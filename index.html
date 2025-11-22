@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Calculate mechanics lien deadlines instantly via API. Fast, reliable, and accurate.">
+    <title>LienDeadlineAPI.com - Calculate Mechanics Lien Deadlines via API</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-white text-gray-900">
+    <!-- Navigation -->
+    <nav id="nav" class="fixed top-0 w-full bg-white shadow-sm z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="text-xl font-bold text-gray-900">LienDeadlineAPI.com</div>
+                <div class="flex gap-4">
+                    <a href="#api-tester" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Test API</a>
+                    <a href="#stripe-checkout" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">Get API Key</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero" class="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto text-center">
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
+                Calculate Mechanics Lien Deadlines in 0.3 Seconds via API
+            </h1>
+            <p class="text-xl sm:text-2xl mb-8">
+                Stop losing $75K+ per year to missed deadlines. Get instant, accurate lien deadline calculations with our lightning-fast API.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#api-tester" class="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold text-lg">Try It Free</a>
+                <a href="#pricing" class="px-8 py-3 bg-gray-100 text-gray-900 rounded-md hover:bg-gray-200 font-semibold text-lg">View Pricing</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live API Tester Section -->
+    <section id="api-tester" class="py-16 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-8">Live API Tester</h2>
+            <form id="api-form" class="p-6 rounded-lg shadow-md">
+                <div class="space-y-4">
+                    <div>
+                        <label for="invoice-date" class="block text-sm font-medium mb-2">Invoice Date</label>
+                        <input type="date" id="invoice-date" name="invoice-date" required class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="state" class="block text-sm font-medium mb-2">State</label>
+                        <select id="state" name="state" required class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select a state</option>
+                            <option value="AL">Alabama</option>
+                            <option value="AK">Alaska</option>
+                            <option value="AZ">Arizona</option>
+                            <option value="AR">Arkansas</option>
+                            <option value="CA">California</option>
+                            <option value="CO">Colorado</option>
+                            <option value="CT">Connecticut</option>
+                            <option value="DE">Delaware</option>
+                            <option value="FL">Florida</option>
+                            <option value="GA">Georgia</option>
+                            <option value="HI">Hawaii</option>
+                            <option value="ID">Idaho</option>
+                            <option value="IL">Illinois</option>
+                            <option value="IN">Indiana</option>
+                            <option value="IA">Iowa</option>
+                            <option value="KS">Kansas</option>
+                            <option value="KY">Kentucky</option>
+                            <option value="LA">Louisiana</option>
+                            <option value="ME">Maine</option>
+                            <option value="MD">Maryland</option>
+                            <option value="MA">Massachusetts</option>
+                            <option value="MI">Michigan</option>
+                            <option value="MN">Minnesota</option>
+                            <option value="MS">Mississippi</option>
+                            <option value="MO">Missouri</option>
+                            <option value="MT">Montana</option>
+                            <option value="NE">Nebraska</option>
+                            <option value="NV">Nevada</option>
+                            <option value="NH">New Hampshire</option>
+                            <option value="NJ">New Jersey</option>
+                            <option value="NM">New Mexico</option>
+                            <option value="NY">New York</option>
+                            <option value="NC">North Carolina</option>
+                            <option value="ND">North Dakota</option>
+                            <option value="OH">Ohio</option>
+                            <option value="OK">Oklahoma</option>
+                            <option value="OR">Oregon</option>
+                            <option value="PA">Pennsylvania</option>
+                            <option value="RI">Rhode Island</option>
+                            <option value="SC">South Carolina</option>
+                            <option value="SD">South Dakota</option>
+                            <option value="TN">Tennessee</option>
+                            <option value="TX">Texas</option>
+                            <option value="UT">Utah</option>
+                            <option value="VT">Vermont</option>
+                            <option value="VA">Virginia</option>
+                            <option value="WA">Washington</option>
+                            <option value="WV">West Virginia</option>
+                            <option value="WI">Wisconsin</option>
+                            <option value="WY">Wyoming</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="role" class="block text-sm font-medium mb-2">Role</label>
+                        <select id="role" name="role" required class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select a role</option>
+                            <option value="supplier">Supplier</option>
+                            <option value="subcontractor">Subcontractor</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 font-semibold text-lg">Calculate</button>
+                </div>
+            </form>
+            <div id="response-container" class="mt-6 hidden">
+                <h3 class="text-xl font-semibold mb-3">API Response</h3>
+                <pre id="api-response" class="p-4 rounded-lg overflow-x-auto text-sm"></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">How It Works</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="text-5xl mb-4">🔄</div>
+                    <h3 class="text-xl font-semibold mb-2">Simple Integration</h3>
+                    <p class="text-gray-600">Add our API endpoint to your application with just a few lines of code. No complex setup required.</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-5xl mb-4">⚡</div>
+                    <h3 class="text-xl font-semibold mb-2">Lightning Fast</h3>
+                    <p class="text-gray-600">Get accurate deadline calculations in under 0.3 seconds. Built for speed and reliability.</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-5xl mb-4">💰</div>
+                    <h3 class="text-xl font-semibold mb-2">Save Money</h3>
+                    <p class="text-gray-600">Prevent costly missed deadlines. Our API helps you avoid $75K+ in annual losses.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">Pricing</h2>
+            <div class="bg-white rounded-lg shadow-lg p-8 max-w-md mx-auto">
+                <div class="text-center mb-8">
+                    <div class="text-5xl font-bold text-gray-900 mb-2">$299<span class="text-2xl text-gray-600">/month</span></div>
+                    <p class="text-gray-600">Unlimited API calls</p>
+                </div>
+                <ul class="space-y-4 mb-8">
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span>Unlimited API requests</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span>All 50 US states supported</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span>99.9% uptime SLA</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span>Priority support</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span>Detailed API documentation</span>
+                    </li>
+                </ul>
+                <a href="#stripe-checkout" class="block w-full bg-blue-600 text-white text-center py-3 rounded-md hover:bg-blue-700 font-semibold text-lg">Get API Key</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Proof Section -->
+    <section id="testimonials" class="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">What Our Customers Say</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <blockquote class="bg-gray-50 p-6 rounded-lg">
+                    <p class="text-gray-700 mb-4">"This API has been a game-changer for our construction management platform. We've eliminated all missed lien deadlines and saved thousands in potential losses."</p>
+                    <footer class="text-sm font-semibold text-gray-900">— Sarah Johnson, CTO at BuildTech Solutions</footer>
+                </blockquote>
+                <blockquote class="bg-gray-50 p-6 rounded-lg">
+                    <p class="text-gray-700 mb-4">"Integration took less than an hour, and the response times are incredible. Our team can now focus on building instead of worrying about deadline calculations."</p>
+                    <footer class="text-sm font-semibold text-gray-900">— Michael Chen, Lead Developer at ConstructPro</footer>
+                </blockquote>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
+            <div class="space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 class="text-xl font-semibold mb-2">How accurate are the deadline calculations?</h3>
+                    <p class="text-gray-600">Our API uses up-to-date state-specific lien laws and regulations to ensure 100% accuracy. We regularly update our database to reflect any changes in legislation.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 class="text-xl font-semibold mb-2">What happens if I exceed my API limit?</h3>
+                    <p class="text-gray-600">With our $299/month plan, you get unlimited API calls. There are no overage fees or rate limits to worry about.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 class="text-xl font-semibold mb-2">Do you offer reseller or partner programs?</h3>
+                    <p class="text-gray-600">Yes! We offer competitive reseller and partner programs for agencies and platforms that want to white-label our API. Contact us for more details.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="footer" class="py-8 px-4 sm:px-6 lg:px-8 bg-gray-900 text-gray-300">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p>&copy; 2024 LienDeadlineAPI.com. All rights reserved.</p>
+                </div>
+                <div class="flex gap-6">
+                    <a href="#faq" class="hover:text-white">FAQ</a>
+                    <a href="#pricing" class="hover:text-white">Pricing</a>
+                    <a href="#api-tester" class="hover:text-white">API Tester</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js" defer></script>
+</body>
+</html>
+

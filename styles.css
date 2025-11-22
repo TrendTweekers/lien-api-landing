@@ -1,0 +1,137 @@
+/* Custom styles for optimal performance and mobile-first design */
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Ensure proper spacing for fixed nav */
+body {
+    padding-top: 0;
+}
+
+/* Optimize font rendering */
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hero section gradient background */
+#hero {
+    background: linear-gradient(to bottom, #1e3a8a, #1d4ed8);
+    color: white;
+}
+
+#hero h1,
+#hero p {
+    color: white;
+}
+
+#hero a.bg-gray-100 {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+#hero a.bg-gray-100:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* API tester section dark background */
+#api-tester {
+    background-color: #1f2937;
+    color: white;
+}
+
+#api-tester h2 {
+    color: white;
+}
+
+#api-tester h3 {
+    color: white;
+}
+
+#api-tester form {
+    background-color: #374151;
+}
+
+#api-tester label {
+    color: white;
+}
+
+#api-tester input,
+#api-tester select {
+    background-color: #4b5563;
+    color: white;
+    border-color: #6b7280;
+}
+
+#api-tester input::placeholder {
+    color: #9ca3af;
+}
+
+/* Button hover transitions */
+button,
+a[class*="bg-blue"] {
+    transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+button:hover,
+a[class*="bg-blue"]:hover {
+    transform: scale(1.05);
+}
+
+/* JSON response pre block styling */
+#api-response {
+    background-color: #000000;
+    color: #10b981;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+/* Error state styling */
+.error {
+    color: #ef4444 !important;
+}
+
+/* Success state styling */
+.success {
+    color: #10b981;
+}
+
+/* Loading state for API calls */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Custom scrollbar for code blocks */
+pre::-webkit-scrollbar {
+    height: 8px;
+}
+
+pre::-webkit-scrollbar-track {
+    background: #1f2937;
+}
+
+pre::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+
+/* Mobile responsiveness - ensure columns stack below md breakpoint */
+@media (max-width: 767px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Max-width 6xl and center content */
+.max-w-6xl {
+    max-width: 72rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
