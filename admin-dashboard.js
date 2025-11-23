@@ -81,7 +81,7 @@ const API_BASE = 'https://vigilant-nourishment-production.up.railway.app';
 
 // Set your admin credentials (should match Railway env vars)
 const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'YourSecurePassword123!'; // Update this to match your Railway ADMIN_PASS
+const ADMIN_PASS = 'LienAPI2025';
 
 // Generate Test Key Form
 document.getElementById('generate-key-form').addEventListener('submit', async function(e) {
@@ -90,10 +90,6 @@ document.getElementById('generate-key-form').addEventListener('submit', async fu
     const expiration = document.getElementById('test-expiration').value;
     const limit = document.getElementById('test-limit').value;
     
-    // Get admin credentials (in production, use proper auth)
-    const adminUser = prompt('Admin username:') || 'admin';
-    const adminPass = prompt('Admin password:') || 'secret';
-    
     try {
         // Call API endpoint (query params format)
         const params = new URLSearchParams({
@@ -101,10 +97,10 @@ document.getElementById('generate-key-form').addEventListener('submit', async fu
             days: expiration,
             calls: limit
         });
-        const response = await fetch(`/admin/test-key?${params}`, {
+        const response = await fetch(`${API_BASE}/admin/test-key?${params}`, {
             method: 'POST',
             headers: {
-                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
         });
         
@@ -135,10 +131,6 @@ document.getElementById('approve-broker-form').addEventListener('submit', async 
     const name = document.getElementById('broker-name').value;
     const model = document.getElementById('broker-model').value;
     
-    // Get admin credentials (in production, use proper auth)
-    const adminUser = prompt('Admin username:') || 'admin';
-    const adminPass = prompt('Admin password:') || 'secret';
-    
     try {
         // Call API endpoint (query params format)
         const params = new URLSearchParams({
@@ -146,10 +138,10 @@ document.getElementById('approve-broker-form').addEventListener('submit', async 
             name: name,
             model: model
         });
-        const response = await fetch(`/admin/approve-broker?${params}`, {
+        const response = await fetch(`${API_BASE}/admin/approve-broker?${params}`, {
             method: 'POST',
             headers: {
-                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
         });
         
