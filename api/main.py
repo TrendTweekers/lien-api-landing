@@ -7,8 +7,8 @@ from contextlib import asynccontextmanager
 import os
 import subprocess
 import sys
-from admin import router as admin_router, stripe_webhook
-from portal import router as portal_router
+from api.admin import router as admin_router, stripe_webhook
+from api.portal import router as portal_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
         try:
             # Import and run setup_db directly
             import sqlite3
-            import api.setup_db as setup_db_module
+            from api import setup_db
             # The setup_db.py file will run when imported
             print("✅ Database created via import!")
         except Exception as e:

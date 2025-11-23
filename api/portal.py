@@ -1,6 +1,6 @@
 # portal.py - Stripe Customer Portal endpoint
 from fastapi import APIRouter, Depends, HTTPException
-from admin import verify_admin
+from api.admin import verify_admin
 import stripe
 import os
 
