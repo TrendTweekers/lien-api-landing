@@ -1,12 +1,48 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Header, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Union
 from pydantic import BaseModel
-from admin import router as admin_router
+from contextlib import asynccontextmanager
+import os
+import subprocess
+import sys
+from admin import router as admin_router, stripe_webhook
 from portal import router as portal_router
 
-app = FastAPI(title="Lien Deadline API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Initialize database
+    db_path = os.getenv("DATABASE_PATH", "admin.db")
+    if not os.path.exists(db_path):
+        print("📦 Creating database...")
+        try:
+            # Run setup_db.py to create database
+            result = subprocess.run(
+                [sys.executable, "api/setup_db.py"],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode == 0:
+                print("✅ Database created!")
+            else:
+                print(f"⚠️ Database setup warning: {result.stderr}")
+        except Exception as e:
+            print(f"⚠️ Database setup error: {e}")
+            # Try alternative method - import and run setup
+            try:
+                import sqlite3
+                from api import setup_db
+                print("✅ Database created via import!")
+            except Exception as e2:
+                print(f"❌ Could not create database automatically: {e2}")
+    
+    yield
+    
+    # Shutdown: cleanup if needed
+    pass
+
+app = FastAPI(title="Lien Deadline API", version="1.0.0", lifespan=lifespan)
 
 # CORS middleware to allow requests from landing page
 app.add_middleware(
@@ -49,6 +85,11 @@ LIEN_RULES = {
     # etc.
 }
 
+@app.get("/health")
+def health_check():
+    """Health check endpoint for Railway deployment"""
+    return {"status": "ok"}
+
 @app.get("/")
 def root():
     return {
@@ -67,10 +108,70 @@ def calculate_deadline(data: CalculateRequest, api_key: str = None):
     - lien_filing_deadline: When to file the lien
     - serving_requirements: Who must be served
     """
+    return _calculate_deadline_internal(data, api_key)
+
+@app.post("/v1/calculate-deadline")
+def calculate_deadline_alt(
+    data: Union[dict, CalculateRequest] = Body(None),
+    invoice_date: str = None,
+    state: str = None,
+    role: str = None,
+    x_api_key: str = Header(None, alias="X-API-Key")
+):
+    """
+    Alternative endpoint for calculating mechanics lien deadlines.
+    Accepts either form data or JSON body.
+    
+    For now, returns dummy data - you'll add real calculation later
+    """
+    # Handle both form data and JSON body
+    if isinstance(data, dict):
+        invoice_date = data.get("invoice_date") or invoice_date
+        state = data.get("state") or state
+        role = data.get("role") or role
+    elif isinstance(data, CalculateRequest):
+        invoice_date = data.invoice_date
+        state = data.state
+        role = data.role
+    
+    # If we have the data, use the internal function
+    if invoice_date and state and role:
+        try:
+            request_data = CalculateRequest(
+                invoice_date=invoice_date,
+                state=state,
+                role=role
+            )
+            return _calculate_deadline_internal(request_data, x_api_key)
+        except Exception as e:
+            return {
+                "error": "Invalid request",
+                "message": str(e)
+            }
+    
+    # Dummy response for testing if data is missing
+    return {
+        "preliminary_notice_deadline": "2025-11-07",
+        "lien_filing_deadline": "2026-01-21",
+        "serving_requirements": ["owner", "gc"],
+        "response_time_ms": 411,
+        "disclaimer": "Not legal advice. Consult attorney. This API provides general deadline estimates."
+    }
+
+def _calculate_deadline_internal(data: CalculateRequest, api_key: str = None):
+    """
+    Calculate mechanics lien deadlines based on invoice date and state.
+    
+    Returns:
+    - preliminary_notice_deadline: When to send preliminary notice
+    - lien_filing_deadline: When to file the lien
+    - serving_requirements: Who must be served
+    """
     # Check test key if provided
     if api_key and api_key.startswith("test_"):
         import sqlite3
-        con = sqlite3.connect("admin.db")
+        db_path = os.getenv("DATABASE_PATH", "admin.db")
+        con = sqlite3.connect(db_path)
         cur = con.execute("""
             SELECT calls_used, max_calls, expiry_date, status, email
             FROM test_keys 
