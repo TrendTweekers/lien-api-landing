@@ -17,25 +17,69 @@ async def lifespan(app: FastAPI):
     if not os.path.exists(db_path):
         print("📦 Creating database...")
         try:
-            # Run setup_db.py to create database
-            result = subprocess.run(
-                [sys.executable, "api/setup_db.py"],
-                capture_output=True,
-                text=True
-            )
-            if result.returncode == 0:
-                print("✅ Database created!")
-            else:
-                print(f"⚠️ Database setup warning: {result.stderr}")
+            # Import and run setup_db directly
+            import sqlite3
+            import api.setup_db as setup_db_module
+            # The setup_db.py file will run when imported
+            print("✅ Database created via import!")
         except Exception as e:
             print(f"⚠️ Database setup error: {e}")
-            # Try alternative method - import and run setup
+            # Fallback: create database manually
             try:
                 import sqlite3
-                from api import setup_db
-                print("✅ Database created via import!")
+                db_path = os.getenv("DATABASE_PATH", "admin.db")
+                con = sqlite3.connect(db_path)
+                # Create tables if they don't exist
+                con.execute("""
+                    CREATE TABLE IF NOT EXISTS test_keys(
+                        key TEXT PRIMARY KEY,
+                        email TEXT,
+                        expiry_date TEXT,
+                        max_calls INTEGER DEFAULT 50,
+                        calls_used INTEGER DEFAULT 0,
+                        status TEXT DEFAULT 'active',
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                con.execute("""
+                    CREATE TABLE IF NOT EXISTS brokers(
+                        id TEXT PRIMARY KEY,
+                        email TEXT,
+                        name TEXT,
+                        model TEXT,
+                        referrals INTEGER DEFAULT 0,
+                        earned REAL DEFAULT 0,
+                        stripe_account_id TEXT
+                    )
+                """)
+                con.execute("""
+                    CREATE TABLE IF NOT EXISTS customers(
+                        email TEXT PRIMARY KEY,
+                        api_calls INTEGER DEFAULT 0,
+                        status TEXT DEFAULT 'active',
+                        broker_ref TEXT,
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                con.execute("""
+                    CREATE TABLE IF NOT EXISTS referrals(
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        broker_ref TEXT,
+                        customer_email TEXT,
+                        customer_id TEXT,
+                        amount REAL,
+                        status TEXT DEFAULT 'pending',
+                        date TEXT DEFAULT CURRENT_TIMESTAMP,
+                        paid_at TEXT,
+                        stripe_transfer_id TEXT,
+                        days_active INTEGER
+                    )
+                """)
+                con.commit()
+                con.close()
+                print("✅ Database created via fallback!")
             except Exception as e2:
-                print(f"❌ Could not create database automatically: {e2}")
+                print(f"❌ Could not create database: {e2}")
     
     yield
     
