@@ -9,7 +9,7 @@ function requestState() {
 }
 
 // API Configuration
-const API_BASE = 'https://vigilant-nourishment-production.up.railway.app';
+const API_BASE = 'https://lien-api-landing-production.up.railway.app';
 
 // Referral tracking - saves referral code from URL parameter
 function trackReferral() {
