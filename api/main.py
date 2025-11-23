@@ -9,8 +9,9 @@ from contextlib import asynccontextmanager
 import os
 import subprocess
 import sys
-from api.admin import router as admin_router, stripe_webhook
+from api.admin import router as admin_router, stripe_webhook, verify_admin
 from api.portal import router as portal_router
+from fastapi import Depends
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -112,8 +113,8 @@ except Exception as e:
 
 # Serve HTML dashboards
 @app.get("/admin-dashboard.html")
-def serve_admin_dashboard():
-    """Serve admin dashboard HTML"""
+def serve_admin_dashboard(user=Depends(verify_admin)):
+    """Serve admin dashboard HTML (protected with HTTP Basic Auth)"""
     if os.path.exists("admin-dashboard.html"):
         return FileResponse("admin-dashboard.html")
     raise HTTPException(status_code=404, detail="Admin dashboard not found")
