@@ -117,38 +117,6 @@ function closeModal(modalId) {
 // API Configuration
 const API_BASE = 'https://lien-api-landing-production.up.railway.app';
 
-// Admin authentication
-const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'LienAPI2025'; // Match Railway env var
-
-// Check auth on page load
-document.addEventListener('DOMContentLoaded', () => {
-    // Check if already authenticated
-    const isAuthenticated = sessionStorage.getItem('admin_authenticated');
-    
-    if (!isAuthenticated) {
-        // Prompt for credentials
-        const username = prompt('Admin Username:');
-        const password = prompt('Admin Password:');
-        
-        if (username !== ADMIN_USER || password !== ADMIN_PASS) {
-            alert('❌ Invalid credentials');
-            window.location.href = 'index.html';
-            return;
-        }
-        
-        // Save auth state
-        sessionStorage.setItem('admin_authenticated', 'true');
-    }
-    
-    // Load dashboard data
-    updateStats();
-    loadCustomers();
-    loadBrokers();
-    loadPendingPayouts();
-    loadTestKeys();
-});
-
 // Logout function
 function logout() {
     sessionStorage.removeItem('admin_authenticated');
