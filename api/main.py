@@ -103,7 +103,7 @@ app.include_router(portal_router)
 
 # Stripe webhook endpoint (no auth - Stripe signs it)
 # Note: This is at root level, not under /admin, because Stripe webhooks don't use Basic Auth
-from admin import stripe_webhook
+# stripe_webhook is already imported at the top: from api.admin import stripe_webhook
 @app.post("/webhook/stripe")
 async def stripe_webhook_handler(request: Request):
     """Stripe webhook endpoint - delegates to admin router webhook handler"""
