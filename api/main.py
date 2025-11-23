@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Request, Header, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from datetime import datetime, timedelta
 from typing import Optional, Union
 from pydantic import BaseModel
@@ -100,6 +102,42 @@ app.add_middleware(
 # Include admin routes
 app.include_router(admin_router)
 app.include_router(portal_router)
+
+# Serve static files (HTML, CSS, JS)
+# Mount static files directory (serves files from project root)
+try:
+    app.mount("/static", StaticFiles(directory="."), name="static")
+except Exception as e:
+    print(f"⚠️ Could not mount static files: {e}")
+
+# Serve HTML dashboards
+@app.get("/admin-dashboard.html")
+def serve_admin_dashboard():
+    """Serve admin dashboard HTML"""
+    if os.path.exists("admin-dashboard.html"):
+        return FileResponse("admin-dashboard.html")
+    raise HTTPException(status_code=404, detail="Admin dashboard not found")
+
+@app.get("/broker-dashboard.html")
+def serve_broker_dashboard():
+    """Serve broker dashboard HTML"""
+    if os.path.exists("broker-dashboard.html"):
+        return FileResponse("broker-dashboard.html")
+    raise HTTPException(status_code=404, detail="Broker dashboard not found")
+
+@app.get("/customer-dashboard.html")
+def serve_customer_dashboard():
+    """Serve customer dashboard HTML"""
+    if os.path.exists("customer-dashboard.html"):
+        return FileResponse("customer-dashboard.html")
+    raise HTTPException(status_code=404, detail="Customer dashboard not found")
+
+@app.get("/index.html")
+def serve_landing_page():
+    """Serve landing page HTML"""
+    if os.path.exists("index.html"):
+        return FileResponse("index.html")
+    raise HTTPException(status_code=404, detail="Landing page not found")
 
 # Stripe webhook endpoint (no auth - Stripe signs it)
 # Note: This is at root level, not under /admin, because Stripe webhooks don't use Basic Auth
