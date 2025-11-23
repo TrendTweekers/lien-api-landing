@@ -1,6 +1,44 @@
 // Admin Dashboard Functionality
 // Hard-coded data for now - wire to API later
 
+// Admin authentication
+const ADMIN_USER = 'admin';
+const ADMIN_PASS = 'LienAPI2025'; // Match Railway env var
+
+// Check auth on page load
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if already authenticated
+    const isAuthenticated = sessionStorage.getItem('admin_authenticated');
+    
+    if (!isAuthenticated) {
+        // Prompt for credentials
+        const username = prompt('Admin Username:');
+        const password = prompt('Admin Password:');
+        
+        if (username !== ADMIN_USER || password !== ADMIN_PASS) {
+            alert('❌ Invalid credentials');
+            window.location.href = 'index.html';
+            return;
+        }
+        
+        // Save auth state
+        sessionStorage.setItem('admin_authenticated', 'true');
+    }
+    
+    // Load dashboard data
+    updateStats();
+    loadCustomers();
+    loadBrokers();
+    loadPendingPayouts();
+    loadTestKeys();
+});
+
+// Logout function
+function logout() {
+    sessionStorage.removeItem('admin_authenticated');
+    window.location.href = 'index.html';
+}
+
 // Sample data (matches Kimi's format)
 const sampleCustomers = [
     { email: 'sarah@abcsupply.com', calls: 1247, status: 'Active' },
@@ -79,9 +117,43 @@ function closeModal(modalId) {
 // API Configuration
 const API_BASE = 'https://lien-api-landing-production.up.railway.app';
 
-// Set your admin credentials (should match Railway env vars)
+// Admin authentication
 const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'LienAPI2025';
+const ADMIN_PASS = 'LienAPI2025'; // Match Railway env var
+
+// Check auth on page load
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if already authenticated
+    const isAuthenticated = sessionStorage.getItem('admin_authenticated');
+    
+    if (!isAuthenticated) {
+        // Prompt for credentials
+        const username = prompt('Admin Username:');
+        const password = prompt('Admin Password:');
+        
+        if (username !== ADMIN_USER || password !== ADMIN_PASS) {
+            alert('❌ Invalid credentials');
+            window.location.href = 'index.html';
+            return;
+        }
+        
+        // Save auth state
+        sessionStorage.setItem('admin_authenticated', 'true');
+    }
+    
+    // Load dashboard data
+    updateStats();
+    loadCustomers();
+    loadBrokers();
+    loadPendingPayouts();
+    loadTestKeys();
+});
+
+// Logout function
+function logout() {
+    sessionStorage.removeItem('admin_authenticated');
+    window.location.href = 'index.html';
+}
 
 // Generate Test Key Form
 document.getElementById('generate-key-form').addEventListener('submit', async function(e) {
@@ -357,12 +429,5 @@ function displayTestKeys(keys) {
     }).join('');
 }
 
-// Initialize
-document.addEventListener('DOMContentLoaded', function() {
-    updateStats();
-    loadCustomers();
-    loadBrokers();
-    loadPendingPayouts();
-    loadTestKeys();
-});
+// Dashboard initialization is now handled in the auth check above
 
