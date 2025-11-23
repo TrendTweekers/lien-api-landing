@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Broker Dashboard - Track referrals and commissions">
+    <title>Broker Dashboard - LienDeadlineAPI.com</title>
+    
+    <!-- Preconnect to Tailwind CDN for faster loading -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <!-- Navigation -->
+    <nav id="nav" class="fixed top-0 w-full bg-white shadow-sm z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="index.html" class="text-xl font-bold text-gray-900">LienDeadlineAPI.com</a>
+                <div class="flex gap-4">
+                    <a href="partners.html" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Partners</a>
+                    <a href="index.html#pricing" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">Pricing</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Content -->
+    <section class="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto">
+            <h1 class="text-3xl font-bold mb-8">Broker Dashboard</h1>
+            
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="text-sm text-gray-600 mb-1">Total Customers</div>
+                    <div class="text-3xl font-bold text-gray-900" id="total-customers">12</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="text-sm text-gray-600 mb-1">Monthly Commission</div>
+                    <div class="text-3xl font-bold text-green-600" id="monthly-commission">$600<span class="text-lg text-gray-600">/mo</span></div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="text-sm text-gray-600 mb-1">Total Earned</div>
+                    <div class="text-3xl font-bold text-gray-900" id="total-earned">$3,200</div>
+                </div>
+            </div>
+
+            <!-- Tools Section -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-xl font-semibold mb-4">Your Tools</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button id="copy-link-btn" class="px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold">
+                        📋 Copy Referral Link
+                    </button>
+                    <button id="copy-email-btn" class="px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 font-semibold">
+                        📧 Copy Email Template
+                    </button>
+                    <button id="download-invoice-btn" class="px-4 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 font-semibold">
+                        📄 Download Invoice
+                    </button>
+                </div>
+                
+                <div class="mt-6 p-4 bg-gray-50 rounded">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Your Referral Link:</label>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="referral-link" readonly value="lien-api.com?ref=broker_john_123" class="flex-1 px-4 py-2 border border-gray-300 rounded-md bg-white">
+                        <button id="copy-link-input-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">Copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Customers -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-xl font-semibold mb-4">Active Customers</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commission</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Since</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customers-table" class="bg-white divide-y divide-gray-200">
+                            <!-- Sample data - will be populated dynamically -->
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">ABC Supply Co</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$50/mo</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jan 2025</td>
+                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span></td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">BuildTech Materials</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$50/mo</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Feb 2025</td>
+                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span></td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Texas Lumber Yard</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$50/mo</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Feb 2025</td>
+                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Commission Model Info -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-xl font-semibold mb-4">Commission Model</h2>
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <div class="font-semibold text-gray-900" id="commission-model">$500 One-Time Bounty</div>
+                        <div class="text-sm text-gray-600 mt-1">Current model</div>
+                    </div>
+                    <div id="upgrade-section" class="hidden">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <p class="text-sm font-semibold text-blue-900 mb-2">💡 Upgrade Available!</p>
+                            <p class="text-sm text-blue-800 mb-3">You have <span id="active-referrals-count">7</span> active referrals!</p>
+                            <p class="text-sm text-blue-800 mb-3">Switch to $50/month recurring:</p>
+                            <p class="text-sm font-bold text-blue-900 mb-3">→ Earn $<span id="recurring-annual">4,200</span>/year instead of one-time</p>
+                            <div class="flex gap-2">
+                                <button onclick="showModelComparison()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-semibold">
+                                    Compare Models
+                                </button>
+                                <button onclick="switchToRecurring()" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-semibold">
+                                    Switch to Recurring
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payout Info -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4">Next Payout</h2>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600">Scheduled for: <span class="font-semibold text-gray-900">March 1st</span></p>
+                        <p class="text-sm text-gray-500 mt-1">Via ACH transfer</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-2xl font-bold text-green-600" id="next-payout">$600</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="footer" class="py-8 px-4 sm:px-6 lg:px-8 bg-gray-900 text-gray-300">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p>&copy; 2024 LienDeadlineAPI.com. All rights reserved.</p>
+                </div>
+                <div class="flex gap-6">
+                    <a href="index.html#faq" class="hover:text-white">FAQ</a>
+                    <a href="index.html#pricing" class="hover:text-white">Pricing</a>
+                    <a href="partners.html" class="hover:text-white">Partners</a>
+                    <a href="terms.html" class="hover:text-white">Terms</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Broker info (in production, fetch from API)
+        const brokerInfo = {
+            name: 'John',
+            referralCode: 'broker_john_123',
+            commissionPerCustomer: 50
+        };
+
+        // Email template
+        function getEmailTemplate() {
+            return `Subject: Save $15K/year on mechanics lien compliance
+
+Hi [Client Name],
+
+I found a tool that auto-calculates mechanics lien deadlines for your suppliers. Costs $299/month, saves thousands in missed lien rights.
+
+Benefits:
+- Never miss another lien deadline
+- Covers all 50 states
+- $299/month (saves $15K+ in missed liens)
+
+Check it out: lien-api.com?ref=${brokerInfo.referralCode}
+
+Let me know if you have questions!
+
+${brokerInfo.name}`;
+        }
+
+        // Copy referral link
+        document.getElementById('copy-link-btn').addEventListener('click', function() {
+            copyToClipboard(`lien-api.com?ref=${brokerInfo.referralCode}`);
+            showNotification('✅ Referral link copied!');
+        });
+
+        document.getElementById('copy-link-input-btn').addEventListener('click', function() {
+            const input = document.getElementById('referral-link');
+            input.select();
+            document.execCommand('copy');
+            showNotification('✅ Referral link copied!');
+        });
+
+        // Copy email template
+        document.getElementById('copy-email-btn').addEventListener('click', function() {
+            const template = getEmailTemplate();
+            copyToClipboard(template);
+            showNotification('✅ Email template copied! Paste into your email client.');
+        });
+
+        // Download invoice (demo - in production, generate PDF)
+        document.getElementById('download-invoice-btn').addEventListener('click', function() {
+            showNotification('📄 Invoice download will be available after first payout.');
+        });
+
+        // Helper function to copy to clipboard
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text);
+            } else {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+        }
+
+        // Show notification
+        function showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-20 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.3s';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // In production, this would fetch from your API
+        // For demo purposes, we'll simulate tracking
+        function updateDashboard() {
+            // This would be called when Stripe webhook fires
+            // For now, just display the sample data
+            const customers = [
+                { name: 'ABC Supply Co', commission: 50, since: 'Jan 2025', status: 'Active' },
+                { name: 'BuildTech Materials', commission: 50, since: 'Feb 2025', status: 'Active' },
+                { name: 'Texas Lumber Yard', commission: 50, since: 'Feb 2025', status: 'Active' }
+            ];
+
+            const totalCustomers = customers.length;
+            const monthlyCommission = totalCustomers * brokerInfo.commissionPerCustomer;
+            const totalEarned = 3200; // Would calculate from database
+
+            document.getElementById('total-customers').textContent = totalCustomers;
+            document.getElementById('monthly-commission').innerHTML = `$${monthlyCommission}<span class="text-lg text-gray-600">/mo</span>`;
+            document.getElementById('total-earned').textContent = `$${totalEarned.toLocaleString()}`;
+            document.getElementById('next-payout').textContent = `$${monthlyCommission}`;
+        }
+
+        // Check if upgrade available (7+ customers)
+        function checkUpgradeEligibility() {
+            const totalCustomers = parseInt(document.getElementById('total-customers').textContent);
+            if (totalCustomers >= 7) {
+                document.getElementById('upgrade-section').classList.remove('hidden');
+                document.getElementById('active-referrals-count').textContent = totalCustomers;
+                const recurringAnnual = totalCustomers * 50 * 12;
+                document.getElementById('recurring-annual').textContent = recurringAnnual.toLocaleString();
+            }
+        }
+
+        function showModelComparison() {
+            const totalCustomers = parseInt(document.getElementById('total-customers').textContent);
+            const bountyTotal = totalCustomers * 500;
+            const recurringYear1 = totalCustomers * 600;
+            const recurringYear2 = totalCustomers * 600;
+            const recurringTotal = recurringYear1 + recurringYear2;
+            
+            alert(`Model Comparison (${totalCustomers} customers):\n\n` +
+                  `One-Time Bounty:\n` +
+                  `Year 1: $${bountyTotal.toLocaleString()}\n` +
+                  `Year 2: $0\n` +
+                  `Total: $${bountyTotal.toLocaleString()}\n\n` +
+                  `Recurring ($50/mo):\n` +
+                  `Year 1: $${recurringYear1.toLocaleString()}\n` +
+                  `Year 2: $${recurringYear2.toLocaleString()}\n` +
+                  `Total: $${recurringTotal.toLocaleString()}\n\n` +
+                  `Recurring earns $${(recurringTotal - bountyTotal).toLocaleString()} more over 2 years!`);
+        }
+
+        function switchToRecurring() {
+            if (confirm('Switch to $50/month recurring model? This cannot be undone.')) {
+                // In production, call API to switch model
+                alert('✅ Switched to recurring model! You will now earn $50/month per active customer.');
+                document.getElementById('commission-model').textContent = '$50/month Recurring';
+                document.getElementById('upgrade-section').classList.add('hidden');
+                updateDashboard();
+            }
+        }
+
+        // Initialize dashboard
+        updateDashboard();
+        checkUpgradeEligibility();
+
+        // Simulate new signup (for demo - in production, this comes from Stripe webhook)
+        // Uncomment to test:
+        /*
+        setTimeout(() => {
+            console.log('Simulating new signup...');
+            // This would be triggered by Stripe webhook in production
+            // addNewCustomer('New Customer Co', 'Mar 2025');
+        }, 5000);
+        */
+    </script>
+</body>
+</html>
+
