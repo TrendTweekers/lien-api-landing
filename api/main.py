@@ -88,13 +88,14 @@ LIEN_RULES = {
 @app.get("/health")
 def health_check():
     """Health check endpoint for Railway deployment"""
-    return {"status": "ok"}
+    return {"status": "ok", "message": "API is running"}
 
 @app.get("/")
 def root():
     return {
-        "message": "Lien Deadline API",
+        "name": "Lien Deadline API",
         "version": "1.0.0",
+        "status": "active",
         "states_available": list(LIEN_RULES.keys())
     }
 
