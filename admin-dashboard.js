@@ -76,6 +76,13 @@ function closeModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
 }
 
+// API Configuration
+const API_BASE = 'https://vigilant-nourishment-production.up.railway.app';
+
+// Set your admin credentials (should match Railway env vars)
+const ADMIN_USER = 'admin';
+const ADMIN_PASS = 'YourSecurePassword123!'; // Update this to match your Railway ADMIN_PASS
+
 // Generate Test Key Form
 document.getElementById('generate-key-form').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -191,12 +198,9 @@ async function loadPendingPayouts() {
     
     try {
         // Get admin credentials (in production, use proper auth)
-        const adminUser = 'admin'; // In production, get from session
-        const adminPass = 'secret'; // In production, get from session
-        
-        const response = await fetch('/admin/payouts/pending', {
+        const response = await fetch(`${API_BASE}/admin/payouts/pending`, {
             headers: {
-                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
         });
         
@@ -254,13 +258,10 @@ async function approvePayout(payoutId) {
     if (!confirm(`Approve this payout?`)) return;
     
     try {
-        const adminUser = 'admin';
-        const adminPass = 'secret';
-        
-        const response = await fetch(`/admin/approve-payout/${payoutId}`, {
+        const response = await fetch(`${API_BASE}/admin/approve-payout/${payoutId}`, {
             method: 'POST',
             headers: {
-                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
         });
         
@@ -288,13 +289,10 @@ async function rejectPayout(payoutId) {
     if (!reason) return;
     
     try {
-        const adminUser = 'admin';
-        const adminPass = 'secret';
-        
-        const response = await fetch(`/admin/reject-payout/${payoutId}?reason=${encodeURIComponent(reason)}`, {
+        const response = await fetch(`${API_BASE}/admin/reject-payout/${payoutId}?reason=${encodeURIComponent(reason)}`, {
             method: 'POST',
             headers: {
-                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
         });
         
@@ -315,12 +313,9 @@ async function loadTestKeys() {
     const table = document.getElementById('test-keys-table');
     
     try {
-        const adminUser = 'admin';
-        const adminPass = 'secret';
-        
-        const response = await fetch('/admin/test-keys', {
+        const response = await fetch(`${API_BASE}/admin/test-keys`, {
             headers: {
-                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
         });
         

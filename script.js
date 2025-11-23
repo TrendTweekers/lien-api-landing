@@ -8,6 +8,9 @@ function requestState() {
     }
 }
 
+// API Configuration
+const API_BASE = 'https://vigilant-nourishment-production.up.railway.app';
+
 // Referral tracking - saves referral code from URL parameter
 function trackReferral() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -146,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let responseTime;
             
             try {
-                const response = await fetch('https://api.liendeadline.com/v1/calculate', {
+                const response = await fetch(`${API_BASE}/v1/calculate`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
