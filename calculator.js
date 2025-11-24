@@ -59,10 +59,10 @@ function displayResults(data) {
     const upgradePrompt = document.getElementById('upgradePrompt');
     if (userEmail) {
         // User is logged in, hide upgrade prompt
-        upgradePrompt.classList.add('hidden');
+        if (upgradePrompt) upgradePrompt.style.display = 'none';
     } else {
         // User is not logged in, show upgrade prompt
-        upgradePrompt.classList.remove('hidden');
+        if (upgradePrompt) upgradePrompt.style.display = 'block';
     }
     
     // Always show state expansion prompt (everyone wants more states)
@@ -185,6 +185,14 @@ document.getElementById('emailReport').addEventListener('click', () => {
 
 // Set today as default invoice date
 document.getElementById('invoiceDate').valueAsDate = new Date();
+
+// Hide upgrade prompt if user is logged in (on page load)
+document.addEventListener('DOMContentLoaded', function() {
+    if (localStorage.getItem('userEmail')) {
+        const prompt = document.getElementById('upgradePrompt');
+        if (prompt) prompt.style.display = 'none';
+    }
+});
 
 // State expansion email capture
 document.getElementById('notifyMeBtn').addEventListener('click', function() {
