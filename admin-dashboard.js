@@ -31,6 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
     loadBrokers();
     loadPendingPayouts();
     loadTestKeys();
+    loadQuickStats();
+    
+    // Refresh stats every 60 seconds
+    setInterval(loadQuickStats, 60000);
 });
 
 // Logout function
@@ -221,6 +225,26 @@ function payBroker(brokerName) {
 function logout() {
     if (confirm('Logout?')) {
         window.location.href = 'index.html';
+    }
+}
+
+// Load quick stats from analytics API
+async function loadQuickStats() {
+    try {
+        const res = await fetch(`${API_BASE}/analytics/today`);
+        if (!res.ok) {
+            console.error('Failed to load analytics');
+            return;
+        }
+        const data = await res.json();
+        
+        document.getElementById('pvToday').innerText = data.pv || 0;
+        document.getElementById('uvToday').innerText = data.uv || 0;
+        document.getElementById('calcToday').innerText = data.calc || 0;
+        document.getElementById('paidToday').innerText = '$' + (data.paid || 0);
+    } catch (error) {
+        console.error('Error loading quick stats:', error);
+        // Keep showing "—" on error
     }
 }
 
