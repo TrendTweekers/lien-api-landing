@@ -99,6 +99,53 @@ async def calculate_deadline(
     days_to_prelim = (prelim_deadline - today).days
     days_to_lien = (lien_deadline - today).days
     
+    # Track page view and calculation (non-blocking)
+    try:
+        con = sqlite3.connect(get_db_path())
+        # Create tables if they don't exist
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS page_views (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT NOT NULL,
+                ip TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS calculations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT NOT NULL,
+                state TEXT NOT NULL,
+                invoice_date TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS payments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT NOT NULL,
+                amount REAL NOT NULL,
+                customer_email TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # Insert page view (get IP from request if available)
+        client_ip = request.client.host if request and request.client else "unknown"
+        con.execute(
+            "INSERT INTO page_views(date, ip) VALUES (?, ?)",
+            (date.today().isoformat(), client_ip)
+        )
+        # Insert calculation
+        con.execute(
+            "INSERT INTO calculations(date, state, invoice_date) VALUES (?, ?, ?)",
+            (date.today().isoformat(), state_code, invoice_date)
+        )
+        con.commit()
+        con.close()
+    except Exception as e:
+        # Don't fail the request if tracking fails
+        print(f"Failed to track analytics: {e}")
+    
     # Determine urgency
     def get_urgency(days):
         if days <= 7:
