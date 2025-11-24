@@ -337,16 +337,32 @@
 
         // Broker Application Modal Functions
         function openApplicationModal(model) {
-            document.getElementById('commissionModel').value = model;
-            document.getElementById('applicationModal').classList.remove('hidden');
+            const modal = document.getElementById('applicationModal');
+            const modelInput = document.getElementById('commissionModel');
+            if (modal && modelInput) {
+                modelInput.value = model;
+                modal.classList.remove('hidden');
+            } else {
+                console.error('Modal or commissionModel input not found');
+                alert('Application form is loading... Please refresh the page.');
+            }
         }
 
         function closeApplicationModal() {
-            document.getElementById('applicationModal').classList.add('hidden');
+            const modal = document.getElementById('applicationModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
         }
 
+        // Make functions globally available
+        window.openApplicationModal = openApplicationModal;
+        window.closeApplicationModal = closeApplicationModal;
+
         // Handle broker application form submission
-        document.getElementById('brokerApplicationForm').addEventListener('submit', async (e) => {
+        const brokerForm = document.getElementById('brokerApplicationForm');
+        if (brokerForm) {
+            brokerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData);
@@ -398,7 +414,10 @@
                     window.location.href = '/broker-dashboard.html';
                 }, 1000);
             }
-        });
+            });
+        } else {
+            console.error('Broker application form not found');
+        }
     </script>
 </body>
 </html>

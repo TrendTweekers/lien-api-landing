@@ -248,6 +248,82 @@ async function loadQuickStats() {
     }
 }
 
+// Generate Test API Key
+function generateTestKey() {
+    const key = 'test_' + Math.random().toString(36).substr(2, 32);
+    
+    // Show success message with key
+    alert('Test API key generated!\n\nKey: ' + key + '\n\nClick OK to copy it to clipboard.');
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(key).then(() => {
+        console.log('Key copied to clipboard:', key);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+    });
+    
+    // Add to active keys list if table exists
+    const keysList = document.getElementById('activeKeysList');
+    if (keysList) {
+        const keyRow = document.createElement('tr');
+        keyRow.className = 'border-b';
+        keyRow.innerHTML = `
+            <td class="px-6 py-4">
+                <code class="text-sm bg-gray-100 px-2 py-1 rounded">${key}</code>
+            </td>
+            <td class="px-6 py-4">0</td>
+            <td class="px-6 py-4">${new Date().toLocaleDateString()}</td>
+            <td class="px-6 py-4">
+                <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">Active</span>
+            </td>
+            <td class="px-6 py-4">
+                <button onclick="copyToClipboard('${key}')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm">
+                    Copy
+                </button>
+            </td>
+        `;
+        keysList.insertBefore(keyRow, keysList.firstChild);
+    }
+}
+
+// Copy to Clipboard
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        // Fallback method
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('Copied to clipboard!');
+    });
+}
+
+// Show Approve Broker Modal
+function showApproveBrokerModal() {
+    const modal = document.getElementById('approve-broker-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    } else {
+        alert('Approve Broker modal not found. Opening form...');
+        // Fallback: show prompt
+        const email = prompt('Broker Email:');
+        const name = prompt('Broker Name:');
+        if (email && name) {
+            alert(`Broker approval form:\n\nEmail: ${email}\nName: ${name}\n\n(Implement full approval in production)`);
+        }
+    }
+}
+
+// Make functions globally available
+window.generateTestKey = generateTestKey;
+window.copyToClipboard = copyToClipboard;
+window.showApproveBrokerModal = showApproveBrokerModal;
+
 // Load pending payouts
 async function loadPendingPayouts() {
     const container = document.getElementById('pending-payouts-container');
