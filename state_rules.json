@@ -83,6 +83,239 @@
       "Lien expires if lawsuit not filed within 1 year"
     ],
     "notes": "Pro tip: Serve Notice to Owner BEFORE first delivery to eliminate deadline concerns."
+  },
+  "NY": {
+    "state_name": "New York",
+    "complexity": "medium",
+    "preliminary_notice": {
+      "name": "None Required",
+      "days": 0,
+      "trigger": "none",
+      "description": "No preliminary notice required for any claimants"
+    },
+    "lien_filing": {
+      "name": "Notice of Mechanic's Lien",
+      "standard_days": 240,
+      "residential_days": 120,
+      "trigger": "from_last_delivery",
+      "description": "8 months for commercial/multi-family, 4 months for single-family residential"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": ["NY Lien Law § 10"],
+    "critical_warnings": [
+      "⚠️ Must serve copy of lien on owner within 5 days before or 30 days after filing",
+      "⚠️ Residential projects have HALF the filing time (120 days vs 240 days)"
+    ],
+    "notes": "No preliminary notice required. Using standard 240-day deadline for MVP (commercial). Residential toggle coming in v2."
+  },
+  "PA": {
+    "state_name": "Pennsylvania",
+    "complexity": "medium",
+    "preliminary_notice": {
+      "name": "Notice of Intent to Lien",
+      "days": 30,
+      "trigger": "from_last_delivery",
+      "description": "Must serve notice at least 30 days before filing lien"
+    },
+    "lien_filing": {
+      "name": "Mechanic's Lien",
+      "days": 120,
+      "trigger": "from_last_delivery",
+      "description": "6 months after last furnishing labor or materials"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": ["49 PA. CONS. STAT. § 1501"],
+    "critical_warnings": [
+      "⚠️ Must serve Notice of Intent at least 30 days BEFORE filing lien",
+      "⚠️ Lien must be filed within 6 months of last work"
+    ],
+    "notes": "Two-step process: Notice of Intent (30 days before) then Lien filing (within 6 months)."
+  },
+  "IL": {
+    "state_name": "Illinois",
+    "complexity": "medium",
+    "preliminary_notice": {
+      "name": "Notice of Lien Claim",
+      "days": 90,
+      "trigger": "from_last_delivery",
+      "description": "Must serve notice within 90 days of last furnishing"
+    },
+    "lien_filing": {
+      "name": "Mechanic's Lien",
+      "days": 120,
+      "trigger": "from_last_delivery",
+      "description": "4 months after last furnishing labor or materials"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": ["770 ILCS 60/1"],
+    "critical_warnings": [
+      "⚠️ Must serve Notice of Lien Claim within 90 days of last work",
+      "⚠️ Lien must be filed within 4 months of last furnishing"
+    ],
+    "notes": "Notice must be served before or with lien filing. Using 90-day notice deadline."
+  },
+  "GA": {
+    "state_name": "Georgia",
+    "complexity": "low",
+    "preliminary_notice": {
+      "name": "Notice to Contractor",
+      "days": 30,
+      "trigger": "from_first_delivery",
+      "description": "Within 30 days of first furnishing (or before starting work)"
+    },
+    "lien_filing": {
+      "name": "Claim of Lien",
+      "days": 90,
+      "trigger": "from_last_delivery",
+      "description": "90 days after last furnishing labor or materials"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": ["GA CODE § 44-14-361.1"],
+    "critical_warnings": [
+      "⚠️ Notice to Contractor must be served within 30 days of first work",
+      "⚠️ Lien must be filed within 90 days of last furnishing"
+    ],
+    "notes": "Simple two-step process. Notice within 30 days, then lien within 90 days of last work."
+  },
+  "NC": {
+    "state_name": "North Carolina",
+    "complexity": "medium",
+    "preliminary_notice": {
+      "name": "Notice of Claim of Lien",
+      "days": 120,
+      "trigger": "from_last_delivery",
+      "description": "Must serve notice within 120 days of last furnishing"
+    },
+    "lien_filing": {
+      "name": "Claim of Lien",
+      "days": 120,
+      "trigger": "from_last_delivery",
+      "description": "Must file lien within 120 days of last furnishing"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": ["NC GEN. STAT. § 44A-12"],
+    "critical_warnings": [
+      "⚠️ Notice and lien filing both have same 120-day deadline",
+      "⚠️ Must serve notice BEFORE or WITH lien filing"
+    ],
+    "notes": "Notice and filing deadlines are the same. Must complete both within 120 days."
+  },
+  "WA": {
+    "state_name": "Washington",
+    "complexity": "medium",
+    "preliminary_notice": {
+      "name": "Notice to Owner",
+      "days": 60,
+      "trigger": "from_first_delivery",
+      "description": "Within 60 days of first furnishing (or before starting work)"
+    },
+    "lien_filing": {
+      "name": "Claim of Lien",
+      "days": 90,
+      "trigger": "from_last_delivery",
+      "description": "90 days after last furnishing labor or materials"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": ["RCW 60.04.031"],
+    "critical_warnings": [
+      "⚠️ Notice to Owner must be served within 60 days of first work",
+      "⚠️ Lien must be filed within 90 days of last furnishing"
+    ],
+    "notes": "Notice within 60 days of first work, then lien within 90 days of last work."
+  },
+  "OH": {
+    "state_name": "Ohio",
+    "complexity": "low",
+    "preliminary_notice": {
+      "name": "Notice of Commencement",
+      "days": 0,
+      "trigger": "none",
+      "description": "No preliminary notice required - owner files Notice of Commencement"
+    },
+    "lien_filing": {
+      "name": "Mechanic's Lien",
+      "days": 75,
+      "trigger": "from_last_delivery",
+      "description": "75 days after last furnishing labor or materials"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": ["OHIO REV. CODE § 1311.06"],
+    "critical_warnings": [
+      "⚠️ Must file lien within 75 days of last furnishing",
+      "⚠️ Owner files Notice of Commencement - no preliminary notice needed from suppliers"
+    ],
+    "notes": "No preliminary notice required. Simple 75-day filing deadline from last work."
+  },
+  "AZ": {
+    "state_name": "Arizona",
+    "complexity": "medium",
+    "preliminary_notice": {
+      "name": "Preliminary 20-Day Notice",
+      "days": 20,
+      "trigger": "from_first_delivery",
+      "description": "Within 20 days of first furnishing (or before starting work)"
+    },
+    "lien_filing": {
+      "name": "Mechanic's Lien",
+      "days": 120,
+      "trigger": "from_last_delivery",
+      "description": "120 days after last furnishing labor or materials"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": ["ARS § 33-992.01"],
+    "critical_warnings": [
+      "⚠️ 20-day preliminary notice deadline is strictly enforced",
+      "⚠️ Late notice limits recovery to work within 20 days of notice",
+      "⚠️ Lien must be filed within 120 days of last furnishing"
+    ],
+    "notes": "Similar to California - strict 20-day notice requirement. Lien filing within 120 days."
+  },
+  "CO": {
+    "state_name": "Colorado",
+    "complexity": "low",
+    "preliminary_notice": {
+      "name": "Notice of Intent to Lien",
+      "days": 10,
+      "trigger": "from_last_delivery",
+      "description": "Must serve notice at least 10 days before filing lien"
+    },
+    "lien_filing": {
+      "name": "Mechanic's Lien",
+      "days": 120,
+      "trigger": "from_last_delivery",
+      "description": "4 months after last furnishing labor or materials"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": ["COLO. REV. STAT. § 38-22-109"],
+    "critical_warnings": [
+      "⚠️ Must serve Notice of Intent at least 10 days BEFORE filing lien",
+      "⚠️ Lien must be filed within 4 months of last furnishing"
+    ],
+    "notes": "Short 10-day notice window before filing. Lien deadline is 120 days from last work."
+  },
+  "VA": {
+    "state_name": "Virginia",
+    "complexity": "medium",
+    "preliminary_notice": {
+      "name": "Notice of Mechanic's Lien",
+      "days": 90,
+      "trigger": "from_last_delivery",
+      "description": "Must serve notice within 90 days of last furnishing"
+    },
+    "lien_filing": {
+      "name": "Mechanic's Lien",
+      "days": 150,
+      "trigger": "from_last_delivery",
+      "description": "150 days after last furnishing labor or materials"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": ["VA CODE § 43-4"],
+    "critical_warnings": [
+      "⚠️ Must serve Notice within 90 days of last furnishing",
+      "⚠️ Lien must be filed within 150 days of last furnishing",
+      "⚠️ Notice must be served before lien filing"
+    ],
+    "notes": "Notice deadline (90 days) is shorter than lien filing deadline (150 days). Both from last work."
   }
 }
 
