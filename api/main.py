@@ -14,6 +14,9 @@ import sys
 from api.admin import router as admin_router, stripe_webhook, verify_admin
 from api.portal import router as portal_router
 
+# Get project root directory
+BASE_DIR = Path(__file__).parent.parent
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize database
@@ -108,7 +111,7 @@ app.include_router(portal_router)
 # Serve static files (HTML, CSS, JS)
 # Mount static files directory (serves files from project root)
 try:
-    app.mount("/static", StaticFiles(directory="."), name="static")
+    app.mount("/static", StaticFiles(directory=str(BASE_DIR)), name="static")
 except Exception as e:
     print(f"⚠️ Could not mount static files: {e}")
 
@@ -116,37 +119,66 @@ except Exception as e:
 @app.get("/admin-dashboard.html")
 def serve_admin_dashboard(user=Depends(verify_admin)):
     """Serve admin dashboard HTML (protected with HTTP Basic Auth)"""
-    if os.path.exists("admin-dashboard.html"):
-        return FileResponse("admin-dashboard.html")
+    file_path = BASE_DIR / "admin-dashboard.html"
+    if file_path.exists():
+        return FileResponse(str(file_path))
     raise HTTPException(status_code=404, detail="Admin dashboard not found")
 
 @app.get("/broker-dashboard.html")
 def serve_broker_dashboard():
     """Serve broker dashboard HTML"""
-    if os.path.exists("broker-dashboard.html"):
-        return FileResponse("broker-dashboard.html")
+    file_path = BASE_DIR / "broker-dashboard.html"
+    if file_path.exists():
+        return FileResponse(str(file_path))
     raise HTTPException(status_code=404, detail="Broker dashboard not found")
 
 @app.get("/customer-dashboard.html")
 def serve_customer_dashboard():
     """Serve customer dashboard HTML"""
-    if os.path.exists("customer-dashboard.html"):
-        return FileResponse("customer-dashboard.html")
+    file_path = BASE_DIR / "customer-dashboard.html"
+    if file_path.exists():
+        return FileResponse(str(file_path))
     raise HTTPException(status_code=404, detail="Customer dashboard not found")
 
 @app.get("/index.html")
 def serve_landing_page():
     """Serve landing page HTML"""
-    if os.path.exists("index.html"):
-        return FileResponse("index.html")
+    file_path = BASE_DIR / "index.html"
+    if file_path.exists():
+        return FileResponse(str(file_path))
     raise HTTPException(status_code=404, detail="Landing page not found")
+
+@app.get("/calculator.html")
+def serve_calculator():
+    """Serve calculator HTML"""
+    file_path = BASE_DIR / "calculator.html"
+    if file_path.exists():
+        return FileResponse(str(file_path))
+    raise HTTPException(status_code=404, detail="Calculator not found")
+
+@app.get("/calculator.js")
+def serve_calculator_js():
+    """Serve calculator JavaScript"""
+    file_path = BASE_DIR / "calculator.js"
+    if file_path.exists():
+        return FileResponse(str(file_path), media_type="application/javascript")
+    raise HTTPException(status_code=404, detail="Calculator JS not found")
 
 @app.get("/dashboard.html")
 def serve_dashboard():
     """Serve dashboard HTML"""
-    if os.path.exists("dashboard.html"):
-        return FileResponse("dashboard.html")
+    file_path = BASE_DIR / "dashboard.html"
+    if file_path.exists():
+        return FileResponse(str(file_path))
     raise HTTPException(status_code=404, detail="Dashboard not found")
+
+@app.get("/dashboard.js")
+def serve_dashboard_js():
+    """Serve dashboard JavaScript"""
+    file_path = BASE_DIR / "dashboard.js"
+    if file_path.exists():
+        return FileResponse(str(file_path), media_type="application/javascript")
+    raise HTTPException(status_code=404, detail="Dashboard JS not found")
 
 # Stripe webhook endpoint (no auth - Stripe signs it)
 # Note: This is at root level, not under /admin, because Stripe webhooks don't use Basic Auth
