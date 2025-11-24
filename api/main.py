@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Request, Depends, status
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.staticfiles import StaticFiles
 from datetime import datetime, timedelta, date
 from pathlib import Path
 import json
@@ -30,7 +31,6 @@ app.include_router(analytics_router)
 try:
     static_dir = BASE_DIR / "static"
     if static_dir.exists():
-        from fastapi.staticfiles import StaticFiles
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 except Exception as e:
     print(f"Warning: Could not mount static files: {e}")
