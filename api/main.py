@@ -51,9 +51,6 @@ def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
         )
     return credentials.username
 
-# Get project root
-BASE_DIR = Path(__file__).parent.parent
-
 # Load state rules
 try:
     with open(BASE_DIR / "state_rules.json", 'r') as f:
