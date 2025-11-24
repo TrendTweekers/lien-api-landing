@@ -20,6 +20,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Get project root
+BASE_DIR = Path(__file__).parent.parent
+
 # Include analytics router
 app.include_router(analytics_router)
 
@@ -27,6 +30,7 @@ app.include_router(analytics_router)
 try:
     static_dir = BASE_DIR / "static"
     if static_dir.exists():
+        from fastapi.staticfiles import StaticFiles
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 except Exception as e:
     print(f"Warning: Could not mount static files: {e}")
