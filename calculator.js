@@ -65,6 +65,9 @@ function displayResults(data) {
         upgradePrompt.classList.remove('hidden');
     }
     
+    // Always show state expansion prompt (everyone wants more states)
+    document.getElementById('stateExpansionPrompt').classList.remove('hidden');
+    
     // Preliminary Notice Card
     const prelimCard = document.getElementById('prelimCard');
     const prelimUrgency = data.preliminary_notice.urgency;
@@ -182,6 +185,36 @@ document.getElementById('emailReport').addEventListener('click', () => {
 
 // Set today as default invoice date
 document.getElementById('invoiceDate').valueAsDate = new Date();
+
+// State expansion email capture
+document.getElementById('notifyMeBtn').addEventListener('click', function() {
+    const emailInput = document.getElementById('stateEmailInput');
+    const email = emailInput.value.trim();
+    const successMessage = document.getElementById('stateEmailSuccess');
+    
+    // Basic email validation
+    if (!email || !email.includes('@')) {
+        alert('Please enter a valid email address');
+        return;
+    }
+    
+    // Store email in localStorage (for MVP - later send to backend)
+    let stateWaitlist = JSON.parse(localStorage.getItem('stateWaitlist') || '[]');
+    if (!stateWaitlist.includes(email)) {
+        stateWaitlist.push(email);
+        localStorage.setItem('stateWaitlist', JSON.stringify(stateWaitlist));
+    }
+    
+    // Show success message
+    successMessage.classList.remove('hidden');
+    emailInput.value = '';
+    emailInput.disabled = true;
+    document.getElementById('notifyMeBtn').disabled = true;
+    document.getElementById('notifyMeBtn').textContent = '✓ Added!';
+    
+    // In production, send to backend API:
+    // fetch('/api/waitlist', { method: 'POST', body: JSON.stringify({ email, states: ['NY', 'PA', 'IL', 'GA', 'NC', 'WA', 'OH', 'AZ', 'CO', 'VA'] }) })
+});
 
 function generatePDF(data) {
     const { jsPDF } = window.jspdf;
