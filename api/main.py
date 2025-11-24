@@ -296,15 +296,23 @@ class BrokerApplication(BaseModel):
 async def submit_broker_application(application: BrokerApplication):
     """
     Handle broker application submissions
-    For MVP: Log to console and return success
+    For MVP: Enhanced logging for Railway logs
     TODO: Store in database, send notification email
     """
-    print(f"[BROKER APPLICATION] {application.name} ({application.email}) - {application.company}")
+    # Enhanced logging for Railway
+    print(f"\n{'='*50}")
+    print(f"[NEW BROKER APPLICATION] {datetime.now().isoformat()}")
+    print(f"{'='*50}")
+    print(f"Name: {application.name}")
+    print(f"Email: {application.email}")
+    print(f"Company: {application.company}")
+    print(f"Phone: {application.phone or '(not provided)'}")
+    print(f"Message: {application.message or '(no message)'}")
     print(f"Commission Model: {application.commission_model}")
-    print(f"Message: {application.message}")
+    print(f"{'='*50}\n")
     
-    # TODO: Save to database
-    # TODO: Send email notification to admin
+    # TODO: Save to database (add after MVP validation)
+    # For now, admin checks Railway logs for applications
     
     return {
         "status": "success",
