@@ -54,6 +54,17 @@ function displayResults(data) {
     // Show results section
     document.getElementById('results').classList.remove('hidden');
     
+    // Show/hide upgrade prompt based on login status
+    const userEmail = localStorage.getItem('userEmail');
+    const upgradePrompt = document.getElementById('upgradePrompt');
+    if (userEmail) {
+        // User is logged in, hide upgrade prompt
+        upgradePrompt.classList.add('hidden');
+    } else {
+        // User is not logged in, show upgrade prompt
+        upgradePrompt.classList.remove('hidden');
+    }
+    
     // Preliminary Notice Card
     const prelimCard = document.getElementById('prelimCard');
     const prelimUrgency = data.preliminary_notice.urgency;
