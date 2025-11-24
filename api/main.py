@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException, Request, Depends, status
+from fastapi import FastAPI, HTTPException, Request, Depends, status, Response
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, EmailStr
 from datetime import datetime, timedelta, date
 from pathlib import Path
 import json
@@ -237,8 +238,22 @@ async def serve_admin_dashboard(username: str = Depends(verify_admin)):
     """Serve admin dashboard with HTTP Basic Auth"""
     file_path = BASE_DIR / "admin-dashboard.html"
     if not file_path.exists():
-        raise HTTPException(status_code=404, detail="admin-dashboard.html not found in project root")
-    return FileResponse(file_path)
+        raise HTTPException(status_code=404, detail="Admin dashboard not found")
+    
+    # Read file content
+    with open(file_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    
+    # Return with proper headers
+    return Response(
+        content=html_content,
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 @app.get("/broker-dashboard.html")
 async def serve_broker_dashboard():
