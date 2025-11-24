@@ -292,6 +292,20 @@ class BrokerApplication(BaseModel):
     message: str = ""
     commission_model: str  # "bounty" or "recurring"
 
+# Approved brokers list (replace with database later)
+approved_brokers_list = {
+    # Add approved brokers here manually
+    # Example:
+    # "john@example.com": {
+    #     "name": "John Smith",
+    #     "approved": True,
+    #     "commission_model": "bounty"
+    # }
+}
+
+# Pending applications (from broker/apply endpoint)
+pending_brokers = {}
+
 @app.post("/v1/broker/apply")
 async def submit_broker_application(application: BrokerApplication):
     """
@@ -311,6 +325,18 @@ async def submit_broker_application(application: BrokerApplication):
     print(f"Commission Model: {application.commission_model}")
     print(f"{'='*50}\n")
     
+    # Add to pending brokers
+    email_lower = application.email.lower()
+    pending_brokers[email_lower] = {
+        "name": application.name,
+        "email": application.email,
+        "company": application.company,
+        "phone": application.phone,
+        "message": application.message,
+        "commission_model": application.commission_model,
+        "applied_at": datetime.now().isoformat()
+    }
+    
     # TODO: Save to database (add after MVP validation)
     # For now, admin checks Railway logs for applications
     
@@ -319,6 +345,29 @@ async def submit_broker_application(application: BrokerApplication):
         "message": "Application received! We'll review and contact you within 24 hours.",
         "broker_email": application.email
     }
+
+@app.post("/v1/broker/check-approval")
+async def check_broker_approval(data: dict):
+    """Check if broker email is approved"""
+    email = data.get('email', '').lower()
+    
+    if email in approved_brokers_list:
+        return {
+            "approved": True,
+            "name": approved_brokers_list[email]["name"],
+            "commission_model": approved_brokers_list[email]["commission_model"]
+        }
+    elif email in pending_brokers:
+        return {
+            "approved": False,
+            "pending": True,
+            "name": pending_brokers[email]["name"]
+        }
+    else:
+        return {
+            "approved": False,
+            "pending": False
+        }
 
 # Serve JS files
 @app.get("/calculator.js")

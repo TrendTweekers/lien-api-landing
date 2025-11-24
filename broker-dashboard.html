@@ -12,6 +12,55 @@
     <link rel="stylesheet" href="styles.css">
     <!-- Privacy-friendly analytics by Plausible -->
     <script defer data-domain="lien-api-landing-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+    
+    <!-- Email-based broker authentication -->
+    <script>
+        // Email-based broker authentication
+        (function() {
+            const brokerEmail = localStorage.getItem('brokerEmail');
+            const brokerApproved = localStorage.getItem('brokerApproved');
+            
+            if (!brokerApproved) {
+                // Prompt for email
+                const email = prompt('Enter your registered email address:');
+                
+                if (!email) {
+                    alert('Access denied. Apply at /partners.html');
+                    window.location.href = '/partners.html';
+                    return;
+                }
+                
+                // Check if broker is approved
+                fetch('https://lien-api-landing-production.up.railway.app/v1/broker/check-approval', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.approved) {
+                        // Save credentials
+                        localStorage.setItem('brokerEmail', email);
+                        localStorage.setItem('brokerName', data.name);
+                        localStorage.setItem('brokerApproved', 'true');
+                        localStorage.setItem('brokerCommissionModel', data.commission_model || 'bounty');
+                        window.location.reload();
+                    } else if (data.pending) {
+                        alert('Your application is pending review. We\'ll email you when approved!');
+                        window.location.href = '/partners.html';
+                    } else {
+                        alert('Email not found. Please apply at /partners.html');
+                        window.location.href = '/partners.html';
+                    }
+                })
+                .catch(error => {
+                    console.error('Verification failed:', error);
+                    alert('Could not verify email. Try again later.');
+                    window.location.href = '/partners.html';
+                });
+            }
+        })();
+    </script>
 </head>
 <body class="bg-gray-50 text-gray-900">
     <!-- Navigation -->
