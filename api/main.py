@@ -141,6 +141,13 @@ def serve_landing_page():
         return FileResponse("index.html")
     raise HTTPException(status_code=404, detail="Landing page not found")
 
+@app.get("/dashboard.html")
+def serve_dashboard():
+    """Serve dashboard HTML"""
+    if os.path.exists("dashboard.html"):
+        return FileResponse("dashboard.html")
+    raise HTTPException(status_code=404, detail="Dashboard not found")
+
 # Stripe webhook endpoint (no auth - Stripe signs it)
 # Note: This is at root level, not under /admin, because Stripe webhooks don't use Basic Auth
 # stripe_webhook is already imported at the top: from api.admin import stripe_webhook

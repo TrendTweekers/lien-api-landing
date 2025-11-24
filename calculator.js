@@ -154,9 +154,14 @@ function formatServing(requirement) {
     return map[requirement] || requirement;
 }
 
-// PDF Download (we'll implement this next)
+// PDF Download
 document.getElementById('downloadPDF').addEventListener('click', () => {
-    alert('PDF download feature coming in next step!');
+    if (!window.currentCalculation) {
+        alert('Please calculate deadlines first');
+        return;
+    }
+    
+    generatePDF(window.currentCalculation);
 });
 
 // Email Report (we'll implement this next)
@@ -166,4 +171,217 @@ document.getElementById('emailReport').addEventListener('click', () => {
 
 // Set today as default invoice date
 document.getElementById('invoiceDate').valueAsDate = new Date();
+
+function generatePDF(data) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Page dimensions
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    let yPos = 20;
+    
+    // Header
+    doc.setFontSize(24);
+    doc.setTextColor(37, 99, 235); // Blue color
+    doc.text('LienDeadlineAPI', margin, yPos);
+    
+    yPos += 10;
+    doc.setFontSize(18);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Lien Deadline Report', margin, yPos);
+    
+    yPos += 5;
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated: ${new Date().toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    })}`, margin, yPos);
+    
+    // Line separator
+    yPos += 5;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 10;
+    
+    // Project Information
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Project Information', margin, yPos);
+    yPos += 7;
+    
+    doc.setFontSize(10);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`State: ${data.state}`, margin + 5, yPos);
+    yPos += 6;
+    doc.text(`Invoice Date: ${formatDate(data.invoice_date)}`, margin + 5, yPos);
+    yPos += 6;
+    doc.text(`Role: ${data.role.charAt(0).toUpperCase() + data.role.slice(1)}`, margin + 5, yPos);
+    yPos += 10;
+    
+    // Preliminary Notice
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text(data.preliminary_notice.name, margin, yPos);
+    yPos += 7;
+    
+    // Add colored box for urgency
+    const prelimColor = getUrgencyPDFColor(data.preliminary_notice.urgency);
+    doc.setFillColor(prelimColor.r, prelimColor.g, prelimColor.b);
+    doc.rect(margin, yPos - 5, 5, 5, 'F');
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Deadline: ${formatDate(data.preliminary_notice.deadline)}`, margin + 10, yPos);
+    yPos += 6;
+    
+    doc.setFontSize(10);
+    doc.setTextColor(getUrgencyPDFColor(data.preliminary_notice.urgency).r, 
+                     getUrgencyPDFColor(data.preliminary_notice.urgency).g, 
+                     getUrgencyPDFColor(data.preliminary_notice.urgency).b);
+    doc.text(`${data.preliminary_notice.days_from_now} days from now`, margin + 10, yPos);
+    yPos += 6;
+    
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    const prelimDesc = doc.splitTextToSize(data.preliminary_notice.description, pageWidth - margin * 2 - 10);
+    doc.text(prelimDesc, margin + 10, yPos);
+    yPos += prelimDesc.length * 5 + 5;
+    
+    // Lien Filing
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text(data.lien_filing.name, margin, yPos);
+    yPos += 7;
+    
+    // Add colored box for urgency
+    const lienColor = getUrgencyPDFColor(data.lien_filing.urgency);
+    doc.setFillColor(lienColor.r, lienColor.g, lienColor.b);
+    doc.rect(margin, yPos - 5, 5, 5, 'F');
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Deadline: ${formatDate(data.lien_filing.deadline)}`, margin + 10, yPos);
+    yPos += 6;
+    
+    doc.setFontSize(10);
+    doc.setTextColor(getUrgencyPDFColor(data.lien_filing.urgency).r, 
+                     getUrgencyPDFColor(data.lien_filing.urgency).g, 
+                     getUrgencyPDFColor(data.lien_filing.urgency).b);
+    doc.text(`${data.lien_filing.days_from_now} days from now`, margin + 10, yPos);
+    yPos += 6;
+    
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    const lienDesc = doc.splitTextToSize(data.lien_filing.description, pageWidth - margin * 2 - 10);
+    doc.text(lienDesc, margin + 10, yPos);
+    yPos += lienDesc.length * 5 + 8;
+    
+    // Serving Requirements
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Must Serve:', margin, yPos);
+    yPos += 7;
+    
+    doc.setFontSize(10);
+    doc.setTextColor(60, 60, 60);
+    data.serving_requirements.forEach(req => {
+        doc.text(`• ${formatServing(req)}`, margin + 5, yPos);
+        yPos += 5;
+    });
+    yPos += 5;
+    
+    // Critical Warnings
+    if (yPos > 220) {
+        doc.addPage();
+        yPos = 20;
+    }
+    
+    doc.setFontSize(12);
+    doc.setTextColor(220, 38, 38); // Red color
+    doc.text('⚠ Critical Warnings:', margin, yPos);
+    yPos += 7;
+    
+    doc.setFontSize(9);
+    doc.setTextColor(153, 27, 27); // Dark red
+    data.critical_warnings.forEach(warning => {
+        const warningText = doc.splitTextToSize(warning, pageWidth - margin * 2 - 5);
+        doc.text(warningText, margin + 5, yPos);
+        yPos += warningText.length * 5 + 3;
+    });
+    yPos += 5;
+    
+    // Statute Citations
+    if (yPos > 220) {
+        doc.addPage();
+        yPos = 20;
+    }
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Legal References:', margin, yPos);
+    yPos += 7;
+    
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    data.statute_citations.forEach(citation => {
+        const citationText = doc.splitTextToSize(citation, pageWidth - margin * 2 - 5);
+        doc.text(citationText, margin + 5, yPos);
+        yPos += citationText.length * 4 + 2;
+    });
+    yPos += 8;
+    
+    // Disclaimer
+    if (yPos > 240) {
+        doc.addPage();
+        yPos = 20;
+    }
+    
+    doc.setFillColor(254, 252, 232); // Light yellow background
+    doc.rect(margin - 5, yPos - 5, pageWidth - margin * 2 + 10, 30, 'F');
+    
+    doc.setFontSize(10);
+    doc.setTextColor(120, 53, 15); // Dark yellow/brown
+    doc.text('DISCLAIMER', margin, yPos);
+    yPos += 6;
+    
+    doc.setFontSize(8);
+    doc.setTextColor(113, 63, 18);
+    const disclaimer = doc.splitTextToSize(
+        'This is general information only, NOT legal advice. Always consult a licensed construction attorney before taking any legal action. Deadlines vary based on project specifics, and this tool cannot account for all variables. LienDeadlineAPI assumes no liability for missed deadlines or legal consequences.',
+        pageWidth - margin * 2
+    );
+    doc.text(disclaimer, margin, yPos);
+    
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(
+            `Page ${i} of ${pageCount} | LienDeadlineAPI.com | Not Legal Advice`,
+            pageWidth / 2,
+            doc.internal.pageSize.getHeight() - 10,
+            { align: 'center' }
+        );
+    }
+    
+    // Save PDF
+    const filename = `Lien-Deadline-Report-${data.state_code}-${data.invoice_date}.pdf`;
+    doc.save(filename);
+}
+
+function getUrgencyPDFColor(urgency) {
+    switch(urgency) {
+        case 'critical': return { r: 220, g: 38, b: 38 }; // Red
+        case 'warning': return { r: 234, g: 179, b: 8 }; // Yellow
+        default: return { r: 34, g: 197, b: 94 }; // Green
+    }
+}
 
