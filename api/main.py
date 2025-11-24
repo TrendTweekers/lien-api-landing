@@ -54,7 +54,8 @@ async def calculate_deadline(
     invoice_date: str,
     state: str,
     role: str = "supplier",
-    project_type: str = "commercial"
+    project_type: str = "commercial",
+    request: Request = None
 ):
     state_code = state.upper()
     
