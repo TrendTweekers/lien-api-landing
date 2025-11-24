@@ -283,6 +283,35 @@ async def serve_customer_dashboard():
         raise HTTPException(status_code=404, detail="customer-dashboard.html not found in project root")
     return FileResponse(file_path)
 
+# Broker Application Model
+class BrokerApplication(BaseModel):
+    name: str
+    email: EmailStr
+    company: str
+    phone: str = ""
+    message: str = ""
+    commission_model: str  # "bounty" or "recurring"
+
+@app.post("/v1/broker/apply")
+async def submit_broker_application(application: BrokerApplication):
+    """
+    Handle broker application submissions
+    For MVP: Log to console and return success
+    TODO: Store in database, send notification email
+    """
+    print(f"[BROKER APPLICATION] {application.name} ({application.email}) - {application.company}")
+    print(f"Commission Model: {application.commission_model}")
+    print(f"Message: {application.message}")
+    
+    # TODO: Save to database
+    # TODO: Send email notification to admin
+    
+    return {
+        "status": "success",
+        "message": "Application received! We'll review and contact you within 24 hours.",
+        "broker_email": application.email
+    }
+
 # Serve JS files
 @app.get("/calculator.js")
 async def serve_calculator_js():
