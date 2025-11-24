@@ -334,6 +334,71 @@
             });
             */
         });
+
+        // Broker Application Modal Functions
+        function openApplicationModal(model) {
+            document.getElementById('commissionModel').value = model;
+            document.getElementById('applicationModal').classList.remove('hidden');
+        }
+
+        function closeApplicationModal() {
+            document.getElementById('applicationModal').classList.add('hidden');
+        }
+
+        // Handle broker application form submission
+        document.getElementById('brokerApplicationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                // Send to backend
+                const API_BASE = 'https://lien-api-landing-production.up.railway.app';
+                const response = await fetch(`${API_BASE}/v1/broker/apply`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: data.name,
+                        email: data.email,
+                        company: data.company,
+                        phone: data.phone || '',
+                        message: data.message || '',
+                        commission_model: data.commissionModel
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    // Save to localStorage for MVP
+                    localStorage.setItem('brokerEmail', data.email);
+                    localStorage.setItem('brokerName', data.name);
+                    localStorage.setItem('brokerCompany', data.company);
+                    localStorage.setItem('brokerCommissionModel', data.commissionModel);
+                    
+                    alert('Application submitted! Redirecting to your dashboard...');
+                    setTimeout(() => {
+                        window.location.href = '/broker-dashboard.html';
+                    }, 1000);
+                } else {
+                    alert('Error submitting application. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                // Fallback: save to localStorage and redirect
+                localStorage.setItem('brokerEmail', data.email);
+                localStorage.setItem('brokerName', data.name);
+                localStorage.setItem('brokerCompany', data.company);
+                localStorage.setItem('brokerCommissionModel', data.commissionModel);
+                
+                alert('Application submitted! Redirecting to your dashboard...');
+                setTimeout(() => {
+                    window.location.href = '/broker-dashboard.html';
+                }, 1000);
+            }
+        });
     </script>
 </body>
 </html>
