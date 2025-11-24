@@ -1,0 +1,88 @@
+{
+  "TX": {
+    "state_name": "Texas",
+    "complexity": "high",
+    "preliminary_notice": {
+      "name": "Notice of Claim",
+      "residential_days": 45,
+      "commercial_days": 75,
+      "trigger": "from_delivery",
+      "description": "15th of 2nd month (residential) or 3rd month (commercial)"
+    },
+    "lien_filing": {
+      "name": "Lien Affidavit",
+      "residential_days": 75,
+      "commercial_days": 105,
+      "trigger": "from_last_delivery",
+      "description": "15th of 3rd month (residential) or 4th month (commercial)"
+    },
+    "serving_requirements": ["property_owner", "original_contractor"],
+    "statute_citations": [
+      "Texas Property Code § 53.056 (Notices)",
+      "Texas Property Code § 53.052 (Lien Affidavits)"
+    ],
+    "critical_warnings": [
+      "⚠️ ONGOING WORK: Must send monthly notices to protect each month's materials",
+      "Single notice only protects that month and future deliveries",
+      "Failure to send monthly notices may forfeit prior months' lien rights"
+    ],
+    "notes": "Using commercial deadlines for MVP (longer = safer). Residential toggle coming in v2."
+  },
+  "CA": {
+    "state_name": "California",
+    "complexity": "medium",
+    "preliminary_notice": {
+      "name": "Preliminary Notice",
+      "days": 20,
+      "trigger": "from_first_delivery",
+      "description": "Within 20 days of first furnishing"
+    },
+    "lien_filing": {
+      "name": "Mechanic's Lien",
+      "standard_days": 90,
+      "accelerated_days": 30,
+      "trigger": "from_completion",
+      "description": "90 days after completion (or 30 days if Notice of Completion recorded)"
+    },
+    "serving_requirements": ["property_owner", "direct_contractor", "construction_lender"],
+    "statute_citations": [
+      "California Civil Code § 8200 (Preliminary Notice)",
+      "California Civil Code § 8412 (Lien Recording)",
+      "California Civil Code § 8414 (Deadlines)"
+    ],
+    "critical_warnings": [
+      "⚠️ 20-day preliminary notice deadline is strictly enforced",
+      "Late notice limits recovery to work within 20 days of notice",
+      "⚠️ Deadline can shorten to 30 days if Notice of Completion recorded"
+    ],
+    "notes": "Showing 90-day standard deadline. Add warning about potential 30-day acceleration."
+  },
+  "FL": {
+    "state_name": "Florida",
+    "complexity": "low",
+    "preliminary_notice": {
+      "name": "Notice to Owner (NTO)",
+      "days": 45,
+      "trigger": "from_first_delivery",
+      "description": "Within 45 days of first furnishing (or before starting work)"
+    },
+    "lien_filing": {
+      "name": "Claim of Lien",
+      "days": 90,
+      "trigger": "from_last_delivery",
+      "description": "90 days after last furnishing"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": [
+      "Florida Statutes § 713.06 (Notice to Owner)",
+      "Florida Statutes § 713.08 (Claim of Lien)"
+    ],
+    "critical_warnings": [
+      "⚠️ Missing 45-day NTO deadline = COMPLETE LOSS of lien rights",
+      "Must record lien AND serve copy on owner within 15 days",
+      "Lien expires if lawsuit not filed within 1 year"
+    ],
+    "notes": "Pro tip: Serve Notice to Owner BEFORE first delivery to eliminate deadline concerns."
+  }
+}
+
