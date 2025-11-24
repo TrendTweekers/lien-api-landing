@@ -1,10 +1,12 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends, status
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from datetime import datetime, timedelta, date
 from pathlib import Path
 import json
 import sqlite3
+import secrets
 from api.analytics import router as analytics_router
 
 app = FastAPI(title="Lien Deadline API")
@@ -20,6 +22,30 @@ app.add_middleware(
 
 # Include analytics router
 app.include_router(analytics_router)
+
+# Serve static files (CSS, JS)
+try:
+    static_dir = BASE_DIR / "static"
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+except Exception as e:
+    print(f"Warning: Could not mount static files: {e}")
+
+# HTTP Basic Auth for admin routes
+security = HTTPBasic()
+
+def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
+    """Verify admin credentials"""
+    correct_username = secrets.compare_digest(credentials.username, "admin")
+    correct_password = secrets.compare_digest(credentials.password, "LienAPI2025")
+    
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
 
 # Get project root
 BASE_DIR = Path(__file__).parent.parent
@@ -203,6 +229,42 @@ async def serve_index():
     file_path = BASE_DIR / "index.html"
     if not file_path.exists():
         raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
+    return FileResponse(file_path)
+
+@app.get("/admin-dashboard.html")
+async def serve_admin_dashboard(username: str = Depends(verify_admin)):
+    """Serve admin dashboard with HTTP Basic Auth"""
+    file_path = BASE_DIR / "admin-dashboard.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="admin-dashboard.html not found in project root")
+    return FileResponse(file_path)
+
+@app.get("/broker-dashboard.html")
+async def serve_broker_dashboard():
+    file_path = BASE_DIR / "broker-dashboard.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="broker-dashboard.html not found in project root")
+    return FileResponse(file_path)
+
+@app.get("/partners.html")
+async def serve_partners():
+    file_path = BASE_DIR / "partners.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="partners.html not found in project root")
+    return FileResponse(file_path)
+
+@app.get("/terms.html")
+async def serve_terms():
+    file_path = BASE_DIR / "terms.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="terms.html not found in project root")
+    return FileResponse(file_path)
+
+@app.get("/customer-dashboard.html")
+async def serve_customer_dashboard():
+    file_path = BASE_DIR / "customer-dashboard.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="customer-dashboard.html not found in project root")
     return FileResponse(file_path)
 
 # Serve JS files
