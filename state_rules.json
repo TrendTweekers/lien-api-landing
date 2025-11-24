@@ -316,6 +316,282 @@
       "⚠️ Notice must be served before lien filing"
     ],
     "notes": "Notice deadline (90 days) is shorter than lien filing deadline (150 days). Both from last work."
+  },
+  "MI": {
+    "state_name": "Michigan",
+    "complexity": "medium",
+    "preliminary_notice": {
+      "name": "Notice of Furnishing",
+      "days": 20,
+      "trigger": "from_first_delivery",
+      "description": "Required for subcontractors/suppliers within 20 days of first furnishing"
+    },
+    "lien_filing": {
+      "name": "Claim of Lien",
+      "days": 90,
+      "trigger": "from_last_delivery",
+      "description": "Must be filed within 90 days after last furnishing"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": [
+      "Mich. Comp. Laws § 570.1110 (Notice of Furnishing)",
+      "Mich. Comp. Laws § 570.1113 (Claim of Lien)"
+    ],
+    "critical_warnings": [
+      "⚠️ Late notice limits protection to work performed AFTER notice is served",
+      "Must serve lien on owner within 15 days of recording",
+      "'Last furnishing' excludes corrective work"
+    ],
+    "notes": "Notice of Furnishing protects subcontractors and suppliers. Late notice still preserves rights but only for work after notice date. No residential/commercial deadline distinctions."
+  },
+  "TN": {
+    "state_name": "Tennessee",
+    "complexity": "medium",
+    "preliminary_notice": {
+      "name": "Notice of Nonpayment",
+      "days": 90,
+      "trigger": "from_last_day_of_month",
+      "description": "Required for remote contractors within 90 days after last day of each month work was performed"
+    },
+    "lien_filing": {
+      "name": "Notice of Lien",
+      "standard_days": 90,
+      "accelerated_days": 30,
+      "trigger": "from_last_delivery",
+      "description": "90 days after last furnishing (30 days if Notice of Completion filed)"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": [
+      "Tenn. Code Ann. § 66-11-145 (Notice of Nonpayment)",
+      "Tenn. Code Ann. § 66-11-112 (Notice of Lien)"
+    ],
+    "critical_warnings": [
+      "⚠️ General contractors have 1 YEAR to file (not 90 days)",
+      "⚠️ Deadline accelerates to 30 days if Notice of Completion recorded",
+      "Notice of Nonpayment protects each month's work separately"
+    ],
+    "notes": "General contractors have extended 1-year filing period. All others must file within 90 days (or 30 if completion notice filed). 'Last furnishing' excludes warranty work."
+  },
+  "MA": {
+    "state_name": "Massachusetts",
+    "complexity": "high",
+    "preliminary_notice": {
+      "name": "Notice of Identification",
+      "days": 30,
+      "trigger": "from_first_delivery",
+      "description": "Required for sub-subcontractors and suppliers within 30 days of first furnishing"
+    },
+    "lien_filing": {
+      "name": "Statement of Account",
+      "standard_days": 90,
+      "alternative_days": 120,
+      "trigger": "from_notice_of_completion",
+      "description": "90 days after Notice of Substantial Completion OR 120 days after Notice of Termination"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": [
+      "Mass. Gen. Laws ch. 254, § 4 (Notice of Identification)",
+      "Mass. Gen. Laws ch. 254, § 8 (Notice of Contract)",
+      "Mass. Gen. Laws ch. 254, § 10 (Statement of Account)"
+    ],
+    "critical_warnings": [
+      "⚠️ COMPLEX: Multiple notice types required (Identification, Contract, Statement)",
+      "⚠️ Enforcement suit must be filed within 90 days of recording Statement",
+      "Deadlines triggered by formal Notices of Completion, not last work date"
+    ],
+    "notes": "Massachusetts has the most complex lien process. Multiple notices required at different stages. Statement of Account filing deadline depends on which completion notice is filed."
+  },
+  "NJ": {
+    "state_name": "New Jersey",
+    "complexity": "medium",
+    "preliminary_notice": {
+      "name": "Notice of Unpaid Balance",
+      "residential_days": 60,
+      "trigger": "from_last_delivery",
+      "description": "Mandatory for residential within 60 days; optional but recommended for commercial"
+    },
+    "lien_filing": {
+      "name": "Notice of Lien",
+      "standard_days": 90,
+      "public_days": 120,
+      "trigger": "from_last_delivery",
+      "description": "90 days after last furnishing (120 days for public projects)"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": [
+      "N.J. Stat. Ann. § 2A:44A-8 (Notice of Unpaid Balance)",
+      "N.J. Stat. Ann. § 2A:44A-9 (Notice of Lien)"
+    ],
+    "critical_warnings": [
+      "⚠️ RESIDENTIAL ONLY: Notice of Unpaid Balance is MANDATORY within 60 days",
+      "Public projects get extended 120-day filing period",
+      "'Last furnishing' excludes minor corrections"
+    ],
+    "notes": "Residential projects require Notice of Unpaid Balance within 60 days. Commercial projects: notice optional but recommended. Public projects have 120-day filing deadline."
+  },
+  "MD": {
+    "state_name": "Maryland",
+    "complexity": "low",
+    "preliminary_notice": {
+      "name": "Notice of Intent to Claim Lien",
+      "days": 120,
+      "trigger": "from_last_delivery",
+      "description": "Subcontractors must serve notice within 120 days after last furnishing"
+    },
+    "lien_filing": {
+      "name": "Lien Petition",
+      "days": 180,
+      "trigger": "from_last_delivery",
+      "description": "Must be filed within 180 days (6 months) after last work"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": [
+      "Md. Code Ann., Real Prop. § 9-104 (Notice of Intent)",
+      "Md. Code Ann., Real Prop. § 9-105 (Lien Petition)"
+    ],
+    "critical_warnings": [
+      "⚠️ Work must improve property value by 15% or more to qualify for lien",
+      "Enforcement suit must be commenced within 1 year of filing",
+      "'Last furnishing' excludes warranty work"
+    ],
+    "notes": "One of the most generous deadlines (6 months). Notice of Intent required for subs. Unique requirement: work must increase property value by 15%+."
+  },
+  "WI": {
+    "state_name": "Wisconsin",
+    "complexity": "high",
+    "preliminary_notice": {
+      "name": "Subcontractor Identification Notice",
+      "days": 60,
+      "trigger": "from_first_delivery",
+      "description": "Required within 60 days of first furnishing"
+    },
+    "lien_filing": {
+      "name": "Construction Lien",
+      "days": 180,
+      "trigger": "from_last_delivery",
+      "description": "Must be recorded within 6 months (180 days) after last furnishing"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": [
+      "Wis. Stat. § 779.02 (Construction Liens)",
+      "Wis. Stat. § 779.06 (Subcontractor Notice)"
+    ],
+    "critical_warnings": [
+      "⚠️ Notice of Intent to Lien must be served 30 days BEFORE filing",
+      "Very strict compliance requirements - follow statute exactly",
+      "'Last furnishing' excludes corrective work"
+    ],
+    "notes": "Wisconsin has strict lien procedures. Two notices required: Identification Notice (60 days) and Intent Notice (30 days before filing). Long filing deadline (6 months) but rigid process."
+  },
+  "MN": {
+    "state_name": "Minnesota",
+    "complexity": "medium",
+    "preliminary_notice": {
+      "name": "Preliminary Notice",
+      "days": 45,
+      "trigger": "from_first_delivery",
+      "description": "Subcontractors must serve on owner within 45 days of first furnishing"
+    },
+    "lien_filing": {
+      "name": "Mechanic's Lien Statement",
+      "days": 120,
+      "trigger": "from_last_delivery",
+      "description": "Must be filed within 120 days after last furnishing"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": [
+      "Minn. Stat. § 514.011 (Lien Rights and Procedures)"
+    ],
+    "critical_warnings": [
+      "⚠️ Late preliminary notice limits lien to unpaid balance at time of notice",
+      "Enforcement suit must be commenced within 1 year",
+      "Serve lien on owner after filing"
+    ],
+    "notes": "Standard 45-day preliminary notice protects subcontractors. Late notice reduces lien amount to balance owed when notice finally served. 120-day filing deadline."
+  },
+  "IN": {
+    "state_name": "Indiana",
+    "complexity": "medium",
+    "preliminary_notice": {
+      "name": "Preliminary Notice",
+      "residential_repair_days": 30,
+      "residential_new_days": 60,
+      "trigger": "from_first_delivery",
+      "description": "30 days (repair/remodel) or 60 days (new residential) from first furnishing"
+    },
+    "lien_filing": {
+      "name": "Notice of Intention to Hold Lien",
+      "residential_days": 60,
+      "commercial_days": 90,
+      "trigger": "from_last_delivery",
+      "description": "60 days for residential, 90 days for commercial after last furnishing"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": [
+      "Ind. Code § 32-28-3-3 (Preliminary Notice)",
+      "Ind. Code § 32-28-3-1 (Lien Filing)"
+    ],
+    "critical_warnings": [
+      "⚠️ RESIDENTIAL vs COMMERCIAL: Different deadlines for both notice AND filing",
+      "Residential repair: 30-day notice, 60-day filing",
+      "Residential new construction: 60-day notice, 60-day filing",
+      "Commercial: 90-day filing"
+    ],
+    "notes": "Indiana distinguishes between residential repairs, residential new construction, and commercial. Residential has accelerated deadlines. Enforcement suit within 1 year."
+  },
+  "MO": {
+    "state_name": "Missouri",
+    "complexity": "low",
+    "preliminary_notice": {
+      "name": "Notice of Intent to Lien",
+      "days": 10,
+      "trigger": "before_filing",
+      "description": "Required at least 10 days before filing for subcontractors/suppliers"
+    },
+    "lien_filing": {
+      "name": "Mechanic's Lien",
+      "days": 180,
+      "trigger": "from_last_delivery",
+      "description": "Must be filed within 6 months (180 days) after last furnishing"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": [
+      "Mo. Rev. Stat. § 429.100 (Notice of Intent)",
+      "Mo. Rev. Stat. § 429.080 (Mechanic's Lien)"
+    ],
+    "critical_warnings": [
+      "⚠️ Notice of Intent must be sent 10+ days BEFORE filing lien",
+      "Equipment rentals require additional 15-day notice",
+      "'Last furnishing' excludes warranty work"
+    ],
+    "notes": "Straightforward process: 10-day pre-filing notice, then 6-month filing window. One of the longer deadlines. Serve on owner after filing."
+  },
+  "SC": {
+    "state_name": "South Carolina",
+    "complexity": "low",
+    "preliminary_notice": {
+      "name": "None Required (Optional Notice of Furnishing)",
+      "days": 0,
+      "trigger": "none",
+      "description": "No mandatory preliminary notice; optional Notice of Furnishing recommended before final payment"
+    },
+    "lien_filing": {
+      "name": "Mechanic's Lien",
+      "days": 90,
+      "trigger": "from_last_delivery",
+      "description": "Must be filed within 90 days after last furnishing"
+    },
+    "serving_requirements": ["property_owner"],
+    "statute_citations": [
+      "S.C. Code Ann. § 29-5-90 (Mechanic's Liens)",
+      "S.C. Code Ann. § 29-5-100 (Filing Requirements)"
+    ],
+    "critical_warnings": [
+      "⚠️ Enforcement suit PLUS lis pendens required within 6 months of filing",
+      "Failure to file lawsuit within 6 months = lien expires",
+      "'Last furnishing' excludes corrective work"
+    ],
+    "notes": "Simple filing process: no preliminary notice required. 90-day filing deadline. Critical: must file enforcement lawsuit within 6 months or lien expires automatically."
   }
 }
 
