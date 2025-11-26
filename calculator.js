@@ -1,5 +1,36 @@
 // calculator.js
 
+// Usage tracking - check localStorage for calcCount and userEmail
+let calcCount = parseInt(localStorage.getItem('calcCount') || '0');
+let userEmail = localStorage.getItem('userEmail') || null;
+
+// Update remaining calculations counter
+function updateRemainingCounter() {
+    const remainingCalcsEl = document.getElementById('remainingCalcs');
+    if (!remainingCalcsEl) return;
+    
+    if (calcCount >= 10) {
+        remainingCalcsEl.textContent = '';
+        remainingCalcsEl.parentElement.classList.add('hidden');
+    } else if (calcCount >= 3 && !userEmail) {
+        const remaining = 3 - calcCount;
+        remainingCalcsEl.textContent = `${remaining} of 3 free calculations remaining`;
+    } else if (userEmail) {
+        const remaining = 10 - calcCount;
+        remainingCalcsEl.textContent = `${remaining} of 10 free calculations remaining`;
+    } else {
+        const remaining = 3 - calcCount;
+        remainingCalcsEl.textContent = `${remaining} of 3 free calculations remaining`;
+    }
+}
+
+// Initialize counter on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateRemainingCounter);
+} else {
+    updateRemainingCounter();
+}
+
 // Handle referral codes for Stripe checkout
 (function() {
     // Get referral code from URL
@@ -35,6 +66,17 @@ const API_BASE = '';
 document.getElementById('calculatorForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    // Check usage limits
+    if (calcCount >= 10) {
+        document.getElementById('upgradeModal').classList.remove('hidden');
+        return;
+    }
+    
+    if (calcCount >= 3 && !userEmail) {
+        document.getElementById('emailModal').classList.remove('hidden');
+        return;
+    }
+    
     // Get form values
     const invoiceDate = document.getElementById('invoiceDate').value;
     const state = document.getElementById('state').value;
@@ -67,6 +109,11 @@ document.getElementById('calculatorForm').addEventListener('submit', async (e) =
             return;
         }
         
+        // Increment calculation count
+        calcCount++;
+        localStorage.setItem('calcCount', calcCount.toString());
+        updateRemainingCounter();
+        
         // Display results
         displayResults(data);
         
@@ -82,6 +129,61 @@ document.getElementById('calculatorForm').addEventListener('submit', async (e) =
         submitButton.disabled = false;
     }
 });
+
+// Email submission handler (wait for DOM)
+function initEmailHandler() {
+    const submitEmailBtn = document.getElementById('submitEmail');
+    if (!submitEmailBtn) return;
+    
+    submitEmailBtn.addEventListener('click', async () => {
+    const emailInput = document.getElementById('emailInput');
+    const email = emailInput.value.trim();
+    
+    if (!email || !email.includes('@')) {
+        alert('Please enter a valid email address');
+        return;
+    }
+    
+    // Store email
+    userEmail = email;
+    localStorage.setItem('userEmail', email);
+    
+    // Track email submission
+    try {
+        // Get IP address (simplified - in production use a proper IP service)
+        const response = await fetch('/track-email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: email,
+                timestamp: new Date().toISOString()
+            })
+        });
+        
+        if (!response.ok) {
+            console.error('Failed to track email');
+        }
+    } catch (error) {
+        console.error('Error tracking email:', error);
+    }
+    
+    // Hide modal and allow calculation
+    document.getElementById('emailModal').classList.add('hidden');
+    updateRemainingCounter();
+    
+    // Trigger form submission again
+    document.getElementById('calculatorForm').dispatchEvent(new Event('submit'));
+    });
+}
+
+// Initialize email handler on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initEmailHandler);
+} else {
+    initEmailHandler();
+}
 
 function displayResults(data) {
     // Store results for email functionality

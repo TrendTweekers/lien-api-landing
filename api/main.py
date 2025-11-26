@@ -603,6 +603,36 @@ async def logout(authorization: str = Header(None)):
     finally:
         db.close()
 
+# Track email endpoint for calculator gating
+class TrackEmailRequest(BaseModel):
+    email: str
+    timestamp: str
+
+@app.post("/track-email")
+async def track_email(request_data: TrackEmailRequest, request: Request):
+    """Track email submissions from calculator email gate"""
+    try:
+        # Get client IP
+        client_ip = request.client.host if request.client else "unknown"
+        
+        # Store email tracking (you can add this to a database table if needed)
+        # For now, just log it
+        print(f"📧 Email tracked: {request_data.email} from IP: {client_ip} at {request_data.timestamp}")
+        
+        # Optional: Store in database for analytics
+        # db = get_db()
+        # db.execute("""
+        #     INSERT INTO email_tracking (email, ip, timestamp)
+        #     VALUES (?, ?, ?)
+        # """, (request_data.email, client_ip, request_data.timestamp))
+        # db.commit()
+        # db.close()
+        
+        return {"success": True, "message": "Email tracked"}
+    except Exception as e:
+        print(f"Error tracking email: {e}")
+        return {"success": False, "error": str(e)}
+
 # Stripe Webhook Handler
 @app.post("/webhooks/stripe")
 async def stripe_webhook(request: Request):

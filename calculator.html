@@ -19,6 +19,7 @@
                 <nav class="flex space-x-4">
                     <a href="index.html" class="text-gray-600 hover:text-blue-600">Home</a>
                     <a href="calculator.html" class="text-blue-600 font-semibold">Calculator</a>
+                    <a href="/partners.html" class="text-gray-600 hover:text-blue-600">Partners</a>
                     <a href="#" class="text-gray-600 hover:text-blue-600">Login</a>
                 </nav>
             </div>
@@ -280,6 +281,15 @@
                 </div>
             </div>
 
+            <!-- Broker CTA -->
+            <div class="mt-8 p-4 bg-gray-50 border border-gray-200 rounded">
+                <p class="text-sm text-gray-600">💼 Insurance broker or consultant?</p>
+                <p class="text-sm font-semibold mt-1">Earn $500 per client you refer</p>
+                <a href="/partners.html" class="text-blue-600 hover:underline text-sm mt-2 inline-block">
+                    Learn about our partner program →
+                </a>
+            </div>
+
             <!-- State Expansion Email Capture -->
             <div id="stateExpansionPrompt" class="mt-6 p-4 bg-green-50 border-l-4 border-green-500 rounded hidden">
                 <p class="font-bold text-gray-900 mb-1">Need more states?</p>
@@ -299,6 +309,11 @@
                     </button>
                 </div>
                 <p id="stateEmailSuccess" class="hidden mt-2 text-sm text-green-700 font-semibold">✓ Thanks! We'll notify you when your state is available.</p>
+            </div>
+
+            <!-- Remaining Calculations Counter -->
+            <div class="mt-4 text-center text-sm text-gray-600">
+                <span id="remainingCalcs"></span>
             </div>
 
             <!-- Final Disclaimer -->
@@ -381,6 +396,39 @@
         </div>
     </main>
 
+    <!-- Email Gate Modal (shows after 3 calculations) -->
+    <div id="emailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-md mx-4">
+            <h2 class="text-2xl font-bold mb-4">Want 7 More Free Calculations?</h2>
+            <p class="text-gray-600 mb-6">Enter your email to continue using the calculator for free.</p>
+            <input type="email" id="emailInput" placeholder="your@email.com" class="border border-gray-300 p-3 w-full rounded mb-4">
+            <button id="submitEmail" class="bg-blue-600 text-white px-6 py-3 rounded w-full hover:bg-blue-700">
+                Continue Free
+            </button>
+            <p class="text-xs text-gray-500 mt-4">No spam. We'll only send you lien deadline tips.</p>
+        </div>
+    </div>
+
+    <!-- Upgrade Modal (shows after 10 calculations) -->
+    <div id="upgradeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-md mx-4">
+            <h2 class="text-2xl font-bold mb-4">You've Used All 10 Free Calculations</h2>
+            <p class="text-gray-600 mb-6">Upgrade to Pro for unlimited calculations, PDF reports, and calculation history.</p>
+            <div class="mb-6 p-4 bg-gray-50 rounded">
+                <p class="font-semibold">Pro Plan: $299/month</p>
+                <ul class="text-sm mt-2 space-y-1">
+                    <li>✓ Unlimited calculations</li>
+                    <li>✓ All 23 states</li>
+                    <li>✓ PDF reports</li>
+                    <li>✓ Calculation history</li>
+                </ul>
+            </div>
+            <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" class="block bg-blue-600 text-white px-6 py-3 rounded text-center hover:bg-blue-700">
+                Upgrade Now
+            </a>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="bg-gray-800 text-white mt-16 py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -388,7 +436,8 @@
                 <p class="text-sm">&copy; 2025 LienDeadline. Not legal advice. Consult an attorney.</p>
                 <p class="text-xs mt-2 text-gray-400">
                     <a href="terms.html" class="hover:text-white">Terms of Service</a> | 
-                    <a href="#" class="hover:text-white">Privacy Policy</a>
+                    <a href="#" class="hover:text-white">Privacy Policy</a> |
+                    <a href="/partners.html" class="hover:text-white">Become a Partner</a>
                 </p>
             </div>
         </div>
