@@ -415,8 +415,10 @@ async def send_email(data: dict):
         from sendgrid import SendGridAPIClient
         from sendgrid.helpers.mail import Mail
         
-        # Get SendGrid API key from environment variable or use provided one
-        sendgrid_api_key = os.getenv('SENDGRID_API_KEY', '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')
+        # Get SendGrid API key from environment variable
+        sendgrid_api_key = os.getenv('SENDGRID_API_KEY')
+        if not sendgrid_api_key:
+            raise HTTPException(status_code=500, detail="SendGrid API key not configured. Please set SENDGRID_API_KEY environment variable.")
         
         to_email = data.get('to_email')
         results = data.get('results', {})
