@@ -100,7 +100,7 @@ document.getElementById('dashboardCalculatorForm').addEventListener('submit', as
     submitButton.disabled = true;
     
     try {
-        const response = await fetch(`${API_BASE}/v1/calculate-deadline`, {
+        const response = await fetch(`${API_BASE}/api/v1/calculate-deadline`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

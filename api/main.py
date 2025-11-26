@@ -121,7 +121,7 @@ class CalculateDeadlineRequest(BaseModel):
     role: str = "supplier"
     project_type: str = "commercial"
 
-@app.post("/v1/calculate-deadline")
+@app.post("/api/v1/calculate-deadline")
 async def calculate_deadline(
     request_data: CalculateDeadlineRequest,
     request: Request = None
@@ -834,6 +834,13 @@ async def serve_script_js():
     if not file_path.exists():
         raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
     return FileResponse(file_path, media_type="application/javascript")
+
+@app.get("/styles.css")
+async def serve_styles_css():
+    file_path = BASE_DIR / "styles.css"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
+    return FileResponse(file_path, media_type="text/css")
 
 # Test endpoint
 @app.get("/test-calculate")
