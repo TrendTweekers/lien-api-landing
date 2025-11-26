@@ -450,6 +450,13 @@ async def serve_dashboard_js():
         raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
     return FileResponse(file_path, media_type="application/javascript")
 
+@app.get("/admin-dashboard.js")
+async def serve_admin_dashboard_js():
+    file_path = BASE_DIR / "admin-dashboard.js"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
+    return FileResponse(file_path, media_type="application/javascript")
+
 @app.get("/script.js")
 async def serve_script_js():
     file_path = BASE_DIR / "script.js"

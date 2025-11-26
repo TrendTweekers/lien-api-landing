@@ -187,8 +187,8 @@ function closeModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
 }
 
-// API Configuration
-const API_BASE = 'https://api.liendeadline.com';
+// API Configuration - Use relative URLs (same domain)
+const API_BASE = '';
 
 // Logout function
 function logout() {
