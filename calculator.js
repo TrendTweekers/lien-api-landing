@@ -51,6 +51,9 @@ document.getElementById('calculatorForm').addEventListener('submit', async (e) =
 });
 
 function displayResults(data) {
+    // Store results for email functionality
+    latestResults = data;
+    
     // Show results section
     document.getElementById('results').classList.remove('hidden');
     
@@ -178,9 +181,52 @@ document.getElementById('downloadPDF').addEventListener('click', () => {
     generatePDF(window.currentCalculation);
 });
 
-// Email Report (we'll implement this next)
-document.getElementById('emailReport').addEventListener('click', () => {
-    alert('Email feature coming in next step!');
+// Store latest calculation results for email
+let latestResults = null;
+
+// Email Report using SendGrid
+document.getElementById('emailReport').addEventListener('click', async () => {
+    if (!latestResults) {
+        alert('Please calculate deadlines first!');
+        return;
+    }
+    
+    const userEmail = prompt("Enter your email address:");
+    if (!userEmail) return;
+    
+    // Basic email validation
+    if (!userEmail.includes('@') || !userEmail.includes('.')) {
+        alert('Please enter a valid email address');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/v1/send-email`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                to_email: userEmail,
+                results: {
+                    state: document.getElementById('state').value,
+                    prelimDeadline: document.getElementById('prelimDate').textContent,
+                    lienDeadline: document.getElementById('lienDate').textContent
+                }
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.status === 'success') {
+            alert(`✅ Report emailed to ${userEmail}`);
+        } else {
+            alert(`❌ Failed to send email: ${data.detail || data.message || 'Unknown error'}\n\nTry downloading PDF instead.`);
+        }
+    } catch (error) {
+        console.error('Email error:', error);
+        alert('❌ Email failed. Please download PDF instead.');
+    }
 });
 
 // Set today as default invoice date

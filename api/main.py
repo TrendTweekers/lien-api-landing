@@ -9,6 +9,7 @@ from pathlib import Path
 import json
 import sqlite3
 import secrets
+import os
 from api.analytics import router as analytics_router
 
 app = FastAPI(title="Lien Deadline API")
@@ -406,6 +407,55 @@ def test_calculate():
             test_results.append({"error": str(e), "test": test})
     
     return {"test_cases": test_results}
+
+@app.post("/v1/send-email")
+async def send_email(data: dict):
+    """Send calculation results via email using SendGrid"""
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+        
+        # Get SendGrid API key from environment variable or use provided one
+        sendgrid_api_key = os.getenv('SENDGRID_API_KEY', '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')
+        
+        to_email = data.get('to_email')
+        results = data.get('results', {})
+        
+        if not to_email:
+            raise HTTPException(status_code=400, detail="Email address required")
+        
+        # Build email content
+        state = results.get('state', 'N/A')
+        prelim_deadline = results.get('prelimDeadline', 'N/A')
+        lien_deadline = results.get('lienDeadline', 'N/A')
+        
+        html_content = f'''
+        <h2>Your Lien Deadline Calculation</h2>
+        <p><strong>State:</strong> {state}</p>
+        <p><strong>Preliminary Notice Deadline:</strong> {prelim_deadline}</p>
+        <p><strong>Lien Filing Deadline:</strong> {lien_deadline}</p>
+        <hr>
+        <p><em>This is general information only, NOT legal advice. Always consult a licensed construction attorney before taking any legal action.</em></p>
+        <p>Visit <a href="https://liendeadline.com">LienDeadline.com</a> for more calculations!</p>
+        '''
+        
+        message = Mail(
+            from_email='support@liendeadline.com',
+            to_emails=to_email,
+            subject='Your Lien Deadline Calculation - LienDeadline.com',
+            html_content=html_content
+        )
+        
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        
+        return {"status": "success", "message": "Email sent successfully!"}
+        
+    except ImportError:
+        raise HTTPException(status_code=500, detail="SendGrid library not installed. Run: pip install sendgrid")
+    except Exception as e:
+        print(f"SendGrid error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
