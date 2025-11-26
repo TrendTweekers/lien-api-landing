@@ -103,10 +103,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Auto-load sample data on page load (with small delay to ensure page is rendered)
+    // Only auto-load if we're actually on the API tester section (check for hash or section visibility)
     setTimeout(function() {
-        // Only auto-load if we're near the API tester section or if form is empty
-        const invoiceDate = document.getElementById('invoice-date').value;
-        if (!invoiceDate) {
+        // Check if API tester section is visible in viewport or if URL has #api-tester hash
+        const apiTesterSection = document.getElementById('api-tester');
+        const isApiTesterVisible = apiTesterSection && 
+            window.location.hash === '#api-tester' ||
+            (apiTesterSection.getBoundingClientRect().top >= 0 && 
+             apiTesterSection.getBoundingClientRect().top < window.innerHeight);
+        
+        // Only auto-load if we're on the API tester section and form is empty
+        const invoiceDate = document.getElementById('invoice-date');
+        if (invoiceDate && !invoiceDate.value && isApiTesterVisible) {
             loadSampleData();
         }
     }, 500);
@@ -130,7 +138,12 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('calculate-text').textContent = 'Calculating...';
         document.getElementById('loading-spinner').classList.remove('hidden');
         responseContainer.classList.add('hidden');
-        document.getElementById('error-message').classList.add('hidden');
+        // Hide error immediately and keep it hidden until we confirm failure
+        const errorMessage = document.getElementById('error-message');
+        if (errorMessage) {
+            errorMessage.classList.add('hidden');
+            errorMessage.style.display = 'none'; // Force hide to prevent flash
+        }
         apiResponse.classList.remove('error', 'success');
 
         // Record start time for response time calculation
@@ -166,8 +179,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Check if API returned an error
                 if (!response.ok || data.error) {
-                    // Show friendly error message
-                    document.getElementById('error-message').classList.remove('hidden');
+                    // Show friendly error message only if API actually failed
+                    const errorMessage = document.getElementById('error-message');
+                    if (errorMessage) {
+                        errorMessage.style.display = 'block'; // Show explicitly
+                        errorMessage.classList.remove('hidden');
+                    }
                     apiResponse.classList.add('hidden');
                     // Log full error to console
                     console.error('API Error:', data);
@@ -177,8 +194,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Log the real error to console
                 console.error('API fetch failed:', fetchError);
                 
-                // Show friendly error message
-                document.getElementById('error-message').classList.remove('hidden');
+                // Only show error if fetch actually failed (not fallback)
+                // For fallback demo, we'll hide error and show results instead
+                const errorMessage = document.getElementById('error-message');
+                if (errorMessage) {
+                    // Keep error hidden for fallback demo
+                    errorMessage.style.display = 'none';
+                    errorMessage.classList.add('hidden');
+                }
                 apiResponse.classList.add('hidden');
                 responseContainer.classList.remove('hidden');
                 
@@ -199,7 +222,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 
                 // Hide error message for fallback demo
-                document.getElementById('error-message').classList.add('hidden');
+                const errorMessage = document.getElementById('error-message');
+                if (errorMessage) {
+                    errorMessage.style.display = 'none';
+                    errorMessage.classList.add('hidden');
+                }
             }
 
             // Display successful response with response time and disclaimer
@@ -213,7 +240,12 @@ document.addEventListener('DOMContentLoaded', function() {
             apiResponse.classList.add('success');
             apiResponse.classList.remove('error');
             apiResponse.classList.remove('hidden');
-            document.getElementById('error-message').classList.add('hidden');
+            // Ensure error is hidden on success
+            const errorMessage = document.getElementById('error-message');
+            if (errorMessage) {
+                errorMessage.style.display = 'none';
+                errorMessage.classList.add('hidden');
+            }
 
             responseContainer.classList.remove('hidden');
             
