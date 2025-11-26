@@ -1,6 +1,6 @@
 // dashboard.js
 
-const API_BASE = 'https://api.liendeadline.com';
+const API_BASE = ''; // Use relative URL since API is on same domain
 
 // Check login status on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -100,11 +100,16 @@ document.getElementById('dashboardCalculatorForm').addEventListener('submit', as
     submitButton.disabled = true;
     
     try {
-        const response = await fetch(`${API_BASE}/v1/calculate-deadline?invoice_date=${invoiceDate}&state=${state}&role=${role}`, {
+        const response = await fetch(`${API_BASE}/v1/calculate-deadline`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+                invoice_date: invoiceDate,
+                state: state,
+                role: role
+            })
         });
         
         const data = await response.json();

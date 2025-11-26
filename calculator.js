@@ -47,12 +47,17 @@ document.getElementById('calculatorForm').addEventListener('submit', async (e) =
     submitButton.disabled = true;
     
     try {
-        // Call API
-        const response = await fetch(`${API_BASE}/v1/calculate-deadline?invoice_date=${invoiceDate}&state=${state}&role=${role}`, {
+        // Call API with POST and JSON body
+        const response = await fetch(`${API_BASE}/v1/calculate-deadline`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+                invoice_date: invoiceDate,
+                state: state,
+                role: role
+            })
         });
         
         const data = await response.json();

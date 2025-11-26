@@ -114,14 +114,22 @@ def health():
 def get_states():
     return list(STATE_RULES.keys())
 
+# Calculate deadline request model
+class CalculateDeadlineRequest(BaseModel):
+    invoice_date: str
+    state: str
+    role: str = "supplier"
+    project_type: str = "commercial"
+
 @app.post("/v1/calculate-deadline")
 async def calculate_deadline(
-    invoice_date: str,
-    state: str,
-    role: str = "supplier",
-    project_type: str = "commercial",
+    request_data: CalculateDeadlineRequest,
     request: Request = None
 ):
+    invoice_date = request_data.invoice_date
+    state = request_data.state
+    role = request_data.role
+    project_type = request_data.project_type
     state_code = state.upper()
     
     # Validate state
