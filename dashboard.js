@@ -39,23 +39,43 @@ function showDashboard(email) {
     loadHistory();
 }
 
-// Login Form
-document.getElementById('loginForm').addEventListener('submit', (e) => {
+// Login Form - Real API Authentication
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
+    const errorDiv = document.getElementById('error-message');
     
-    // For MVP: Simple validation (replace with real auth later)
-    if (email && password.length >= 6) {
-        // Store login
-        localStorage.setItem('userEmail', email);
-        localStorage.setItem('loginTime', new Date().toISOString());
+    // Clear previous errors
+    errorDiv.textContent = '';
+    errorDiv.classList.add('hidden');
+    
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({email, password})
+        });
         
-        // Show dashboard
-        showDashboard(email);
-    } else {
-        alert('Please enter valid credentials (password must be at least 6 characters)');
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Store session token
+            localStorage.setItem('session_token', data.token);
+            localStorage.setItem('user_email', data.email);
+            
+            // Redirect to customer dashboard
+            window.location.href = '/customer-dashboard';
+        } else {
+            const error = await response.json();
+            errorDiv.textContent = error.detail || 'Invalid email or password';
+            errorDiv.classList.remove('hidden');
+        }
+    } catch (err) {
+        console.error('Login error:', err);
+        errorDiv.textContent = 'Login failed. Please try again.';
+        errorDiv.classList.remove('hidden');
     }
 });
 

@@ -8,6 +8,70 @@
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
+    <script>
+        // Check authentication on page load
+        async function checkAuth() {
+            const token = localStorage.getItem('session_token');
+            
+            if (!token) {
+                window.location.href = '/dashboard';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/verify-session', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    // Session invalid - redirect to login
+                    localStorage.removeItem('session_token');
+                    localStorage.removeItem('user_email');
+                    window.location.href = '/dashboard';
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                // Display user email
+                const userEmailEl = document.getElementById('user-email');
+                if (userEmailEl) {
+                    userEmailEl.textContent = data.email;
+                }
+                
+                // Check subscription status
+                if (data.subscription_status === 'cancelled') {
+                    // Show subscription warning (you can add UI for this)
+                    console.warn('Subscription cancelled');
+                }
+                
+            } catch (err) {
+                console.error('Auth check failed:', err);
+                window.location.href = '/dashboard';
+            }
+        }
+        
+        // Logout function
+        function logout() {
+            const token = localStorage.getItem('session_token');
+            
+            fetch('/api/logout', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            }).finally(() => {
+                localStorage.removeItem('session_token');
+                localStorage.removeItem('user_email');
+                window.location.href = '/dashboard';
+            });
+        }
+        
+        // Run on page load
+        window.addEventListener('DOMContentLoaded', checkAuth);
+    </script>
 </head>
 <body class="bg-gray-50">
     <!-- Navigation -->
@@ -15,7 +79,8 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <h1 class="text-xl font-bold text-gray-900">Customer Dashboard</h1>
-                <div class="flex gap-4">
+                <div class="flex gap-4 items-center">
+                    <span id="user-email" class="text-sm text-gray-600"></span>
                     <a href="index.html" class="text-gray-600 hover:text-gray-900">Landing Page</a>
                     <button onclick="logout()" class="text-red-600 hover:text-red-700">Logout</button>
                 </div>

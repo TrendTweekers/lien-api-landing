@@ -5,5 +5,6 @@ python-multipart==0.0.6
 pydantic==2.5.0
 python-dotenv==1.0.0
 email-validator>=2.0.0
-sendgrid>=6.10.0
+sendgrid>=6.11.0
+bcrypt==4.1.2
 

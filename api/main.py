@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request, Depends, status, Response
+from fastapi import FastAPI, HTTPException, Request, Depends, status, Response, Header
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -10,6 +10,8 @@ import json
 import sqlite3
 import secrets
 import os
+import bcrypt
+import stripe
 from api.analytics import router as analytics_router
 from api.admin import router as admin_router
 
@@ -27,9 +29,45 @@ app.add_middleware(
 # Get project root
 BASE_DIR = Path(__file__).parent.parent
 
+# Database connection
+def get_db():
+    """Get database connection"""
+    db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# Initialize database
+def init_db():
+    """Initialize database with schema"""
+    schema_path = BASE_DIR / "database" / "schema.sql"
+    if not schema_path.exists():
+        print(f"⚠️ Schema file not found: {schema_path}")
+        return
+    
+    db = get_db()
+    try:
+        with open(schema_path, 'r') as f:
+            db.executescript(f.read())
+        db.commit()
+        print("✅ Database initialized")
+    except Exception as e:
+        print(f"❌ Database initialization error: {e}")
+    finally:
+        db.close()
+
+# Initialize Stripe
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
+
 # Include routers
 app.include_router(analytics_router)
 app.include_router(admin_router)
+
+# Initialize database on startup
+@app.on_event("startup")
+async def startup():
+    init_db()
 
 # Serve static files (CSS, JS)
 try:
@@ -434,6 +472,330 @@ async def check_broker_approval(data: dict):
             "approved": False,
             "pending": False
         }
+
+# Authentication Models
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class ChangePasswordRequest(BaseModel):
+    email: str
+    old_password: str
+    new_password: str
+
+# Authentication Endpoints
+@app.post("/api/login")
+async def login(req: LoginRequest):
+    """Login endpoint - validates credentials and returns session token"""
+    db = get_db()
+    
+    try:
+        # Get user
+        user = db.execute("SELECT * FROM users WHERE email = ?", (req.email,)).fetchone()
+        
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Check password
+        if not bcrypt.checkpw(req.password.encode(), user['password_hash'].encode()):
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Check subscription active
+        if user['subscription_status'] not in ['active', 'trialing']:
+            raise HTTPException(status_code=403, detail="Subscription expired or cancelled")
+        
+        # Generate session token
+        token = secrets.token_urlsafe(32)
+        
+        db.execute("""
+            UPDATE users 
+            SET session_token = ?, last_login = ?
+            WHERE email = ?
+        """, (token, datetime.now().isoformat(), req.email))
+        db.commit()
+        
+        return {
+            "success": True,
+            "token": token,
+            "email": req.email
+        }
+    finally:
+        db.close()
+
+@app.get("/api/verify-session")
+async def verify_session(authorization: str = Header(None)):
+    """Verify session token"""
+    if not authorization or not authorization.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail="No token provided")
+    
+    token = authorization.replace('Bearer ', '')
+    
+    db = get_db()
+    try:
+        user = db.execute("SELECT * FROM users WHERE session_token = ?", (token,)).fetchone()
+        
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid session")
+        
+        if user['subscription_status'] not in ['active', 'trialing']:
+            raise HTTPException(status_code=403, detail="Subscription expired")
+        
+        return {
+            "valid": True,
+            "email": user['email'],
+            "subscription_status": user['subscription_status']
+        }
+    finally:
+        db.close()
+
+@app.post("/api/change-password")
+async def change_password(req: ChangePasswordRequest):
+    """Change user password"""
+    db = get_db()
+    
+    try:
+        user = db.execute("SELECT * FROM users WHERE email = ?", (req.email,)).fetchone()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Verify old password
+        if not bcrypt.checkpw(req.old_password.encode(), user['password_hash'].encode()):
+            raise HTTPException(status_code=401, detail="Current password incorrect")
+        
+        # Hash new password
+        new_hash = bcrypt.hashpw(req.new_password.encode(), bcrypt.gensalt())
+        
+        db.execute("UPDATE users SET password_hash = ? WHERE email = ?", 
+                   (new_hash.decode(), req.email))
+        db.commit()
+        
+        return {"success": True, "message": "Password changed successfully"}
+    finally:
+        db.close()
+
+@app.post("/api/logout")
+async def logout(authorization: str = Header(None)):
+    """Logout - invalidate session token"""
+    if not authorization or not authorization.startswith('Bearer '):
+        return {"success": True}
+    
+    token = authorization.replace('Bearer ', '')
+    
+    db = get_db()
+    try:
+        db.execute("UPDATE users SET session_token = NULL WHERE session_token = ?", (token,))
+        db.commit()
+        return {"success": True}
+    finally:
+        db.close()
+
+# Stripe Webhook Handler
+@app.post("/webhooks/stripe")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhooks for subscription events"""
+    payload = await request.body()
+    sig_header = request.headers.get('stripe-signature')
+    
+    if not STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(status_code=500, detail="Webhook secret not configured")
+    
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    except stripe.error.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    
+    db = get_db()
+    
+    try:
+        # New subscription
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            
+            email = session.get('customer_details', {}).get('email')
+            customer_id = session.get('customer')
+            subscription_id = session.get('subscription')
+            
+            if not email:
+                print("⚠️ No email in checkout session")
+                return {"status": "skipped"}
+            
+            # Check for referral
+            metadata = session.get('metadata', {})
+            ref_code = metadata.get('ref_code', '')
+            
+            # Generate secure temporary password
+            temp_password = secrets.token_urlsafe(12)
+            password_hash = bcrypt.hashpw(temp_password.encode(), bcrypt.gensalt())
+            
+            # Create user account
+            try:
+                db.execute("""
+                    INSERT INTO users (email, password_hash, stripe_customer_id, subscription_id, subscription_status)
+                    VALUES (?, ?, ?, ?, 'active')
+                """, (email, password_hash.decode(), customer_id, subscription_id))
+                
+                # Also create customer record
+                db.execute("""
+                    INSERT INTO customers (email, stripe_customer_id, subscription_id, status, plan, amount)
+                    VALUES (?, ?, ?, 'active', 'unlimited', 299.00)
+                """, (email, customer_id, subscription_id))
+                
+                db.commit()
+                
+                # Send welcome email
+                send_welcome_email(email, temp_password)
+                
+                # Handle referral if exists
+                if ref_code and ref_code.startswith('broker_'):
+                    broker = db.execute("SELECT * FROM brokers WHERE id = ?", (ref_code,)).fetchone()
+                    if broker:
+                        # Create referral record
+                        db.execute("""
+                            INSERT INTO referrals (broker_id, customer_email, customer_id, amount, payout, status)
+                            VALUES (?, ?, ?, 299.00, 500.00, 'pending')
+                        """, (ref_code, email, customer_id))
+                        
+                        # Update broker stats
+                        db.execute("""
+                            UPDATE brokers 
+                            SET referrals = referrals + 1 
+                            WHERE id = ?
+                        """, (ref_code,))
+                        
+                        db.commit()
+                        
+                        # Notify broker
+                        send_broker_notification(broker['email'], email)
+                
+            except sqlite3.IntegrityError:
+                # User already exists - just update subscription
+                db.execute("""
+                    UPDATE users 
+                    SET subscription_status = 'active', subscription_id = ?
+                    WHERE email = ?
+                """, (subscription_id, email))
+                db.commit()
+        
+        # Subscription cancelled
+        elif event['type'] == 'customer.subscription.deleted':
+            subscription = event['data']['object']
+            customer_id = subscription['customer']
+            
+            db.execute("""
+                UPDATE users 
+                SET subscription_status = 'cancelled'
+                WHERE stripe_customer_id = ?
+            """, (customer_id,))
+            
+            db.execute("""
+                UPDATE customers 
+                SET status = 'cancelled'
+                WHERE stripe_customer_id = ?
+            """, (customer_id,))
+            
+            db.commit()
+        
+        # Payment failed
+        elif event['type'] == 'invoice.payment_failed':
+            invoice = event['data']['object']
+            customer_id = invoice['customer']
+            
+            db.execute("""
+                UPDATE users 
+                SET subscription_status = 'past_due'
+                WHERE stripe_customer_id = ?
+            """, (customer_id,))
+            
+            db.commit()
+        
+        return {"status": "success"}
+    finally:
+        db.close()
+
+def send_welcome_email(email: str, password: str):
+    """Send welcome email with login credentials"""
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail, Email, To
+        
+        sg = SendGridAPIClient(api_key=os.getenv('SENDGRID_API_KEY', ''))
+        
+        if not os.getenv('SENDGRID_API_KEY'):
+            print(f"⚠️ SENDGRID_API_KEY not set - skipping email to {email}")
+            print(f"   Temporary password: {password}")
+            return
+        
+        message = Mail(
+            from_email=Email("support@liendeadline.com"),
+            to_emails=To(email),
+            subject="Welcome to LienDeadline - Your Login Credentials",
+            html_content=f"""
+            <h2>Welcome to LienDeadline!</h2>
+            <p>Your account is now active. Here are your login credentials:</p>
+            
+            <p><strong>Login:</strong> <a href="https://liendeadline.com/dashboard">https://liendeadline.com/dashboard</a></p>
+            <p><strong>Email:</strong> {email}</p>
+            <p><strong>Temporary Password:</strong> {password}</p>
+            
+            <p><em>Please change your password after your first login for security.</em></p>
+            
+            <h3>Getting Started:</h3>
+            <ol>
+                <li>Login to your dashboard</li>
+                <li>Use the calculator for unlimited lien deadline calculations</li>
+                <li>Access covers 23 states (TX, CA, FL, NY, PA, IL, GA, NC, WA, OH, AZ, CO, VA, MI, TN, MA, NJ, MD, WI, MN, IN, MO, SC)</li>
+            </ol>
+            
+            <p>Questions? Reply to this email or contact support@liendeadline.com</p>
+            
+            <p>Best,<br>The LienDeadline Team</p>
+            """
+        )
+        
+        response = sg.send(message)
+        print(f"✅ Welcome email sent to {email}")
+    except Exception as e:
+        print(f"❌ Email failed: {e}")
+
+def send_broker_notification(broker_email: str, customer_email: str):
+    """Notify broker of new referral"""
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail, Email, To
+        
+        if not os.getenv('SENDGRID_API_KEY'):
+            print(f"⚠️ SENDGRID_API_KEY not set - skipping broker notification")
+            return
+        
+        sg = SendGridAPIClient(api_key=os.getenv('SENDGRID_API_KEY'))
+        
+        message = Mail(
+            from_email=Email("support@liendeadline.com"),
+            to_emails=To(broker_email),
+            subject="New Referral - $500 Commission Earned!",
+            html_content=f"""
+            <h2>Congratulations! New Referral</h2>
+            <p>Your referral just signed up:</p>
+            
+            <p><strong>Customer:</strong> {customer_email}</p>
+            <p><strong>Plan:</strong> Unlimited ($299/month)</p>
+            <p><strong>Your Commission:</strong> $500 (payable after 30 days)</p>
+            
+            <p>Track your earnings: <a href="https://liendeadline.com/broker-dashboard">Broker Dashboard</a></p>
+            
+            <p>Best,<br>The LienDeadline Team</p>
+            """
+        )
+        
+        sg.send(message)
+        print(f"✅ Broker notification sent to {broker_email}")
+    except Exception as e:
+        print(f"❌ Broker notification failed: {e}")
 
 # Serve JS files
 @app.get("/calculator.js")

@@ -1,5 +1,33 @@
 // calculator.js
 
+// Handle referral codes for Stripe checkout
+(function() {
+    // Get referral code from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref') || '';
+    
+    // Update all Stripe upgrade links to include referral code
+    function updateStripeLinks() {
+        const stripeLinks = document.querySelectorAll('a[href*="buy.stripe.com"]');
+        stripeLinks.forEach(link => {
+            const originalHref = link.getAttribute('href');
+            if (refCode && !originalHref.includes('client_reference_id')) {
+                // Stripe payment links use metadata, but we can pass via URL params
+                // Note: Stripe checkout sessions need metadata set server-side
+                // For now, we'll store the ref in localStorage and webhook will check it
+                localStorage.setItem('referral_code', refCode);
+            }
+        });
+    }
+    
+    // Run on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateStripeLinks);
+    } else {
+        updateStripeLinks();
+    }
+})();
+
 // API Base URL (update this to your Railway URL)
 const API_BASE = 'https://api.liendeadline.com';
 
