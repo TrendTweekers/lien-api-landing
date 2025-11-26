@@ -1,112 +1,357 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Partner Calculator – LienDeadline</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Partner with LienDeadline - Earn $500 for every contractor or supplier you refer.">
+    <title>Partner With Us - LienDeadline</title>
+    
+    <!-- Preconnect to Tailwind CDN for faster loading -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/styles.css">
 </head>
-<body class="bg-gray-50">
-  <nav class="bg-white shadow px-6 py-4 flex justify-between">
-    <a href="/" class="font-bold text-blue-600">LienDeadline.com</a>
-    <a href="/login" class="text-blue-600">Login</a>
-  </nav>
-
-  <section class="max-w-2xl mx-auto mt-10 bg-white p-8 rounded shadow">
-    <h1 class="text-2xl font-bold mb-4">Partner Calculator</h1>
-    
-    <div class="bg-blue-50 border-l-4 border-blue-500 p-6 mb-8 rounded">
-      <p class="text-lg font-semibold mb-3">🎯 Ideal Partners:</p>
-      <ul class="text-sm space-y-2">
-        <li>✓ Insurance brokers with 50+ contractor/supplier clients</li>
-        <li>✓ Construction consultants & risk advisors</li>
-        <li>✓ Trade association representatives</li>
-        <li>✓ Surety bond specialists</li>
-      </ul>
-    </div>
-    
-    <p class="text-sm text-gray-600 mb-6">Enter invoice details → get deadlines → upgrade to Pro for unlimited access.</p>
-
-    <form id="calculatorForm" class="space-y-4">
-      <label class="block text-sm font-medium">Invoice Date (MM/DD/YYYY)</label>
-      <input type="date" id="invoiceDate" class="border p-2 w-full rounded" required>
-
-      <label class="block text-sm font-medium">State</label>
-      <select id="state" class="border p-2 w-full rounded" required>
-        <option value="">Select state...</option>
-        <option value="TX">Texas</option>
-        <option value="CA">California</option>
-        <option value="FL">Florida</option>
-      </select>
-
-      <label class="block text-sm font-medium">Role</label>
-      <select id="role" class="border p-2 w-full rounded" required>
-        <option value="supplier">Material Supplier</option>
-        <option value="subcontractor">Subcontractor</option>
-      </select>
-
-      <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded w-full">Calculate Deadlines</button>
-    </form>
-
-    <div id="results" class="mt-6 hidden border-t pt-6">
-      <h2 class="text-xl font-bold mb-4">Your Deadlines</h2>
-      
-      <!-- Preliminary Notice Card -->
-      <div id="prelimCard" class="bg-white shadow-lg rounded-lg p-6 border-l-4 border-blue-500 mb-4">
-        <h3 id="prelimTitle" class="text-lg font-semibold mb-2">Preliminary Notice</h3>
-        <div class="text-2xl font-bold text-blue-600 mb-2">
-          <span id="prelimDays">0 days</span>
+<body class="bg-white text-gray-900">
+    <!-- Navigation -->
+    <nav id="nav" class="fixed top-0 w-full bg-white shadow-sm z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-2">
+                    <svg width="40" height="40" viewBox="0 0 40 40" class="text-blue-600">
+                        <rect x="4" y="4" width="32" height="32" rx="4" fill="currentColor"/>
+                        <text x="20" y="26" text-anchor="middle" fill="white" font-size="16" font-weight="bold">LD</text>
+                    </svg>
+                    <a href="/" class="text-xl font-bold text-gray-900">LienDeadline.com</a>
+                </div>
+                <div class="flex gap-4">
+                    <a href="/test-api" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Test API</a>
+                    <a href="/partners.html" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Partners</a>
+                    <a href="/#pricing" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Pricing</a>
+                </div>
+            </div>
         </div>
-        <p class="text-gray-700 mb-2">
-          <strong>Deadline:</strong> <span id="prelimDate"></span>
-        </p>
-        <p id="prelimDescription" class="text-sm text-gray-600"></p>
-      </div>
+    </nav>
 
-      <!-- Lien Filing Card -->
-      <div id="lienCard" class="bg-white shadow-lg rounded-lg p-6 border-l-4 border-red-500 mb-4">
-        <h3 id="lienTitle" class="text-lg font-semibold mb-2">Lien Filing</h3>
-        <div class="text-2xl font-bold text-red-600 mb-2">
-          <span id="lienDays">0 days</span>
+    <!-- Hero Section -->
+    <section class="pt-32 pb-16 px-6 md:px-8">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+                Partner With Us
+            </h1>
+            <p class="text-xl sm:text-2xl mb-8 text-gray-700">
+                Earn $500 for every contractor or supplier you refer.
+            </p>
+            <p class="text-lg text-gray-600 mb-8">
+                Help your clients never miss a lien deadline while earning passive income. 
+                Perfect for insurance brokers, construction consultants, and trade associations.
+            </p>
+            <a href="#apply" class="inline-block px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold text-lg">
+                Apply Now
+            </a>
         </div>
-        <p class="text-gray-700 mb-2">
-          <strong>Deadline:</strong> <span id="lienDate"></span>
-        </p>
-        <p id="lienDescription" class="text-sm text-gray-600"></p>
-      </div>
+    </section>
 
-      <!-- Serving Requirements (hidden if not needed) -->
-      <div id="servingSection" class="mb-4 hidden">
-        <h3 class="font-semibold mb-2">Serving Requirements</h3>
-        <ul id="servingList" class="list-none space-y-2"></ul>
-      </div>
+    <!-- How It Works Section -->
+    <section class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">How It Works</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-blue-600 mb-4 bg-white rounded-full w-16 h-16 flex items-center justify-center mx-auto shadow-md">1</div>
+                    <h3 class="text-xl font-semibold mb-2">Send Your Clients a Referral Link</h3>
+                    <p class="text-gray-600">Share your unique partner link with contractors and suppliers in your network.</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-blue-600 mb-4 bg-white rounded-full w-16 h-16 flex items-center justify-center mx-auto shadow-md">2</div>
+                    <h3 class="text-xl font-semibold mb-2">They Sign Up for $299/month</h3>
+                    <p class="text-gray-600">Your clients get unlimited lien deadline calculations and never miss a filing deadline.</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-blue-600 mb-4 bg-white rounded-full w-16 h-16 flex items-center justify-center mx-auto shadow-md">3</div>
+                    <h3 class="text-xl font-semibold mb-2">You Get $500 After 30 Days</h3>
+                    <p class="text-gray-600">We pay you $500 per referral after 30 days (anti-churn protection).</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-blue-600 mb-4 bg-white rounded-full w-16 h-16 flex items-center justify-center mx-auto shadow-md">4</div>
+                    <h3 class="text-xl font-semibold mb-2">They Save Thousands</h3>
+                    <p class="text-gray-600">Your clients avoid $75K+ in annual losses from missed deadlines.</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-      <!-- Critical Warnings (hidden if not needed) -->
-      <div id="warningsSection" class="mb-4 hidden">
-        <h3 class="font-semibold text-red-700 mb-2">Critical Warnings</h3>
-        <ul id="warningsList" class="list-disc list-inside text-red-700"></ul>
-      </div>
+    <!-- Commission Model Comparison Section -->
+    <section class="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">Choose Your Commission Model</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- One-Time Bounty Card -->
+                <div class="bg-white border-2 border-gray-300 rounded-lg p-8 shadow-lg">
+                    <h3 class="text-2xl font-bold mb-4">$500 One-Time Bounty</h3>
+                    <div class="mb-6">
+                        <div class="text-4xl font-bold text-gray-900 mb-2">$500</div>
+                        <p class="text-gray-600">per referral</p>
+                    </div>
+                    <ul class="space-y-3 mb-6">
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Paid after 30 days</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Quick cash, no tracking</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Best for brokers with &lt;10 customers</span>
+                        </li>
+                    </ul>
+                </div>
 
-      <!-- Statute Citations (hidden if not needed) -->
-      <div id="citationsSection" class="mb-4 hidden">
-        <h3 class="font-semibold mb-2">Statute Citations</h3>
-        <ul id="citationsList" class="list-disc list-inside text-gray-700 text-sm"></ul>
-      </div>
+                <!-- Recurring Revenue Card -->
+                <div class="bg-blue-50 border-2 border-blue-600 rounded-lg p-8 shadow-lg relative">
+                    <div class="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                        MOST POPULAR
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">$50/month Recurring</h3>
+                    <div class="mb-6">
+                        <div class="text-4xl font-bold text-gray-900 mb-2">$50</div>
+                        <p class="text-gray-600">per active customer/month</p>
+                    </div>
+                    <ul class="space-y-3 mb-6">
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Passive income every month</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Compounds over time</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Best for brokers with 10+ customers</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
 
-      <!-- Upgrade Prompt -->
-      <div id="upgradePrompt" class="mt-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-        <p class="font-bold">Need more states or unlimited calculations?</p>
-        <p class="text-sm">Upgrade to Pro for $299/month – unlimited deadlines, PDF reports, calculation history.</p>
-        <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" class="mt-2 inline-block bg-blue-600 text-white px-4 py-2 rounded">Upgrade Now</a>
-      </div>
+    <!-- Earnings Calculator Section -->
+    <section class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-8">Which Earns More?</h2>
+            <p class="text-center text-gray-600 mb-8">Compare earnings over 2 years</p>
+            
+            <!-- Slider -->
+            <div class="mb-8">
+                <label for="customer-count" class="block text-sm font-medium mb-4 text-center">
+                    Number of customers: <span id="customer-display" class="font-bold text-blue-600">10</span>
+                </label>
+                <input type="range" id="customer-count" min="1" max="50" value="10" 
+                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            </div>
 
-      <!-- State Expansion Prompt (hidden by default) -->
-      <div id="stateExpansionPrompt" class="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded hidden">
-        <p class="text-sm text-yellow-800">Want access to more states? Upgrade to Pro!</p>
-      </div>
-    </div>
-  </section>
+            <!-- Comparison Table -->
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Model</th>
+                            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Year 1</th>
+                            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Year 2</th>
+                            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        <tr>
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900">$500 One-Time Bounty</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 text-center" id="bounty-year1">$5,000</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 text-center" id="bounty-year2">$0</td>
+                            <td class="px-6 py-4 text-sm font-semibold text-gray-900 text-center" id="bounty-total">$5,000</td>
+                        </tr>
+                        <tr class="bg-green-50" id="recurring-row">
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900">$50/month Recurring</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 text-center" id="recurring-year1">$6,000</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 text-center" id="recurring-year2">$6,000</td>
+                            <td class="px-6 py-4 text-sm font-semibold text-green-700 text-center" id="recurring-total">$12,000</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-6 text-center">
+                <p class="text-lg font-semibold text-green-700" id="winner-message">
+                    Recurring earns $7,000 more over 2 years!
+                </p>
+            </div>
+        </div>
+    </section>
 
-  <script src="/calculator.js"></script>
+    <!-- Ideal Partners Section -->
+    <section class="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-8">🎯 Ideal Partners</h2>
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
+                <ul class="space-y-3 text-gray-700">
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <span><strong>Insurance brokers</strong> with 50+ contractor/supplier clients</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <span><strong>Construction consultants</strong> & risk advisors</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <span><strong>Trade association</strong> representatives</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <span><strong>Surety bond</strong> specialists</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Apply Now Section -->
+    <section id="apply" class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div class="max-w-2xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-8">Apply Now</h2>
+            <form id="partner-form" class="bg-white rounded-lg shadow-lg p-8">
+                <div class="space-y-6">
+                    <div>
+                        <label for="name" class="block text-sm font-medium mb-2">Name</label>
+                        <input type="text" id="name" name="name" required 
+                               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="email" class="block text-sm font-medium mb-2">Email</label>
+                        <input type="email" id="email" name="email" required 
+                               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="company" class="block text-sm font-medium mb-2">Company Name</label>
+                        <input type="text" id="company" name="company" required 
+                               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="client-count" class="block text-sm font-medium mb-2">Client Count</label>
+                        <input type="number" id="client-count" name="client-count" min="1" required 
+                               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="How many contractor/supplier clients do you have?">
+                    </div>
+                    <button type="submit" 
+                            class="w-full bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 font-semibold text-lg">
+                        Apply Now
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="footer" class="py-8 px-4 sm:px-6 lg:px-8 bg-gray-900 text-gray-300">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p>&copy; 2025 LienDeadline.com. All rights reserved.</p>
+                </div>
+                <div class="flex gap-6">
+                    <a href="/#faq" class="hover:text-white">FAQ</a>
+                    <a href="/#pricing" class="hover:text-white">Pricing</a>
+                    <a href="/test-api" class="hover:text-white">API Tester</a>
+                    <a href="/" class="hover:text-white">Home</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Earnings Calculator Logic
+        const customerSlider = document.getElementById('customer-count');
+        const customerDisplay = document.getElementById('customer-display');
+        const bountyYear1 = document.getElementById('bounty-year1');
+        const bountyYear2 = document.getElementById('bounty-year2');
+        const bountyTotal = document.getElementById('bounty-total');
+        const recurringYear1 = document.getElementById('recurring-year1');
+        const recurringYear2 = document.getElementById('recurring-year2');
+        const recurringTotal = document.getElementById('recurring-total');
+        const winnerMessage = document.getElementById('winner-message');
+
+        function updateCalculator() {
+            const customers = parseInt(customerSlider.value);
+            customerDisplay.textContent = customers;
+            
+            // Calculate bounty model
+            const bountyY1 = customers * 500;
+            const bountyY2 = 0;
+            const bountySum = bountyY1 + bountyY2;
+            
+            // Calculate recurring model
+            const recurringY1 = customers * 600; // $50/month * 12 months
+            const recurringY2 = customers * 600;
+            const recurringSum = recurringY1 + recurringY2;
+            
+            // Update display
+            bountyYear1.textContent = '$' + bountyY1.toLocaleString();
+            bountyYear2.textContent = '$' + bountyY2.toLocaleString();
+            bountyTotal.textContent = '$' + bountySum.toLocaleString();
+            
+            recurringYear1.textContent = '$' + recurringY1.toLocaleString();
+            recurringYear2.textContent = '$' + recurringY2.toLocaleString();
+            recurringTotal.textContent = '$' + recurringSum.toLocaleString();
+            
+            // Highlight winner
+            const difference = recurringSum - bountySum;
+            if (difference > 0) {
+                winnerMessage.textContent = `Recurring earns $${difference.toLocaleString()} more over 2 years!`;
+                winnerMessage.className = 'text-lg font-semibold text-green-700';
+            } else {
+                winnerMessage.textContent = 'Both models earn the same';
+                winnerMessage.className = 'text-lg font-semibold text-gray-700';
+            }
+        }
+
+        customerSlider.addEventListener('input', updateCalculator);
+        updateCalculator(); // Initial calculation
+
+        // Form submission
+        document.getElementById('partner-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                company: document.getElementById('company').value,
+                clientCount: document.getElementById('client-count').value
+            };
+            
+            // In production, send to API
+            console.log('Partner application:', formData);
+            alert('Thank you for your application! We\'ll contact you within 24 hours.');
+            this.reset();
+        });
+    </script>
 </body>
 </html>

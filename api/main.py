@@ -109,6 +109,14 @@ async def root():
         raise HTTPException(status_code=404, detail="index.html not found")
     return FileResponse(file_path, media_type="text/html")
 
+@app.get("/test-api")
+async def test_api():
+    """Serve test-api.html API tester page"""
+    file_path = BASE_DIR / "test-api.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="test-api.html not found")
+    return FileResponse(file_path, media_type="text/html")
+
 @app.get("/health")
 def health():
     return {"status": "ok", "message": "API is running"}
