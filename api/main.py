@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request, Depends, status, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
@@ -61,13 +61,9 @@ except FileNotFoundError:
     print("WARNING: state_rules.json not found")
 
 @app.get("/")
-def root():
-    return {
-        "name": "Lien Deadline API",
-        "version": "1.0.0",
-        "status": "active",
-        "states_available": list(STATE_RULES.keys())
-    }
+async def root():
+    """Redirect root URL to index.html landing page"""
+    return RedirectResponse(url="/index.html")
 
 @app.get("/health")
 def health():
