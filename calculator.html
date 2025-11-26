@@ -6,7 +6,7 @@
     <title>LienDeadline - Mechanics Lien Deadline Calculator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
 </head>
 <body class="bg-gray-50">
     <!-- Header -->
@@ -64,6 +64,8 @@
                         id="invoiceDate" 
                         name="invoiceDate"
                         required
+                        placeholder="MM/DD/YYYY"
+                        lang="en-US"
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                 </div>
@@ -195,6 +197,20 @@
                 <button id="emailReport" class="flex-1 bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition duration-200">
                     📧 Email to Legal Team
                 </button>
+            </div>
+
+            <!-- In-Line Upgrade Prompt -->
+            <div class="mt-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                <p class="font-bold text-gray-900 mb-2">Need more states or unlimited calculations?</p>
+                <p class="text-sm text-gray-700 mb-3">Upgrade to Pro for $299/month – unlimited deadlines, PDF reports, calculation history.</p>
+                <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" class="mt-2 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium">
+                    Upgrade Now
+                </a>
+            </div>
+
+            <!-- Social Proof -->
+            <div class="mt-4 p-4 bg-gray-50 rounded">
+                <p class="text-sm text-gray-700">💬 "We eliminated 14 missed deadlines in 6 months – ABC Supply"</p>
             </div>
 
             <!-- Upgrade Prompt (Hidden if logged in) -->
