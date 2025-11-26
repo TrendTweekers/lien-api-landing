@@ -188,7 +188,7 @@ function closeModal(modalId) {
 }
 
 // API Configuration - Use relative URLs (same domain)
-const API_BASE = '';
+const API_BASE = '/api';
 
 // Logout function
 function logout() {

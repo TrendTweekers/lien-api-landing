@@ -166,7 +166,8 @@ async def calculate_deadline(
     
     # Track page view and calculation (non-blocking)
     try:
-        con = sqlite3.connect(get_db_path())
+        db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+        con = sqlite3.connect(str(db_path))
         # Create tables if they don't exist
         con.execute("""
             CREATE TABLE IF NOT EXISTS page_views (
@@ -455,11 +456,11 @@ async def check_broker_approval(data: dict):
     """Check if broker email is approved"""
     email = data.get('email', '').lower()
     
-    if email in approved_brokers_list:
+    if email in approved_brokers:
         return {
             "approved": True,
-            "name": approved_brokers_list[email]["name"],
-            "commission_model": approved_brokers_list[email]["commission_model"]
+            "name": approved_brokers[email]["name"],
+            "commission_model": approved_brokers[email].get("commission_model", "bounty")
         }
     elif email in pending_brokers:
         return {
@@ -899,6 +900,110 @@ async def send_email(data: dict):
     except Exception as e:
         print(f"SendGrid error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+
+# Admin API endpoints (for admin dashboard)
+@app.get("/api/admin/stats")
+async def get_admin_stats_api(username: str = Depends(verify_admin)):
+    """Return real dashboard stats"""
+    db = get_db()
+    try:
+        # Count active customers
+        customers_count = db.execute(
+            "SELECT COUNT(*) FROM customers WHERE status='active'"
+        ).fetchone()[0] or 0
+        
+        # Count approved brokers
+        brokers_count = db.execute(
+            "SELECT COUNT(*) FROM brokers WHERE status='approved'"
+        ).fetchone()[0] or 0
+        
+        # Calculate revenue (sum of active subscriptions)
+        revenue_result = db.execute(
+            "SELECT SUM(amount) FROM customers WHERE status='active'"
+        ).fetchone()[0] or 0
+        
+        return {
+            "customers": customers_count,
+            "brokers": brokers_count,
+            "revenue": float(revenue_result)
+        }
+    finally:
+        db.close()
+
+@app.get("/api/admin/customers")
+async def get_customers_api(username: str = Depends(verify_admin)):
+    """Return list of customers"""
+    db = get_db()
+    try:
+        rows = db.execute("""
+            SELECT email, calls_used, status 
+            FROM customers 
+            ORDER BY created_at DESC
+        """).fetchall()
+        
+        return [
+            {
+                "email": row['email'],
+                "calls": row['calls_used'] or 0,
+                "status": row['status'] or 'active'
+            }
+            for row in rows
+        ]
+    finally:
+        db.close()
+
+@app.get("/api/admin/brokers")
+async def get_brokers_api(username: str = Depends(verify_admin)):
+    """Return list of brokers"""
+    db = get_db()
+    try:
+        rows = db.execute("""
+            SELECT id, name, email, referrals, earned, status
+            FROM brokers
+            ORDER BY created_at DESC
+        """).fetchall()
+        
+        return [
+            {
+                "name": row['name'] or row['email'],
+                "email": row['email'],
+                "referrals": row['referrals'] or 0,
+                "earned": float(row['earned'] or 0),
+                "status": row['status'] or 'pending'
+            }
+            for row in rows
+        ]
+    finally:
+        db.close()
+
+@app.get("/api/admin/payouts/pending")
+async def get_pending_payouts_api(username: str = Depends(verify_admin)):
+    """Return pending broker payouts"""
+    db = get_db()
+    try:
+        rows = db.execute("""
+            SELECT r.id, r.broker_id, r.customer_email, r.amount, r.payout, r.status,
+                   b.name as broker_name
+            FROM referrals r
+            LEFT JOIN brokers b ON r.broker_id = b.id
+            WHERE r.status = 'pending'
+            ORDER BY r.created_at DESC
+        """).fetchall()
+        
+        return [
+            {
+                "id": row['id'],
+                "broker_name": row['broker_name'] or 'Unknown',
+                "broker_id": row['broker_id'],
+                "customer_email": row['customer_email'],
+                "amount": float(row['amount'] or 0),
+                "payout": float(row['payout'] or 0),
+                "status": row['status'] or 'pending'
+            }
+            for row in rows
+        ]
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     import uvicorn
