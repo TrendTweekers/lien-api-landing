@@ -28,8 +28,8 @@
     }
 })();
 
-// API Base URL (update this to your Railway URL)
-const API_BASE = 'https://api.liendeadline.com';
+// API Base URL - use relative URL since API is on same domain
+const API_BASE = '';
 
 // Form submission
 document.getElementById('calculatorForm').addEventListener('submit', async (e) => {
