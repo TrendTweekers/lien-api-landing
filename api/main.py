@@ -11,6 +11,7 @@ import sqlite3
 import secrets
 import os
 from api.analytics import router as analytics_router
+from api.admin import router as admin_router
 
 app = FastAPI(title="Lien Deadline API")
 
@@ -26,8 +27,9 @@ app.add_middleware(
 # Get project root
 BASE_DIR = Path(__file__).parent.parent
 
-# Include analytics router
+# Include routers
 app.include_router(analytics_router)
+app.include_router(admin_router)
 
 # Serve static files (CSS, JS)
 try:

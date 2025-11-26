@@ -60,48 +60,117 @@ const sampleBrokers = [
 ];
 
 // Update stats
-function updateStats() {
-    const customerCount = sampleCustomers.filter(c => c.status === 'Active').length;
-    const brokerCount = sampleBrokers.length;
-    const totalRevenue = sampleBrokers.reduce((sum, b) => sum + b.earned, 0);
-    
-    document.getElementById('stats-customers').textContent = `${customerCount} customers`;
-    document.getElementById('stats-brokers').textContent = `${brokerCount} brokers`;
-    document.getElementById('stats-revenue').textContent = `$${totalRevenue.toLocaleString()}`;
+// Load real-time stats from API
+async function updateStats() {
+    try {
+        const response = await fetch(`${API_BASE}/admin/stats`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load stats');
+        }
+        
+        const data = await response.json();
+        
+        // Update stats display
+        document.getElementById('stats-customers').textContent = `${data.customers} customers`;
+        document.getElementById('stats-brokers').textContent = `${data.brokers} brokers`;
+        document.getElementById('stats-revenue').textContent = `$${data.revenue.toLocaleString()}`;
+    } catch (error) {
+        console.error('Error loading stats:', error);
+        // Fallback to showing loading state
+        document.getElementById('stats-customers').textContent = 'Loading...';
+        document.getElementById('stats-brokers').textContent = 'Loading...';
+        document.getElementById('stats-revenue').textContent = 'Loading...';
+    }
 }
 
-// Load customers table
-function loadCustomers() {
-    const tbody = document.getElementById('customers-table');
-    tbody.innerHTML = sampleCustomers.map(customer => `
-        <tr>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${customer.email}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${customer.calls.toLocaleString()}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 py-1 text-xs font-semibold rounded-full ${customer.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                    ${customer.status}
-                </span>
-            </td>
-        </tr>
-    `).join('');
+// Load customers table (from real API)
+async function loadCustomers() {
+    try {
+        const response = await fetch(`${API_BASE}/admin/customers`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load customers');
+        }
+        
+        const customers = await response.json();
+        const tbody = document.getElementById('customers-table');
+        
+        if (!tbody) return;
+        
+        if (customers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-gray-500">No customers yet</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = customers.map(customer => `
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${customer.email}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(customer.calls || 0).toLocaleString()}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full ${customer.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                        ${customer.status || 'active'}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading customers:', error);
+        const tbody = document.getElementById('customers-table');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-red-500">Error loading customers</td></tr>';
+        }
+    }
 }
 
-// Load brokers table
-function loadBrokers() {
-    const tbody = document.getElementById('brokers-table');
-    tbody.innerHTML = sampleBrokers.map(broker => `
-        <tr>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${broker.name}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${broker.referrals}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">$${broker.earned.toLocaleString()}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                ${broker.hasPending ? 
-                    `<button onclick="payBroker('${broker.name}')" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-semibold text-xs">Pay</button>` :
-                    `<span class="text-gray-400">-</span>`
-                }
-            </td>
-        </tr>
-    `).join('');
+// Load brokers table (from real API)
+async function loadBrokers() {
+    try {
+        const response = await fetch(`${API_BASE}/admin/brokers`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load brokers');
+        }
+        
+        const brokers = await response.json();
+        const tbody = document.getElementById('brokers-table');
+        
+        if (!tbody) return;
+        
+        if (brokers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No brokers yet</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = brokers.map(broker => `
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${broker.name || broker.email}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${broker.referrals || 0}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">$${(broker.earned || 0).toLocaleString()}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <span class="text-gray-400">-</span>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading brokers:', error);
+        const tbody = document.getElementById('brokers-table');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Error loading brokers</td></tr>';
+        }
+    }
 }
 
 // Generate Test API Key Modal
@@ -248,41 +317,49 @@ async function loadQuickStats() {
     }
 }
 
-// Generate Test API Key
-function generateTestKey() {
-    const key = 'test_' + Math.random().toString(36).substr(2, 32);
+// Generate Test API Key (calls real API)
+async function generateTestKey() {
+    const email = prompt('Test user email:');
+    if (!email) return;
     
-    // Show success message with key
-    alert('Test API key generated!\n\nKey: ' + key + '\n\nClick OK to copy it to clipboard.');
-    
-    // Copy to clipboard
-    navigator.clipboard.writeText(key).then(() => {
-        console.log('Key copied to clipboard:', key);
-    }).catch(err => {
-        console.error('Failed to copy:', err);
-    });
-    
-    // Add to active keys list if table exists
-    const keysList = document.getElementById('activeKeysList');
-    if (keysList) {
-        const keyRow = document.createElement('tr');
-        keyRow.className = 'border-b';
-        keyRow.innerHTML = `
-            <td class="px-6 py-4">
-                <code class="text-sm bg-gray-100 px-2 py-1 rounded">${key}</code>
-            </td>
-            <td class="px-6 py-4">0</td>
-            <td class="px-6 py-4">${new Date().toLocaleDateString()}</td>
-            <td class="px-6 py-4">
-                <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">Active</span>
-            </td>
-            <td class="px-6 py-4">
-                <button onclick="copyToClipboard('${key}')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm">
-                    Copy
-                </button>
-            </td>
-        `;
-        keysList.insertBefore(keyRow, keysList.firstChild);
+    try {
+        const params = new URLSearchParams({
+            email: email,
+            days: '7',
+            calls: '50'
+        });
+        
+        const response = await fetch(`${API_BASE}/admin/test-key?${params}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to generate test key');
+        }
+        
+        const data = await response.json();
+        const key = data.key;
+        
+        // Show success message with key
+        alert(`Test API key generated!\n\nKey: ${key}\n\nExpires: ${data.expiry_date}\n\nClick OK to copy it to clipboard.`);
+        
+        // Copy to clipboard
+        navigator.clipboard.writeText(key).then(() => {
+            console.log('Key copied to clipboard:', key);
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+        });
+        
+        // Refresh test keys list
+        loadTestKeys();
+        updateStats();
+    } catch (error) {
+        console.error('Error generating test key:', error);
+        alert('Error generating test key: ' + error.message);
     }
 }
 
@@ -303,19 +380,51 @@ function copyToClipboard(text) {
     });
 }
 
-// Show Approve Broker Modal
-function showApproveBrokerModal() {
+// Show Approve Broker Modal (calls real API)
+async function showApproveBrokerModal() {
     const modal = document.getElementById('approve-broker-modal');
     if (modal) {
         modal.classList.remove('hidden');
-    } else {
-        alert('Approve Broker modal not found. Opening form...');
-        // Fallback: show prompt
-        const email = prompt('Broker Email:');
-        const name = prompt('Broker Name:');
-        if (email && name) {
-            alert(`Broker approval form:\n\nEmail: ${email}\nName: ${name}\n\n(Implement full approval in production)`);
+        return;
+    }
+    
+    // Fallback: use prompts if modal doesn't exist
+    const email = prompt('Broker Email:');
+    if (!email) return;
+    
+    const name = prompt('Broker Name:');
+    if (!name) return;
+    
+    const model = prompt('Commission Model (bounty/recurring):', 'bounty');
+    
+    try {
+        const params = new URLSearchParams({
+            email: email,
+            name: name,
+            model: model || 'bounty'
+        });
+        
+        const response = await fetch(`${API_BASE}/admin/approve-broker?${params}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to approve broker');
         }
+        
+        const data = await response.json();
+        alert(`Broker approved!\n\nReferral Code: ${data.referral_code}\n\nEmail sent with dashboard link.`);
+        
+        // Refresh brokers list and stats
+        loadBrokers();
+        updateStats();
+    } catch (error) {
+        console.error('Error approving broker:', error);
+        alert('Error approving broker: ' + error.message);
     }
 }
 

@@ -173,7 +173,7 @@ def list_brokers(user: str = Depends(verify_admin)):
 @router.get("/customers")
 def list_customers(user: str = Depends(verify_admin)):
     """List all customers"""
-    con = sqlite3.connect("admin.db")
+    con = sqlite3.connect(get_db_path())
     cur = con.execute("SELECT email, api_calls, status FROM customers ORDER BY email")
     rows = cur.fetchall()
     con.close()
@@ -186,6 +186,41 @@ def list_customers(user: str = Depends(verify_admin)):
         }
         for row in rows
     ]
+
+@router.get("/stats")
+def get_admin_stats(user: str = Depends(verify_admin)):
+    """Get real-time dashboard stats"""
+    con = sqlite3.connect(get_db_path())
+    
+    # Count active customers
+    cur = con.execute("SELECT COUNT(*) FROM customers WHERE status='active'")
+    customers = cur.fetchone()[0] or 0
+    
+    # Count approved brokers
+    cur = con.execute("SELECT COUNT(*) FROM brokers")
+    brokers = cur.fetchone()[0] or 0
+    
+    # Calculate revenue (sum of all broker earnings + active subscriptions)
+    # For MVP, we'll estimate: active customers * $299/month
+    cur = con.execute("SELECT COUNT(*) FROM customers WHERE status='active'")
+    active_customers = cur.fetchone()[0] or 0
+    estimated_mrr = active_customers * 299
+    
+    # Also sum broker earnings from referrals table
+    cur = con.execute("SELECT SUM(amount) FROM referrals WHERE status='paid'")
+    paid_referrals = cur.fetchone()[0] or 0
+    
+    # Total revenue = MRR + paid referrals (for display purposes)
+    revenue = estimated_mrr + (paid_referrals or 0)
+    
+    con.close()
+    
+    return {
+        "customers": customers,
+        "brokers": brokers,
+        "revenue": revenue,
+        "mrr": estimated_mrr
+    }
 
 @router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
