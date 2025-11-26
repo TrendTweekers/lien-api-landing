@@ -209,6 +209,7 @@ async def calculate_deadline(
     }
 
 # Serve HTML files
+# Serve HTML files (with .html extension)
 @app.get("/calculator.html")
 async def serve_calculator():
     file_path = BASE_DIR / "calculator.html"
@@ -231,7 +232,7 @@ async def serve_index():
     return FileResponse(file_path)
 
 @app.get("/admin-dashboard.html")
-async def serve_admin_dashboard(username: str = Depends(verify_admin)):
+async def serve_admin_dashboard_html(username: str = Depends(verify_admin)):
     """Serve admin dashboard with HTTP Basic Auth"""
     file_path = BASE_DIR / "admin-dashboard.html"
     if not file_path.exists():
@@ -253,31 +254,100 @@ async def serve_admin_dashboard(username: str = Depends(verify_admin)):
     )
 
 @app.get("/broker-dashboard.html")
-async def serve_broker_dashboard():
+async def serve_broker_dashboard_html():
     file_path = BASE_DIR / "broker-dashboard.html"
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="broker-dashboard.html not found in project root")
     return FileResponse(file_path)
 
 @app.get("/partners.html")
-async def serve_partners():
+async def serve_partners_html():
     file_path = BASE_DIR / "partners.html"
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="partners.html not found in project root")
     return FileResponse(file_path)
 
 @app.get("/terms.html")
-async def serve_terms():
+async def serve_terms_html():
     file_path = BASE_DIR / "terms.html"
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="terms.html not found in project root")
     return FileResponse(file_path)
 
 @app.get("/customer-dashboard.html")
-async def serve_customer_dashboard():
+async def serve_customer_dashboard_html():
     file_path = BASE_DIR / "customer-dashboard.html"
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="customer-dashboard.html not found in project root")
+    return FileResponse(file_path)
+
+# Clean URLs (without .html extension)
+@app.get("/calculator")
+async def serve_calculator_clean():
+    """Clean URL: /calculator → calculator.html"""
+    file_path = BASE_DIR / "calculator.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Calculator not found")
+    return FileResponse(file_path)
+
+@app.get("/dashboard")
+async def serve_dashboard_clean():
+    """Clean URL: /dashboard → dashboard.html"""
+    file_path = BASE_DIR / "dashboard.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+    return FileResponse(file_path)
+
+@app.get("/admin-dashboard")
+async def serve_admin_dashboard_clean(username: str = Depends(verify_admin)):
+    """Clean URL: /admin-dashboard → admin-dashboard.html"""
+    file_path = BASE_DIR / "admin-dashboard.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Admin dashboard not found")
+    
+    with open(file_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    
+    return Response(
+        content=html_content,
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
+
+@app.get("/broker-dashboard")
+async def serve_broker_dashboard_clean():
+    """Clean URL: /broker-dashboard → broker-dashboard.html"""
+    file_path = BASE_DIR / "broker-dashboard.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Broker dashboard not found")
+    return FileResponse(file_path)
+
+@app.get("/partners")
+async def serve_partners_clean():
+    """Clean URL: /partners → partners.html"""
+    file_path = BASE_DIR / "partners.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Partners page not found")
+    return FileResponse(file_path)
+
+@app.get("/terms")
+async def serve_terms_clean():
+    """Clean URL: /terms → terms.html"""
+    file_path = BASE_DIR / "terms.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Terms page not found")
+    return FileResponse(file_path)
+
+@app.get("/customer-dashboard")
+async def serve_customer_dashboard_clean():
+    """Clean URL: /customer-dashboard → customer-dashboard.html"""
+    file_path = BASE_DIR / "customer-dashboard.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Customer dashboard not found")
     return FileResponse(file_path)
 
 # Broker Application Model
