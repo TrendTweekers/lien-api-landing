@@ -124,6 +124,7 @@ class CalculateDeadlineRequest(BaseModel):
     role: str = "supplier"
     project_type: str = "commercial"
 
+@app.post("/v1/calculate")
 @app.post("/api/v1/calculate-deadline")
 async def calculate_deadline(
     request_data: CalculateDeadlineRequest,

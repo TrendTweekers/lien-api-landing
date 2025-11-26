@@ -217,8 +217,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             responseContainer.classList.remove('hidden');
             
-            // Scroll to response
-            responseContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            // Scroll to response - REMOVED to prevent auto-scroll on landing page
+            // responseContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
         } catch (error) {
             // Handle unexpected errors
@@ -237,7 +237,8 @@ document.addEventListener('DOMContentLoaded', function() {
             apiResponse.classList.add('error');
             apiResponse.classList.remove('success');
             responseContainer.classList.remove('hidden');
-            responseContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            // Scroll to response - REMOVED to prevent auto-scroll on landing page
+            // responseContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         } finally {
             // Reset button state
             calculateButton.disabled = false;
@@ -256,11 +257,12 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const target = document.querySelector(href);
             if (target) {
-                const offsetTop = target.offsetTop - 64; // Account for fixed nav
-                window.scrollTo({
-                    top: offsetTop,
-                    behavior: 'smooth'
-                });
+                // Removed auto-scroll - user requested no auto-scrolling
+                // const offsetTop = target.offsetTop - 64; // Account for fixed nav
+                // window.scrollTo({
+                //     top: offsetTop,
+                //     behavior: 'smooth'
+                // });
             }
         });
     });
