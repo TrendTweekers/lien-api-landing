@@ -4,71 +4,122 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Broker Dashboard - Track referrals and commissions">
-    <title>Broker Dashboard - LienDeadlineAPI.com</title>
+    <title>Broker Dashboard - LienDeadline.com</title>
     
     <!-- Preconnect to Tailwind CDN for faster loading -->
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
     <!-- Privacy-friendly analytics by Plausible -->
-    <script defer data-domain="lien-api-landing-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
-    
+    <script defer data-domain="liendeadline.com" src="https://plausible.io/js/script.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
     <!-- Email-based broker authentication -->
     <script>
+        const API_BASE = 'https://api.liendeadline.com';
+
         // Email-based broker authentication
-        (function() {
+        (async function() {
             const brokerEmail = localStorage.getItem('brokerEmail');
             const brokerApproved = localStorage.getItem('brokerApproved');
+            const brokerName = localStorage.getItem('brokerName');
             
-            if (!brokerApproved) {
+            // If not authenticated, prompt for email
+            if (!brokerApproved || !brokerEmail) {
+                // Hide page content during authentication
+                document.body.style.visibility = 'hidden';
+                
                 // Prompt for email
-                const email = prompt('Enter your registered email address:');
+                const email = prompt('Enter your registered broker email address:');
                 
                 if (!email) {
-                    alert('Access denied. Apply at /partners.html');
+                    alert('Access denied. Apply for broker access at the Partners page.');
                     window.location.href = '/partners.html';
                     return;
                 }
                 
-                // Check if broker is approved
-                fetch('https://lien-api-landing-production.up.railway.app/v1/broker/check-approval', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email })
-                })
-                .then(response => response.json())
-                .then(data => {
+                try {
+                    // Check if broker is approved
+                    const response = await fetch(`${API_BASE}/v1/broker/check-approval`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: email.toLowerCase().trim() })
+                    });
+                    
+                    const data = await response.json();
+                    
                     if (data.approved) {
-                        // Save credentials
-                        localStorage.setItem('brokerEmail', email);
+                        // Broker is approved - save credentials and show dashboard
+                        localStorage.setItem('brokerEmail', email.toLowerCase().trim());
                         localStorage.setItem('brokerName', data.name);
-                        localStorage.setItem('brokerApproved', 'true');
+                        localStorage.setItem('brokerCompany', data.company || '');
                         localStorage.setItem('brokerCommissionModel', data.commission_model || 'bounty');
+                        localStorage.setItem('brokerApproved', 'true');
+                        
+                        // Show success message
+                        alert(`Welcome back, ${data.name}! Loading your dashboard...`);
                         window.location.reload();
+                        
                     } else if (data.pending) {
-                        alert('Your application is pending review. We\'ll email you when approved!');
+                        // Application is pending
+                        alert(data.message || 'Your application is under review. We\'ll email you when approved!');
                         window.location.href = '/partners.html';
+                        
                     } else {
-                        alert('Email not found. Please apply at /partners.html');
+                        // Email not found
+                        alert(data.message || 'Email not found. Please apply at the Partners page first.');
                         window.location.href = '/partners.html';
                     }
-                })
-                .catch(error => {
-                    console.error('Verification failed:', error);
-                    alert('Could not verify email. Try again later.');
+                    
+                } catch (error) {
+                    console.error('Broker verification failed:', error);
+                    alert('Could not verify your email. Please try again or contact support.');
                     window.location.href = '/partners.html';
-                });
+                }
+                
+            } else {
+                // Already authenticated - show dashboard
+                document.body.style.visibility = 'visible';
+                
+                // Display broker name if element exists
+                const nameElement = document.getElementById('brokerName');
+                if (nameElement && brokerName) {
+                    nameElement.textContent = brokerName;
+                }
+                
+                // Display broker email if element exists
+                const emailElement = document.getElementById('brokerEmail');
+                if (emailElement && brokerEmail) {
+                    emailElement.textContent = brokerEmail;
+                }
             }
         })();
+
+        // Add logout functionality
+        function logoutBroker() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('brokerEmail');
+                localStorage.removeItem('brokerApproved');
+                localStorage.removeItem('brokerName');
+                localStorage.removeItem('brokerCompany');
+                localStorage.removeItem('brokerCommissionModel');
+                window.location.href = '/partners.html';
+            }
+        }
+        
+        // Make logout function globally available
+        window.logoutBroker = logoutBroker;
     </script>
-</head>
-<body class="bg-gray-50 text-gray-900">
     <!-- Navigation -->
     <nav id="nav" class="fixed top-0 w-full bg-white shadow-sm z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <a href="index.html" class="text-xl font-bold text-gray-900">LienDeadlineAPI.com</a>
-                <div class="flex gap-4">
+                <a href="index.html" class="text-xl font-bold text-gray-900">LienDeadline.com</a>
+                <div class="flex gap-4 items-center">
+                    <span id="brokerEmail" class="text-sm text-gray-600"></span>
+                    <button onclick="logoutBroker()" class="text-red-600 hover:text-red-700 px-4 py-2 border border-red-600 rounded hover:bg-red-50">
+                        Logout
+                    </button>
                     <a href="partners.html" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Partners</a>
                     <a href="index.html#pricing" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">Pricing</a>
                 </div>
@@ -207,7 +258,7 @@
         <div class="max-w-6xl mx-auto">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="mb-4 md:mb-0">
-                    <p>&copy; 2024 LienDeadlineAPI.com. All rights reserved.</p>
+                    <p>&copy; 2024 LienDeadline.com. All rights reserved.</p>
                 </div>
                 <div class="flex gap-6">
                     <a href="index.html#faq" class="hover:text-white">FAQ</a>

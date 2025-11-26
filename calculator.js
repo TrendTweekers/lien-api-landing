@@ -1,7 +1,7 @@
 // calculator.js
 
 // API Base URL (update this to your Railway URL)
-const API_BASE = 'https://lien-api-landing-production.up.railway.app';
+const API_BASE = 'https://api.liendeadline.com';
 
 // Form submission
 document.getElementById('calculatorForm').addEventListener('submit', async (e) => {
@@ -236,7 +236,7 @@ function generatePDF(data) {
     // Header
     doc.setFontSize(24);
     doc.setTextColor(37, 99, 235); // Blue color
-    doc.text('LienDeadlineAPI', margin, yPos);
+    doc.text('LienDeadline', margin, yPos);
     
     yPos += 10;
     doc.setFontSize(18);
@@ -405,7 +405,7 @@ function generatePDF(data) {
     doc.setFontSize(8);
     doc.setTextColor(113, 63, 18);
     const disclaimer = doc.splitTextToSize(
-        'This is general information only, NOT legal advice. Always consult a licensed construction attorney before taking any legal action. Deadlines vary based on project specifics, and this tool cannot account for all variables. LienDeadlineAPI assumes no liability for missed deadlines or legal consequences.',
+        'This is general information only, NOT legal advice. Always consult a licensed construction attorney before taking any legal action. Deadlines vary based on project specifics, and this tool cannot account for all variables. LienDeadline assumes no liability for missed deadlines or legal consequences.',
         pageWidth - margin * 2
     );
     doc.text(disclaimer, margin, yPos);
@@ -417,7 +417,7 @@ function generatePDF(data) {
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
         doc.text(
-            `Page ${i} of ${pageCount} | LienDeadlineAPI.com | Not Legal Advice`,
+            `Page ${i} of ${pageCount} | LienDeadline.com | Not Legal Advice`,
             pageWidth / 2,
             doc.internal.pageSize.getHeight() - 10,
             { align: 'center' }

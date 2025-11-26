@@ -1,8 +1,12 @@
 # setup_db.py - One-time database setup
 import sqlite3
+import os
+
+# Get the database path (works in both local and Railway environments)
+db_path = os.getenv("DATABASE_PATH", "admin.db")
 
 # Create database and tables
-con = sqlite3.connect("admin.db")
+con = sqlite3.connect(db_path)
 
 # Test keys table (with dual limits: 50 calls OR 7 days)
 con.execute("""

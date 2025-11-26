@@ -292,58 +292,55 @@ class BrokerApplication(BaseModel):
     message: str = ""
     commission_model: str  # "bounty" or "recurring"
 
-# Approved brokers list (replace with database later)
-approved_brokers_list = {
-    # Add approved brokers here manually
-    # Example:
+# Broker storage (replace with database after MVP)
+# This stores pending broker applications
+pending_brokers = {}
+
+# This stores approved brokers
+approved_brokers = {
+    # Example format (empty for now):
     # "john@example.com": {
     #     "name": "John Smith",
-    #     "approved": True,
+    #     "company": "ABC Insurance",
+    #     "approved_date": "2025-11-24",
     #     "commission_model": "bounty"
     # }
 }
 
-# Pending applications (from broker/apply endpoint)
-pending_brokers = {}
-
 @app.post("/v1/broker/apply")
 async def submit_broker_application(application: BrokerApplication):
-    """
-    Handle broker application submissions
-    For MVP: Enhanced logging for Railway logs
-    TODO: Store in database, send notification email
-    """
-    # Enhanced logging for Railway
+    """Handle broker application submissions"""
+    
+    email = application.email.lower()
+    
+    # Save to pending list
+    pending_brokers[email] = {
+        "name": application.name,
+        "email": email,
+        "company": application.company,
+        "phone": application.phone or "(not provided)",
+        "message": application.message or "(no message)",
+        "commission_model": application.commission_model,
+        "applied_date": datetime.now().isoformat(),
+        "status": "pending"
+    }
+    
+    # Enhanced logging
     print(f"\n{'='*50}")
     print(f"[NEW BROKER APPLICATION] {datetime.now().isoformat()}")
     print(f"{'='*50}")
     print(f"Name: {application.name}")
-    print(f"Email: {application.email}")
+    print(f"Email: {email}")
     print(f"Company: {application.company}")
     print(f"Phone: {application.phone or '(not provided)'}")
     print(f"Message: {application.message or '(no message)'}")
     print(f"Commission Model: {application.commission_model}")
     print(f"{'='*50}\n")
     
-    # Add to pending brokers
-    email_lower = application.email.lower()
-    pending_brokers[email_lower] = {
-        "name": application.name,
-        "email": application.email,
-        "company": application.company,
-        "phone": application.phone,
-        "message": application.message,
-        "commission_model": application.commission_model,
-        "applied_at": datetime.now().isoformat()
-    }
-    
-    # TODO: Save to database (add after MVP validation)
-    # For now, admin checks Railway logs for applications
-    
     return {
         "status": "success",
         "message": "Application received! We'll review and contact you within 24 hours.",
-        "broker_email": application.email
+        "broker_email": email
     }
 
 @app.post("/v1/broker/check-approval")

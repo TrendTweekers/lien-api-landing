@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - LienDeadlineAPI.com</title>
+    <title>Admin Dashboard - LienDeadline.com</title>
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Styles loaded via Tailwind CDN -->
     <!-- Privacy-friendly analytics by Plausible -->
-    <script defer data-domain="lien-api-landing-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+    <script defer data-domain="liendeadline.com" src="https://plausible.io/js/script.js"></script>
 </head>
 <body class="bg-white text-gray-900">
     <!-- Navigation (Same as landing page) -->
     <nav id="nav" class="fixed top-0 w-full bg-white shadow-sm z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <div class="text-xl font-bold text-gray-900">Admin – lien-deadline.com</div>
+                <div class="text-xl font-bold text-gray-900">Admin – LienDeadline.com</div>
                 <div class="flex gap-4">
                     <a href="index.html" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Landing Page</a>
                     <button onclick="logout()" class="px-4 py-2 text-red-600 hover:text-red-700 font-medium">Logout</button>
@@ -178,7 +178,7 @@
     <section class="mt-10 p-6 bg-white rounded shadow">
         <h2 class="text-xl font-bold mb-4">Live Analytics</h2>
         <iframe
-            src="https://plausible.io/liendeadlineapi.com?embed=true&theme=light"
+            src="https://plausible.io/liendeadline.com?embed=true&theme=light"
             loading="lazy"
             style="width: 100%; height: 600px; border: 0;">
         </iframe>
@@ -205,6 +205,115 @@
     </div>
 
     <script src="/admin-dashboard.js"></script>
+    
+    <!-- Broker Approval Functionality -->
+    <script>
+        const API_BASE = 'https://api.liendeadline.com';
+        const ADMIN_USER = 'admin';
+        const ADMIN_PASS = 'LienAPI2025';
+
+        // Load pending broker applications
+        async function loadPendingBrokers() {
+            try {
+                const response = await fetch(`${API_BASE}/v1/broker/pending`, {
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.error('Failed to load pending brokers');
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                const tbody = document.querySelector('#brokersTable tbody');
+                if (!tbody) {
+                    console.error('Brokers table body not found');
+                    return;
+                }
+                
+                tbody.innerHTML = ''; // Clear existing
+                
+                if (data.pending && data.pending.length > 0) {
+                    data.pending.forEach(broker => {
+                        const row = document.createElement('tr');
+                        row.className = 'border-b hover:bg-gray-50';
+                        row.innerHTML = `
+                            <td class="px-6 py-4">${broker.name}</td>
+                            <td class="px-6 py-4">${broker.email}</td>
+                            <td class="px-6 py-4">${broker.company || 'N/A'}</td>
+                            <td class="px-6 py-4">${broker.commission_model || 'bounty'}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm">Pending</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <button 
+                                    onclick="approveBroker('${broker.email}')" 
+                                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm">
+                                    Approve
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No pending applications</td></tr>';
+                }
+                
+            } catch (error) {
+                console.error('Failed to load pending brokers:', error);
+            }
+        }
+
+        // Approve a broker
+        async function approveBroker(email) {
+            if (!confirm(`Approve broker: ${email}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/v1/broker/approve`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+                    },
+                    body: JSON.stringify({ email: email })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert(`Broker approved! Email them at ${email} to notify them.`);
+                    // Reload the pending brokers list
+                    loadPendingBrokers();
+                    // Reload brokers table
+                    if (typeof loadBrokers === 'function') {
+                        loadBrokers();
+                    }
+                } else {
+                    alert('Failed to approve broker: ' + (data.detail || 'Unknown error'));
+                }
+                
+            } catch (error) {
+                console.error('Failed to approve broker:', error);
+                alert('Error approving broker. Check console for details.');
+            }
+        }
+
+        // Load brokers when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPendingBrokers();
+            
+            // Refresh every 30 seconds
+            setInterval(loadPendingBrokers, 30000);
+        });
+        
+        // Make approveBroker globally available
+        window.approveBroker = approveBroker;
+    </script>
 </body>
 </html>
 

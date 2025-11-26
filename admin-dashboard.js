@@ -119,7 +119,7 @@ function closeModal(modalId) {
 }
 
 // API Configuration
-const API_BASE = 'https://lien-api-landing-production.up.railway.app';
+const API_BASE = 'https://api.liendeadline.com';
 
 // Logout function
 function logout() {

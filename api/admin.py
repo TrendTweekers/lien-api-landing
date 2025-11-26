@@ -11,6 +11,11 @@ import json
 # Initialize Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
 
+# Database path helper
+def get_db_path():
+    """Get database path (works in both local and Railway environments)"""
+    return os.getenv("DATABASE_PATH", "admin.db")
+
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 # HTTP-Basic auth (env vars)
@@ -48,7 +53,7 @@ def create_test_key(
     expiry_date = datetime.utcnow() + timedelta(days=days)
     
     # Store in SQLite
-    con = sqlite3.connect("admin.db")
+    con = sqlite3.connect(get_db_path())
     con.execute(
         "INSERT INTO test_keys(key, email, expiry_date, max_calls, calls_used, status) VALUES (?,?,?,?,?,?)",
         (key, email, expiry_date.isoformat(), calls, 0, 'active')
@@ -130,7 +135,7 @@ def approve_broker(
     referral_code = f"broker_{name.lower().replace(' ', '_')}_{uuid.uuid4().hex[:8]}"
     
     # Store in SQLite
-    con = sqlite3.connect("admin.db")
+    con = sqlite3.connect(get_db_path())
     con.execute(
         "INSERT INTO brokers(id, email, name, model, referrals, earned) VALUES (?,?,?,?,?,?)",
         (referral_code, email, name, model, 0, 0)
@@ -230,7 +235,7 @@ async def stripe_webhook(request: Request):
                     
                     if broker_ref:
                         # Get broker commission model
-                        con = sqlite3.connect("admin.db")
+                        con = sqlite3.connect(get_db_path())
                         cur = con.execute(
                             "SELECT model, stripe_account_id FROM brokers WHERE id = ?",
                             (broker_ref,)
@@ -269,7 +274,7 @@ async def stripe_webhook(request: Request):
         customer_id = subscription.get('customer')
         
         # Mark any pending payouts as cancelled
-        con = sqlite3.connect("admin.db")
+        con = sqlite3.connect(get_db_path())
         con.execute("""
             UPDATE referrals 
             SET status = 'cancelled' 
