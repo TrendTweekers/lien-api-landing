@@ -9,7 +9,7 @@ function requestState() {
 }
 
 // API Configuration
-const API_BASE = 'https://api.liendeadline.com';
+const API_BASE = ''; // Use relative URL since API is on same domain
 
 // Referral tracking - saves referral code from URL parameter
 function trackReferral() {

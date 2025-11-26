@@ -103,8 +103,11 @@ except FileNotFoundError:
 
 @app.get("/")
 async def root():
-    """Redirect root URL to index.html landing page"""
-    return RedirectResponse(url="/index.html")
+    """Serve index.html landing page at root"""
+    file_path = BASE_DIR / "index.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="index.html not found")
+    return FileResponse(file_path, media_type="text/html")
 
 @app.get("/health")
 def health():

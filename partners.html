@@ -416,7 +416,7 @@
             
             try {
                 // Send to backend
-                const API_BASE = 'https://api.liendeadline.com';
+                const API_BASE = ''; // Use relative URL since API is on same domain
                 const response = await fetch(`${API_BASE}/v1/broker/apply`, {
                     method: 'POST',
                     headers: {
