@@ -154,11 +154,21 @@ async def calculate_deadline(
     
     rules = STATE_RULES[state_code]
     
-    # Parse date
+    # Parse date - handle both MM/DD/YYYY and YYYY-MM-DD formats
+    delivery_date = None
     try:
-        delivery_date = datetime.fromisoformat(invoice_date)
+        # Try MM/DD/YYYY format first (common in US)
+        delivery_date = datetime.strptime(invoice_date, "%m/%d/%Y")
     except ValueError:
-        return {"error": "Invalid date format. Use YYYY-MM-DD"}
+        try:
+            # Try YYYY-MM-DD format (ISO format)
+            delivery_date = datetime.strptime(invoice_date, "%Y-%m-%d")
+        except ValueError:
+            try:
+                # Try ISO format with fromisoformat
+                delivery_date = datetime.fromisoformat(invoice_date)
+            except ValueError:
+                return {"error": "Invalid date format. Use MM/DD/YYYY or YYYY-MM-DD"}
     
     # Get deadline days
     prelim_notice = rules["preliminary_notice"]
