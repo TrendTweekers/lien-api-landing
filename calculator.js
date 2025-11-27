@@ -319,7 +319,9 @@ document.getElementById('downloadPDF').addEventListener('click', () => {
 // Store latest calculation results for email
 let latestResults = null;
 
-// Email Report using SendGrid
+// Email Report functionality removed - button removed from UI
+// Email functionality can be added back later if needed
+/*
 document.getElementById('emailReport').addEventListener('click', async () => {
     if (!latestResults) {
         alert('Please calculate deadlines first!');
@@ -363,6 +365,7 @@ document.getElementById('emailReport').addEventListener('click', async () => {
         alert('❌ Email failed. Please download PDF instead.');
     }
 });
+*/
 
 // Set today as default invoice date
 document.getElementById('invoiceDate').valueAsDate = new Date();
