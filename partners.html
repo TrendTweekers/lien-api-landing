@@ -52,7 +52,7 @@
     </section>
 
     <!-- How It Works Section -->
-    <section class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+    <section class="py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-slate-50">
         <div class="max-w-6xl mx-auto">
             <h2 class="text-3xl font-bold text-center mb-12">How It Works</h2>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -81,12 +81,12 @@
     </section>
 
     <!-- Commission Model Comparison Section -->
-    <section class="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+    <section class="py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-white">
         <div class="max-w-6xl mx-auto">
             <h2 class="text-3xl font-bold text-center mb-12">Choose Your Commission Model</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <!-- One-Time Bounty Card -->
-                <div id="card-bounty" class="commission-card bg-white border border-gray-200 rounded-lg p-8 shadow-lg relative transition-all">
+                <div id="card-bounty" class="commission-card bg-white border border-slate-200 rounded-xl p-8 shadow-sm relative transition-all">
                     <!-- Selection Checkmark -->
                     <div class="selection-checkmark" style="display: none; position: absolute; top: -12px; right: -12px; background: #2563eb; color: white; width: 40px; height: 40px; border-radius: 50%; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); z-index: 10;">
                         ✓
@@ -116,13 +116,13 @@
                             <span>Best for brokers with &lt;10 customers</span>
                         </li>
                     </ul>
-                    <button onclick="selectCommissionModel('one-time')" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition">
+                    <button onclick="selectCommissionModel('one-time')" class="w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm hover:shadow-md">
                         Choose This Plan →
                     </button>
                 </div>
 
                 <!-- Recurring Revenue Card -->
-                <div id="card-recurring" class="commission-card bg-blue-50 border border-blue-200 rounded-lg p-8 shadow-lg relative transition-all">
+                <div id="card-recurring" class="commission-card bg-white border border-slate-200 rounded-xl p-8 shadow-sm relative transition-all">
                     <div class="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">
                         MOST POPULAR
                     </div>
@@ -155,7 +155,7 @@
                             <span>Best for brokers with 10+ customers</span>
                         </li>
                     </ul>
-                    <button onclick="selectCommissionModel('recurring')" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition">
+                    <button onclick="selectCommissionModel('recurring')" class="w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm hover:shadow-md">
                         Choose This Plan →
                     </button>
                 </div>
@@ -165,10 +165,10 @@
             <div class="mt-8 text-center">
                 <p class="text-lg font-semibold text-gray-700 mb-4">Ready to start earning? Choose your model:</p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                    <button onclick="chooseBounty()" class="bg-blue-600 text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-blue-700 transition shadow-lg hover:shadow-xl">
+                    <button onclick="chooseBounty()" class="bg-blue-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm hover:shadow-md">
                         I Want $500 Now
                     </button>
-                    <button onclick="chooseRecurring()" class="border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-blue-50 transition">
+                    <button onclick="chooseRecurring()" class="border border-slate-300 text-slate-700 px-4 py-2.5 rounded-lg font-medium hover:bg-slate-50 transition">
                         I Want $50/month
                     </button>
                 </div>
@@ -178,7 +178,7 @@
     </section>
 
     <!-- Earnings Calculator Section -->
-    <section class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+    <section class="py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-slate-50">
         <div class="max-w-4xl mx-auto">
             <h2 class="text-3xl font-bold text-center mb-8">Which Earns More?</h2>
             <p class="text-center text-gray-600 mb-8">Compare earnings over 2 years</p>
@@ -193,7 +193,7 @@
             </div>
 
             <!-- Comparison Table -->
-            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -229,10 +229,10 @@
     </section>
 
     <!-- Ideal Partners Section -->
-    <section class="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+    <section class="py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-white">
         <div class="max-w-4xl mx-auto">
             <h2 class="text-3xl font-bold text-center mb-8">🎯 Ideal Partners</h2>
-            <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
+            <div class="bg-white border border-slate-200 p-6 rounded-xl shadow-sm">
                 <ul class="space-y-3 text-gray-700">
                     <li class="flex items-start">
                         <svg class="w-5 h-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -264,13 +264,13 @@
     </section>
 
     <!-- Apply Now Section -->
-    <section id="apply" class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+    <section id="apply" class="py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-slate-50">
         <div class="max-w-2xl mx-auto">
             <h2 class="text-3xl font-bold text-center mb-8">Apply Now</h2>
             <h3 class="text-2xl font-bold text-center mb-6">
                 Complete Your Application
             </h3>
-            <form id="partner-form" class="bg-white rounded-lg shadow-lg p-8">
+            <form id="partner-form" class="bg-white border border-slate-200 rounded-xl shadow-sm p-8">
                 <div class="space-y-6">
                     <!-- Selected Model Display -->
                     <div id="modelDisplay" style="display: none; background: #DBEAFE; border: 2px solid #3B82F6; padding: 16px; border-radius: 12px; margin-bottom: 24px; text-align: center; font-size: 18px; font-weight: 600; color: #1E40AF;">
@@ -308,7 +308,7 @@
                                placeholder="Tell us about your business..."></textarea>
                     </div>
                     <button type="submit" 
-                            class="w-full bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 font-semibold text-lg">
+                            class="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 font-medium shadow-sm hover:shadow-md transition">
                         Apply Now
                     </button>
                 </div>
