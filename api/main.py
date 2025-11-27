@@ -643,6 +643,7 @@ async def partner_application(data: dict):
                 company TEXT NOT NULL,
                 client_count TEXT,
                 message TEXT,
+                commission_model TEXT,
                 timestamp TEXT NOT NULL,
                 status TEXT DEFAULT 'pending'
             )
@@ -651,14 +652,15 @@ async def partner_application(data: dict):
         # Insert application
         cur.execute("""
             INSERT INTO partner_applications 
-            (name, email, company, client_count, message, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (name, email, company, client_count, message, commission_model, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
             data.get('name', ''),
             data.get('email', ''),
             data.get('company', ''),
             data.get('client_count', ''),
             data.get('message', ''),
+            data.get('commission_model', ''),
             datetime.now().isoformat()
         ))
         
@@ -1095,7 +1097,7 @@ async def get_partner_applications_api(username: str = Depends(verify_admin)):
     
     try:
         cur.execute("""
-            SELECT name, email, company, client_count, timestamp, status, message
+            SELECT name, email, company, client_count, timestamp, status, message, commission_model
             FROM partner_applications 
             ORDER BY timestamp DESC
         """)
@@ -1109,7 +1111,8 @@ async def get_partner_applications_api(username: str = Depends(verify_admin)):
                 "client_count": app[3],
                 "timestamp": app[4],
                 "status": app[5] or "pending",
-                "message": app[6] or ""
+                "message": app[6] or "",
+                "commission_model": app[7] or ""
             }
             for app in apps
         ]

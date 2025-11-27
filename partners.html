@@ -241,6 +241,14 @@
             <h2 class="text-3xl font-bold text-center mb-8">Apply Now</h2>
             <form id="partner-form" class="bg-white rounded-lg shadow-lg p-8">
                 <div class="space-y-6">
+                    <!-- Selected Model Display -->
+                    <div id="modelDisplay" style="display: none; background: #EBF5FF; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: 600;">
+                        Selected model: <span id="modelText"></span>
+                    </div>
+                    
+                    <!-- Hidden field for commission model -->
+                    <input type="hidden" id="selectedModel" name="commission_model" value="">
+                    
                     <div>
                         <label for="partnerName" class="block text-sm font-medium mb-2">Name</label>
                         <input type="text" id="partnerName" name="name" required 
@@ -343,6 +351,23 @@
         customerSlider.addEventListener('input', updateCalculator);
         updateCalculator(); // Initial calculation
 
+        // Handle commission model selection
+        function selectCommissionModel(model) {
+            // Set the hidden field
+            document.getElementById('selectedModel').value = model;
+            
+            // Update model display
+            const modelDisplay = document.getElementById('modelDisplay');
+            const modelText = document.getElementById('modelText');
+            if (modelDisplay && modelText) {
+                modelText.textContent = model === 'one-time' ? '$500 One-Time Bounty' : '$50/month Recurring';
+                modelDisplay.style.display = 'block';
+            }
+            
+            // Scroll to application form
+            document.getElementById('partner-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
         // Form submission
         document.getElementById('partner-form').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -352,7 +377,8 @@
                 email: document.getElementById('partnerEmail').value,
                 company: document.getElementById('partnerCompany').value,
                 client_count: document.getElementById('clientCount').value,
-                message: document.getElementById('partnerMessage').value || ''
+                message: document.getElementById('partnerMessage').value || '',
+                commission_model: document.getElementById('selectedModel').value || ''
             };
             
             const submitBtn = e.target.querySelector('button[type="submit"]');
