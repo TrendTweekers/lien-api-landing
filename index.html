@@ -22,6 +22,18 @@
     
     <!-- Preconnect to Tailwind CDN for faster loading -->
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    
+    <!-- Performance: Preload critical resources -->
+    <link rel="preload" href="/og-image.png" as="image">
+    <link rel="preload" href="/styles.css" as="style">
+    
+    <!-- Performance: DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://plausible.io">
+    
+    <!-- Performance: Future images should use lazy loading -->
+    <!-- Example: <img loading="lazy" src="/hero.jpg" alt="Hero image" class="rounded-lg"> -->
+    <!-- Example: <img loading="lazy" src="/testimonial.jpg" alt="Testimonial" class="rounded-lg"> -->
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/styles.css">
 </head>
