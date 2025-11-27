@@ -86,7 +86,11 @@
             <h2 class="text-3xl font-bold text-center mb-12">Choose Your Commission Model</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <!-- One-Time Bounty Card -->
-                <div class="bg-white border-2 border-gray-300 rounded-lg p-8 shadow-lg">
+                <div id="card-bounty" class="commission-card bg-white border border-gray-200 rounded-lg p-8 shadow-lg relative transition-all">
+                    <!-- Selection Checkmark -->
+                    <div class="selection-checkmark" style="display: none; position: absolute; top: -12px; right: -12px; background: #2563eb; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); z-index: 10;">
+                        ✓
+                    </div>
                     <h3 class="text-2xl font-bold mb-4">$500 One-Time Bounty</h3>
                     <div class="mb-6">
                         <div class="text-4xl font-bold text-gray-900 mb-2">$500</div>
@@ -113,14 +117,18 @@
                         </li>
                     </ul>
                     <button onclick="selectCommissionModel('one-time')" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition">
-                        Choose $500 Bounty
+                        Choose This Plan →
                     </button>
                 </div>
 
                 <!-- Recurring Revenue Card -->
-                <div class="bg-blue-50 border-2 border-blue-600 rounded-lg p-8 shadow-lg relative">
+                <div id="card-recurring" class="commission-card bg-blue-50 border border-blue-200 rounded-lg p-8 shadow-lg relative transition-all">
                     <div class="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">
                         MOST POPULAR
+                    </div>
+                    <!-- Selection Checkmark -->
+                    <div class="selection-checkmark" style="display: none; position: absolute; top: -12px; right: -12px; background: #2563eb; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); z-index: 10;">
+                        ✓
                     </div>
                     <h3 class="text-2xl font-bold mb-4">$50/month Recurring</h3>
                     <div class="mb-6">
@@ -148,7 +156,7 @@
                         </li>
                     </ul>
                     <button onclick="selectCommissionModel('recurring')" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition">
-                        Choose $50 Recurring
+                        Choose This Plan →
                     </button>
                 </div>
             </div>
@@ -245,11 +253,14 @@
     <section id="apply" class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div class="max-w-2xl mx-auto">
             <h2 class="text-3xl font-bold text-center mb-8">Apply Now</h2>
+            <h3 class="text-2xl font-bold text-center mb-6">
+                Complete Your Application
+            </h3>
             <form id="partner-form" class="bg-white rounded-lg shadow-lg p-8">
                 <div class="space-y-6">
                     <!-- Selected Model Display -->
-                    <div id="modelDisplay" style="display: none; background: #EBF5FF; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: 600;">
-                        Selected model: <span id="modelText"></span>
+                    <div id="modelDisplay" style="display: none; background: #DBEAFE; border: 2px solid #3B82F6; padding: 16px; border-radius: 12px; margin-bottom: 24px; text-align: center; font-size: 18px; font-weight: 600; color: #1E40AF;">
+                        ✅ Selected: <strong id="modelText"></strong>
                     </div>
                     
                     <!-- Hidden field for commission model -->
@@ -359,18 +370,44 @@
 
         // Handle commission model selection
         function selectCommissionModel(model) {
-            // Set the hidden field
+            // Remove previous selections
+            document.querySelectorAll('.commission-card').forEach(card => {
+                card.classList.remove('border-blue-600', 'border-4', 'bg-blue-50');
+                card.classList.add('border-gray-200', 'border', 'opacity-100');
+                if (card.id === 'card-bounty') {
+                    card.classList.remove('bg-blue-50');
+                    card.classList.add('bg-white');
+                } else if (card.id === 'card-recurring') {
+                    card.classList.remove('bg-blue-50');
+                    card.classList.add('bg-blue-50');
+                }
+            });
+            
+            // Highlight selected card
+            const selectedCard = document.getElementById(model === 'one-time' ? 'card-bounty' : 'card-recurring');
+            const otherCard = document.getElementById(model === 'one-time' ? 'card-recurring' : 'card-bounty');
+            
+            // Style selected card
+            selectedCard.classList.remove('border-gray-200', 'border', 'opacity-50');
+            selectedCard.classList.add('border-blue-600', 'border-4', 'bg-blue-50');
+            
+            // Dim other card
+            otherCard.classList.add('opacity-50');
+            
+            // Add checkmark to selected card
+            const checkmarks = document.querySelectorAll('.selection-checkmark');
+            checkmarks.forEach(c => c.style.display = 'none');
+            selectedCard.querySelector('.selection-checkmark').style.display = 'flex';
+            
+            // Set hidden field
             document.getElementById('selectedModel').value = model;
             
-            // Update model display
-            const modelDisplay = document.getElementById('modelDisplay');
-            const modelText = document.getElementById('modelText');
-            if (modelDisplay && modelText) {
-                modelText.textContent = model === 'one-time' ? '$500 One-Time Bounty' : '$50/month Recurring';
-                modelDisplay.style.display = 'block';
-            }
+            // Update form display
+            const modelText = model === 'one-time' ? '$500 One-Time Bounty' : '$50/month Recurring';
+            document.getElementById('modelText').textContent = modelText;
+            document.getElementById('modelDisplay').style.display = 'block';
             
-            // Scroll to application form
+            // Scroll to form
             document.getElementById('partner-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
