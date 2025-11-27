@@ -68,13 +68,32 @@
             </p>
             
             <!-- Testimonial Card in Hero -->
-            <section class="bg-gray-100 py-12 mb-8">
-                <div class="max-w-4xl mx-auto px-6 text-center">
-                    <h2 class="text-3xl font-bold text-gray-900 mb-6">What Our Users Say</h2>
-                    <blockquote class="text-lg text-gray-800 italic">
-                        "We eliminated 14 missed deadlines in 6 months – ABC Supply"
-                    </blockquote>
-                    <p class="text-sm text-gray-600 mt-4">★★★★★</p>
+            <section class="bg-gradient-to-br from-blue-600 to-blue-800 py-16 mb-8">
+                <div class="max-w-4xl mx-auto px-4">
+                    <!-- Section heading -->
+                    <h2 class="text-white text-3xl font-bold text-center mb-8">What Our Users Say</h2>
+                    
+                    <!-- Testimonial card -->
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 md:p-12">
+                        <!-- Stars -->
+                        <div class="flex justify-center gap-2 mb-6">
+                            <span class="text-yellow-400 text-4xl">⭐</span>
+                            <span class="text-yellow-400 text-4xl">⭐</span>
+                            <span class="text-yellow-400 text-4xl">⭐</span>
+                            <span class="text-yellow-400 text-4xl">⭐</span>
+                            <span class="text-yellow-400 text-4xl">⭐</span>
+                        </div>
+                        
+                        <!-- Quote -->
+                        <blockquote class="text-center">
+                            <p class="text-gray-900 text-2xl md:text-3xl font-bold mb-4 leading-tight">
+                                "We eliminated 14 missed deadlines in 6 months"
+                            </p>
+                            <cite class="text-gray-700 text-xl font-semibold not-italic">
+                                — ABC Supply
+                            </cite>
+                        </blockquote>
+                    </div>
                 </div>
             </section>
             
@@ -90,8 +109,9 @@
         <div class="max-w-4xl mx-auto px-6 text-center">
             <h2 class="text-3xl font-bold text-gray-900 mb-4">See It Work – 30 Second Demo</h2>
             <p class="text-lg text-gray-700 mb-6">Enter any invoice date below → get exact deadlines in under 1 second.</p>
-            <form id="demoForm" class="flex gap-2 max-w-md mx-auto">
-                <input type="date" id="demoDate" class="border p-2 rounded flex-1" required>
+            <form id="demoForm" class="flex flex-col gap-2 max-w-md mx-auto">
+                <input type="text" id="demoDate" class="border p-2 rounded flex-1" placeholder="MM/DD/YYYY" required pattern="\d{2}/\d{2}/\d{4}">
+                <p class="text-sm text-gray-600 text-center">Format: MM/DD/YYYY (e.g., 11/27/2025)</p>
                 <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Demo</button>
             </form>
             <div id="demoResult" class="mt-4 hidden text-left bg-white p-4 rounded shadow max-w-md mx-auto"></div>
@@ -101,20 +121,35 @@
     <script>
         document.getElementById('demoForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const date = document.getElementById('demoDate').value;
-            const res = await fetch('/v1/calculate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ invoice_date: date, state: 'TX', role: 'supplier' })
-            });
-            const json = await res.json();
-            document.getElementById('demoResult').innerHTML = `
-                <strong>Texas Example:</strong><br>
-                Preliminary Notice: ${json.preliminary_notice?.deadline || json.preliminary_notice_deadline || 'N/A'}<br>
-                Lien Filing: ${json.lien_filing?.deadline || json.lien_filing_deadline || 'N/A'}<br>
-                <span class="text-sm text-gray-600">Try other states on the full calculator.</span>
-            `;
-            document.getElementById('demoResult').classList.remove('hidden');
+            const dateInput = document.getElementById('demoDate').value;
+            
+            // Parse MM/DD/YYYY format and convert to YYYY-MM-DD for API
+            let dateForAPI = dateInput;
+            if (dateInput.includes('/')) {
+                const [month, day, year] = dateInput.split('/');
+                dateForAPI = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            }
+            
+            try {
+                const res = await fetch('/v1/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ invoice_date: dateForAPI, state: 'TX', role: 'supplier' })
+                });
+                const json = await res.json();
+                document.getElementById('demoResult').innerHTML = `
+                    <strong>Texas Example:</strong><br>
+                    Preliminary Notice: ${json.preliminary_notice?.deadline || json.preliminary_notice_deadline || 'N/A'}<br>
+                    Lien Filing: ${json.lien_filing?.deadline || json.lien_filing_deadline || 'N/A'}<br>
+                    <span class="text-sm text-gray-600">Try other states on the full calculator.</span>
+                `;
+                document.getElementById('demoResult').classList.remove('hidden');
+            } catch (error) {
+                document.getElementById('demoResult').innerHTML = `
+                    <span class="text-red-600">Error: Please enter date in MM/DD/YYYY format (e.g., 11/27/2025)</span>
+                `;
+                document.getElementById('demoResult').classList.remove('hidden');
+            }
         });
     </script>
 
