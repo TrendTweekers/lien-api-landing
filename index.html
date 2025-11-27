@@ -137,66 +137,37 @@
             </p>
             
             <!-- Working Demo Calculator -->
-            <div class="max-w-2xl mx-auto mt-10 bg-white border border-slate-200 rounded-xl shadow-sm p-6 text-center">
-                <h3 class="text-lg font-bold mb-3 text-slate-900">Try It Now – 30 Second Demo</h3>
-                <p class="text-sm text-slate-600 mb-4">Enter any invoice date → get exact deadlines for Texas (more states in Pro).</p>
+            <section class="max-w-2xl mx-auto mt-10 bg-white p-6 rounded-lg shadow text-center">
+                <h3 class="text-lg font-bold mb-3">Try It Now – 30 Second Demo</h3>
+                <p class="text-sm text-gray-600 mb-4">Enter any invoice date → get exact deadlines for Texas (more states in Pro).</p>
 
-                <form id="demoForm" class="flex gap-2 max-w-md mx-auto mb-4">
-                    <input type="date" id="demoDate" class="border border-slate-300 p-2 rounded-lg flex-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium shadow-sm hover:shadow-md transition">Demo</button>
+                <form id="demoForm" class="flex gap-2 max-w-md mx-auto">
+                    <input type="date" id="demoDate" class="border p-2 rounded flex-1" required>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Demo</button>
                 </form>
 
-                <div id="demoResult" class="mt-4 hidden text-left bg-slate-50 border border-slate-200 p-4 rounded-lg">
-                    <strong class="text-slate-900">Texas Example:</strong><br>
-                    <div class="mt-2 space-y-1">
-                        <div>Preliminary Notice: <span id="demoPrelim" class="font-semibold text-slate-900"></span></div>
-                        <div>Lien Filing: <span id="demoLien" class="font-semibold text-slate-900"></span></div>
-                    </div>
-                    <p class="text-xs text-slate-500 mt-3">Want more states? <a href="#pricing" class="text-blue-600 hover:text-blue-700 underline">Upgrade to Pro</a></p>
+                <div id="demoResult" class="mt-4 hidden text-left bg-gray-50 p-4 rounded">
+                    <strong>Texas Example:</strong><br>
+                    Preliminary Notice: <span id="demoPrelim"></span><br>
+                    Lien Filing: <span id="demoLien"></span><br>
+                    <span class="text-xs text-gray-500">Want more states? <a href="/pricing" class="text-blue-600">Upgrade to Pro</a></span>
                 </div>
-            </div>
+            </section>
         </div>
     </section>
 
     <script>
         document.getElementById('demoForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const button = e.target.querySelector('button[type="submit"]');
-            const originalText = button.textContent;
-            button.textContent = 'Calculating...';
-            button.disabled = true;
-            
-            try {
-                const res = await fetch('/v1/calculate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        invoice_date: document.getElementById('demoDate').value, 
-                        state: 'TX', 
-                        role: 'supplier' 
-                    })
-                });
-                
-                if (!res.ok) {
-                    throw new Error('Calculation failed');
-                }
-                
-                const json = await res.json();
-                
-                // Format dates nicely
-                const prelimDate = new Date(json.preliminary_notice?.deadline || json.preliminary_notice_deadline);
-                const lienDate = new Date(json.lien_filing?.deadline || json.lien_filing_deadline);
-                
-                document.getElementById('demoPrelim').innerText = prelimDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                document.getElementById('demoLien').innerText = lienDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                document.getElementById('demoResult').classList.remove('hidden');
-            } catch (error) {
-                console.error('Demo calculation error:', error);
-                alert('Could not calculate. Please try again.');
-            } finally {
-                button.textContent = originalText;
-                button.disabled = false;
-            }
+            const res = await fetch('/v1/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ invoice_date: document.getElementById('demoDate').value, state: 'TX', role: 'supplier' })
+            });
+            const json = await res.json();
+            document.getElementById('demoPrelim').innerText = json.preliminary_notice_deadline;
+            document.getElementById('demoLien').innerText = json.lien_filing_deadline;
+            document.getElementById('demoResult').classList.remove('hidden');
         });
     </script>
 
