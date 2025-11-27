@@ -7,9 +7,6 @@ let userEmail = localStorage.getItem('userEmail') || null;
 
 // Update remaining calculations counter display
 function updateRemainingCounter() {
-    const remainingCalcsEl = document.getElementById('remainingCalcs');
-    if (!remainingCalcsEl) return;
-    
     // Refresh values from localStorage
     calcCount = parseInt(localStorage.getItem('calcCount') || '0');
     userEmail = localStorage.getItem('userEmail') || null;
@@ -17,11 +14,25 @@ function updateRemainingCounter() {
     const limit = userEmail ? 10 : 3;
     const remaining = Math.max(0, limit - calcCount);
     
-    if (remaining > 0) {
-        remainingCalcsEl.textContent = `${remaining} of ${limit} free calculations remaining`;
-        remainingCalcsEl.parentElement.classList.remove('hidden');
-    } else {
-        remainingCalcsEl.textContent = `0 of ${limit} free calculations remaining`;
+    // Update counter in form area (always visible)
+    const remainingCalcsTop = document.getElementById('remainingCalcsTop');
+    if (remainingCalcsTop) {
+        if (remaining > 0) {
+            remainingCalcsTop.textContent = `${remaining} of ${limit} free calculations remaining`;
+        } else {
+            remainingCalcsTop.textContent = `0 of ${limit} free calculations remaining`;
+        }
+    }
+    
+    // Update counter in results area (if visible)
+    const remainingCalcsEl = document.getElementById('remainingCalcs');
+    if (remainingCalcsEl) {
+        if (remaining > 0) {
+            remainingCalcsEl.textContent = `${remaining} of ${limit} free calculations remaining`;
+            remainingCalcsEl.parentElement.classList.remove('hidden');
+        } else {
+            remainingCalcsEl.textContent = `0 of ${limit} free calculations remaining`;
+        }
     }
 }
 
