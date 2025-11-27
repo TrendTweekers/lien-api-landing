@@ -302,6 +302,13 @@ async def serve_index():
         raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
     return FileResponse(file_path)
 
+@app.get("/api.html")
+async def serve_api():
+    file_path = BASE_DIR / "api.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
+    return FileResponse(file_path)
+
 @app.get("/admin-dashboard.html")
 async def serve_admin_dashboard_html(username: str = Depends(verify_admin)):
     """Serve admin dashboard with HTTP Basic Auth"""

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LienDeadline API - Integrate mechanics lien deadline calculations into your application. REST API for developers.">
+    <title>API Documentation - LienDeadline</title>
+    
+    <!-- Preconnect to Tailwind CDN for faster loading -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="bg-white text-gray-900">
+    <!-- Navigation -->
+    <nav id="nav" class="fixed top-0 w-full bg-white shadow-sm z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-2">
+                    <svg width="40" height="40" viewBox="0 0 40 40" class="text-blue-600">
+                        <rect x="4" y="4" width="32" height="32" rx="4" fill="currentColor"/>
+                        <text x="20" y="26" text-anchor="middle" fill="white" font-size="16" font-weight="bold">LD</text>
+                    </svg>
+                    <a href="/" class="text-xl font-bold text-gray-900">LienDeadline.com</a>
+                </div>
+                <div class="flex gap-4">
+                    <a href="/" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Home</a>
+                    <a href="/api.html" class="px-4 py-2 text-blue-600 font-semibold">API</a>
+                    <a href="/partners.html" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Partners</a>
+                    <a href="/#pricing" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Pricing</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-32 pb-16 px-6 md:px-8 bg-white border-b border-slate-200">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight text-slate-900 tracking-tight">
+                LienDeadline API
+            </h1>
+            <p class="text-xl sm:text-2xl mb-8 text-slate-700 font-medium">
+                Integrate mechanics lien deadline calculations into your application
+            </p>
+            <p class="text-lg text-slate-600 mb-8">
+                REST API for developers. Auto-generate deadlines inside your ERP/CRM system.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/test-api" class="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-5 py-3 shadow-sm hover:shadow-md transition">Try API Tester</a>
+                <a href="/#pricing" class="border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg px-5 py-3 font-medium">View Pricing</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- API vs Web Calculator Visual Table -->
+    <section class="py-14 px-4 sm:px-6 lg:px-8 bg-slate-50">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12 text-slate-900 tracking-tight">Web Calculator & API — Your Choice</h2>
+            <div class="overflow-hidden rounded-xl border border-slate-200 shadow-sm bg-white">
+                <table class="w-full">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-4"></th>
+                            <th class="p-6 text-left">
+                                <div class="text-xl font-bold text-gray-900">Web Calculator</div>
+                                <div class="text-sm text-gray-600">For credit managers & office staff</div>
+                            </th>
+                            <th class="p-6 text-left">
+                                <div class="text-xl font-bold text-gray-900">API</div>
+                                <div class="text-sm text-gray-600">For developers & integrations</div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-t">
+                            <td class="p-4 font-semibold bg-gray-50">Use Case</td>
+                            <td class="p-4">Instant deadlines on-screen</td>
+                            <td class="p-4">Auto-generate deadlines inside your ERP/CRM</td>
+                        </tr>
+                        <tr class="border-t">
+                            <td class="p-4 font-semibold bg-gray-50">Output</td>
+                            <td class="p-4">PDF export, visual dashboard</td>
+                            <td class="p-4">JSON responses for system integration</td>
+                        </tr>
+                        <tr class="border-t">
+                            <td class="p-4 font-semibold bg-gray-50">Pricing</td>
+                            <td class="p-4">Included in $299/month plan</td>
+                            <td class="p-4">Included in $299/month plan</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- API Documentation -->
+    <section class="py-14 px-4 sm:px-6 lg:px-8 bg-white">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12 text-slate-900 tracking-tight">API Documentation</h2>
+            
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8 mb-8">
+                <h3 class="text-xl font-bold mb-4 text-slate-900">Endpoint</h3>
+                <code class="block bg-slate-50 p-4 rounded-lg text-sm font-mono mb-4">POST /api/v1/calculate-deadline</code>
+                
+                <h3 class="text-xl font-bold mb-4 text-slate-900 mt-6">Request Body</h3>
+                <pre class="bg-slate-50 p-4 rounded-lg text-sm overflow-x-auto"><code>{
+  "invoice_date": "2025-11-27",
+  "state": "TX",
+  "role": "supplier"
+}</code></pre>
+                
+                <h3 class="text-xl font-bold mb-4 text-slate-900 mt-6">Response</h3>
+                <pre class="bg-slate-50 p-4 rounded-lg text-sm overflow-x-auto"><code>{
+  "preliminary_notice": {
+    "deadline": "2025-12-12",
+    "days_from_now": 15
+  },
+  "lien_filing": {
+    "deadline": "2026-02-27",
+    "days_from_now": 92
+  },
+  "serving_requirements": [...],
+  "statute_citations": [...]
+}</code></pre>
+            </div>
+            
+            <div class="text-center">
+                <a href="/test-api" class="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-5 py-3 shadow-sm hover:shadow-md transition inline-block">
+                    Try API Tester →
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="footer" class="py-8 px-4 sm:px-6 lg:px-8 bg-gray-900 text-gray-300">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p>&copy; 2025 LienDeadline.com. All rights reserved.</p>
+                </div>
+                <div class="flex gap-6">
+                    <a href="/#faq" class="hover:text-white">FAQ</a>
+                    <a href="/#pricing" class="hover:text-white">Pricing</a>
+                    <a href="/" class="hover:text-white">Home</a>
+                    <a href="/partners.html" class="hover:text-white">Become a Partner</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/script.js" defer></script>
+</body>
+</html>
+
