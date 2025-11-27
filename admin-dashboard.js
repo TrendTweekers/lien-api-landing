@@ -607,5 +607,57 @@ function displayTestKeys(keys) {
     }).join('');
 }
 
+// Load partner applications
+async function loadPartnerApplications() {
+    try {
+        const response = await fetch(`${API_BASE}/admin/partner-applications`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load partner applications');
+        }
+        
+        const applications = await response.json();
+        const tbody = document.getElementById('partnerApplicationsTable');
+        
+        if (!tbody) {
+            console.error('Partner applications table not found');
+            return;
+        }
+        
+        if (applications.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No applications yet</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = applications.map(app => {
+            const date = app.timestamp ? new Date(app.timestamp).toLocaleDateString() : 'N/A';
+            return `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${app.name || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.email || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.company || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.client_count || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${app.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                            ${app.status || 'pending'}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading partner applications:', error);
+        const tbody = document.getElementById('partnerApplicationsTable');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Error loading applications</td></tr>';
+        }
+    }
+}
+
 // Dashboard initialization is now handled in the auth check above
 
