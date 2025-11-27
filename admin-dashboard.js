@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadPendingPayouts();
     loadTestKeys();
     loadQuickStats();
+    loadPartnerApplications();
     
     // Refresh stats every 60 seconds
     setInterval(loadQuickStats, 60000);

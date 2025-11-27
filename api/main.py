@@ -626,6 +626,49 @@ class TrackEmailRequest(BaseModel):
     email: str
     timestamp: str
 
+@app.post("/partner-application")
+async def partner_application(data: dict):
+    """Handle partner application form submission"""
+    try:
+        db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+        con = sqlite3.connect(str(db_path))
+        cur = con.cursor()
+        
+        # Create table if it doesn't exist
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS partner_applications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                company TEXT NOT NULL,
+                client_count TEXT,
+                message TEXT,
+                timestamp TEXT NOT NULL,
+                status TEXT DEFAULT 'pending'
+            )
+        """)
+        
+        # Insert application
+        cur.execute("""
+            INSERT INTO partner_applications 
+            (name, email, company, client_count, message, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            data.get('name', ''),
+            data.get('email', ''),
+            data.get('company', ''),
+            data.get('client_count', ''),
+            data.get('message', ''),
+            datetime.now().isoformat()
+        ))
+        
+        con.commit()
+        con.close()
+        return {"status": "success", "message": "Application submitted!"}
+    except Exception as e:
+        print(f"Error saving partner application: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/track-email")
 async def track_email(request_data: TrackEmailRequest, request: Request):
     """Track email submissions from calculator email gate"""
@@ -1042,6 +1085,36 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
         ]
     finally:
         db.close()
+
+@app.get("/api/admin/partner-applications")
+async def get_partner_applications_api(username: str = Depends(verify_admin)):
+    """Get all partner applications"""
+    db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+    con = sqlite3.connect(str(db_path))
+    cur = con.cursor()
+    
+    try:
+        cur.execute("""
+            SELECT name, email, company, client_count, timestamp, status, message
+            FROM partner_applications 
+            ORDER BY timestamp DESC
+        """)
+        apps = cur.fetchall()
+        
+        return [
+            {
+                "name": app[0],
+                "email": app[1],
+                "company": app[2],
+                "client_count": app[3],
+                "timestamp": app[4],
+                "status": app[5] or "pending",
+                "message": app[6] or ""
+            }
+            for app in apps
+        ]
+    finally:
+        con.close()
 
 @app.get("/api/admin/payouts/pending")
 async def get_pending_payouts_api(username: str = Depends(verify_admin)):
