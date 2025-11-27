@@ -104,54 +104,80 @@
         </div>
     </section>
 
-    <!-- Demo Section -->
-    <section class="bg-blue-50 py-12">
-        <div class="max-w-4xl mx-auto px-6 text-center">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">See It Work – 30 Second Demo</h2>
-            <p class="text-lg text-gray-700 mb-6">Enter any invoice date below → get exact deadlines in under 1 second.</p>
-            <form id="demoForm" class="flex flex-col gap-2 max-w-md mx-auto">
-                <input type="text" id="demoDate" class="border p-2 rounded flex-1" placeholder="MM/DD/YYYY" required pattern="\d{2}/\d{2}/\d{4}">
-                <p class="text-sm text-gray-600 text-center">Format: MM/DD/YYYY (e.g., 11/27/2025)</p>
-                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Demo</button>
-            </form>
-            <div id="demoResult" class="mt-4 hidden text-left bg-white p-4 rounded shadow max-w-md mx-auto"></div>
+    <!-- Static Example Preview Section -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4">
+            <!-- Heading -->
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-4">
+                See How It Works
+            </h2>
+            <p class="text-xl text-gray-600 text-center mb-12">
+                Get exact deadlines for your state in under 30 seconds
+            </p>
+            
+            <!-- Static Example Card -->
+            <div class="bg-white rounded-xl shadow-xl p-8 border-4 border-blue-200">
+                <!-- Example label -->
+                <div class="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-2 rounded-lg inline-block mb-6">
+                    📋 Example: Texas Material Supplier
+                </div>
+                
+                <!-- Input shown (not functional) -->
+                <div class="grid md:grid-cols-2 gap-4 mb-6 opacity-75">
+                    <div>
+                        <label class="text-sm font-semibold text-gray-700 mb-2 block">Invoice Date</label>
+                        <div class="bg-gray-100 px-4 py-3 rounded-lg text-gray-700 border border-gray-300">
+                            11/27/2025
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-gray-700 mb-2 block">State</label>
+                        <div class="bg-gray-100 px-4 py-3 rounded-lg text-gray-700 border border-gray-300">
+                            Texas
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Results preview -->
+                <div class="bg-gradient-to-br from-blue-50 to-green-50 rounded-lg p-6 mb-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Your Deadlines:</h3>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Preliminary Notice -->
+                        <div class="bg-white rounded-lg p-4 border-l-4 border-green-500">
+                            <div class="text-sm text-gray-600 mb-1">Preliminary Notice</div>
+                            <div class="text-2xl font-bold text-green-600">Dec 12, 2025</div>
+                            <div class="text-xs text-gray-500 mt-1">15 days remaining</div>
+                        </div>
+                        
+                        <!-- Lien Filing -->
+                        <div class="bg-white rounded-lg p-4 border-l-4 border-red-500">
+                            <div class="text-sm text-gray-600 mb-1">Lien Filing Deadline</div>
+                            <div class="text-2xl font-bold text-red-600">Feb 27, 2026</div>
+                            <div class="text-xs text-gray-500 mt-1">92 days remaining</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Teaser features -->
+                    <div class="mt-6 flex items-center gap-4 text-sm text-gray-600 flex-wrap justify-center">
+                        <span>✓ Serving requirements</span>
+                        <span>✓ Critical warnings</span>
+                        <span>✓ Legal references</span>
+                        <span>✓ PDF download</span>
+                    </div>
+                </div>
+                
+                <!-- CTA Button -->
+                <a href="/calculator.html" class="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-4 px-6 rounded-lg font-bold text-lg transition-colors">
+                    Calculate Your Deadlines (3 Free) →
+                </a>
+                
+                <p class="text-center text-sm text-gray-500 mt-4">
+                    No credit card required • 23 states covered • Instant results
+                </p>
+            </div>
         </div>
     </section>
-
-    <script>
-        document.getElementById('demoForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const dateInput = document.getElementById('demoDate').value;
-            
-            // Parse MM/DD/YYYY format and convert to YYYY-MM-DD for API
-            let dateForAPI = dateInput;
-            if (dateInput.includes('/')) {
-                const [month, day, year] = dateInput.split('/');
-                dateForAPI = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-            }
-            
-            try {
-                const res = await fetch('/v1/calculate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ invoice_date: dateForAPI, state: 'TX', role: 'supplier' })
-                });
-                const json = await res.json();
-                document.getElementById('demoResult').innerHTML = `
-                    <strong>Texas Example:</strong><br>
-                    Preliminary Notice: ${json.preliminary_notice?.deadline || json.preliminary_notice_deadline || 'N/A'}<br>
-                    Lien Filing: ${json.lien_filing?.deadline || json.lien_filing_deadline || 'N/A'}<br>
-                    <span class="text-sm text-gray-600">Try other states on the full calculator.</span>
-                `;
-                document.getElementById('demoResult').classList.remove('hidden');
-            } catch (error) {
-                document.getElementById('demoResult').innerHTML = `
-                    <span class="text-red-600">Error: Please enter date in MM/DD/YYYY format (e.g., 11/27/2025)</span>
-                `;
-                document.getElementById('demoResult').classList.remove('hidden');
-            }
-        });
-    </script>
 
     <!-- How It Works Section -->
     <section id="how-it-works" class="py-16 px-4 sm:px-6 lg:px-8 bg-white">
