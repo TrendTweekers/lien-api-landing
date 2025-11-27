@@ -49,8 +49,8 @@
     <!-- Sticky Top Banner -->
     <div id="free-banner" class="fixed top-16 left-0 right-0 bg-green-600 text-white z-40 shadow-md">
         <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
-            <span class="text-sm font-medium">First 50 API calls free – no credit card required</span>
-            <a href="/test-api" class="px-4 py-1 bg-white text-green-600 rounded-md hover:bg-gray-100 font-semibold text-sm">Start Free</a>
+            <span class="text-sm font-medium">Free Trial: 10 Calculations (email after first 3) – No credit card required</span>
+            <a href="/calculator.html" class="px-4 py-1 bg-white text-green-600 rounded-md hover:bg-gray-100 font-semibold text-sm">Start Free Trial</a>
         </div>
     </div>
 
@@ -60,12 +60,26 @@
             <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
                 Never Miss a Lien Deadline Again
             </h1>
+            <p class="text-xl md:text-2xl text-gray-800 mb-6 font-medium">
+                Lien deadline calculator for credit managers at building-supply yards and material suppliers
+            </p>
             <p class="text-xl sm:text-2xl mb-6">
                 Stop losing $75K+ per year to missed deadlines. Get instant, accurate lien deadline calculations with our lightning-fast API.
             </p>
             <p class="text-lg leading-relaxed px-4 md:px-0 mb-6 text-gray-700">
                 Currently covering <strong>23 states</strong> — 68% of US construction market (TX, CA, FL, NY, PA, IL, GA, NC, WA, OH, AZ, CO, VA, MI, TN, MA, NJ, MD, WI, MN, IN, MO, SC).
             </p>
+            
+            <!-- API vs Web Calculator Clarification -->
+            <div class="bg-blue-700/50 backdrop-blur-sm rounded-lg p-6 mb-8 max-w-2xl mx-auto">
+                <p class="text-white text-lg mb-3">
+                    <strong>Use it in your browser</strong> or plug the API into your ERP – same database, same deadlines.
+                </p>
+                <div class="flex flex-wrap gap-6 justify-center text-white">
+                    <span>✅ No-code web calculator</span>
+                    <span>✅ REST API for developers</span>
+                </div>
+            </div>
             
             <!-- Testimonial Card in Hero -->
             <section class="bg-gradient-to-br from-blue-600 to-blue-800 py-16 mb-8">
@@ -98,7 +112,7 @@
             </section>
             
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="calculator.html" aria-label="Try the calculator for free" class="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold text-lg">Try It Free</a>
+                <a href="calculator.html" aria-label="Start free trial" class="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold text-lg">Start Free Trial – 10 Calculations</a>
                 <a href="#pricing" aria-label="View pricing plans" class="px-8 py-3 bg-gray-100 text-gray-900 rounded-md hover:bg-gray-200 font-semibold text-lg">View Pricing</a>
             </div>
         </div>
@@ -292,7 +306,7 @@
     <!-- Trust Badges -->
     <section class="py-12 px-4 sm:px-6 lg:px-8 bg-white">
         <div class="max-w-6xl mx-auto text-center">
-            <p class="text-sm text-gray-600 mb-4">Trusted by 47 building-supply branches</p>
+            <p class="text-sm text-gray-600 mb-4">Built for building-supply branches and material suppliers</p>
             <div class="flex flex-wrap justify-center items-center gap-8">
                 <div class="flex items-center gap-2">
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -398,12 +412,18 @@
                 </div>
                 
                 <div class="mt-8 text-center">
-                    <p class="text-gray-600 mb-4">
-                        <strong>Try it free first:</strong> Calculate up to 50 deadlines at no cost
-                    </p>
-                    <a href="/calculator.html" class="text-blue-600 hover:text-blue-700 font-medium">
-                        Start with Free Calculator →
-                    </a>
+                    <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 max-w-md mx-auto">
+                        <p class="text-gray-900 font-bold mb-3">Free Trial: 10 Calculations</p>
+                        <ul class="text-left text-sm text-gray-700 space-y-2 mb-4">
+                            <li>✓ First 3 calculations: No email required</li>
+                            <li>✓ Email unlocks 7 more calculations (10 total)</li>
+                            <li>✓ No credit card required</li>
+                            <li>✓ Upgrade anytime to unlimited</li>
+                        </ul>
+                        <a href="/calculator.html" class="inline-block text-blue-600 hover:text-blue-700 font-semibold">
+                            Start Your Free Trial →
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -464,6 +484,12 @@
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="mb-4 md:mb-0">
                     <p>&copy; 2025 LienDeadline.com. All rights reserved.</p>
+                    <p class="text-gray-400 text-sm mt-2">
+                        Built by a former construction credit manager who understands the $75K cost of missed deadlines.
+                    </p>
+                    <p class="text-gray-400 text-xs mt-2">
+                        Free trial includes 10 calculations. Email required after 3. Upgrade to Pro for unlimited calculations.
+                    </p>
                 </div>
                 <div class="flex gap-6">
                     <a href="#faq" class="hover:text-white">FAQ</a>

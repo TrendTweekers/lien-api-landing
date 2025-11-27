@@ -135,7 +135,34 @@
                 >
                     Calculate Deadlines
                 </button>
+                <p class="text-xs text-gray-500 text-center mt-2">
+                    Estimates only, not legal advice. Always consult a construction attorney.
+                </p>
             </form>
+            
+            <!-- Free Trial Info -->
+            <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 text-center mb-6">
+                <p class="text-gray-900 font-semibold">
+                    🎁 Free Trial: <strong>10 Calculations Total</strong>
+                </p>
+                <p class="text-gray-600 text-sm mt-1">
+                    First 3 calculations free • Email unlocks 7 more • No credit card required
+                </p>
+            </div>
+            
+            <!-- What You Get -->
+            <div class="bg-blue-50 rounded-lg p-6 border-2 border-blue-200 mb-8">
+                <h3 class="font-bold text-gray-900 mb-4">Each Calculation Includes:</h3>
+                <ul class="space-y-2 text-gray-700">
+                    <li>✓ Preliminary notice deadline (exact date)</li>
+                    <li>✓ Lien filing deadline (exact date)</li>
+                    <li>✓ Days remaining alerts</li>
+                    <li>✓ State-specific serving requirements</li>
+                    <li>✓ Critical warnings (ongoing work, monthly notices)</li>
+                    <li>✓ Legal statute references</li>
+                    <li>✓ Downloadable PDF report</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Results Section (Hidden by default) -->
@@ -264,7 +291,7 @@
                     <div class="ml-4 flex-1">
                         <h3 class="text-xl font-bold text-gray-900 mb-2">⚡ Need Unlimited Calculations?</h3>
                         <p class="text-gray-700 mb-3">
-                            This free calculator is limited to <strong>50 calculations</strong>.
+                            Your free trial includes <strong>10 calculations total</strong>.
                         </p>
                         <p class="text-gray-700 mb-4">
                             Upgrade to <strong>Pro</strong> for <span class="text-2xl font-bold text-blue-600">$299/month</span>:
@@ -327,8 +354,8 @@
     <!-- Email Gate Modal (shows after 3 calculations) -->
     <div id="emailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-lg shadow-xl max-w-md mx-4">
-            <h2 class="text-2xl font-bold mb-4">Want 7 More Free Calculations?</h2>
-            <p class="text-gray-600 mb-6">Enter your email to continue using the calculator for free.</p>
+            <h2 class="text-2xl font-bold mb-4">Unlock 7 More Free Calculations</h2>
+            <p class="text-gray-600 mb-6">Enter your email to unlock 7 more calculations (10 total in your free trial).</p>
             <input type="email" id="emailInput" placeholder="your@email.com" class="border border-gray-300 p-3 w-full rounded mb-4">
             <button id="submitEmail" class="bg-blue-600 text-white px-6 py-3 rounded w-full hover:bg-blue-700">
                 Continue Free
@@ -340,8 +367,8 @@
     <!-- Upgrade Modal (shows after 10 calculations) -->
     <div id="upgradeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-lg shadow-xl max-w-md mx-4">
-            <h2 class="text-2xl font-bold mb-4">You've Used All 10 Free Calculations</h2>
-            <p class="text-gray-600 mb-6">Upgrade to Pro for unlimited calculations, PDF reports, and calculation history.</p>
+            <h2 class="text-2xl font-bold mb-4">Your Free Trial Has Ended</h2>
+            <p class="text-gray-600 mb-6">You've used all 10 free trial calculations. Upgrade to Pro for unlimited calculations, PDF reports, and calculation history.</p>
             <div class="mb-6 p-4 bg-gray-50 rounded">
                 <p class="font-semibold">Pro Plan: $299/month</p>
                 <ul class="text-sm mt-2 space-y-1">
