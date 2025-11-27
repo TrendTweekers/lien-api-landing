@@ -678,18 +678,32 @@ async def track_email(request_data: TrackEmailRequest, request: Request):
         # Get client IP
         client_ip = request.client.host if request.client else "unknown"
         
-        # Store email tracking (you can add this to a database table if needed)
-        # For now, just log it
-        print(f"📧 Email tracked: {request_data.email} from IP: {client_ip} at {request_data.timestamp}")
+        # Store email tracking in database
+        db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+        con = sqlite3.connect(str(db_path))
+        cur = con.cursor()
         
-        # Optional: Store in database for analytics
-        # db = get_db()
-        # db.execute("""
-        #     INSERT INTO email_tracking (email, ip, timestamp)
-        #     VALUES (?, ?, ?)
-        # """, (request_data.email, client_ip, request_data.timestamp))
-        # db.commit()
-        # db.close()
+        # Create table if it doesn't exist
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS email_captures (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
+                ip TEXT,
+                timestamp TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Insert email capture
+        cur.execute("""
+            INSERT INTO email_captures (email, ip, timestamp)
+            VALUES (?, ?, ?)
+        """, (request_data.email, client_ip, request_data.timestamp))
+        
+        con.commit()
+        con.close()
+        
+        print(f"📧 Email tracked: {request_data.email} from IP: {client_ip} at {request_data.timestamp}")
         
         return {"success": True, "message": "Email tracked"}
     except Exception as e:
@@ -1116,6 +1130,70 @@ async def get_partner_applications_api(username: str = Depends(verify_admin)):
             }
             for app in apps
         ]
+    finally:
+        con.close()
+
+@app.get("/api/admin/email-captures")
+async def get_email_captures_api(username: str = Depends(verify_admin)):
+    """Get all email captures from calculator email gate"""
+    db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+    con = sqlite3.connect(str(db_path))
+    cur = con.cursor()
+    
+    try:
+        # Create table if it doesn't exist (in case it hasn't been created yet)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS email_captures (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
+                ip TEXT,
+                timestamp TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        cur.execute("""
+            SELECT email, ip, timestamp
+            FROM email_captures 
+            ORDER BY timestamp DESC
+        """)
+        captures = cur.fetchall()
+        
+        return [
+            {
+                "email": c[0],
+                "ip": c[1] or "N/A",
+                "timestamp": c[2]
+            }
+            for c in captures
+        ]
+    finally:
+        con.close()
+
+@app.post("/api/admin/approve-partner")
+async def approve_partner_api(data: dict, username: str = Depends(verify_admin)):
+    """Approve a partner application"""
+    email = data.get('email')
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    
+    db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+    con = sqlite3.connect(str(db_path))
+    cur = con.cursor()
+    
+    try:
+        # Update status to approved
+        cur.execute("UPDATE partner_applications SET status = ? WHERE email = ?", ('approved', email))
+        
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Partner application not found")
+        
+        con.commit()
+        
+        # TODO: Send email to partner with referral link
+        # (You'll implement this later with EmailJS or SendGrid)
+        
+        return {"status": "ok", "message": "Partner approved"}
     finally:
         con.close()
 

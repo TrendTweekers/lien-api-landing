@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadTestKeys();
     loadQuickStats();
     loadPartnerApplications();
+    loadEmailCaptures();
     
     // Refresh stats every 60 seconds
     setInterval(loadQuickStats, 60000);
@@ -635,6 +636,7 @@ async function loadPartnerApplications() {
         
         tbody.innerHTML = applications.map(app => {
             const date = app.timestamp ? new Date(app.timestamp).toLocaleDateString() : 'N/A';
+            const status = app.status || 'pending';
             return `
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${app.name || 'N/A'}</td>
@@ -643,9 +645,17 @@ async function loadPartnerApplications() {
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.client_count || 'N/A'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${date}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${app.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
-                            ${app.status || 'pending'}
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                            ${status}
                         </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        ${status === 'pending' ? `
+                            <button onclick="approvePartner('${app.email}')" 
+                                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-semibold text-sm">
+                                Approve
+                            </button>
+                        ` : '<span class="text-green-600 font-semibold">Approved ✓</span>'}
                     </td>
                 </tr>
             `;
@@ -658,6 +668,81 @@ async function loadPartnerApplications() {
         }
     }
 }
+
+// Load email captures
+async function loadEmailCaptures() {
+    try {
+        const response = await fetch(`${API_BASE}/admin/email-captures`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load email captures');
+        }
+        
+        const captures = await response.json();
+        const tbody = document.getElementById('emailCapturesTable');
+        
+        if (!tbody) {
+            console.error('Email captures table not found');
+            return;
+        }
+        
+        if (captures.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No email captures yet</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = captures.map(c => `
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${c.email}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${c.ip || 'N/A'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(c.timestamp).toLocaleString()}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3-10 range</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading email captures:', error);
+        const tbody = document.getElementById('emailCapturesTable');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Error loading email captures</td></tr>';
+        }
+    }
+}
+
+// Approve partner application
+async function approvePartner(email) {
+    if (!confirm(`Approve this partner application for ${email}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/admin/approve-partner`, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email: email })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to approve partner');
+        }
+        
+        alert('Partner approved! They will receive an email with their referral link.');
+        loadPartnerApplications(); // Reload table
+    } catch (error) {
+        console.error('Error approving partner:', error);
+        alert('Error approving partner: ' + error.message);
+    }
+}
+
+// Make approvePartner globally available
+window.approvePartner = approvePartner;
 
 // Dashboard initialization is now handled in the auth check above
 
