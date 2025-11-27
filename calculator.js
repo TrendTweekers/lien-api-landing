@@ -1,33 +1,45 @@
 // calculator.js
 
 // Usage tracking - check localStorage for calcCount and userEmail
+// CRITICAL: Initialize counter at 0 if not set
 let calcCount = parseInt(localStorage.getItem('calcCount') || '0');
 let userEmail = localStorage.getItem('userEmail') || null;
 
-// Update remaining calculations counter
+// Update remaining calculations counter display
 function updateRemainingCounter() {
     const remainingCalcsEl = document.getElementById('remainingCalcs');
     if (!remainingCalcsEl) return;
     
-    if (calcCount >= 10) {
-        remainingCalcsEl.textContent = '';
-        remainingCalcsEl.parentElement.classList.add('hidden');
-    } else if (calcCount >= 3 && !userEmail) {
-        const remaining = 3 - calcCount;
-        remainingCalcsEl.textContent = `${remaining} of 3 free calculations remaining`;
-    } else if (userEmail) {
-        const remaining = 10 - calcCount;
-        remainingCalcsEl.textContent = `${remaining} of 10 free calculations remaining`;
+    // Refresh values from localStorage
+    calcCount = parseInt(localStorage.getItem('calcCount') || '0');
+    userEmail = localStorage.getItem('userEmail') || null;
+    
+    const limit = userEmail ? 10 : 3;
+    const remaining = Math.max(0, limit - calcCount);
+    
+    if (remaining > 0) {
+        remainingCalcsEl.textContent = `${remaining} of ${limit} free calculations remaining`;
+        remainingCalcsEl.parentElement.classList.remove('hidden');
     } else {
-        const remaining = 3 - calcCount;
-        remainingCalcsEl.textContent = `${remaining} of 3 free calculations remaining`;
+        remainingCalcsEl.textContent = `0 of ${limit} free calculations remaining`;
     }
 }
 
-// Initialize counter on page load
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', updateRemainingCounter);
-} else {
+// Initialize counter on page load - ensure it starts at 0
+window.addEventListener('DOMContentLoaded', function() {
+    if (!localStorage.getItem('calcCount')) {
+        localStorage.setItem('calcCount', '0');
+        calcCount = 0;
+    }
+    updateRemainingCounter();
+});
+
+// Also run if DOM already loaded
+if (document.readyState !== 'loading') {
+    if (!localStorage.getItem('calcCount')) {
+        localStorage.setItem('calcCount', '0');
+        calcCount = 0;
+    }
     updateRemainingCounter();
 }
 
@@ -66,7 +78,11 @@ const API_BASE = '';
 document.getElementById('calculatorForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    // Check usage limits
+    // Refresh values from localStorage before checking
+    calcCount = parseInt(localStorage.getItem('calcCount') || '0');
+    userEmail = localStorage.getItem('userEmail') || null;
+    
+    // Check limits BEFORE calculation (prevent API call if already at limit)
     if (calcCount >= 10) {
         document.getElementById('upgradeModal').classList.remove('hidden');
         return;
@@ -109,12 +125,38 @@ document.getElementById('calculatorForm').addEventListener('submit', async (e) =
             return;
         }
         
-        // Increment calculation count
+        // CRITICAL: Increment calculation count AFTER successful API response
         calcCount++;
         localStorage.setItem('calcCount', calcCount.toString());
+        
+        // Refresh userEmail from localStorage
+        userEmail = localStorage.getItem('userEmail') || null;
+        
+        // Update counter display
         updateRemainingCounter();
         
-        // Display results
+        // CRITICAL: Check limits AFTER incrementing (this is when modals should appear)
+        if (!userEmail && calcCount >= 3) {
+            // Show EMAIL GATE after 3 calculations (no email yet)
+            // Store the result so we can display it after email is entered
+            window.pendingCalculationResult = data;
+            document.getElementById('emailModal').classList.remove('hidden');
+            // Don't display results yet - user must enter email first
+            // Reset button before returning
+            submitButton.textContent = originalText;
+            submitButton.disabled = false;
+            return;
+        } else if (userEmail && calcCount >= 10) {
+            // Show UPGRADE GATE after 10 calculations (email already provided)
+            document.getElementById('upgradeModal').classList.remove('hidden');
+            // Don't display results - user must upgrade
+            // Reset button before returning
+            submitButton.textContent = originalText;
+            submitButton.disabled = false;
+            return;
+        }
+        
+        // Display results only if we haven't hit a limit
         displayResults(data);
         
         // Scroll to results
@@ -169,12 +211,21 @@ function initEmailHandler() {
         console.error('Error tracking email:', error);
     }
     
-    // Hide modal and allow calculation
+    // Hide modal
     document.getElementById('emailModal').classList.add('hidden');
+    
+    // Update counter display to show new limit (now 10 instead of 3)
     updateRemainingCounter();
     
-    // Trigger form submission again
-    document.getElementById('calculatorForm').dispatchEvent(new Event('submit'));
+    // Show success message
+    alert('Email saved! You now have 7 more free calculations (10 total).');
+    
+    // Display the pending calculation result (the one that triggered the email gate)
+    if (window.pendingCalculationResult) {
+        displayResults(window.pendingCalculationResult);
+        document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        window.pendingCalculationResult = null; // Clear it
+    }
     });
 }
 
@@ -620,4 +671,5 @@ function getUrgencyPDFColor(urgency) {
         default: return { r: 34, g: 197, b: 94 }; // Green
     }
 }
+
 
