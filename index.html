@@ -125,86 +125,80 @@
     </section>
 
 
-    <!-- Static Example Preview Section -->
+    <!-- Working Demo Calculator Section -->
     <section class="py-14 bg-white">
         <div class="max-w-4xl mx-auto px-4">
             <!-- Heading -->
             <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-slate-900 tracking-tight">
                 See How It Works
             </h2>
-            <p class="text-xl text-gray-600 text-center mb-6">
+            <p class="text-xl text-slate-600 text-center mb-8 font-medium">
                 Get exact deadlines for your state in under 30 seconds
             </p>
             
-            <!-- Prominent note that this is static -->
-            <p class="text-center text-lg text-gray-700 mb-6 font-semibold">
-                👇 This is a static example showing what you'll get. 
-                <a href="/calculator.html" class="text-blue-600 underline">Go to calculator</a> to calculate your own deadlines.
-            </p>
-            
-            <!-- Static Example Card -->
-            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8">
-                <!-- Example label -->
-                <div class="bg-blue-600 text-white text-base font-bold px-6 py-3 rounded-lg inline-flex items-center gap-2 mb-6">
-                    📋 Static Example (not functional - go to calculator to try it yourself)
+            <!-- Working Demo Calculator -->
+            <div class="max-w-2xl mx-auto mt-10 bg-white border border-slate-200 rounded-xl shadow-sm p-6 text-center">
+                <h3 class="text-lg font-bold mb-3 text-slate-900">Try It Now – 30 Second Demo</h3>
+                <p class="text-sm text-slate-600 mb-4">Enter any invoice date → get exact deadlines for Texas (more states in Pro).</p>
+
+                <form id="demoForm" class="flex gap-2 max-w-md mx-auto mb-4">
+                    <input type="date" id="demoDate" class="border border-slate-300 p-2 rounded-lg flex-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium shadow-sm hover:shadow-md transition">Demo</button>
+                </form>
+
+                <div id="demoResult" class="mt-4 hidden text-left bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                    <strong class="text-slate-900">Texas Example:</strong><br>
+                    <div class="mt-2 space-y-1">
+                        <div>Preliminary Notice: <span id="demoPrelim" class="font-semibold text-slate-900"></span></div>
+                        <div>Lien Filing: <span id="demoLien" class="font-semibold text-slate-900"></span></div>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-3">Want more states? <a href="#pricing" class="text-blue-600 hover:text-blue-700 underline">Upgrade to Pro</a></p>
                 </div>
-                
-                <!-- Input shown (not functional) -->
-                <div class="grid md:grid-cols-2 gap-4 mb-6">
-                    <div>
-                        <label class="text-sm font-semibold text-gray-700 mb-2 block">Invoice Date</label>
-                        <div class="bg-gray-200 px-4 py-3 rounded-lg text-gray-700 border-2 border-gray-300 opacity-60">
-                            11/27/2025
-                        </div>
-                    </div>
-                    <div>
-                        <label class="text-sm font-semibold text-gray-700 mb-2 block">State</label>
-                        <div class="bg-gray-200 px-4 py-3 rounded-lg text-gray-700 border-2 border-gray-300 opacity-60">
-                            Texas
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Results preview -->
-                <div class="bg-gradient-to-br from-blue-50 to-green-50 rounded-lg p-6 mb-6">
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">Your Deadlines:</h3>
-                    
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <!-- Preliminary Notice -->
-                        <div class="bg-white rounded-lg p-4 border-l-4 border-green-500">
-                            <div class="text-sm text-gray-600 mb-1">Preliminary Notice</div>
-                            <div class="text-2xl font-bold text-green-600">Dec 12, 2025</div>
-                            <div class="text-xs text-gray-500 mt-1">15 days remaining</div>
-                        </div>
-                        
-                        <!-- Lien Filing -->
-                        <div class="bg-white rounded-lg p-4 border-l-4 border-red-500">
-                            <div class="text-sm text-gray-600 mb-1">Lien Filing Deadline</div>
-                            <div class="text-2xl font-bold text-red-600">Feb 27, 2026</div>
-                            <div class="text-xs text-gray-500 mt-1">92 days remaining</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Teaser features -->
-                    <div class="mt-6 flex items-center gap-4 text-sm text-gray-600 flex-wrap justify-center">
-                        <span>✓ Serving requirements</span>
-                        <span>✓ Critical warnings</span>
-                        <span>✓ Legal references</span>
-                        <span>✓ PDF download</span>
-                    </div>
-                </div>
-                
-                <!-- CTA Button -->
-                <a href="/calculator.html" class="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-2.5 px-4 rounded-lg font-medium shadow-sm hover:shadow-md transition">
-                    Start Free Trial — 10 Calculations →
-                </a>
-                
-                <p class="text-center text-sm text-gray-500 mt-4">
-                    Free Professional Trial — 10 Deadline Calculations<br>No credit card required. Email after 3 calculations.
-                </p>
             </div>
         </div>
     </section>
+
+    <script>
+        document.getElementById('demoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const button = e.target.querySelector('button[type="submit"]');
+            const originalText = button.textContent;
+            button.textContent = 'Calculating...';
+            button.disabled = true;
+            
+            try {
+                const res = await fetch('/v1/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        invoice_date: document.getElementById('demoDate').value, 
+                        state: 'TX', 
+                        role: 'supplier' 
+                    })
+                });
+                
+                if (!res.ok) {
+                    throw new Error('Calculation failed');
+                }
+                
+                const json = await res.json();
+                
+                // Format dates nicely
+                const prelimDate = new Date(json.preliminary_notice?.deadline || json.preliminary_notice_deadline);
+                const lienDate = new Date(json.lien_filing?.deadline || json.lien_filing_deadline);
+                
+                document.getElementById('demoPrelim').innerText = prelimDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                document.getElementById('demoLien').innerText = lienDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                document.getElementById('demoResult').classList.remove('hidden');
+            } catch (error) {
+                console.error('Demo calculation error:', error);
+                alert('Could not calculate. Please try again.');
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        });
+    </script>
 
     <!-- How It Works Section -->
     <section id="how-it-works" class="py-14 px-4 sm:px-6 lg:px-8 bg-white">
