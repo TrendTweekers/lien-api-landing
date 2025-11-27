@@ -85,6 +85,39 @@
         </div>
     </section>
 
+    <!-- Demo Section -->
+    <section class="bg-blue-50 py-12">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">See It Work – 30 Second Demo</h2>
+            <p class="text-lg text-gray-700 mb-6">Enter any invoice date below → get exact deadlines in under 1 second.</p>
+            <form id="demoForm" class="flex gap-2 max-w-md mx-auto">
+                <input type="date" id="demoDate" class="border p-2 rounded flex-1" required>
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Demo</button>
+            </form>
+            <div id="demoResult" class="mt-4 hidden text-left bg-white p-4 rounded shadow max-w-md mx-auto"></div>
+        </div>
+    </section>
+
+    <script>
+        document.getElementById('demoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const date = document.getElementById('demoDate').value;
+            const res = await fetch('/v1/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ invoice_date: date, state: 'TX', role: 'supplier' })
+            });
+            const json = await res.json();
+            document.getElementById('demoResult').innerHTML = `
+                <strong>Texas Example:</strong><br>
+                Preliminary Notice: ${json.preliminary_notice?.deadline || json.preliminary_notice_deadline || 'N/A'}<br>
+                Lien Filing: ${json.lien_filing?.deadline || json.lien_filing_deadline || 'N/A'}<br>
+                <span class="text-sm text-gray-600">Try other states on the full calculator.</span>
+            `;
+            document.getElementById('demoResult').classList.remove('hidden');
+        });
+    </script>
+
     <!-- How It Works Section -->
     <section id="how-it-works" class="py-16 px-4 sm:px-6 lg:px-8 bg-white">
         <div class="max-w-6xl mx-auto">
