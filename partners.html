@@ -160,6 +160,20 @@
                     </button>
                 </div>
             </div>
+            
+            <!-- Quick CTA Section -->
+            <div class="mt-8 text-center">
+                <p class="text-lg font-semibold text-gray-700 mb-4">Ready to start earning? Choose your model:</p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                    <button onclick="chooseBounty()" class="bg-blue-600 text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-blue-700 transition shadow-lg hover:shadow-xl">
+                        I Want $500 Now
+                    </button>
+                    <button onclick="chooseRecurring()" class="border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-blue-50 transition">
+                        I Want $50/month
+                    </button>
+                </div>
+                <p class="text-sm text-gray-500 mt-4">Or scroll down to apply first</p>
+            </div>
         </div>
     </section>
 
@@ -409,6 +423,21 @@
             
             // Scroll to form
             document.getElementById('partner-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Quick CTA functions - direct to payment
+        function chooseBounty() {
+            // Set model and redirect to payment
+            document.getElementById('selectedModel').value = 'one-time';
+            // For now, redirect to Stripe checkout - update with actual partner signup flow
+            window.location.href = "https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00";
+        }
+        
+        function chooseRecurring() {
+            // Set model and redirect to payment
+            document.getElementById('selectedModel').value = 'recurring';
+            // For now, redirect to Stripe checkout - update with actual partner signup flow
+            window.location.href = "https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00";
         }
 
         // Form submission
