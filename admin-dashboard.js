@@ -31,12 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loadBrokers();
     loadPendingPayouts();
     loadTestKeys();
-    loadQuickStats();
+    // loadQuickStats(); // Disabled - analytics endpoint returns 404
     loadPartnerApplications();
     loadEmailCaptures();
     
     // Refresh stats every 60 seconds
-    setInterval(loadQuickStats, 60000);
+    // setInterval(loadQuickStats, 60000); // Disabled - analytics endpoint returns 404
 });
 
 // Logout function
@@ -300,7 +300,11 @@ function logout() {
 }
 
 // Load quick stats from analytics API
+// DISABLED - Analytics endpoint returns 404, dashboard works fine without it
 async function loadQuickStats() {
+    // Analytics endpoint disabled - stats show default values (0)
+    return;
+    /*
     try {
         const res = await fetch(`${API_BASE}/analytics/today`);
         if (!res.ok) {
@@ -317,6 +321,7 @@ async function loadQuickStats() {
         console.error('Error loading quick stats:', error);
         // Keep showing "—" on error
     }
+    */
 }
 
 // Generate Test API Key (calls real API)
