@@ -77,41 +77,93 @@ def create_test_key(
 @router.get("/test-keys")
 def list_test_keys(user: str = Depends(verify_admin)):
     """List all test keys"""
-    con = sqlite3.connect("admin.db")
-    # Check for both old and new column names for compatibility
+    print("=== /api/admin/test-keys ENDPOINT CALLED ===")
+    con = None
     try:
-        cur = con.execute("SELECT key, email, expiry_date, expiry, max_calls, calls_used, status FROM test_keys ORDER BY expiry_date DESC, expiry DESC")
-    except:
-        # Fallback for old schema
-        cur = con.execute("SELECT key, email, expiry, expiry, max_calls, 0 as calls_used, 'active' as status FROM test_keys ORDER BY expiry DESC")
-    
-    rows = cur.fetchall()
-    con.close()
-    
-    result = []
-    for row in rows:
-        # Handle both old and new schema
-        expiry = row[2] if row[2] else row[3]  # expiry_date or expiry
-        calls_used = row[5] if len(row) > 5 else 0
-        status = row[6] if len(row) > 6 else 'active'
+        db_path = get_db_path()
+        print(f"Database path: {db_path}")
+        con = sqlite3.connect(db_path)
+        print("Database connection opened")
         
-        # Check if expired
-        if expiry:
-            expiry_date = datetime.fromisoformat(expiry)
-            if expiry_date < datetime.utcnow() or calls_used >= (row[4] or 50):
-                status = 'expired'
+        # Check if table exists
+        print("Checking table existence...")
+        cur = con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='test_keys'")
+        table_exists = cur.fetchone()
+        print(f"Table exists: {table_exists is not None}")
         
-        result.append({
-            "key": row[0],
-            "email": row[1],
-            "expiry_date": expiry,
-            "expiry": expiry,  # For backward compatibility
-            "max_calls": row[4] or 50,
-            "calls_used": calls_used,
-            "status": status
-        })
-    
-    return result
+        if not table_exists:
+            print("Test keys table does not exist - returning empty array")
+            return []
+        
+        # Check for both old and new column names for compatibility
+        print("Attempting query with new schema...")
+        try:
+            cur = con.execute("SELECT key, email, expiry_date, expiry, max_calls, calls_used, status FROM test_keys ORDER BY expiry_date DESC, expiry DESC")
+            print("Query successful with new schema")
+        except sqlite3.OperationalError as e:
+            print(f"New schema query failed: {e}")
+            print("Attempting query with old schema...")
+            try:
+                cur = con.execute("SELECT key, email, expiry, expiry, max_calls, 0 as calls_used, 'active' as status FROM test_keys ORDER BY expiry DESC")
+                print("Query successful with old schema")
+            except sqlite3.OperationalError as e2:
+                print(f"Old schema query also failed: {e2}")
+                import traceback
+                traceback.print_exc()
+                return []
+        
+        rows = cur.fetchall()
+        print(f"Found {len(rows)} test keys")
+        
+        result = []
+        for idx, row in enumerate(rows):
+            try:
+                print(f"Processing row {idx}: {row}")
+                # Handle both old and new schema
+                expiry = row[2] if len(row) > 2 and row[2] else (row[3] if len(row) > 3 else None)
+                calls_used = row[5] if len(row) > 5 else 0
+                status = row[6] if len(row) > 6 else 'active'
+                
+                print(f"  Row {idx} - expiry: {expiry}, calls_used: {calls_used}, status: {status}")
+                
+                # Check if expired
+                if expiry:
+                    try:
+                        expiry_date = datetime.fromisoformat(expiry)
+                        print(f"  Parsed expiry date: {expiry_date}")
+                        if expiry_date < datetime.utcnow() or calls_used >= (row[4] if len(row) > 4 else 50):
+                            status = 'expired'
+                            print(f"  Marked as expired")
+                    except ValueError as ve:
+                        print(f"  Error parsing expiry date '{expiry}': {ve}")
+                        pass  # Invalid date format, keep status as is
+                
+                result.append({
+                    "key": row[0] if len(row) > 0 else "",
+                    "email": row[1] if len(row) > 1 else "",
+                    "expiry_date": expiry,
+                    "expiry": expiry,  # For backward compatibility
+                    "max_calls": row[4] if len(row) > 4 else 50,
+                    "calls_used": calls_used,
+                    "status": status
+                })
+            except Exception as e:
+                print(f"Error processing row {idx}: {e}")
+                import traceback
+                traceback.print_exc()
+                continue
+        
+        print(f"Returning {len(result)} test keys")
+        return result
+    except Exception as e:
+        print(f"=== ERROR in list_test_keys: {e} ===")
+        import traceback
+        traceback.print_exc()
+        return []
+    finally:
+        if con:
+            print("Closing database connection")
+            con.close()
 
 @router.post("/approve-broker")
 def approve_broker(
