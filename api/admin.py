@@ -153,74 +153,153 @@ def approve_broker(
 @router.get("/brokers")
 def list_brokers(user: str = Depends(verify_admin)):
     """List all brokers"""
-    con = sqlite3.connect("admin.db")
-    cur = con.execute("SELECT id, email, name, model, referrals, earned FROM brokers")
-    rows = cur.fetchall()
-    con.close()
-    
-    return [
-        {
-            "referral_code": row[0],
-            "email": row[1],
-            "name": row[2],
-            "model": row[3],
-            "referrals": row[4],
-            "earned": row[5]
-        }
-        for row in rows
-    ]
+    con = None
+    try:
+        db_path = get_db_path()
+        con = sqlite3.connect(db_path)
+        
+        # Check if table exists
+        cur = con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='brokers'")
+        if not cur.fetchone():
+            print("Brokers table does not exist")
+            return []
+        
+        cur = con.execute("SELECT id, email, name, model, referrals, earned FROM brokers")
+        rows = cur.fetchall()
+        
+        return [
+            {
+                "referral_code": row[0] if len(row) > 0 else "",
+                "email": row[1] if len(row) > 1 else "",
+                "name": row[2] if len(row) > 2 else "",
+                "model": row[3] if len(row) > 3 else "",
+                "referrals": row[4] if len(row) > 4 else 0,
+                "earned": row[5] if len(row) > 5 else 0
+            }
+            for row in rows
+        ]
+    except Exception as e:
+        print(f"Error in list_brokers: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+    finally:
+        if con:
+            con.close()
 
 @router.get("/customers")
 def list_customers(user: str = Depends(verify_admin)):
     """List all customers"""
-    con = sqlite3.connect(get_db_path())
-    cur = con.execute("SELECT email, api_calls, status FROM customers ORDER BY email")
-    rows = cur.fetchall()
-    con.close()
-    
-    return [
-        {
-            "email": row[0],
-            "calls": row[1],
-            "status": row[2]
-        }
-        for row in rows
-    ]
+    con = None
+    try:
+        db_path = get_db_path()
+        con = sqlite3.connect(db_path)
+        
+        # Check if table exists
+        cur = con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='customers'")
+        if not cur.fetchone():
+            print("Customers table does not exist")
+            return []
+        
+        # Try different column names for compatibility
+        try:
+            cur = con.execute("SELECT email, api_calls, status FROM customers ORDER BY email")
+        except sqlite3.OperationalError:
+            try:
+                cur = con.execute("SELECT email, calls_used, status FROM customers ORDER BY email")
+            except sqlite3.OperationalError as e:
+                print(f"Error querying customers: {e}")
+                return []
+        
+        rows = cur.fetchall()
+        
+        return [
+            {
+                "email": row[0] if len(row) > 0 else "",
+                "calls": row[1] if len(row) > 1 else 0,
+                "status": row[2] if len(row) > 2 else "active"
+            }
+            for row in rows
+        ]
+    except Exception as e:
+        print(f"Error in list_customers: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+    finally:
+        if con:
+            con.close()
 
 @router.get("/stats")
 def get_admin_stats(user: str = Depends(verify_admin)):
     """Get real-time dashboard stats"""
-    con = sqlite3.connect(get_db_path())
-    
-    # Count active customers
-    cur = con.execute("SELECT COUNT(*) FROM customers WHERE status='active'")
-    customers = cur.fetchone()[0] or 0
-    
-    # Count approved brokers
-    cur = con.execute("SELECT COUNT(*) FROM brokers")
-    brokers = cur.fetchone()[0] or 0
-    
-    # Calculate revenue (sum of all broker earnings + active subscriptions)
-    # For MVP, we'll estimate: active customers * $299/month
-    cur = con.execute("SELECT COUNT(*) FROM customers WHERE status='active'")
-    active_customers = cur.fetchone()[0] or 0
-    estimated_mrr = active_customers * 299
-    
-    # Also sum broker earnings from referrals table
-    cur = con.execute("SELECT SUM(amount) FROM referrals WHERE status='paid'")
-    paid_referrals = cur.fetchone()[0] or 0
-    
-    # Total revenue = MRR + paid referrals (for display purposes)
-    revenue = estimated_mrr + (paid_referrals or 0)
-    
-    con.close()
-    
-    return {
-        "customers": customers,
-        "brokers": brokers,
-        "revenue": revenue,
-        "mrr": estimated_mrr
-    }
+    con = None
+    try:
+        db_path = get_db_path()
+        con = sqlite3.connect(db_path)
+        
+        # Check if tables exist
+        cur = con.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [row[0] for row in cur.fetchall()]
+        
+        # Count active customers
+        customers = 0
+        if 'customers' in tables:
+            try:
+                cur = con.execute("SELECT COUNT(*) FROM customers WHERE status='active'")
+                result = cur.fetchone()
+                customers = result[0] if result else 0
+            except Exception as e:
+                print(f"Error counting customers: {e}")
+        
+        # Count approved brokers
+        brokers = 0
+        if 'brokers' in tables:
+            try:
+                cur = con.execute("SELECT COUNT(*) FROM brokers")
+                result = cur.fetchone()
+                brokers = result[0] if result else 0
+            except Exception as e:
+                print(f"Error counting brokers: {e}")
+        
+        # Calculate revenue (sum of all broker earnings + active subscriptions)
+        # For MVP, we'll estimate: active customers * $299/month
+        active_customers = customers
+        estimated_mrr = active_customers * 299
+        
+        # Also sum broker earnings from referrals table
+        paid_referrals = 0
+        if 'referrals' in tables:
+            try:
+                cur = con.execute("SELECT SUM(amount) FROM referrals WHERE status='paid'")
+                result = cur.fetchone()
+                paid_referrals = result[0] if result and result[0] else 0
+            except Exception as e:
+                print(f"Error calculating paid referrals: {e}")
+        
+        # Total revenue = MRR + paid referrals (for display purposes)
+        revenue = estimated_mrr + (paid_referrals or 0)
+        
+        return {
+            "customers": customers,
+            "brokers": brokers,
+            "revenue": revenue,
+            "mrr": estimated_mrr
+        }
+    except Exception as e:
+        print(f"Error in get_admin_stats: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "customers": 0,
+            "brokers": 0,
+            "revenue": 0,
+            "mrr": 0,
+            "error": str(e)
+        }
+    finally:
+        if con:
+            con.close()
 
 @router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):

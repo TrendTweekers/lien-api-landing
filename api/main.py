@@ -1038,76 +1038,168 @@ async def send_email(data: dict):
 @app.get("/api/admin/stats")
 async def get_admin_stats_api(username: str = Depends(verify_admin)):
     """Return real dashboard stats"""
-    db = get_db()
+    db = None
     try:
-        # Count active customers
-        customers_count = db.execute(
-            "SELECT COUNT(*) FROM customers WHERE status='active'"
-        ).fetchone()[0] or 0
+        db = get_db()
         
-        # Count approved brokers
-        brokers_count = db.execute(
-            "SELECT COUNT(*) FROM brokers WHERE status='approved'"
-        ).fetchone()[0] or 0
+        # Check if tables exist
+        tables = db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        table_names = [t[0] for t in tables]
+        
+        # Count active customers (with table check)
+        customers_count = 0
+        if 'customers' in table_names:
+            try:
+                result = db.execute(
+                    "SELECT COUNT(*) FROM customers WHERE status='active'"
+                ).fetchone()
+                customers_count = result[0] if result else 0
+            except Exception as e:
+                print(f"Error counting customers: {e}")
+        
+        # Count approved brokers (with table check)
+        brokers_count = 0
+        if 'brokers' in table_names:
+            try:
+                result = db.execute(
+                    "SELECT COUNT(*) FROM brokers"
+                ).fetchone()
+                brokers_count = result[0] if result else 0
+            except Exception as e:
+                print(f"Error counting brokers: {e}")
         
         # Calculate revenue (sum of active subscriptions)
-        revenue_result = db.execute(
-            "SELECT SUM(amount) FROM customers WHERE status='active'"
-        ).fetchone()[0] or 0
+        revenue_result = 0
+        if 'customers' in table_names:
+            try:
+                result = db.execute(
+                    "SELECT SUM(amount) FROM customers WHERE status='active'"
+                ).fetchone()
+                revenue_result = float(result[0]) if result and result[0] else 0
+            except Exception as e:
+                print(f"Error calculating revenue: {e}")
         
         return {
             "customers": customers_count,
             "brokers": brokers_count,
             "revenue": float(revenue_result)
         }
+    except Exception as e:
+        print(f"Error in get_admin_stats_api: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "customers": 0,
+            "brokers": 0,
+            "revenue": 0,
+            "error": str(e)
+        }
     finally:
-        db.close()
+        if db:
+            db.close()
 
 @app.get("/api/admin/customers")
 async def get_customers_api(username: str = Depends(verify_admin)):
     """Return list of customers"""
-    db = get_db()
+    db = None
     try:
-        rows = db.execute("""
-            SELECT email, calls_used, status 
-            FROM customers 
-            ORDER BY created_at DESC
-        """).fetchall()
+        db = get_db()
+        
+        # Check if table exists
+        tables = db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        table_names = [t[0] for t in tables]
+        
+        if 'customers' not in table_names:
+            print("Customers table does not exist")
+            return []
+        
+        # Try different column names for compatibility
+        try:
+            rows = db.execute("""
+                SELECT email, calls_used, status 
+                FROM customers 
+                ORDER BY created_at DESC
+            """).fetchall()
+        except sqlite3.OperationalError:
+            # Fallback if created_at doesn't exist
+            try:
+                rows = db.execute("""
+                    SELECT email, api_calls, status 
+                    FROM customers 
+                    ORDER BY email
+                """).fetchall()
+            except sqlite3.OperationalError as e:
+                print(f"Error querying customers: {e}")
+                return []
         
         return [
             {
-                "email": row['email'],
-                "calls": row['calls_used'] or 0,
-                "status": row['status'] or 'active'
+                "email": row['email'] if 'email' in row.keys() else row[0],
+                "calls": row.get('calls_used') or row.get('api_calls') or 0,
+                "status": row.get('status') or 'active'
             }
             for row in rows
         ]
+    except Exception as e:
+        print(f"Error in get_customers_api: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
     finally:
-        db.close()
+        if db:
+            db.close()
 
 @app.get("/api/admin/brokers")
 async def get_brokers_api(username: str = Depends(verify_admin)):
     """Return list of brokers"""
-    db = get_db()
+    db = None
     try:
-        rows = db.execute("""
-            SELECT id, name, email, referrals, earned, status
-            FROM brokers
-            ORDER BY created_at DESC
-        """).fetchall()
+        db = get_db()
+        
+        # Check if table exists
+        tables = db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        table_names = [t[0] for t in tables]
+        
+        if 'brokers' not in table_names:
+            print("Brokers table does not exist")
+            return []
+        
+        # Try query with created_at, fallback without it
+        try:
+            rows = db.execute("""
+                SELECT id, name, email, referrals, earned, status
+                FROM brokers
+                ORDER BY created_at DESC
+            """).fetchall()
+        except sqlite3.OperationalError:
+            try:
+                rows = db.execute("""
+                    SELECT id, name, email, referrals, earned, status
+                    FROM brokers
+                    ORDER BY id DESC
+                """).fetchall()
+            except sqlite3.OperationalError as e:
+                print(f"Error querying brokers: {e}")
+                return []
         
         return [
             {
-                "name": row['name'] or row['email'],
-                "email": row['email'],
-                "referrals": row['referrals'] or 0,
-                "earned": float(row['earned'] or 0),
-                "status": row['status'] or 'pending'
+                "name": row.get('name') or row.get('email') or 'N/A',
+                "email": row.get('email') or 'N/A',
+                "referrals": row.get('referrals') or 0,
+                "earned": float(row.get('earned') or 0),
+                "status": row.get('status') or 'pending'
             }
             for row in rows
         ]
+    except Exception as e:
+        print(f"Error in get_brokers_api: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
     finally:
-        db.close()
+        if db:
+            db.close()
 
 @app.get("/api/admin/partner-applications")
 async def get_partner_applications_api(username: str = Depends(verify_admin)):
@@ -1158,20 +1250,25 @@ async def get_partner_applications_api(username: str = Depends(verify_admin)):
 async def get_email_captures_api(username: str = Depends(verify_admin)):
     """Get all email captures from calculator email gate"""
     db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
-    con = sqlite3.connect(str(db_path))
-    cur = con.cursor()
-    
+    con = None
     try:
+        con = sqlite3.connect(str(db_path))
+        cur = con.cursor()
+        
         # Create table if it doesn't exist (in case it hasn't been created yet)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS email_captures (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email TEXT NOT NULL,
-                ip TEXT,
-                timestamp TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+        try:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS email_captures (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT NOT NULL,
+                    ip TEXT,
+                    timestamp TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            con.commit()
+        except Exception as e:
+            print(f"Error creating email_captures table: {e}")
         
         cur.execute("""
             SELECT email, ip, timestamp
@@ -1182,14 +1279,20 @@ async def get_email_captures_api(username: str = Depends(verify_admin)):
         
         return [
             {
-                "email": c[0],
-                "ip": c[1] or "N/A",
-                "timestamp": c[2]
+                "email": c[0] if len(c) > 0 else "",
+                "ip": c[1] if len(c) > 1 and c[1] else "N/A",
+                "timestamp": c[2] if len(c) > 2 else ""
             }
             for c in captures
         ]
+    except Exception as e:
+        print(f"Error in get_email_captures_api: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
     finally:
-        con.close()
+        if con:
+            con.close()
 
 @app.post("/api/admin/approve-partner")
 async def approve_partner_api(data: dict, username: str = Depends(verify_admin)):
@@ -1221,31 +1324,64 @@ async def approve_partner_api(data: dict, username: str = Depends(verify_admin))
 @app.get("/api/admin/payouts/pending")
 async def get_pending_payouts_api(username: str = Depends(verify_admin)):
     """Return pending broker payouts"""
-    db = get_db()
+    db = None
     try:
-        rows = db.execute("""
-            SELECT r.id, r.broker_id, r.customer_email, r.amount, r.payout, r.status,
-                   b.name as broker_name
-            FROM referrals r
-            LEFT JOIN brokers b ON r.broker_id = b.id
-            WHERE r.status = 'pending'
-            ORDER BY r.created_at DESC
-        """).fetchall()
+        db = get_db()
+        
+        # Check if tables exist
+        tables = db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        table_names = [t[0] for t in tables]
+        
+        if 'referrals' not in table_names:
+            print("Referrals table does not exist")
+            return []
+        
+        # Try query with different column names for compatibility
+        try:
+            rows = db.execute("""
+                SELECT r.id, r.broker_id, r.customer_email, r.amount, r.payout, r.status,
+                       b.name as broker_name
+                FROM referrals r
+                LEFT JOIN brokers b ON r.broker_id = b.id
+                WHERE r.status = 'pending'
+                ORDER BY r.created_at DESC
+            """).fetchall()
+        except sqlite3.OperationalError:
+            # Fallback if columns don't match
+            try:
+                rows = db.execute("""
+                    SELECT r.id, r.broker_ref, r.customer_email, r.amount, r.status,
+                           b.name as broker_name, r.days_active
+                    FROM referrals r
+                    LEFT JOIN brokers b ON r.broker_ref = b.id
+                    WHERE r.status = 'ready'
+                    ORDER BY r.date ASC
+                """).fetchall()
+            except sqlite3.OperationalError as e:
+                print(f"Error querying pending payouts: {e}")
+                return []
         
         return [
             {
-                "id": row['id'],
-                "broker_name": row['broker_name'] or 'Unknown',
-                "broker_id": row['broker_id'],
-                "customer_email": row['customer_email'],
-                "amount": float(row['amount'] or 0),
-                "payout": float(row['payout'] or 0),
-                "status": row['status'] or 'pending'
+                "id": row.get('id') or 0,
+                "broker_name": row.get('broker_name') or 'Unknown',
+                "broker_id": row.get('broker_id') or row.get('broker_ref') or '',
+                "customer_email": row.get('customer_email') or '',
+                "amount": float(row.get('amount') or 0),
+                "payout": float(row.get('payout') or row.get('amount') or 0),
+                "status": row.get('status') or 'pending',
+                "days_active": row.get('days_active') or 0
             }
             for row in rows
         ]
+    except Exception as e:
+        print(f"Error in get_pending_payouts_api: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
     finally:
-        db.close()
+        if db:
+            db.close()
 
 if __name__ == "__main__":
     import uvicorn
