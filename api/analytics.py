@@ -4,7 +4,8 @@ import sqlite3
 import os
 from pathlib import Path
 
-router = APIRouter(prefix="/analytics", tags=["analytics"])
+# Router without prefix - prefix will be added in main.py include_router call
+router = APIRouter(tags=["analytics"])
 
 def get_db_path():
     """Get database path (works in Railway and local)"""

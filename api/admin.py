@@ -16,7 +16,8 @@ def get_db_path():
     """Get database path (works in both local and Railway environments)"""
     return os.getenv("DATABASE_PATH", "admin.db")
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+# Router without prefix - prefix will be added in main.py include_router call
+router = APIRouter(tags=["admin"])
 
 # HTTP-Basic auth (env vars)
 security = HTTPBasic()

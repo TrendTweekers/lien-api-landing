@@ -60,9 +60,9 @@ def init_db():
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 
-# Include routers with /api prefix to match frontend calls
-app.include_router(analytics_router, prefix="/api")
-app.include_router(admin_router, prefix="/api")
+# Include routers with full paths to match frontend calls
+app.include_router(analytics_router, prefix="/api/analytics", tags=["analytics"])
+app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
 
 # Initialize database on startup
 @app.on_event("startup")
