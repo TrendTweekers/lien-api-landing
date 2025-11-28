@@ -117,7 +117,7 @@ document.getElementById('calculatorForm').addEventListener('submit', async (e) =
     
     try {
         // Call API with POST and JSON body
-        const response = await fetch('/v1/calculate', {
+        const response = await fetch('https://liendeadline.com/api/v1/calculate-deadline', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
