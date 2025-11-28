@@ -64,6 +64,16 @@ STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 app.include_router(analytics_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 
+# Log registered routes for debugging
+@app.on_event("startup")
+async def log_routes():
+    """Log all registered routes for debugging"""
+    print("\n=== REGISTERED ROUTES ===")
+    for route in app.routes:
+        if hasattr(route, 'path') and hasattr(route, 'methods'):
+            print(f"{list(route.methods)} {route.path}")
+    print("========================\n")
+
 # Initialize database on startup
 @app.on_event("startup")
 async def startup():
