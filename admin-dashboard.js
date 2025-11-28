@@ -1,5 +1,6 @@
 // Admin Dashboard Functionality
 // Hard-coded data for now - wire to API later
+// Version: 2025-01-XX - Analytics disabled to fix 404 error
 
 // Admin authentication
 const ADMIN_USER = 'admin';
