@@ -60,9 +60,9 @@ def init_db():
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 
-# Include routers
-app.include_router(analytics_router)
-app.include_router(admin_router)
+# Include routers with /api prefix to match frontend calls
+app.include_router(analytics_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
 
 # Initialize database on startup
 @app.on_event("startup")
@@ -1117,6 +1117,15 @@ async def get_partner_applications_api(username: str = Depends(verify_admin)):
     cur = con.cursor()
     
     try:
+        # Check if table exists
+        cur.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='partner_applications'
+        """)
+        if not cur.fetchone():
+            con.close()
+            return []  # Return empty list if table doesn't exist
+        
         cur.execute("""
             SELECT name, email, company, client_count, timestamp, status, message, commission_model
             FROM partner_applications 
@@ -1126,19 +1135,24 @@ async def get_partner_applications_api(username: str = Depends(verify_admin)):
         
         return [
             {
-                "name": app[0],
-                "email": app[1],
-                "company": app[2],
-                "client_count": app[3],
-                "timestamp": app[4],
-                "status": app[5] or "pending",
-                "message": app[6] or "",
-                "commission_model": app[7] or ""
+                "name": app[0] if app[0] else "N/A",
+                "email": app[1] if app[1] else "N/A",
+                "company": app[2] if app[2] else "N/A",
+                "client_count": app[3] if app[3] else "N/A",
+                "timestamp": app[4] if app[4] else None,
+                "status": app[5] if app[5] else "pending",
+                "message": app[6] if app[6] else "",
+                "commission_model": app[7] if len(app) > 7 and app[7] else ""
             }
             for app in apps
         ]
-    finally:
+    except Exception as e:
+        print(f"Error loading partner applications: {e}")
         con.close()
+        return []  # Return empty list on error
+    finally:
+        if con:
+            con.close()
 
 @app.get("/api/admin/email-captures")
 async def get_email_captures_api(username: str = Depends(verify_admin)):
