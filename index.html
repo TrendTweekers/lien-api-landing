@@ -745,9 +745,9 @@
                             </div>
                         </div>
                         
-                        <a href="#partners" class="inline-flex items-center justify-center gap-2 h-14 px-6 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors text-lg">
+                        <a href="mailto:partners@liendeadline.com?subject=Partner Program Inquiry" class="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-lg bg-accent text-white font-semibold text-lg hover:bg-accent/90 transition-colors">
                             Join Partner Program
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                             </svg>
                         </a>
@@ -1050,24 +1050,51 @@
                 // Handle different possible response structures
                 let prelimNotice, lienFiling, daysUntilPrelim, daysUntilLien;
                 
-                if (data.deadlines) {
-                    // Structure 1: data.deadlines.preliminary_notice
-                    prelimNotice = data.deadlines.preliminary_notice || data.deadlines.preliminaryNotice;
-                    lienFiling = data.deadlines.lien_filing || data.deadlines.lienFiling;
-                    daysUntilPrelim = data.deadlines.days_until_preliminary || data.deadlines.daysUntilPreliminary || 'N/A';
-                    daysUntilLien = data.deadlines.days_until_lien || data.deadlines.daysUntilLien || 'N/A';
-                } else if (data.preliminary_notice) {
-                    // Structure 2: data.preliminary_notice (flat)
-                    prelimNotice = data.preliminary_notice || data.preliminaryNotice;
-                    lienFiling = data.lien_filing || data.lienFiling;
-                    daysUntilPrelim = data.days_until_preliminary || data.daysUntilPreliminary || 'N/A';
-                    daysUntilLien = data.days_until_lien || data.daysUntilLien || 'N/A';
+                console.log('Raw API data:', data);
+                
+                if (data.preliminary_notice) {
+                    // Check if preliminary_notice is an object or string
+                    if (typeof data.preliminary_notice === 'object') {
+                        prelimNotice = data.preliminary_notice.deadline || data.preliminary_notice.date || JSON.stringify(data.preliminary_notice);
+                        daysUntilPrelim = data.preliminary_notice.days_from_now || data.preliminary_notice.days_remaining || 'N/A';
+                    } else {
+                        prelimNotice = data.preliminary_notice;
+                        daysUntilPrelim = data.days_until_preliminary || 'N/A';
+                    }
+                    
+                    // Check if lien_filing is an object or string
+                    if (typeof data.lien_filing === 'object') {
+                        lienFiling = data.lien_filing.deadline || data.lien_filing.date || JSON.stringify(data.lien_filing);
+                        daysUntilLien = data.lien_filing.days_from_now || data.lien_filing.days_remaining || 'N/A';
+                    } else {
+                        lienFiling = data.lien_filing;
+                        daysUntilLien = data.days_until_lien || 'N/A';
+                    }
+                } else if (data.deadlines) {
+                    // Nested structure
+                    const deadlines = data.deadlines;
+                    
+                    if (typeof deadlines.preliminary_notice === 'object') {
+                        prelimNotice = deadlines.preliminary_notice.deadline || deadlines.preliminary_notice.date;
+                        daysUntilPrelim = deadlines.preliminary_notice.days_from_now || 'N/A';
+                    } else {
+                        prelimNotice = deadlines.preliminary_notice;
+                        daysUntilPrelim = deadlines.days_until_preliminary || 'N/A';
+                    }
+                    
+                    if (typeof deadlines.lien_filing === 'object') {
+                        lienFiling = deadlines.lien_filing.deadline || deadlines.lien_filing.date;
+                        daysUntilLien = deadlines.lien_filing.days_from_now || 'N/A';
+                    } else {
+                        lienFiling = deadlines.lien_filing;
+                        daysUntilLien = deadlines.days_until_lien || 'N/A';
+                    }
                 } else {
                     console.error('Unknown API response structure:', data);
                     throw new Error('Unexpected API response format. Check console for details.');
                 }
                 
-                console.log('Parsed data:', { prelimNotice, lienFiling, daysUntilPrelim, daysUntilLien });
+                console.log('Parsed dates:', { prelimNotice, lienFiling, daysUntilPrelim, daysUntilLien });
                 
                 // Display results
                 const resultsDiv = document.getElementById('calculatorResults');
