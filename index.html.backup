@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LienDeadline provides instant mechanics lien deadline calculations via API. Fast, reliable, and accurate. Never miss a deadline again.">
+    <title>LienDeadline - Never Miss a Mechanics Lien Deadline</title>
+    
+    <!-- Social Preview Meta Tags -->
+    <meta property="og:title" content="LienDeadline - Never Miss a Mechanics Lien Deadline">
+    <meta property="og:description" content="Calculate mechanics lien deadlines in 0.3 seconds via API. Fast, reliable, and accurate. Stop losing $75K+ per year to missed deadlines.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://liendeadline.com">
+    <meta property="og:image" content="https://liendeadline.com/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="LienDeadline - Never Miss a Mechanics Lien Deadline">
+    <meta name="twitter:description" content="Calculate mechanics lien deadlines in 0.3 seconds via API. Fast, reliable, and accurate.">
+    <meta name="twitter:image" content="https://liendeadline.com/og-image.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+    
+    <!-- Preconnect to Tailwind CDN for faster loading -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    
+    <!-- Performance: Preload critical resources -->
+    <link rel="preload" href="/og-image.png" as="image">
+    <link rel="preload" href="/styles.css" as="style">
+    
+    <!-- Performance: DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://plausible.io">
+    
+    <!-- Performance: Future images should use lazy loading -->
+    <!-- Example: <img loading="lazy" src="/hero.jpg" alt="Hero image" class="rounded-lg"> -->
+    <!-- Example: <img loading="lazy" src="/testimonial.jpg" alt="Testimonial" class="rounded-lg"> -->
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="bg-white text-gray-900">
+    <!-- Navigation -->
+    <nav id="nav" class="fixed top-0 w-full bg-white shadow-sm z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-2">
+                    <svg width="40" height="40" viewBox="0 0 40 40" class="text-blue-600">
+                        <rect x="4" y="4" width="32" height="32" rx="4" fill="currentColor"/>
+                        <text x="20" y="26" text-anchor="middle" fill="white" font-size="16" font-weight="bold">LD</text>
+                    </svg>
+                    <span class="text-xl font-bold text-gray-900">LienDeadline.com</span>
+                </div>
+                <div class="flex gap-4">
+                    <a href="/api.html" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">API</a>
+                    <a href="/partners.html" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Partners</a>
+                    <a href="#pricing" aria-label="View pricing plans" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Pricing</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sticky Top Banner -->
+    <div id="free-banner" class="fixed top-16 left-0 right-0 bg-emerald-50 text-emerald-900 z-40 border-b border-emerald-200">
+        <div class="max-w-7xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+            <div class="text-emerald-900 text-sm md:text-base font-medium">
+                Free Professional Trial — 10 Deadline Calculations
+                <span class="hidden md:inline ml-2 text-emerald-700">No credit card required. Email after 3 calculations.</span>
+            </div>
+            <a href="/calculator.html" class="bg-emerald-600 text-white px-4 py-2 rounded-full font-medium text-sm hover:bg-emerald-700 transition-colors whitespace-nowrap">Start Free Trial</a>
+        </div>
+    </div>
+
+
+    <!-- Hero Section -->
+    <section id="hero" class="pt-8 px-6 py-14 md:px-8 bg-white border-b border-slate-200">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 text-slate-900 tracking-tight">
+                Miss one deadline = lose $75,000+.<br>Calculate lien deadlines instantly.
+            </h1>
+            <p class="text-xl text-slate-700 mb-8 max-w-2xl mx-auto font-medium">
+                For credit managers at building-supply yards and material suppliers. Covers 23 states.
+            </p>
+            <div class="flex items-center justify-center gap-2 text-sm text-slate-600">
+                <svg class="w-5 h-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <span>No credit card required • Email after 3 calculations</span>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Working Demo Calculator Section -->
+    <section class="py-14 bg-white">
+        <div class="max-w-4xl mx-auto px-4">
+            <!-- Heading -->
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-slate-900 tracking-tight">
+                See How It Works
+            </h2>
+            <p class="text-xl text-slate-600 text-center mb-8 font-medium">
+                Get exact deadlines for your state in under 30 seconds
+            </p>
+            
+            <!-- Static Example Box -->
+            <div class="max-w-2xl mx-auto mt-10 bg-white border border-slate-200 rounded-xl shadow-sm p-8">
+                <!-- Example label -->
+                <div class="bg-blue-600 text-white text-base font-bold px-6 py-3 rounded-lg inline-flex items-center gap-2 mb-6">
+                    <span class="text-xl">📋</span> Static Example (not functional - go to calculator to try it yourself)
+                </div>
+                
+                <!-- Input shown (not functional) -->
+                <div class="grid md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="text-sm font-semibold text-gray-700 mb-2 block">Invoice Date</label>
+                        <div class="bg-gray-200 px-4 py-3 rounded-lg text-gray-700 border-2 border-gray-300 opacity-60">
+                            11/27/2025
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-gray-700 mb-2 block">State</label>
+                        <div class="bg-gray-200 px-4 py-3 rounded-lg text-gray-700 border-2 border-gray-300 opacity-60">
+                            Texas
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Results preview -->
+                <div class="bg-gradient-to-br from-blue-50 to-green-50 rounded-lg p-6 mb-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Your Deadlines:</h3>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Preliminary Notice -->
+                        <div class="bg-white rounded-lg p-4 border-l-4 border-green-500">
+                            <div class="text-sm text-gray-600 mb-1">Preliminary Notice</div>
+                            <div class="text-2xl font-bold text-green-600">Dec 12, 2025</div>
+                            <div class="text-xs text-gray-500 mt-1">15 days remaining</div>
+                        </div>
+                        
+                        <!-- Lien Filing -->
+                        <div class="bg-white rounded-lg p-4 border-l-4 border-red-500">
+                            <div class="text-sm text-gray-600 mb-1">Lien Filing Deadline</div>
+                            <div class="text-2xl font-bold text-red-600">Feb 27, 2026</div>
+                            <div class="text-xs text-gray-500 mt-1">92 days remaining</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Teaser features -->
+                    <div class="mt-6 flex items-center gap-4 text-sm text-gray-600 flex-wrap justify-center">
+                        <span>✓ Serving requirements</span>
+                        <span>✓ Critical warnings</span>
+                        <span>✓ Legal references</span>
+                        <span>✓ PDF download</span>
+                    </div>
+                </div>
+
+                <!-- CTA Button -->
+                <div class="mt-6 text-center">
+                    <a href="/calculator.html" 
+                       class="inline-block bg-blue-600 text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-blue-700 transition-all shadow-lg">
+                        Try Calculator →
+                    </a>
+                    <p class="text-sm text-gray-600 mt-3">
+                        🎁 3 free calculations • Enter email for 7 more • All 23 states
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-14 px-4 sm:px-6 lg:px-8 bg-white">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-slate-900 tracking-tight">
+                How It Works
+            </h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-blue-600 mb-4">1</div>
+                    <h3 class="text-xl font-bold mb-3 text-slate-900">Enter Invoice Date & State</h3>
+                    <p class="text-slate-600">Select from 23 covered states</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-blue-600 mb-4">2</div>
+                    <h3 class="text-xl font-bold mb-3 text-slate-900">Get Exact Filing + Notice Deadlines</h3>
+                    <p class="text-slate-600">0.3 second calculation with all requirements</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-blue-600 mb-4">3</div>
+                    <h3 class="text-xl font-bold mb-3 text-slate-900">Export PDF or Send to Your Team</h3>
+                    <p class="text-slate-600">Professional reports with legal references</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Who Uses + Why Credit Managers Trust Section -->
+    <section class="py-14 bg-slate-50">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-slate-900 tracking-tight">
+                Who Uses LienDeadline & Why They Trust Us
+            </h2>
+            <p class="text-xl text-slate-700 text-center mb-8 font-medium">
+                Built for construction credit professionals who can't afford to miss deadlines
+            </p>
+            <div class="grid md:grid-cols-3 gap-8 mb-12">
+                <div class="text-center">
+                    <div class="text-4xl mb-4">🏗️</div>
+                    <h3 class="text-xl font-bold mb-2 text-slate-900">Building-Supply Branches</h3>
+                    <p class="text-slate-600">Track lien deadlines for hundreds of active jobs</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl mb-4">🪵</div>
+                    <h3 class="text-xl font-bold mb-2 text-slate-900">Lumber & Material Yards</h3>
+                    <p class="text-slate-600">Protect every invoice with accurate deadline tracking</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl mb-4">🚛</div>
+                    <h3 class="text-xl font-bold mb-2 text-slate-900">Concrete & Roofing Suppliers</h3>
+                    <p class="text-slate-600">Eliminate manual deadline calculations completely</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl mb-4">💼</div>
+                    <h3 class="text-xl font-bold mb-2 text-slate-900">Contractor Credit Teams</h3>
+                    <p class="text-slate-600">Manage lien rights across multiple states</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl mb-4">📦</div>
+                    <h3 class="text-xl font-bold mb-2 text-slate-900">Material Distributors</h3>
+                    <p class="text-slate-600">Automate compliance for entire branch networks</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl mb-4">🏦</div>
+                    <h3 class="text-xl font-bold mb-2 text-slate-900">Construction Finance Teams</h3>
+                    <p class="text-slate-600">Monitor lien deadlines for portfolio companies</p>
+                </div>
+            </div>
+            <!-- Why Trust Us -->
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8">
+                <h3 class="text-2xl font-bold text-center mb-6 text-slate-900">Why Credit Managers Trust Us</h3>
+                <div class="grid md:grid-cols-3 gap-6 text-center">
+                    <div>
+                        <div class="text-2xl font-bold mb-2 text-slate-900">Prevent $75K–$200K Losses</div>
+                        <div class="text-slate-600 text-sm">One missed deadline = catastrophic loss</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold mb-2 text-slate-900">Avoid Legal Exposure</div>
+                        <div class="text-slate-600 text-sm">Automated compliance with state statutes</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold mb-2 text-slate-900">0.3 Second Calculations</div>
+                        <div class="text-slate-600 text-sm">Instant deadlines for 23 states</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quarterly Legal Updates Promise -->
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8 max-w-4xl mx-auto mb-14">
+        <div class="flex items-center gap-4 mb-4">
+            <span class="text-5xl">🔄</span>
+            <h3 class="text-2xl font-bold text-slate-900">Quarterly Legal Updates Included</h3>
+        </div>
+        <p class="text-slate-700 text-lg">
+            State lien laws change often — we monitor all 23 states and keep your deadlines accurate automatically. 
+            Every update is reviewed by our legal research team and deployed immediately.
+        </p>
+    </div>
+
+    <!-- Aggressive Comparison Grid -->
+    <section class="py-14 bg-slate-50">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-slate-900 tracking-tight">
+                Manual vs Automated Deadline Tracking
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full bg-white border border-slate-200 rounded-xl shadow-sm">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-4 text-left font-bold">Task</th>
+                            <th class="p-4 text-left font-bold text-red-600">Manual (Error-Prone)</th>
+                            <th class="p-4 text-left font-bold text-green-600">With LienDeadline</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-t">
+                            <td class="p-4 font-semibold">Find correct statute</td>
+                            <td class="p-4 text-red-600">10–20 minutes per lookup</td>
+                            <td class="p-4 text-green-600 font-bold">0.3 seconds ⚡</td>
+                        </tr>
+                        <tr class="border-t bg-gray-50">
+                            <td class="p-4 font-semibold">Confirm state rules</td>
+                            <td class="p-4 text-red-600">5–10 minutes + risk of outdated info</td>
+                            <td class="p-4 text-green-600 font-bold">Automated & updated quarterly</td>
+                        </tr>
+                        <tr class="border-t">
+                            <td class="p-4 font-semibold">Track deadline changes</td>
+                            <td class="p-4 text-red-600">Manual monitoring, easy to miss</td>
+                            <td class="p-4 text-green-600 font-bold">Guaranteed accurate with legal updates</td>
+                        </tr>
+                        <tr class="border-t bg-gray-50">
+                            <td class="p-4 font-semibold">Missed deadline risk</td>
+                            <td class="p-4 text-red-600 font-bold">VERY HIGH ($75K–$200K loss)</td>
+                            <td class="p-4 text-green-600 font-bold">ELIMINATED ✓</td>
+                        </tr>
+                        <tr class="border-t">
+                            <td class="p-4 font-semibold">Cost per year</td>
+                            <td class="p-4 text-red-600">Staff time + catastrophic losses</td>
+                            <td class="p-4 text-green-600 font-bold">$3,588 (prevents $75K+ losses)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- State Coverage Section -->
+    <section class="py-14 px-4 sm:px-6 lg:px-8 bg-white">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl font-bold mb-8 text-slate-900 tracking-tight">Currently Available States</h2>
+            
+            <div class="flex flex-wrap justify-center gap-3 mb-6">
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 TX</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 CA</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 FL</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 NY</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 PA</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 IL</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 GA</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 NC</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 WA</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 OH</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 AZ</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 CO</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 VA</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 MI</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 TN</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 MA</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 NJ</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 MD</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 WI</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 MN</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 IN</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 MO</span>
+                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm">🟢 SC</span>
+            </div>
+            
+            <p class="text-gray-700 mb-6 text-lg">
+                These <strong>23 states represent 68% of US construction volume</strong>.
+            </p>
+            
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+                <p class="text-gray-700 mb-4">Need another state?</p>
+                <a href="mailto:support@liendeadline.com?subject=State%20Request&body=I%20need%20deadline%20calculations%20for%20this%20state:%0A%0AState:%20%0ACompany:%20%0AEmail:%20" 
+                   class="inline-block px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold mb-2">
+                    Request Your State →
+                </a>
+                <p class="text-sm text-gray-500">We add requested states within 48 hours</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trust Badges -->
+    <section class="py-14 px-4 sm:px-6 lg:px-8 bg-slate-50">
+        <div class="max-w-6xl mx-auto text-center">
+            <h2 class="text-2xl font-bold text-center mb-2 text-slate-900 tracking-tight">Built for teams like these</h2>
+            <p class="text-sm text-gray-600 mb-4">Designed for building-supply branches and material suppliers</p>
+            <div class="flex flex-wrap justify-center items-center gap-8">
+                <div class="flex items-center gap-2">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="8" y="4" width="4" height="8" fill="#2563eb"/>
+                        <rect x="12" y="4" width="4" height="8" fill="#2563eb"/>
+                        <rect x="6" y="12" width="4" height="12" fill="#2563eb"/>
+                    </svg>
+                    <span class="text-sm text-gray-700">ABC Supply</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="8" y="4" width="4" height="8" fill="#2563eb"/>
+                        <rect x="12" y="4" width="4" height="8" fill="#2563eb"/>
+                        <rect x="6" y="12" width="4" height="12" fill="#2563eb"/>
+                    </svg>
+                    <span class="text-sm text-gray-700">BuildTech</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="8" y="4" width="4" height="8" fill="#2563eb"/>
+                        <rect x="12" y="4" width="4" height="8" fill="#2563eb"/>
+                        <rect x="6" y="12" width="4" height="12" fill="#2563eb"/>
+                    </svg>
+                    <span class="text-sm text-gray-700">Texas Lumber</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="8" y="4" width="4" height="8" fill="#2563eb"/>
+                        <rect x="12" y="4" width="4" height="8" fill="#2563eb"/>
+                        <rect x="6" y="12" width="4" height="12" fill="#2563eb"/>
+                    </svg>
+                    <span class="text-sm text-gray-700">+44 more</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Proof Section -->
+    <section id="testimonials" class="py-14 px-4 sm:px-6 lg:px-8 bg-slate-50">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12 text-slate-900 tracking-tight">What Credit Managers Are Looking For</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <blockquote class="bg-white border border-slate-200 p-6 rounded-xl shadow-sm">
+                    <p class="text-slate-700 mb-4">"We eliminated 14 missed deadlines in 6 months. This tool has been essential for our credit team."</p>
+                    <footer class="text-sm font-semibold text-slate-900">— Sample scenario based on beta testing feedback</footer>
+                </blockquote>
+                <blockquote class="bg-white border border-slate-200 p-6 rounded-xl shadow-sm">
+                    <p class="text-slate-700 mb-4">"The calculations are instant and accurate. We've saved thousands by catching deadlines we would have missed."</p>
+                    <footer class="text-sm font-semibold text-slate-900">— Sample scenario based on beta testing feedback</footer>
+                </blockquote>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-14 px-4 sm:px-6 lg:px-8 bg-white">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-4xl font-bold text-center mb-4 text-slate-900 tracking-tight">Simple, Transparent Pricing</h2>
+            <p class="text-xl text-center text-slate-700 mb-12 font-medium">
+                One plan. Everything included. Cancel anytime.
+            </p>
+            
+            <div class="max-w-lg mx-auto">
+                <div class="bg-white border-2 border-blue-600 rounded-xl p-8 shadow-md relative">
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-bold">
+                        RECOMMENDED
+                    </div>
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold mb-2 text-slate-900">Pro Plan</h3>
+                        <div class="flex items-baseline justify-center">
+                            <span class="text-5xl font-bold text-slate-900">$299</span>
+                            <span class="text-xl text-slate-600 ml-2">/month</span>
+                        </div>
+                    </div>
+                    
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-start">
+                            <svg class="w-6 h-6 text-emerald-600 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-slate-700"><strong>Unlimited</strong> lien deadline calculations</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-6 h-6 text-emerald-600 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-slate-700"><strong>23 states</strong> covered (68% of US market)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-6 h-6 text-emerald-600 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-slate-700"><strong>PDF reports</strong> for every calculation</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-6 h-6 text-emerald-600 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-slate-700"><strong>Calculation history</strong> - never lose a deadline</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-6 h-6 text-emerald-600 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-slate-700"><strong>Priority support</strong> - email response within 24 hours</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-6 h-6 text-emerald-600 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-slate-700"><strong>Cancel anytime</strong> - no contracts, no commitments</span>
+                        </li>
+                    </ul>
+                    
+                    <!-- Risk Justification -->
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-6 mb-6">
+                        <p class="text-emerald-900 text-lg font-bold mb-2">
+                            ⚠️ One Missed Deadline = $75,000–$200,000 Loss
+                        </p>
+                        <p class="text-emerald-800">
+                            This tool eliminates that risk for $299/month. ROI after preventing just one missed deadline: <strong>25,000%</strong>
+                        </p>
+                    </div>
+                    
+                    <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" 
+                       class="block w-full bg-blue-600 text-white text-center px-5 py-3 rounded-lg hover:bg-blue-700 transition font-medium shadow-sm hover:shadow-md mt-6">
+                        Subscribe Now - $299/month
+                    </a>
+                    
+                    <p class="text-center text-sm text-slate-600 mt-4">
+                        💳 Secure payment via Stripe • 🔒 Cancel anytime
+                    </p>
+                </div>
+                
+                <div class="mt-8 text-center">
+                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 max-w-md mx-auto">
+                        <p class="text-slate-900 font-bold mb-3">Free Professional Trial — 10 Deadline Calculations</p>
+                        <p class="text-sm text-slate-700 mb-4">No credit card required. Email after 3 calculations.</p>
+                        <a href="/calculator.html" class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg font-medium shadow-sm hover:shadow-md transition">
+                            Start Free Trial — 10 Calculations →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-14 px-4 sm:px-6 lg:px-8 bg-white">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12 text-slate-900 tracking-tight">Frequently Asked Questions</h2>
+            <div class="space-y-6">
+                <div class="bg-white border border-slate-200 p-6 rounded-xl shadow-sm">
+                    <h3 class="text-xl font-bold mb-2 text-slate-900">How accurate are the deadline calculations?</h3>
+                    <p class="text-gray-600 mb-2">Our API uses up-to-date state-specific lien laws and regulations to provide general deadline estimates. We regularly update our database to reflect changes in legislation.</p>
+                    <p class="text-sm text-yellow-700 bg-yellow-50 p-2 rounded"><strong>Important:</strong> These are estimates based on general statutes. Deadlines may vary based on project type, contract terms, and local rules. Always consult a construction attorney before making lien filing decisions.</p>
+                </div>
+                <div class="bg-white border border-slate-200 p-6 rounded-xl shadow-sm">
+                    <h3 class="text-xl font-bold mb-2 text-slate-900">What happens if I exceed my API limit?</h3>
+                    <p class="text-gray-600">With our $299/month plan, you get unlimited API calls. There are no overage fees or rate limits to worry about.</p>
+                </div>
+                <div class="bg-white border border-slate-200 p-6 rounded-xl shadow-sm">
+                    <h3 class="text-xl font-bold mb-2 text-slate-900">Do you offer reseller or partner programs?</h3>
+                    <p class="text-gray-600">Yes! We offer competitive reseller and partner programs for agencies and platforms that want to white-label our API. Contact us for more details.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Disclaimer Bar -->
+    <div class="bg-yellow-50 border-t border-yellow-200 py-2 px-4">
+        <div class="max-w-6xl mx-auto text-center">
+            <p class="text-xs text-gray-700">
+                This tool provides estimates only. Always consult an attorney. 
+                <a href="terms.html" class="text-blue-600 hover:text-blue-700 underline">Full disclaimer</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer" class="py-8 px-4 sm:px-6 lg:px-8 bg-gray-900 text-gray-300">
+        <div class="max-w-6xl mx-auto">
+            <!-- Footer Credibility Section -->
+            <div class="border-t border-gray-700 pt-8 pb-6">
+                <div class="grid md:grid-cols-4 gap-6 text-center text-gray-400 text-sm">
+                    <div>
+                        <div class="font-semibold text-white mb-2">✓ State Statute Based</div>
+                        <div>Calculated from current state laws</div>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-white mb-2">✓ Quarterly Updates</div>
+                        <div>Monitored for legal changes</div>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-white mb-2">✓ 23 State Coverage</div>
+                        <div>68% of US construction market</div>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-white mb-2">✓ Built for Credit Teams</div>
+                        <div>By a former credit manager</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p>&copy; 2025 LienDeadline.com. All rights reserved.</p>
+                    <p class="text-gray-400 text-sm mt-2">
+                        Built by a former construction credit manager who understands the $75K cost of missed deadlines.
+                    </p>
+                    <p class="text-gray-400 text-xs mt-2">
+                        Free Professional Trial — 10 Deadline Calculations. No credit card required. Email after 3 calculations.
+                    </p>
+                </div>
+                <div class="flex gap-6">
+                    <a href="#faq" class="hover:text-white">FAQ</a>
+                    <a href="#pricing" class="hover:text-white">Pricing</a>
+                    <a href="/api.html" class="hover:text-white">API</a>
+                    <a href="/partners.html" class="hover:text-white">Become a Partner</a>
+                    <a href="terms.html" class="hover:text-white">Terms</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Sticky Bottom Bar (Mobile Only) -->
+    <div id="mobile-sticky-bar" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 md:hidden">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center text-sm font-medium text-gray-700">
+                <span class="text-lg mr-2">⚡</span>
+                <span>0.3 s response</span>
+            </div>
+            <a href="calculator.html" aria-label="Start free trial" class="px-5 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm whitespace-nowrap shadow-sm hover:shadow-md transition">
+                Start Free Trial — 10 Calculations
+            </a>
+        </div>
+    </div>
+
+    <script src="/script.js" defer></script>
+    
+    <!-- Privacy-friendly analytics by Plausible -->
+    <script async src="https://plausible.io/js/pa-2jUNdTEsBtWPPoGO3KG8h.js"></script>
+    <script>
+      window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+      plausible.init()
+    </script>
+    <script>
+        // Register Service Worker for offline support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful');
+                }).catch(function(err) {
+                    console.log('ServiceWorker registration failed');
+                });
+            });
+        }
+    </script>
+</body>
+</html>
+
