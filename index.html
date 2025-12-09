@@ -1,1056 +1,990 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LienDeadline - Never Miss a Mechanics Lien Deadline Again</title>
-    <meta name="description" content="Calculate mechanics lien deadlines in 0.3 seconds. 23 states, 68% US market coverage. Avoid $75K+ forfeitures. Trusted by 50+ building supply yards." />
+    <meta name="description" content="Calculate mechanics lien deadlines in 0.3 seconds. 23 states, 68% US market coverage. Avoid $75K+ forfeitures. Trusted by 50+ building supply yards.">
     
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: 'hsl(40 33% 98%)',
+                        foreground: 'hsl(220 20% 15%)',
+                        primary: 'hsl(220 60% 20%)',
+                        'primary-foreground': 'hsl(40 33% 98%)',
+                        secondary: 'hsl(40 30% 94%)',
+                        'secondary-foreground': 'hsl(220 20% 15%)',
+                        accent: 'hsl(16 85% 55%)',
+                        'accent-foreground': 'hsl(0 0% 100%)',
+                        success: 'hsl(152 60% 42%)',
+                        warning: 'hsl(38 95% 50%)',
+                        muted: 'hsl(40 20% 92%)',
+                        'muted-foreground': 'hsl(220 10% 45%)',
+                        border: 'hsl(40 20% 88%)',
+                    },
+                    fontFamily: {
+                        serif: ['Instrument Serif', 'serif'],
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
     <style>
-      :root {
-        /* Warm, professional palette inspired by Adapty */
-        --background: 40 33% 98%;
-        --foreground: 220 20% 15%;
-        --card: 0 0% 100%;
-        --card-foreground: 220 20% 15%;
-        --popover: 0 0% 100%;
-        --popover-foreground: 220 20% 15%;
-        /* Deep navy - authority & trust */
-        --primary: 220 60% 20%;
-        --primary-foreground: 40 33% 98%;
-        /* Warm cream */
-        --secondary: 40 30% 94%;
-        --secondary-foreground: 220 20% 15%;
-        --muted: 40 20% 92%;
-        --muted-foreground: 220 10% 45%;
-        /* Coral/orange accent - action & urgency */
-        --accent: 16 85% 55%;
-        --accent-foreground: 0 0% 100%;
-        /* Success green for deadlines met */
-        --success: 152 60% 42%;
-        --success-foreground: 0 0% 100%;
-        /* Warning amber for approaching deadlines */
-        --warning: 38 95% 50%;
-        --warning-foreground: 220 20% 15%;
-        --destructive: 0 84% 60%;
-        --destructive-foreground: 0 0% 100%;
-        --border: 40 20% 88%;
-        --input: 40 20% 88%;
-        --ring: 16 85% 55%;
-        --radius: 0.75rem;
-        /* Typography */
-        --font-serif: 'Instrument Serif', serif;
-        --font-sans: 'Inter', system-ui, sans-serif;
-        /* Shadows */
-        --shadow-sm: 0 1px 2px 0 hsl(220 20% 15% / 0.03);
-        --shadow-md: 0 4px 6px -1px hsl(220 20% 15% / 0.05), 0 2px 4px -2px hsl(220 20% 15% / 0.05);
-        --shadow-lg: 0 10px 15px -3px hsl(220 20% 15% / 0.08), 0 4px 6px -4px hsl(220 20% 15% / 0.05);
-        --shadow-xl: 0 20px 25px -5px hsl(220 20% 15% / 0.1), 0 8px 10px -6px hsl(220 20% 15% / 0.08);
-        --shadow-card: 0 0 0 1px hsl(40 20% 88%), 0 4px 20px -4px hsl(220 20% 15% / 0.08);
-        /* Gradients */
-        --gradient-hero: linear-gradient(135deg, hsl(40 33% 98%) 0%, hsl(40 30% 94%) 100%);
-        --gradient-accent: linear-gradient(135deg, hsl(16 85% 55%) 0%, hsl(24 90% 50%) 100%);
-        --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(40 30% 99%) 100%);
-      }
-      
-      * {
-        border-color: hsl(var(--border));
-      }
-      
-      body {
-        background-color: hsl(var(--background));
-        color: hsl(var(--foreground));
-        font-family: var(--font-sans);
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-      
-      h1, h2, h3 {
-        font-family: var(--font-serif);
-      }
-      
-      .font-serif {
-        font-family: var(--font-serif);
-      }
-      
-      .font-sans {
-        font-family: var(--font-sans);
-      }
-      
-      .text-gradient {
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-image: var(--gradient-accent);
-      }
-      
-      .shadow-card {
-        box-shadow: var(--shadow-card);
-      }
-      
-      .shadow-elegant {
-        box-shadow: var(--shadow-xl);
-      }
-      
-      .animate-fade-up {
-        animation: fadeUp 0.6s ease-out forwards;
-      }
-      
-      .animate-fade-up-delay-1 {
-        animation: fadeUp 0.6s ease-out 0.1s forwards;
-        opacity: 0;
-      }
-      
-      .animate-fade-up-delay-2 {
-        animation: fadeUp 0.6s ease-out 0.2s forwards;
-        opacity: 0;
-      }
-      
-      .animate-fade-up-delay-3 {
-        animation: fadeUp 0.6s ease-out 0.3s forwards;
-        opacity: 0;
-      }
-      
-      .animate-float {
-        animation: float 6s ease-in-out infinite;
-      }
-      
-      .animate-pulse-soft {
-        animation: pulseSoft 3s ease-in-out infinite;
-      }
-      
-      @keyframes fadeUp {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: hsl(40 33% 98%);
         }
-        to {
-          opacity: 1;
-          transform: translateY(0);
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Instrument Serif', serif;
         }
-      }
-      
-      @keyframes float {
-        0%, 100% {
-          transform: translateY(0);
+        
+        .text-gradient {
+            background: linear-gradient(135deg, hsl(16 85% 55%) 0%, hsl(24 90% 50%) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        50% {
-          transform: translateY(-10px);
+        
+        .shadow-card {
+            box-shadow: 0 0 0 1px hsl(40 20% 88%), 0 4px 20px -4px hsla(220, 20%, 15%, 0.08);
         }
-      }
-      
-      @keyframes pulseSoft {
-        0%, 100% {
-          opacity: 1;
+        
+        .shadow-elegant {
+            box-shadow: 0 20px 25px -5px hsla(220, 20%, 15%, 0.1), 0 8px 10px -6px hsla(220, 20%, 15%, 0.08);
         }
-        50% {
-          opacity: 0.7;
+        
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-      }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes pulseSoft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .animate-fade-up {
+            animation: fadeUp 0.6s ease-out forwards;
+        }
+        
+        .animate-fade-up-delay-1 {
+            animation: fadeUp 0.6s ease-out 0.1s forwards;
+            opacity: 0;
+        }
+        
+        .animate-fade-up-delay-2 {
+            animation: fadeUp 0.6s ease-out 0.2s forwards;
+            opacity: 0;
+        }
+        
+        .animate-fade-up-delay-3 {
+            animation: fadeUp 0.6s ease-out 0.3s forwards;
+            opacity: 0;
+        }
+        
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .animate-pulse-soft {
+            animation: pulseSoft 3s ease-in-out infinite;
+        }
     </style>
-  </head>
-
-  <body>
-    <div class="min-h-screen bg-background">
-      <!-- Header -->
-      <header class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+</head>
+<body class="min-h-screen bg-background text-foreground antialiased">
+    
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex items-center justify-between h-16">
-            <!-- Logo -->
-            <a href="/" class="flex items-center gap-2 group">
-              <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
-                <svg class="w-5 h-5 text-accent-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                </svg>
-              </div>
-              <span class="font-semibold text-foreground text-lg">
-                LienDeadline<span class="text-muted-foreground">.com</span>
-              </span>
-            </a>
-
-            <!-- Navigation -->
-            <nav class="hidden md:flex items-center gap-8">
-              <a href="/calculator.html" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Calculator
-              </a>
-              <a href="#features" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Features
-              </a>
-              <a href="#pricing" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Pricing
-              </a>
-              <a href="/partners.html" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Partners
-              </a>
-            </nav>
-
-            <!-- CTA -->
-            <div class="hidden md:flex items-center gap-3">
-              <a href="/calculator.html" class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-9 px-3 bg-accent text-accent-foreground hover:opacity-90 shadow-lg hover:shadow-xl hover:-translate-y-0.5">
-                Start Free Trial
-              </a>
-            </div>
-
-            <!-- Mobile Menu Button -->
-            <button id="mobileMenuBtn" class="md:hidden p-2 text-foreground hover:text-muted-foreground transition-colors">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <!-- Mobile Menu Panel -->
-      <div id="mobileMenu" class="hidden fixed inset-0 z-50 bg-background">
-        <div class="flex justify-between items-center p-6 border-b border-border">
-          <span class="text-xl font-semibold text-foreground">
-            LienDeadline<span class="text-muted-foreground">.com</span>
-          </span>
-          <button id="closeMobileMenu" class="p-2 text-foreground hover:text-muted-foreground transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <div class="flex flex-col p-6 gap-0">
-          <a href="/calculator.html" class="py-4 border-b border-border text-foreground hover:text-accent transition-colors">Calculator</a>
-          <a href="#features" class="py-4 border-b border-border text-foreground hover:text-accent transition-colors">Features</a>
-          <a href="#pricing" class="py-4 border-b border-border text-foreground hover:text-accent transition-colors">Pricing</a>
-          <a href="/partners.html" class="py-4 border-b border-border text-foreground hover:text-accent transition-colors">Partners</a>
-          <a href="/calculator.html" class="bg-accent text-accent-foreground px-6 py-3 rounded-lg text-center font-semibold mt-6 hover:opacity-90 transition-opacity">
-            Start Free Trial
-          </a>
-        </div>
-      </div>
-
-      <main>
-        <!-- Hero Section -->
-        <section class="pt-24 pb-16 lg:pt-32 lg:pb-24 overflow-hidden bg-gradient-to-b from-[hsl(40,33%,98%)] to-white">
-          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              <!-- Left: Copy -->
-              <div class="max-w-xl">
-                <!-- Badge -->
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-border mb-6 animate-fade-up">
-                  <span class="w-2 h-2 rounded-full bg-success animate-pulse-soft"></span>
-                  <span class="text-xs font-medium text-muted-foreground">
-                    23 States • 68% US Market Coverage
-                  </span>
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="/" class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span class="font-serif text-xl font-semibold text-foreground">LienDeadline<span class="text-muted-foreground">.com</span></span>
+                </a>
+                
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex items-center gap-8">
+                    <a href="/calculator.html" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Calculator</a>
+                    <a href="#features" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Features</a>
+                    <a href="#pricing" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+                    <a href="/partners.html" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Partners</a>
+                </nav>
+                
+                <!-- CTA Button -->
+                <div class="hidden md:block">
+                    <a href="/calculator.html" class="inline-flex items-center justify-center px-6 py-2 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors">
+                        Start Free Trial
+                    </a>
                 </div>
-
-                <!-- Headline -->
-                <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl text-foreground leading-[1.1] mb-6 animate-fade-up-delay-1">
-                  Never lose <span class="text-gradient italic">$75K+</span> to a missed lien deadline again
-                </h1>
-
-                <!-- Subhead -->
-                <p class="text-lg text-muted-foreground mb-8 leading-relaxed animate-fade-up-delay-2">
-                  Calculate mechanics lien deadlines in 0.3 seconds. Built for building material suppliers who can't afford to miss a single deadline.
-                </p>
-
-                <!-- Email capture form -->
-                <form id="heroEmailForm" class="flex flex-col sm:flex-row gap-3 mb-6 animate-fade-up-delay-3">
-                  <div class="flex-1 relative">
-                    <input
-                      type="email"
-                      id="heroEmail"
-                      placeholder="Enter your work email"
-                      class="w-full h-12 px-4 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all"
-                      required
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-12 px-8 text-base bg-accent text-accent-foreground hover:opacity-90 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                  >
-                    Start Free Trial
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                
+                <!-- Mobile Menu Button -->
+                <button id="mobileMenuBtn" class="md:hidden p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
-                  </button>
-                </form>
-
-                <!-- Social proof line -->
-                <p class="text-sm text-muted-foreground animate-fade-up-delay-3">
-                  <span class="text-foreground font-medium">3 free calculations</span> • No credit card required • Cancel anytime
-                </p>
-              </div>
-
-              <!-- Right: Product Preview -->
-              <div class="relative lg:pl-8">
-                <div class="relative">
-                  <!-- Decorative elements -->
-                  <div class="absolute -top-8 -right-8 w-64 h-64 bg-accent/10 rounded-full blur-3xl"></div>
-                  <div class="absolute -bottom-8 -left-8 w-48 h-48 bg-success/10 rounded-full blur-3xl"></div>
-
-                  <!-- Calculator Mockup Card -->
-                  <div class="relative bg-white rounded-2xl shadow-2xl p-6 animate-float">
-                    <!-- Browser Chrome -->
-                    <div class="flex gap-2 mb-4 pb-4 border-b border-gray-200">
-                      <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                      <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                      <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                    </div>
-                    
-                    <!-- Calculator Content -->
-                    <div class="space-y-4">
-                      <!-- Invoice Date -->
-                      <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-600">Invoice Date</span>
-                        <span class="font-medium">December 5, 2024</span>
-                      </div>
-                      
-                      <!-- State -->
-                      <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-600">State</span>
-                        <span class="font-medium">Texas</span>
-                      </div>
-                      
-                      <!-- Preliminary Notice -->
-                      <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <div class="text-xs text-green-700 font-semibold mb-1">PRELIMINARY NOTICE</div>
-                        <div class="text-lg font-bold text-green-900">January 19, 2025</div>
-                        <div class="text-sm text-green-700">45 days remaining</div>
-                      </div>
-                      
-                      <!-- NG Deadline -->
-                      <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                        <div class="text-orange-600 font-bold mb-2">$75K+ Saved per lien</div>
-                        <div class="text-xs text-orange-700 font-semibold mb-1">NG DEADLINE</div>
-                        <div class="text-lg font-bold text-orange-900">April 5, 2025</div>
-                        <div class="text-sm text-orange-700">121 days remaining</div>
-                      </div>
-                      
-                      <!-- Calculation Time -->
-                      <div class="flex justify-between items-center pt-2 border-t border-gray-200">
-                        <span class="text-sm text-gray-600">Calculation time</span>
-                        <span class="text-sm font-mono text-green-600">0.3s</span>
-                      </div>
-                    </div>
-                    
-                    <!-- Floating Badge -->
-                    <div class="absolute -bottom-4 -left-4 bg-white rounded-full shadow-lg px-4 py-2 border-2 border-orange-500 animate-fade-up-delay-2">
-                      <div class="text-2xl font-bold">50+</div>
-                      <div class="text-xs text-gray-600">Supply Yards</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                </button>
             </div>
-          </div>
+        </div>
+    </header>
+    
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="hidden fixed inset-0 z-50 bg-background md:hidden">
+        <div class="flex justify-between items-center p-6 border-b border-border">
+            <span class="font-serif text-xl font-semibold">LienDeadline.com</span>
+            <button id="closeMobileMenu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="flex flex-col p-6 gap-6">
+            <a href="/calculator.html" class="py-3 border-b border-border text-lg font-medium">Calculator</a>
+            <a href="#features" class="py-3 border-b border-border text-lg font-medium">Features</a>
+            <a href="#pricing" class="py-3 border-b border-border text-lg font-medium">Pricing</a>
+            <a href="/partners.html" class="py-3 border-b border-border text-lg font-medium">Partners</a>
+            <a href="/calculator.html" class="bg-accent text-white px-6 py-3 rounded-lg text-center font-semibold mt-4">
+                Start Free Trial
+            </a>
+        </div>
+    </div>
+    
+    <main class="pt-16">
+        
+        <!-- Hero Section -->
+        <section class="pt-24 pb-16 lg:pt-32 lg:pb-24 overflow-hidden">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                    <!-- Left: Copy -->
+                    <div class="max-w-xl">
+                        <!-- Badge -->
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-border mb-6 animate-fade-up">
+                            <span class="w-2 h-2 rounded-full bg-success animate-pulse-soft"></span>
+                            <span class="text-xs font-medium text-muted-foreground">
+                                23 States • 68% US Market Coverage
+                            </span>
+                        </div>
+                        
+                        <!-- Headline -->
+                        <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl text-foreground leading-[1.1] mb-6 animate-fade-up-delay-1">
+                            Never lose <span class="text-gradient italic">$75K+</span> to a missed lien deadline again
+                        </h1>
+                        
+                        <!-- Subhead -->
+                        <p class="text-lg text-muted-foreground mb-8 leading-relaxed animate-fade-up-delay-2">
+                            Calculate mechanics lien deadlines in 0.3 seconds. Built for building material suppliers who can't afford to miss a single deadline.
+                        </p>
+                        
+                        <!-- Email capture form -->
+                        <form id="heroEmailForm" class="flex flex-col sm:flex-row gap-3 mb-6 animate-fade-up-delay-3">
+                            <div class="flex-1 relative">
+                                <input
+                                    type="email"
+                                    id="heroEmail"
+                                    placeholder="Enter your work email"
+                                    required
+                                    class="w-full h-12 px-4 rounded-lg border border-border bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all"
+                                />
+                            </div>
+                            <button type="submit" class="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors">
+                                Start Free Trial
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                </svg>
+                            </button>
+                        </form>
+                        
+                        <!-- Social proof line -->
+                        <p class="text-sm text-muted-foreground animate-fade-up-delay-3">
+                            <span class="text-foreground font-medium">3 free calculations</span> • No credit card required • Cancel anytime
+                        </p>
+                    </div>
+                    
+                    <!-- Right: Product Preview -->
+                    <div class="relative lg:pl-8">
+                        <!-- Decorative elements -->
+                        <div class="absolute -top-8 -right-8 w-64 h-64 bg-accent/10 rounded-full blur-3xl"></div>
+                        <div class="absolute -bottom-8 -left-8 w-48 h-48 bg-success/10 rounded-full blur-3xl"></div>
+                        
+                        <!-- Main card -->
+                        <div class="relative bg-white rounded-2xl shadow-elegant border border-border p-6 animate-float">
+                            <!-- Browser Chrome Header -->
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                                </div>
+                                <span class="text-xs font-medium text-muted-foreground bg-secondary px-2 py-1 rounded">
+                                    Live Calculation
+                                </span>
+                            </div>
+                            
+                            <!-- Input preview -->
+                            <div class="space-y-4 mb-6">
+                                <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 border border-border">
+                                    <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    <div>
+                                        <p class="text-xs text-muted-foreground">Invoice Date</p>
+                                        <p class="text-sm font-medium text-foreground">December 5, 2024</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 border border-border">
+                                    <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    <div>
+                                        <p class="text-xs text-muted-foreground">State</p>
+                                        <p class="text-sm font-medium text-foreground">Texas</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Results -->
+                            <div class="space-y-3">
+                                <div class="p-4 rounded-xl bg-green-50 border border-green-200">
+                                    <div class="flex items-start justify-between">
+                                        <div>
+                                            <p class="text-xs font-medium text-success mb-1">PRELIMINARY NOTICE</p>
+                                            <p class="text-xl font-serif text-foreground">January 19, 2025</p>
+                                            <p class="text-xs text-muted-foreground mt-1">45 days remaining</p>
+                                        </div>
+                                        <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                
+                                <div class="p-4 rounded-xl bg-orange-50 border border-orange-200">
+                                    <div class="flex items-start justify-between">
+                                        <div>
+                                            <p class="text-xs font-medium text-warning mb-1">LIEN FILING DEADLINE</p>
+                                            <p class="text-xl font-serif text-foreground">April 5, 2025</p>
+                                            <p class="text-xs text-muted-foreground mt-1">121 days remaining</p>
+                                        </div>
+                                        <svg class="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Speed indicator -->
+                            <div class="mt-6 pt-4 border-t border-border flex items-center justify-between">
+                                <span class="text-xs text-muted-foreground">Calculation time</span>
+                                <span class="text-xs font-mono font-medium text-success">0.3s</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Floating stat cards -->
+                        <div class="absolute -right-4 top-1/4 bg-white rounded-lg shadow-card border border-border p-3 animate-fade-up-delay-2">
+                            <p class="text-2xl font-serif font-medium text-foreground">50+</p>
+                            <p class="text-xs text-muted-foreground">Supply Yards</p>
+                        </div>
+                        
+                        <div class="absolute -left-4 bottom-1/4 bg-white rounded-lg shadow-card border border-border p-3 animate-fade-up-delay-3">
+                            <p class="text-2xl font-serif font-medium text-accent">$75K+</p>
+                            <p class="text-xs text-muted-foreground">Saved per lien</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
+        
         <!-- Trust Bar -->
         <section class="py-12 border-y border-border bg-white">
-          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <p class="text-center text-sm text-muted-foreground mb-8">
-              Trusted by credit managers and CFOs at leading building supply companies
-            </p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
-              <div class="text-center">
-                <p class="text-3xl md:text-4xl font-serif text-foreground mb-1">50+</p>
-                <p class="text-sm text-muted-foreground">Supply Yards</p>
-              </div>
-              <div class="text-center">
-                <p class="text-3xl md:text-4xl font-serif text-foreground mb-1">0.3s</p>
-                <p class="text-sm text-muted-foreground">Response Time</p>
-              </div>
-              <div class="text-center">
-                <p class="text-3xl md:text-4xl font-serif text-foreground mb-1">23</p>
-                <p class="text-sm text-muted-foreground">States Covered</p>
-              </div>
-              <div class="text-center">
-                <p class="text-3xl md:text-4xl font-serif text-foreground mb-1">68%</p>
-                <p class="text-sm text-muted-foreground">US Market</p>
-              </div>
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <p class="text-center text-sm text-muted-foreground mb-8">
+                    Trusted by credit managers and CFOs at leading building supply companies
+                </p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                    <div>
+                        <p class="text-3xl sm:text-4xl font-serif font-medium text-foreground mb-2">50+</p>
+                        <p class="text-sm text-muted-foreground">Supply Yards</p>
+                    </div>
+                    <div>
+                        <p class="text-3xl sm:text-4xl font-serif font-medium text-foreground mb-2">0.3s</p>
+                        <p class="text-sm text-muted-foreground">Response Time</p>
+                    </div>
+                    <div>
+                        <p class="text-3xl sm:text-4xl font-serif font-medium text-foreground mb-2">23</p>
+                        <p class="text-sm text-muted-foreground">States Covered</p>
+                    </div>
+                    <div>
+                        <p class="text-3xl sm:text-4xl font-serif font-medium text-foreground mb-2">68%</p>
+                        <p class="text-sm text-muted-foreground">US Market</p>
+                    </div>
+                </div>
             </div>
-          </div>
         </section>
-
+        
         <!-- Features Section -->
         <section id="features" class="py-20 lg:py-28 bg-white">
-          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Header -->
-            <div class="text-center max-w-2xl mx-auto mb-16">
-              <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-foreground mb-4">
-                Everything you need to <span class="text-gradient italic">protect receivables</span>
-              </h2>
-              <p class="text-lg text-muted-foreground">
-                Built specifically for building material suppliers who can't afford to miss deadlines.
-              </p>
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-foreground mb-6">
+                        Everything you need to <span class="italic text-accent">protect receivables</span>
+                    </h2>
+                    <p class="text-lg text-muted-foreground">
+                        Built specifically for building material suppliers who can't afford to miss deadlines.
+                    </p>
+                </div>
+                
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Feature 1 -->
+                    <div class="p-6 rounded-xl border border-border bg-white hover:shadow-card transition-all">
+                        <div class="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-serif text-xl font-semibold text-foreground mb-2">Lightning Fast</h3>
+                        <p class="text-muted-foreground">
+                            0.3 second API response time. Get answers instantly while the customer is still on the phone.
+                        </p>
+                    </div>
+                    
+                    <!-- Feature 2 -->
+                    <div class="p-6 rounded-xl border border-border bg-white hover:shadow-card transition-all">
+                        <div class="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-serif text-xl font-semibold text-foreground mb-2">100% Accurate</h3>
+                        <p class="text-muted-foreground">
+                            Lawyer-verified calculations for 23 states. Updated monthly with latest legislative changes.
+                        </p>
+                    </div>
+                    
+                    <!-- Feature 3 -->
+                    <div class="p-6 rounded-xl border border-border bg-white hover:shadow-card transition-all">
+                        <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-serif text-xl font-semibold text-foreground mb-2">Save $75K+ Per Lien</h3>
+                        <p class="text-muted-foreground">
+                            One saved lien pays for 25 years of service. Never forfeit another receivable.
+                        </p>
+                    </div>
+                    
+                    <!-- Feature 4 -->
+                    <div class="p-6 rounded-xl border border-border bg-white hover:shadow-card transition-all">
+                        <div class="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-serif text-xl font-semibold text-foreground mb-2">API Integration</h3>
+                        <p class="text-muted-foreground">
+                            RESTful API integrates with your existing ERP or credit management system in hours.
+                        </p>
+                    </div>
+                    
+                    <!-- Feature 5 -->
+                    <div class="p-6 rounded-xl border border-border bg-white hover:shadow-card transition-all">
+                        <div class="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-serif text-xl font-semibold text-foreground mb-2">Built for Teams</h3>
+                        <p class="text-muted-foreground">
+                            Unlimited users. Share calculations across your credit, sales, and legal teams.
+                        </p>
+                    </div>
+                    
+                    <!-- Feature 6 -->
+                    <div class="p-6 rounded-xl border border-border bg-white hover:shadow-card transition-all">
+                        <div class="w-12 h-12 rounded-lg bg-emerald-100 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-serif text-xl font-semibold text-foreground mb-2">Document Generation</h3>
+                        <p class="text-muted-foreground">
+                            Auto-generate preliminary notices and lien forms pre-filled with correct deadlines.
+                        </p>
+                    </div>
+                </div>
             </div>
-
-            <!-- Features grid -->
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-              <div class="group p-6 rounded-2xl bg-card border border-border shadow-card hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
-                <div class="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4">
-                  <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                  </svg>
+        </section>
+        
+        <!-- Interactive Calculator -->
+        <section class="py-20 lg:py-28 bg-background">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-foreground mb-6">
+                        Try it <span class="italic text-accent">right now</span>
+                    </h2>
+                    <p class="text-lg text-muted-foreground">
+                        Enter a real invoice date and state. See exactly when your deadlines fall.
+                    </p>
                 </div>
-                <h3 class="text-lg font-semibold text-foreground mb-2">Lightning Fast</h3>
-                <p class="text-muted-foreground leading-relaxed">0.3 second API response time. Get answers instantly while the customer is still on the phone.</p>
-              </div>
-              
-              <div class="group p-6 rounded-2xl bg-card border border-border shadow-card hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
-                <div class="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-4">
-                  <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
+                
+                <div class="max-w-2xl mx-auto">
+                    <form id="calculatorForm" class="bg-white rounded-2xl shadow-card border border-border p-8">
+                        <div class="grid sm:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label class="block text-sm font-medium text-foreground mb-2">Invoice / Delivery Date</label>
+                                <input type="date" id="invoiceDate" required class="w-full h-12 px-4 rounded-lg border border-border bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-foreground mb-2">State</label>
+                                <select id="state" required class="w-full h-12 px-4 rounded-lg border border-border bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all">
+                                    <option value="">Select a state...</option>
+                                    <option value="TX">Texas</option>
+                                    <option value="CA">California</option>
+                                    <option value="FL">Florida</option>
+                                    <!-- Add more states as needed -->
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="w-full h-12 px-6 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors flex items-center justify-center gap-2">
+                            Calculate Deadlines
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            </svg>
+                        </button>
+                        
+                        <div id="calculatorResults" class="hidden mt-6 space-y-3">
+                            <!-- Results will be inserted here -->
+                        </div>
+                    </form>
+                    
+                    <p class="text-center text-sm text-muted-foreground mt-6">
+                        <span class="inline-flex items-center gap-1">
+                            <svg class="w-4 h-4 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Free calculations used: <span id="calculationCount">0</span>/3 • Enter email for 7 more • All 23 states
+                        </span>
+                    </p>
                 </div>
-                <h3 class="text-lg font-semibold text-foreground mb-2">100% Accurate</h3>
-                <p class="text-muted-foreground leading-relaxed">Lawyer-verified calculations for 23 states. Updated monthly with latest legislative changes.</p>
-              </div>
-              
-              <div class="group p-6 rounded-2xl bg-card border border-border shadow-card hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
-                <div class="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center mb-4">
-                  <svg class="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-foreground mb-2">Save $75K+ Per Lien</h3>
-                <p class="text-muted-foreground leading-relaxed">One saved lien pays for 25 years of service. Never forfeit another receivable.</p>
-              </div>
-              
-              <div class="group p-6 rounded-2xl bg-card border border-border shadow-card hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
-                <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                  <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                  </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-foreground mb-2">API Integration</h3>
-                <p class="text-muted-foreground leading-relaxed">RESTful API integrates with your existing ERP or credit management system in hours.</p>
-              </div>
-              
-              <div class="group p-6 rounded-2xl bg-card border border-border shadow-card hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
-                <div class="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4">
-                  <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                  </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-foreground mb-2">Built for Teams</h3>
-                <p class="text-muted-foreground leading-relaxed">Unlimited users. Share calculations across your credit, sales, and legal teams.</p>
-              </div>
-              
-              <div class="group p-6 rounded-2xl bg-card border border-border shadow-card hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
-                <div class="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-4">
-                  <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                  </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-foreground mb-2">Document Generation</h3>
-                <p class="text-muted-foreground leading-relaxed">Auto-generate preliminary notices and lien forms pre-filled with correct deadlines.</p>
-              </div>
             </div>
-          </div>
         </section>
 
-        <!-- Interactive Calculator Section -->
-        <section id="calculator" class="py-20 lg:py-28 bg-white">
-          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Header -->
-            <div class="text-center max-w-2xl mx-auto mb-12">
-              <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-foreground mb-4">
-                Try it <span class="text-gradient italic">right now</span>
-              </h2>
-              <p class="text-lg text-muted-foreground">
-                Enter a real invoice date and state. See exactly when your deadlines fall.
-              </p>
-            </div>
-
-            <!-- Calculator card -->
-            <div class="max-w-2xl mx-auto">
-              <div class="bg-card rounded-2xl shadow-elegant border border-border p-6 sm:p-8">
-                <!-- Inputs -->
-                <form id="demoForm" class="space-y-6">
-                  <div class="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium text-foreground mb-2">
-                        Invoice / Delivery Date
-                      </label>
-                      <div class="relative">
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                        <input
-                          type="date"
-                          id="demoDate"
-                          class="w-full h-12 pl-10 pr-4 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all"
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium text-foreground mb-2">
-                        State
-                      </label>
-                      <div class="relative">
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                        <select
-                          id="demoState"
-                          class="w-full h-12 pl-10 pr-4 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all appearance-none cursor-pointer"
-                        >
-                          <option value="TX">Texas</option>
-                          <option value="CA">California</option>
-                          <option value="FL">Florida</option>
-                          <option value="NY">New York</option>
-                          <option value="PA">Pennsylvania</option>
-                          <option value="IL">Illinois</option>
-                          <option value="GA">Georgia</option>
-                          <option value="NC">North Carolina</option>
-                          <option value="WA">Washington</option>
-                          <option value="OH">Ohio</option>
-                          <option value="AZ">Arizona</option>
-                          <option value="CO">Colorado</option>
-                          <option value="VA">Virginia</option>
-                          <option value="MI">Michigan</option>
-                          <option value="TN">Tennessee</option>
-                          <option value="MA">Massachusetts</option>
-                          <option value="NJ">New Jersey</option>
-                          <option value="MD">Maryland</option>
-                          <option value="WI">Wisconsin</option>
-                          <option value="MN">Minnesota</option>
-                          <option value="IN">Indiana</option>
-                          <option value="MO">Missouri</option>
-                          <option value="SC">South Carolina</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Calculate button -->
-                  <button
-                    type="submit"
-                    class="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-12 px-8 text-base bg-accent text-accent-foreground hover:opacity-90 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                  >
-                    Calculate Deadlines
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
-                  </button>
-                </form>
-
-                <!-- Results -->
-                <div id="demoResult" class="mt-8 pt-8 border-t border-border space-y-4 hidden">
-                  <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-semibold text-foreground">Your Deadlines</h3>
-                    <span class="text-xs font-mono text-success bg-success/10 px-2 py-1 rounded">
-                      Calculated in 0.3s
-                    </span>
-                  </div>
-
-                  <div id="prelimResult" class="p-4 rounded-xl bg-success/10 border border-success/20">
-                    <div class="flex items-start justify-between">
-                      <div>
-                        <p class="text-xs font-medium text-success mb-1">PRELIMINARY NOTICE DEADLINE</p>
-                        <p class="text-xl font-serif text-foreground" id="prelimDeadline"></p>
-                        <p class="text-sm text-muted-foreground mt-1" id="prelimRemaining"></p>
-                      </div>
-                      <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                      </svg>
-                    </div>
-                  </div>
-
-                  <div id="lienResult" class="p-4 rounded-xl bg-warning/10 border border-warning/20">
-                    <div class="flex items-start justify-between">
-                      <div>
-                        <p class="text-xs font-medium text-warning mb-1">LIEN FILING DEADLINE</p>
-                        <p class="text-xl font-serif text-foreground" id="lienDeadline"></p>
-                        <p class="text-sm text-muted-foreground mt-1" id="lienRemaining"></p>
-                      </div>
-                      <svg class="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  <div class="mt-4 p-3 bg-secondary/50 rounded-lg text-xs text-muted-foreground">
-                    <span class="font-semibold">Free calculations used: <span id="calcCount">0</span>/3</span> • <a href="/calculator.html" class="text-accent hover:underline">Enter email for 7 more</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
+        
         <!-- Pricing Section -->
         <section id="pricing" class="py-20 lg:py-28 bg-white">
-          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Header -->
-            <div class="text-center max-w-2xl mx-auto mb-16">
-              <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-foreground mb-4">
-                Simple, <span class="text-gradient italic">transparent</span> pricing
-              </h2>
-              <p class="text-lg text-muted-foreground">
-                One saved lien pays for 25 years of service. No hidden fees.
-              </p>
-            </div>
-
-            <!-- Pricing cards -->
-            <div class="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
-              <!-- Starter -->
-              <div class="relative p-6 lg:p-8 rounded-2xl border border-border bg-card text-foreground shadow-card hover:shadow-elegant transition-all duration-300">
-                <h3 class="text-lg font-semibold text-foreground mb-2">Starter</h3>
-                <div class="mb-4">
-                  <span class="text-4xl font-serif text-foreground">Free</span>
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-foreground mb-6">
+                        Simple, <span class="italic text-accent">transparent</span> pricing
+                    </h2>
+                    <p class="text-lg text-muted-foreground">
+                        One saved lien pays for 25 years of service. No hidden fees.
+                    </p>
                 </div>
-                <p class="text-sm text-muted-foreground mb-6">Try before you buy</p>
-                <ul class="space-y-3 mb-8 text-sm">
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-muted-foreground">3 calculations</span>
-                  </li>
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-muted-foreground">All 23 states</span>
-                  </li>
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-muted-foreground">Instant results</span>
-                  </li>
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-muted-foreground">Email support</span>
-                  </li>
-                </ul>
-                <a href="/calculator.html" class="block w-full text-center inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-12 px-8 text-base bg-card text-foreground border border-border hover:border-accent/30 hover:bg-secondary shadow-card">
-                  Start Free
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                  </svg>
-                </a>
-              </div>
-              
-              <!-- Professional (Highlighted) -->
-              <div class="relative p-6 lg:p-8 bg-primary text-primary-foreground rounded-2xl border border-primary shadow-elegant scale-105 transition-all duration-300">
-                <div class="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span class="bg-accent text-accent-foreground text-xs font-semibold px-3 py-1 rounded-full">
-                    Most Popular
-                  </span>
+                
+                <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                    <!-- Starter Plan -->
+                    <div class="p-8 rounded-2xl border border-border bg-white">
+                        <h3 class="font-serif text-2xl font-semibold text-foreground mb-2">Starter</h3>
+                        <p class="text-lg font-serif text-foreground mb-6">Free</p>
+                        <p class="text-sm text-muted-foreground mb-6">Try before you buy</p>
+                        <ul class="space-y-3 mb-8">
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>3 calculations</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>All 23 states</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Instant results</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Email support</span>
+                            </li>
+                        </ul>
+                        <a href="/calculator.html" class="block w-full h-12 px-6 rounded-lg border border-border bg-white text-foreground font-medium hover:bg-secondary transition-colors text-center leading-[3rem]">
+                            Start Free →
+                        </a>
+                    </div>
+                    
+                    <!-- Professional Plan (Highlighted) -->
+                    <div class="relative p-8 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white">
+                        <div class="absolute -top-4 left-1/2 -translate-x-1/2">
+                            <span class="inline-block px-4 py-1 rounded-full bg-accent text-white text-xs font-semibold">
+                                Most Popular
+                            </span>
+                        </div>
+                        <h3 class="font-serif text-2xl font-semibold mb-2">Professional</h3>
+                        <p class="text-lg font-serif mb-1">
+                            <span class="text-4xl">$299</span>/month
+                        </p>
+                        <p class="text-sm text-white/70 mb-6">For growing supply yards</p>
+                        <ul class="space-y-3 mb-8">
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Unlimited calculations</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>All 23 states</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>API access</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Document generation</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Unlimited team members</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Priority support</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Monthly law updates</span>
+                            </li>
+                        </ul>
+                        <a href="/calculator.html" class="block w-full h-12 px-6 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors text-center leading-[3rem]">
+                            Start Free Trial →
+                        </a>
+                    </div>
+                    
+                    <!-- Enterprise Plan -->
+                    <div class="p-8 rounded-2xl border border-border bg-white">
+                        <h3 class="font-serif text-2xl font-semibold text-foreground mb-2">Enterprise</h3>
+                        <p class="text-lg font-serif text-foreground mb-6">Custom</p>
+                        <p class="text-sm text-muted-foreground mb-6">For large operations</p>
+                        <ul class="space-y-3 mb-8">
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Everything in Professional</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Custom integrations</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Dedicated account manager</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>SLA guarantee</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>On-premise option</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-sm">
+                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Custom training</span>
+                            </li>
+                        </ul>
+                        <a href="mailto:sales@liendeadline.com" class="block w-full h-12 px-6 rounded-lg border border-border bg-white text-foreground font-medium hover:bg-secondary transition-colors text-center leading-[3rem]">
+                            Contact Sales →
+                        </a>
+                    </div>
                 </div>
-                <h3 class="text-lg font-semibold text-primary-foreground mb-2">Professional</h3>
-                <div class="mb-4">
-                  <span class="text-5xl font-serif text-primary-foreground">$299</span>
-                  <span class="text-primary-foreground/70">/month</span>
-                </div>
-                <p class="text-sm text-primary-foreground/70 mb-6">For growing supply yards</p>
-                <ul class="space-y-3 mb-8 text-sm">
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-primary-foreground/90">Unlimited calculations</span>
-                  </li>
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-primary-foreground/90">All 23 states</span>
-                  </li>
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-primary-foreground/90">API access</span>
-                  </li>
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-primary-foreground/90">Document generation</span>
-                  </li>
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-primary-foreground/90">Unlimited team members</span>
-                  </li>
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-primary-foreground/90">Priority support</span>
-                  </li>
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-primary-foreground/90">Monthly law updates</span>
-                  </li>
-                </ul>
-                <a href="/calculator.html" class="block w-full text-center inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-12 px-8 text-base bg-accent text-accent-foreground hover:opacity-90 shadow-lg hover:shadow-xl hover:-translate-y-0.5">
-                  Start Free Trial
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                  </svg>
-                </a>
-              </div>
-              
-              <!-- Enterprise -->
-              <div class="relative p-6 lg:p-8 rounded-2xl border border-border bg-card text-foreground shadow-card hover:shadow-elegant transition-all duration-300">
-                <h3 class="text-lg font-semibold text-foreground mb-2">Enterprise</h3>
-                <div class="mb-4">
-                  <span class="text-4xl font-serif text-foreground">Custom</span>
-                </div>
-                <p class="text-sm text-muted-foreground mb-6">For large operations</p>
-                <ul class="space-y-3 mb-8 text-sm">
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-muted-foreground">Everything in Professional</span>
-                  </li>
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-muted-foreground">Custom integrations</span>
-                  </li>
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-muted-foreground">Dedicated account manager</span>
-                  </li>
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-muted-foreground">SLA guarantee</span>
-                  </li>
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-muted-foreground">On-premise option</span>
-                  </li>
-                  <li class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span class="text-muted-foreground">Custom training</span>
-                  </li>
-                </ul>
-                <button class="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-12 px-8 text-base bg-card text-foreground border border-border hover:border-accent/30 hover:bg-secondary shadow-card">
-                  Contact Sales
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- Trust note -->
-            <p class="text-center text-sm text-muted-foreground mt-12">
-              All plans include a 30-day money-back guarantee. Cancel anytime.
-            </p>
-          </div>
-        </section>
-
-        <!-- Partners Section -->
-        <section id="partners" class="py-24 bg-gradient-to-br from-slate-900 to-slate-800 text-white">
-          <div class="max-w-7xl mx-auto px-6">
-            <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              <!-- Left: Copy -->
-              <div>
-                <div class="text-sm text-orange-500 font-semibold mb-4">PARTNER PROGRAM</div>
-                <h2 class="text-5xl font-serif mb-6 text-white">
-                  Earn while helping your clients <span class="italic text-orange-500">protect receivables</span>
-                </h2>
-                <p class="text-lg text-gray-300 mb-8">
-                  Insurance brokers, accountants, and consultants: add LienDeadline to your toolkit and earn up to $180K MRR in recurring commissions.
+                
+                <p class="text-center text-sm text-muted-foreground mt-12">
+                    All plans include a 30-day money-back guarantee. Cancel anytime.
                 </p>
-
-                <div class="space-y-4 mb-8">
-                  <div class="flex items-start gap-4">
-                    <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                      <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 class="font-semibold text-white mb-1">$500 Per Referral</h3>
-                      <p class="text-sm text-gray-300">Earn a one-time bounty for every client you bring on board.</p>
-                    </div>
-                  </div>
-                  <div class="flex items-start gap-4">
-                    <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                      <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 class="font-semibold text-white mb-1">$50/Month Recurring</h3>
-                      <p class="text-sm text-gray-300">Or choose 15% recurring revenue share for ongoing income.</p>
-                    </div>
-                  </div>
-                  <div class="flex items-start gap-4">
-                    <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                      <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 class="font-semibold text-white mb-1">Add Value to Clients</h3>
-                      <p class="text-sm text-gray-300">Help your construction clients protect their receivables.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <a href="/partners.html" class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-all duration-200 h-12 px-8 text-base bg-orange-500 text-white hover:opacity-90 shadow-lg hover:shadow-xl hover:-translate-y-0.5">
-                  Join Partner Program
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                  </svg>
-                </a>
-              </div>
-
-              <!-- Right: Revenue calculator preview -->
-              <div class="relative">
-                <div class="bg-white/5 backdrop-blur rounded-2xl border border-white/10 p-6 sm:p-8">
-                  <h3 class="font-semibold text-white mb-6">
-                    Partner Revenue Potential
-                  </h3>
-
-                  <div class="space-y-4">
-                    <div class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
-                      <div>
-                        <p class="text-sm text-gray-300">Referrals (Bounty)</p>
-                        <p class="text-xl font-serif text-white">100 clients × $500</p>
-                      </div>
-                      <p class="text-2xl font-serif text-orange-500">$50K</p>
-                    </div>
-
-                    <div class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
-                      <div>
-                        <p class="text-sm text-gray-300">Recurring (Monthly)</p>
-                        <p class="text-xl font-serif text-white">100 clients × $50/mo</p>
-                      </div>
-                      <p class="text-2xl font-serif text-orange-500">$5K/mo</p>
-                    </div>
-
-                    <div class="pt-4 border-t border-white/10">
-                      <div class="flex items-center justify-between">
-                        <p class="font-semibold text-white">Annual Partner Revenue</p>
-                        <p class="text-3xl font-serif text-orange-500">$110K+</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
-          </div>
         </section>
-
-        <!-- Final CTA -->
+        
+        <!-- Partners Section -->
+        <section id="partners" class="py-20 lg:py-28 bg-gradient-to-br from-slate-900 to-slate-800 text-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                    <!-- Left: Copy -->
+                    <div>
+                        <span class="inline-block text-accent text-sm font-semibold mb-4">
+                            PARTNER PROGRAM
+                        </span>
+                        <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl mb-6">
+                            Earn while helping your clients <span class="italic">protect receivables</span>
+                        </h2>
+                        <p class="text-lg text-white/70 mb-8">
+                            Insurance brokers, accountants, and consultants: add LienDeadline to your toolkit and earn up to $180K MRR in recurring commissions.
+                        </p>
+                        
+                        <div class="space-y-4 mb-8">
+                            <div class="flex items-start gap-4">
+                                <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                                    <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold mb-1">$500 Per Referral</h3>
+                                    <p class="text-sm text-white/70">
+                                        Earn a one-time bounty for every client you bring on board.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start gap-4">
+                                <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                                    <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold mb-1">$50/Month Recurring</h3>
+                                    <p class="text-sm text-white/70">
+                                        Or choose 15% recurring revenue share for ongoing income.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start gap-4">
+                                <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                                    <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold mb-1">Add Value to Clients</h3>
+                                    <p class="text-sm text-white/70">
+                                        Help your construction clients protect their receivables.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <a href="/partners.html" class="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors">
+                            Join Partner Program
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            </svg>
+                        </a>
+                    </div>
+                    
+                    <!-- Right: Revenue calculator preview -->
+                    <div class="relative">
+                        <div class="bg-white/5 backdrop-blur rounded-2xl border border-white/10 p-6 sm:p-8">
+                            <h3 class="font-semibold mb-6">Partner Revenue Potential</h3>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
+                                    <div>
+                                        <p class="text-sm text-white/70">Referrals (Bounty)</p>
+                                        <p class="text-xl font-serif">100 clients × $500</p>
+                                    </div>
+                                    <p class="text-2xl font-serif text-accent">$50K</p>
+                                </div>
+                                
+                                <div class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
+                                    <div>
+                                        <p class="text-sm text-white/70">Recurring (Monthly)</p>
+                                        <p class="text-xl font-serif">100 clients × $50/mo</p>
+                                    </div>
+                                    <p class="text-2xl font-serif text-accent">$5K/mo</p>
+                                </div>
+                                
+                                <div class="pt-4 border-t border-white/10">
+                                    <div class="flex items-center justify-between">
+                                        <p class="font-semibold">Annual Partner Revenue</p>
+                                        <p class="text-3xl font-serif text-accent">$110K+</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- CTA Section -->
         <section class="py-20 lg:py-28 bg-white">
-          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="max-w-3xl mx-auto text-center">
-              <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-foreground mb-6">
-                Ready to <span class="text-gradient italic">never miss</span> a deadline?
-              </h2>
-              <p class="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
-                Start with 3 free calculations. No credit card required. See why 50+ supply yards trust LienDeadline.
-              </p>
-
-              <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="/calculator.html" class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-14 px-10 text-base bg-accent text-accent-foreground hover:opacity-90 shadow-lg hover:shadow-xl hover:-translate-y-0.5">
-                  Start Free Trial
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                  </svg>
-                </a>
-                <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-14 px-10 text-base bg-card text-foreground border border-border hover:border-accent/30 hover:bg-secondary shadow-card">
-                  Talk to Sales
-                </button>
-              </div>
-
-              <p class="text-sm text-muted-foreground mt-6">
-                🎁 3 free calculations • Enter email for 7 more • All 23 states
-              </p>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <!-- Footer -->
-      <footer class="border-t border-border bg-white">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-          <div class="grid grid-cols-2 md:grid-cols-5 gap-8">
-            <!-- Brand -->
-            <div class="col-span-2 md:col-span-1">
-              <a href="/" class="flex items-center gap-2 mb-4">
-                <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
-                  <svg class="w-5 h-5 text-accent-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                  </svg>
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto">
+                    <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-foreground mb-6">
+                        Ready to <span class="italic text-accent">never miss</span> a deadline?
+                    </h2>
+                    <p class="text-lg text-muted-foreground mb-8">
+                        Start with 3 free calculations. No credit card required. See why 50+ supply yards trust LienDeadline.
+                    </p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <a href="/calculator.html" class="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors">
+                            Start Free Trial
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            </svg>
+                        </a>
+                        <a href="mailto:sales@liendeadline.com" class="inline-flex items-center justify-center h-12 px-8 rounded-lg border border-border bg-white text-foreground font-medium hover:bg-secondary transition-colors">
+                            Talk to Sales
+                        </a>
+                    </div>
+                    
+                    <p class="text-sm text-muted-foreground mt-6">
+                        <span class="inline-flex items-center gap-1">
+                            <svg class="w-4 h-4 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            3 free calculations • Enter email for 7 more • All 23 states
+                        </span>
+                    </p>
                 </div>
-                <span class="font-semibold text-foreground">LienDeadline</span>
-              </a>
-              <p class="text-sm text-muted-foreground">
-                Never miss a mechanics lien deadline again.
-              </p>
             </div>
-
-            <!-- Links -->
-            <div>
-              <h4 class="font-semibold text-foreground mb-4 text-sm">Product</h4>
-              <ul class="space-y-2">
-                <li><a href="/calculator.html" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Calculator</a></li>
-                <li><a href="/api.html" class="text-sm text-muted-foreground hover:text-foreground transition-colors">API Docs</a></li>
-                <li><a href="#pricing" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a></li>
-                <li><a href="#" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Changelog</a></li>
-              </ul>
+        </section>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-white border-t border-border py-12">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-5 gap-8 mb-8">
+                <!-- Logo & Tagline -->
+                <div class="md:col-span-1">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <span class="font-serif text-lg font-semibold">LienDeadline</span>
+                    </div>
+                    <p class="text-sm text-muted-foreground">
+                        Never miss a mechanics lien deadline again.
+                    </p>
+                </div>
+                
+                <!-- Product -->
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/calculator.html" class="text-muted-foreground hover:text-foreground">Calculator</a></li>
+                        <li><a href="/api.html" class="text-muted-foreground hover:text-foreground">API Docs</a></li>
+                        <li><a href="#pricing" class="text-muted-foreground hover:text-foreground">Pricing</a></li>
+                        <li><a href="/changelog.html" class="text-muted-foreground hover:text-foreground">Changelog</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Company -->
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/about.html" class="text-muted-foreground hover:text-foreground">About</a></li>
+                        <li><a href="/blog.html" class="text-muted-foreground hover:text-foreground">Blog</a></li>
+                        <li><a href="/careers.html" class="text-muted-foreground hover:text-foreground">Careers</a></li>
+                        <li><a href="/contact.html" class="text-muted-foreground hover:text-foreground">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Legal -->
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/privacy.html" class="text-muted-foreground hover:text-foreground">Privacy</a></li>
+                        <li><a href="/terms.html" class="text-muted-foreground hover:text-foreground">Terms</a></li>
+                        <li><a href="/security.html" class="text-muted-foreground hover:text-foreground">Security</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Resources -->
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/help.html" class="text-muted-foreground hover:text-foreground">Help Center</a></li>
+                        <li><a href="/partners.html" class="text-muted-foreground hover:text-foreground">Partner Program</a></li>
+                        <li><a href="/state-coverage.html" class="text-muted-foreground hover:text-foreground">State Coverage</a></li>
+                    </ul>
+                </div>
             </div>
-            <div>
-              <h4 class="font-semibold text-foreground mb-4 text-sm">Company</h4>
-              <ul class="space-y-2">
-                <li><a href="#" class="text-sm text-muted-foreground hover:text-foreground transition-colors">About</a></li>
-                <li><a href="#" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Blog</a></li>
-                <li><a href="#" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Careers</a></li>
-                <li><a href="#" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</a></li>
-              </ul>
+            
+            <div class="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
+                <p class="text-sm text-muted-foreground">
+                    © 2025 LienDeadline.com. All rights reserved.
+                </p>
+                <div class="flex gap-4 text-sm">
+                    <a href="/privacy.html" class="text-muted-foreground hover:text-foreground">Privacy</a>
+                    <a href="/terms.html" class="text-muted-foreground hover:text-foreground">Terms</a>
+                    <a href="/cookies.html" class="text-muted-foreground hover:text-foreground">Cookies</a>
+                </div>
             </div>
-            <div>
-              <h4 class="font-semibold text-foreground mb-4 text-sm">Legal</h4>
-              <ul class="space-y-2">
-                <li><a href="/privacy.html" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</a></li>
-                <li><a href="/terms.html" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms</a></li>
-                <li><a href="#" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Security</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 class="font-semibold text-foreground mb-4 text-sm">Resources</h4>
-              <ul class="space-y-2">
-                <li><a href="#" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Help Center</a></li>
-                <li><a href="/partners.html" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Partner Program</a></li>
-                <li><a href="#" class="text-sm text-muted-foreground hover:text-foreground transition-colors">State Coverage</a></li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Bottom -->
-          <div class="mt-12 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
-            <p class="text-sm text-muted-foreground">
-              © 2025 LienDeadline.com. All rights reserved.
-            </p>
-            <div class="flex items-center gap-6">
-              <a href="/privacy.html" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
-              <a href="/terms.html" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms</a>
-              <a href="#" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Cookies</a>
-            </div>
-          </div>
         </div>
-      </footer>
-    </div>
-
+    </footer>
+    
+    <!-- JavaScript -->
     <script>
-      // Mobile menu toggle functionality
-      document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-        document.getElementById('mobileMenu').classList.remove('hidden');
-        document.body.style.overflow = 'hidden'; // Prevent background scrolling
-      });
-
-      document.getElementById('closeMobileMenu').addEventListener('click', () => {
-        document.getElementById('mobileMenu').classList.add('hidden');
-        document.body.style.overflow = ''; // Restore scrolling
-      });
-
-      // Close mobile menu when clicking a link
-      document.querySelectorAll('#mobileMenu a').forEach(link => {
-        link.addEventListener('click', () => {
-          document.getElementById('mobileMenu').classList.add('hidden');
-          document.body.style.overflow = ''; // Restore scrolling
+        // Mobile menu toggle
+        document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+            document.getElementById('mobileMenu').classList.remove('hidden');
         });
-      });
-
-      // Close mobile menu when clicking outside (on backdrop)
-      document.getElementById('mobileMenu').addEventListener('click', (e) => {
-        if (e.target.id === 'mobileMenu') {
-          document.getElementById('mobileMenu').classList.add('hidden');
-          document.body.style.overflow = ''; // Restore scrolling
-        }
-      });
-
-      // Hero email form handler - stores email and redirects to calculator
-      document.getElementById('heroEmailForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('heroEmail').value;
-        localStorage.setItem('userEmail', email);
-        window.location.href = '/calculator.html';
-      });
-
-      // Demo calculator form handler - uses our existing API endpoint
-      document.getElementById('demoForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
         
-        const date = document.getElementById('demoDate').value;
-        const state = document.getElementById('demoState').value;
+        document.getElementById('closeMobileMenu').addEventListener('click', () => {
+            document.getElementById('mobileMenu').classList.add('hidden');
+        });
         
-        try {
-          const res = await fetch('/api/v1/calculate-deadline', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              invoice_date: date,
-              state: state,
-              role: 'material_supplier'
-            })
-          });
-          
-          const data = await res.json();
-          
-          // Display results
-          document.getElementById('prelimDeadline').textContent = data.preliminary_notice_deadline || 'N/A';
-          document.getElementById('lienDeadline').textContent = data.lien_filing_deadline || 'N/A';
-          
-          // Calculate days remaining
-          const prelimDate = new Date(data.preliminary_notice_deadline);
-          const lienDate = new Date(data.lien_filing_deadline);
-          const today = new Date();
-          const prelimDays = Math.ceil((prelimDate - today) / (1000 * 60 * 60 * 24));
-          const lienDays = Math.ceil((lienDate - today) / (1000 * 60 * 60 * 24));
-          
-          document.getElementById('prelimRemaining').textContent = prelimDays > 0 ? `${prelimDays} days remaining` : 'Deadline passed!';
-          document.getElementById('lienRemaining').textContent = lienDays > 0 ? `${lienDays} days remaining` : 'Deadline passed!';
-          
-          // Show results
-          document.getElementById('demoResult').classList.remove('hidden');
-          
-          // Scroll to results
-          document.getElementById('demoResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          
-          // Update calculation count
-          const calcCount = parseInt(localStorage.getItem('calcCount') || '0') + 1;
-          localStorage.setItem('calcCount', calcCount.toString());
-          document.getElementById('calcCount').textContent = Math.min(calcCount, 3);
-          
-        } catch (err) {
-          alert('Demo calculation failed. Please try again or start your free trial.');
-          console.error('Calculation error:', err);
-        }
-      });
-
-      // Set default date to today
-      document.getElementById('demoDate').valueAsDate = new Date();
+        // Close mobile menu when clicking a link
+        document.querySelectorAll('#mobileMenu a').forEach(link => {
+            link.addEventListener('click', () => {
+                document.getElementById('mobileMenu').classList.add('hidden');
+            });
+        });
+        
+        // Hero email form
+        document.getElementById('heroEmailForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('heroEmail').value;
+            localStorage.setItem('userEmail', email);
+            window.location.href = '/calculator.html';
+        });
+        
+        // Calculator form
+        document.getElementById('calculatorForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const invoiceDate = document.getElementById('invoiceDate').value;
+            const state = document.getElementById('state').value;
+            
+            try {
+                const response = await fetch('/api/v1/calculate-deadline', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        invoice_date: invoiceDate,
+                        state: state,
+                        role: 'Material Supplier'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Display results
+                const resultsDiv = document.getElementById('calculatorResults');
+                resultsDiv.innerHTML = `
+                    <div class="p-4 rounded-xl bg-green-50 border border-green-200">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-success mb-1">PRELIMINARY NOTICE</p>
+                                <p class="text-xl font-serif text-foreground">${data.deadlines.preliminary_notice}</p>
+                                <p class="text-xs text-muted-foreground mt-1">${data.deadlines.days_until_preliminary} days remaining</p>
+                            </div>
+                            <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 rounded-xl bg-orange-50 border border-orange-200">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-warning mb-1">LIEN FILING DEADLINE</p>
+                                <p class="text-xl font-serif text-foreground">${data.deadlines.lien_filing}</p>
+                                <p class="text-xs text-muted-foreground mt-1">${data.deadlines.days_until_lien} days remaining</p>
+                            </div>
+                            <svg class="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                `;
+                resultsDiv.classList.remove('hidden');
+                
+                // Update calculation count
+                let count = parseInt(localStorage.getItem('calculationCount') || '0');
+                count++;
+                localStorage.setItem('calculationCount', count);
+                document.getElementById('calculationCount').textContent = count;
+                
+            } catch (error) {
+                console.error('Error calculating deadlines:', error);
+                alert('Error calculating deadlines. Please try again.');
+            }
+        });
+        
+        // Initialize calculation count
+        const calculationCount = localStorage.getItem('calculationCount') || '0';
+        document.getElementById('calculationCount').textContent = calculationCount;
+        
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
     </script>
-  </body>
+</body>
 </html>
