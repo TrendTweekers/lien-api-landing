@@ -134,7 +134,7 @@
                 
                 <!-- Desktop Navigation -->
                 <nav class="hidden md:flex items-center gap-8">
-                    <a href="/calculator.html" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Calculator</a>
+                    <a href="#calculator" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Calculator</a>
                     <a href="#features" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Features</a>
                     <a href="#pricing" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
                     <a href="#partners" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Partners</a>
@@ -1010,7 +1010,7 @@
             const invoiceDate = document.getElementById('invoiceDate').value;
             const state = document.getElementById('state').value;
             
-            console.log('Form submitted:', { invoiceDate, state }); // Debug log
+            console.log('Form submitted:', { invoiceDate, state });
             
             if (!invoiceDate || !state) {
                 alert('Please enter both date and state');
@@ -1018,7 +1018,11 @@
             }
             
             try {
-                console.log('Calling API...'); // Debug log
+                console.log('Calling API with:', {
+                    invoice_date: invoiceDate,
+                    state: state,
+                    role: 'Material Supplier'
+                });
                 
                 const response = await fetch('/api/v1/calculate-deadline', {
                     method: 'POST',
@@ -1032,14 +1036,38 @@
                     })
                 });
                 
-                console.log('API response status:', response.status); // Debug log
+                console.log('API response status:', response.status);
                 
                 if (!response.ok) {
-                    throw new Error(`API returned ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('API error response:', errorText);
+                    throw new Error(`API returned ${response.status}: ${errorText}`);
                 }
                 
                 const data = await response.json();
-                console.log('API data received:', data); // Debug log
+                console.log('API data received:', JSON.stringify(data, null, 2));
+                
+                // Handle different possible response structures
+                let prelimNotice, lienFiling, daysUntilPrelim, daysUntilLien;
+                
+                if (data.deadlines) {
+                    // Structure 1: data.deadlines.preliminary_notice
+                    prelimNotice = data.deadlines.preliminary_notice || data.deadlines.preliminaryNotice;
+                    lienFiling = data.deadlines.lien_filing || data.deadlines.lienFiling;
+                    daysUntilPrelim = data.deadlines.days_until_preliminary || data.deadlines.daysUntilPreliminary || 'N/A';
+                    daysUntilLien = data.deadlines.days_until_lien || data.deadlines.daysUntilLien || 'N/A';
+                } else if (data.preliminary_notice) {
+                    // Structure 2: data.preliminary_notice (flat)
+                    prelimNotice = data.preliminary_notice || data.preliminaryNotice;
+                    lienFiling = data.lien_filing || data.lienFiling;
+                    daysUntilPrelim = data.days_until_preliminary || data.daysUntilPreliminary || 'N/A';
+                    daysUntilLien = data.days_until_lien || data.daysUntilLien || 'N/A';
+                } else {
+                    console.error('Unknown API response structure:', data);
+                    throw new Error('Unexpected API response format. Check console for details.');
+                }
+                
+                console.log('Parsed data:', { prelimNotice, lienFiling, daysUntilPrelim, daysUntilLien });
                 
                 // Display results
                 const resultsDiv = document.getElementById('calculatorResults');
@@ -1048,8 +1076,8 @@
                         <div class="flex items-start justify-between">
                             <div>
                                 <p class="text-sm font-medium text-success mb-1">PRELIMINARY NOTICE</p>
-                                <p class="text-3xl font-serif text-foreground">${data.deadlines.preliminary_notice}</p>
-                                <p class="text-sm text-muted-foreground mt-1">${data.deadlines.days_until_preliminary} days remaining</p>
+                                <p class="text-3xl font-serif text-foreground">${prelimNotice || 'N/A'}</p>
+                                <p class="text-sm text-muted-foreground mt-1">${daysUntilPrelim} days remaining</p>
                             </div>
                             <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -1061,8 +1089,8 @@
                         <div class="flex items-start justify-between">
                             <div>
                                 <p class="text-sm font-medium text-warning mb-1">LIEN FILING DEADLINE</p>
-                                <p class="text-3xl font-serif text-foreground">${data.deadlines.lien_filing}</p>
-                                <p class="text-sm text-muted-foreground mt-1">${data.deadlines.days_until_lien} days remaining</p>
+                                <p class="text-3xl font-serif text-foreground">${lienFiling || 'N/A'}</p>
+                                <p class="text-sm text-muted-foreground mt-1">${daysUntilLien} days remaining</p>
                             </div>
                             <svg class="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -1076,7 +1104,10 @@
                 let count = parseInt(localStorage.getItem('calculationCount') || '0');
                 count++;
                 localStorage.setItem('calculationCount', count);
-                document.getElementById('calculationCount').textContent = count;
+                const countElement = document.getElementById('calculationCount');
+                if (countElement) {
+                    countElement.textContent = count;
+                }
                 
                 // Check if email gate should show (after 3 calculations)
                 if (count === 3 && !localStorage.getItem('userEmail')) {
@@ -1090,8 +1121,8 @@
                 }
                 
             } catch (error) {
-                console.error('Error calculating deadlines:', error);
-                alert('Error calculating deadlines: ' + error.message + '. Please try again or contact support.');
+                console.error('Full error details:', error);
+                alert('Error: ' + error.message + '\n\nPlease check the browser console (F12) for details or contact support.');
             }
         });
         
