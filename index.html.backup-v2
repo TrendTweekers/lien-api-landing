@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LienDeadline.com - Never Miss a Mechanics Lien Deadline</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-white text-gray-900">
+<!-- Navigation -->
+<nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+        <a href="/" class="flex items-center gap-2">
+            <span class="text-2xl font-bold text-blue-600">⚡</span>
+            <span class="text-xl font-bold">LienDeadline.com</span>
+        </a>
+        <div class="flex gap-6 items-center">
+            <a href="/calculator.html" class="text-gray-600 hover:text-blue-600 transition">Calculator</a>
+            <a href="/partners.html" class="text-gray-600 hover:text-blue-600 transition">Partners</a>
+            <a href="/pricing.html" class="text-gray-600 hover:text-blue-600 transition">Pricing</a>
+            <a href="/calculator.html" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-md">
+                Start Free Trial
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<header class="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 text-white relative overflow-hidden">
+    <div class="absolute inset-0 opacity-10">
+        <div class="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+    </div>
+    <div class="max-w-6xl mx-auto px-6 py-24 text-center relative z-10">
+        <div class="inline-block bg-blue-500/30 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-semibold mb-6">
+            ⚡ 0.3 Second Calculations • 23 States Covered
+        </div>
+        <h1 class="text-6xl font-extrabold mb-6 leading-tight">
+            Never Miss a Lien<br>Deadline Again
+        </h1>
+        <p class="text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
+            Calculate mechanics lien deadlines instantly. Avoid $75K+ forfeitures. Used by 50+ building supply yards across America.
+        </p>
+        <div class="flex gap-4 justify-center items-center flex-wrap">
+            <a href="/calculator.html" class="bg-white text-blue-600 px-10 py-4 rounded-xl font-bold text-lg hover:bg-blue-50 transition-all shadow-2xl hover:shadow-xl hover:scale-105">
+                Try Free – 3 Calculations
+            </a>
+            <a href="#demo" class="border-2 border-white/30 backdrop-blur-sm text-white px-10 py-4 rounded-xl font-semibold text-lg hover:bg-white/10 transition-all">
+                See Demo →
+            </a>
+        </div>
+        <p class="text-sm text-blue-200 mt-6">
+            🎁 3 free calculations • No credit card • Enter email for 7 more
+        </p>
+    </div>
+</header>
+
+<!-- Trust Bar -->
+<section class="bg-gray-50 border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-6 py-6">
+        <div class="flex justify-center items-center gap-12 flex-wrap text-sm text-gray-600">
+            <div class="flex items-center gap-2">
+                <span class="text-yellow-500 text-lg">★★★★★</span>
+                <span class="font-semibold">50+ Supply Yards</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">⚡</span>
+                <span class="font-semibold">0.3 Second Response</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">🗺️</span>
+                <span class="font-semibold">23 States Covered</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">💰</span>
+                <span class="font-semibold">68% US Market</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Benefits Grid -->
+<section class="py-24 bg-white">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-extrabold mb-4">Why Teams Choose LienDeadline</h2>
+            <p class="text-xl text-gray-600">Built for building material suppliers who can't afford mistakes</p>
+        </div>
+        
+        <div class="grid md:grid-cols-3 gap-10">
+            <div class="text-center p-8 rounded-2xl hover:bg-gray-50 transition-all">
+                <div class="text-5xl mb-4">⚡</div>
+                <h3 class="text-2xl font-bold mb-3">Lightning Fast</h3>
+                <p class="text-gray-600 leading-relaxed">0.3 second API response time. Get answers instantly while the customer is still on the phone.</p>
+            </div>
+            
+            <div class="text-center p-8 rounded-2xl hover:bg-gray-50 transition-all">
+                <div class="text-5xl mb-4">💯</div>
+                <h3 class="text-2xl font-bold mb-3">100% Accurate</h3>
+                <p class="text-gray-600 leading-relaxed">Lawyer-verified calculations. 23 states covering 68% of US construction market. Updated monthly.</p>
+            </div>
+            
+            <div class="text-center p-8 rounded-2xl hover:bg-gray-50 transition-all">
+                <div class="text-5xl mb-4">💰</div>
+                <h3 class="text-2xl font-bold mb-3">Save $75K+/Year</h3>
+                <p class="text-gray-600 leading-relaxed">Avoid forfeited liens from missed deadlines. One saved lien pays for 25 years of service.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Live Demo Section -->
+<section id="demo" class="py-24 bg-gradient-to-br from-gray-50 to-blue-50">
+    <div class="max-w-4xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <h2 class="text-4xl font-extrabold mb-4">See It Work in 30 Seconds</h2>
+            <p class="text-xl text-gray-600">Real calculation. Real deadlines. Right now.</p>
+        </div>
+        
+        <div class="bg-white rounded-2xl shadow-2xl p-8">
+            <form id="demoForm" class="space-y-4">
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 text-gray-700">Invoice/Delivery Date</label>
+                        <input type="date" id="demoDate" class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none transition" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 text-gray-700">State</label>
+                        <select id="demoState" class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none transition">
+                            <option value="TX">Texas</option>
+                            <option value="CA">California</option>
+                            <option value="FL">Florida</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl">
+                    Calculate Deadlines →
+                </button>
+            </form>
+            
+            <div id="demoResult" class="mt-6 hidden">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border-2 border-blue-200">
+                    <div class="flex items-start gap-3 mb-4">
+                        <span class="text-3xl">✅</span>
+                        <div>
+                            <h4 class="font-bold text-lg mb-1">Calculation Complete</h4>
+                            <p class="text-sm text-gray-600" id="demoStateDisplay"></p>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="bg-white rounded-lg p-4">
+                            <div class="text-sm text-gray-600 mb-1">Preliminary Notice Deadline</div>
+                            <div class="text-2xl font-bold text-blue-600" id="prelimDeadline"></div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4">
+                            <div class="text-sm text-gray-600 mb-1">Lien Filing Deadline</div>
+                            <div class="text-2xl font-bold text-blue-600" id="lienDeadline"></div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <a href="/calculator.html" class="text-blue-600 font-semibold hover:underline">Want more states? Start your free trial →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Social Proof Section -->
+<section class="py-24 bg-white">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-extrabold mb-4">Built for Teams Like These</h2>
+            <p class="text-xl text-gray-600">Trusted by credit managers, CFOs, and legal teams</p>
+        </div>
+        
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition-all">
+                <div class="text-4xl mb-4">🏢</div>
+                <h3 class="text-xl font-bold mb-2">Building Supply Yards</h3>
+                <p class="text-gray-600">Lumber yards, concrete suppliers, equipment rental</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition-all">
+                <div class="text-4xl mb-4">💼</div>
+                <h3 class="text-xl font-bold mb-2">Credit Managers</h3>
+                <p class="text-gray-600">Protect receivables, prevent forfeited liens</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition-all">
+                <div class="text-4xl mb-4">⚖️</div>
+                <h3 class="text-xl font-bold mb-2">Insurance Brokers</h3>
+                <p class="text-gray-600">Add value to construction clients</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Final CTA -->
+<section class="py-24 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 text-white">
+    <div class="max-w-4xl mx-auto px-6 text-center">
+        <h2 class="text-5xl font-extrabold mb-6">Ready to Never Miss a Deadline?</h2>
+        <p class="text-xl text-blue-100 mb-10 leading-relaxed">
+            Start with 3 free calculations. No credit card required. Add your email for 7 more.
+        </p>
+        <a href="/calculator.html" class="inline-block bg-white text-blue-600 px-12 py-5 rounded-xl font-bold text-xl hover:bg-blue-50 transition-all shadow-2xl hover:shadow-xl hover:scale-105">
+            Start Free Trial – 3 Calculations
+        </a>
+        <p class="text-sm text-blue-200 mt-6">
+            🎁 3 free • Enter email for 7 more • All 23 states • Cancel anytime
+        </p>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-gray-900 text-gray-400 py-12">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+                <div class="text-white font-bold text-lg mb-4">LienDeadline.com</div>
+                <p class="text-sm">Never miss a mechanics lien deadline again.</p>
+            </div>
+            <div>
+                <div class="text-white font-semibold mb-4">Product</div>
+                <div class="space-y-2 text-sm">
+                    <a href="/calculator.html" class="block hover:text-white transition">Calculator</a>
+                    <a href="/pricing.html" class="block hover:text-white transition">Pricing</a>
+                    <a href="/api-docs.html" class="block hover:text-white transition">API Docs</a>
+                </div>
+            </div>
+            <div>
+                <div class="text-white font-semibold mb-4">Partners</div>
+                <div class="space-y-2 text-sm">
+                    <a href="/partners.html" class="block hover:text-white transition">Become a Partner</a>
+                    <a href="/partners.html#commission" class="block hover:text-white transition">Commission Plans</a>
+                </div>
+            </div>
+            <div>
+                <div class="text-white font-semibold mb-4">Legal</div>
+                <div class="space-y-2 text-sm">
+                    <a href="/terms.html" class="block hover:text-white transition">Terms of Service</a>
+                    <a href="/privacy.html" class="block hover:text-white transition">Privacy Policy</a>
+                </div>
+            </div>
+        </div>
+        <div class="border-t border-gray-800 pt-8 text-center text-sm">
+            © 2025 LienDeadline.com. All rights reserved.
+        </div>
+    </div>
+</footer>
+
+<script>
+// Demo form handler
+document.getElementById('demoForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const date = document.getElementById('demoDate').value;
+    const state = document.getElementById('demoState').value;
+    
+    try {
+        const res = await fetch('/api/v1/calculate-deadline', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                invoice_date: date,
+                state: state,
+                role: 'material_supplier'
+            })
+        });
+        
+        const data = await res.json();
+        
+        document.getElementById('demoStateDisplay').textContent = `${state} • Material Supplier • Invoice Date: ${date}`;
+        document.getElementById('prelimDeadline').textContent = data.preliminary_notice_deadline || 'N/A';
+        document.getElementById('lienDeadline').textContent = data.lien_filing_deadline || 'N/A';
+        document.getElementById('demoResult').classList.remove('hidden');
+        
+        // Smooth scroll to result
+        document.getElementById('demoResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (err) {
+        alert('Demo calculation failed. Please try again or start your free trial.');
+    }
+});
+
+// Set default date to today
+document.getElementById('demoDate').valueAsDate = new Date();
+</script>
+</body>
+</html>
+
