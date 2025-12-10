@@ -3,439 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Broker Dashboard - Track referrals and commissions">
-    <title>Broker Dashboard - LienDeadline.com</title>
-    
-    <!-- Favicon -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
-    
-    <!-- Preconnect to Tailwind CDN for faster loading -->
-    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <title>Broker Dashboard - LienDeadline</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="styles.css">
-    <!-- Privacy-friendly analytics by Plausible -->
-    <script defer data-domain="liendeadline.com" src="https://plausible.io/js/script.js"></script>
 </head>
-<body class="bg-gray-50 text-gray-900">
-    <!-- Email-based broker authentication -->
-    <script>
-        const API_BASE = ''; // Use relative URL since API is on same domain
-
-        // Email-based broker authentication
-        (async function() {
-            const brokerEmail = localStorage.getItem('brokerEmail');
-            const brokerApproved = localStorage.getItem('brokerApproved');
-            const brokerName = localStorage.getItem('brokerName');
-            
-            // If not authenticated, prompt for email
-            if (!brokerApproved || !brokerEmail) {
-                // Hide page content during authentication
-                document.body.style.visibility = 'hidden';
-                
-                // Prompt for email
-                const email = prompt('Enter your registered broker email address:');
-                
-                if (!email) {
-                    alert('Access denied. Apply for broker access at the Partners page.');
-                    window.location.href = '/partners.html';
-                    return;
-                }
-                
-                try {
-                    // Check if broker is approved
-                    const response = await fetch(`${API_BASE}/v1/broker/check-approval`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: email.toLowerCase().trim() })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.approved) {
-                        // Broker is approved - save credentials and show dashboard
-                        localStorage.setItem('brokerEmail', email.toLowerCase().trim());
-                        localStorage.setItem('brokerName', data.name);
-                        localStorage.setItem('brokerCompany', data.company || '');
-                        localStorage.setItem('brokerCommissionModel', data.commission_model || 'bounty');
-                        localStorage.setItem('brokerApproved', 'true');
-                        
-                        // Show success message
-                        alert(`Welcome back, ${data.name}! Loading your dashboard...`);
-                        window.location.reload();
-                        
-                    } else if (data.pending) {
-                        // Application is pending
-                        alert(data.message || 'Your application is under review. We\'ll email you when approved!');
-                        window.location.href = '/partners.html';
-                        
-                    } else {
-                        // Email not found
-                        alert(data.message || 'Email not found. Please apply at the Partners page first.');
-                        window.location.href = '/partners.html';
-                    }
-                    
-                } catch (error) {
-                    console.error('Broker verification failed:', error);
-                    alert('Could not verify your email. Please try again or contact support.');
-                    window.location.href = '/partners.html';
-                }
-                
-            } else {
-                // Already authenticated - show dashboard
-                document.body.style.visibility = 'visible';
-                
-                // Display broker name if element exists
-                const nameElement = document.getElementById('brokerName');
-                if (nameElement && brokerName) {
-                    nameElement.textContent = brokerName;
-                }
-                
-                // Display broker email if element exists
-                const emailElement = document.getElementById('brokerEmail');
-                if (emailElement && brokerEmail) {
-                    emailElement.textContent = brokerEmail;
-                }
-            }
-        })();
-
-        // Add logout functionality
-        function logoutBroker() {
-            if (confirm('Are you sure you want to logout?')) {
-                localStorage.removeItem('brokerEmail');
-                localStorage.removeItem('brokerApproved');
-                localStorage.removeItem('brokerName');
-                localStorage.removeItem('brokerCompany');
-                localStorage.removeItem('brokerCommissionModel');
-                window.location.href = '/partners.html';
-            }
-        }
-        
-        // Make logout function globally available
-        window.logoutBroker = logoutBroker;
-    </script>
-    <!-- Navigation -->
-    <nav id="nav" class="fixed top-0 w-full bg-white shadow-sm z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <a href="index.html" class="text-xl font-bold text-gray-900">LienDeadline.com</a>
-                <div class="flex gap-4 items-center">
-                    <span id="brokerEmail" class="text-sm text-gray-600"></span>
-                    <button onclick="logoutBroker()" class="text-red-600 hover:text-red-700 px-4 py-2 border border-red-600 rounded hover:bg-red-50">
-                        Logout
-                    </button>
-                    <a href="partners.html" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Partners</a>
-                    <a href="index.html#pricing" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">Pricing</a>
-                </div>
+<body class="bg-gray-50">
+    <nav class="bg-white shadow-sm py-4 px-6">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Broker Dashboard</h1>
+            <div>
+                <span id="brokerName" class="text-gray-600"></span>
+                <button onclick="logout()" class="ml-4 text-red-600 hover:underline">Logout</button>
             </div>
         </div>
     </nav>
-
-    <!-- Dashboard Content -->
-    <section class="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-6xl mx-auto">
-            <h1 class="text-3xl font-bold mb-8">Broker Dashboard</h1>
-            
-            <!-- Stats Overview -->
+    
+    <div class="max-w-6xl mx-auto px-6 py-8">
+        <!-- Login Form (shown if not authenticated) -->
+        <div id="loginForm" class="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8">
+            <h2 class="text-2xl font-bold mb-6">Broker Login</h2>
+            <form onsubmit="login(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Email</label>
+                    <input type="email" id="loginEmail" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg">
+                    Login
+                </button>
+            </form>
+        </div>
+        
+        <!-- Dashboard (shown after login) -->
+        <div id="dashboard" class="hidden">
+            <!-- Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <div class="text-sm text-gray-600 mb-1">Total Customers</div>
-                    <div class="text-3xl font-bold text-gray-900" id="total-customers">12</div>
-                </div>
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <div class="text-sm text-gray-600 mb-1">Monthly Commission</div>
-                    <div class="text-3xl font-bold text-green-600" id="monthly-commission">$600<span class="text-lg text-gray-600">/mo</span></div>
-                </div>
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <div class="text-sm text-gray-600 mb-1">Total Earned</div>
-                    <div class="text-3xl font-bold text-gray-900" id="total-earned">$3,200</div>
-                </div>
-            </div>
-
-            <!-- Tools Section -->
-            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-                <h2 class="text-xl font-semibold mb-4">Your Tools</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button id="copy-link-btn" class="px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold">
-                        📋 Copy Referral Link
-                    </button>
-                    <button id="copy-email-btn" class="px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 font-semibold">
-                        📧 Copy Email Template
-                    </button>
-                    <button id="download-invoice-btn" class="px-4 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 font-semibold">
-                        📄 Download Invoice
-                    </button>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-gray-600 text-sm font-medium mb-2">Total Referrals</h3>
+                    <p class="text-3xl font-bold" id="totalReferrals">0</p>
                 </div>
                 
-                <div class="mt-6 p-4 bg-gray-50 rounded">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Your Referral Link:</label>
-                    <div class="flex items-center gap-2">
-                        <input type="text" id="referral-link" readonly value="lien-api.com?ref=broker_john_123" class="flex-1 px-4 py-2 border border-gray-300 rounded-md bg-white">
-                        <button id="copy-link-input-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">Copy</button>
-                    </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-gray-600 text-sm font-medium mb-2">Pending Commissions</h3>
+                    <p class="text-3xl font-bold text-yellow-600" id="pendingCommissions">$0</p>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-gray-600 text-sm font-medium mb-2">Paid Commissions</h3>
+                    <p class="text-3xl font-bold text-green-600" id="paidCommissions">$0</p>
                 </div>
             </div>
-
-            <!-- Active Customers -->
-            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-                <h2 class="text-xl font-semibold mb-4">Active Customers</h2>
+            
+            <!-- Referral Link -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+                <h3 class="font-bold mb-2">Your Referral Link</h3>
+                <div class="flex gap-2">
+                    <input type="text" id="referralLink" readonly
+                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white">
+                    <button onclick="copyLink()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                        Copy
+                    </button>
+                </div>
+                <p class="text-sm text-gray-600 mt-2">
+                    Commission Model: <span id="commissionModel" class="font-semibold"></span>
+                </p>
+            </div>
+            
+            <!-- Referrals Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="p-6 border-b">
+                    <h3 class="text-xl font-bold">Your Referrals</h3>
+                </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="w-full">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commission</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Since</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Your Commission</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                             </tr>
                         </thead>
-                        <tbody id="customers-table" class="bg-white divide-y divide-gray-200">
-                            <!-- Sample data - will be populated dynamically -->
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">ABC Supply Co</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$50/mo</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jan 2025</td>
-                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span></td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">BuildTech Materials</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$50/mo</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Feb 2025</td>
-                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span></td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Texas Lumber Yard</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$50/mo</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Feb 2025</td>
-                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span></td>
-                            </tr>
+                        <tbody id="referralsTable" class="divide-y divide-gray-200">
+                            <!-- Populated by JavaScript -->
                         </tbody>
                     </table>
                 </div>
             </div>
-
-            <!-- Commission Model Info -->
-            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-                <h2 class="text-xl font-semibold mb-4">Commission Model</h2>
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <div class="font-semibold text-gray-900" id="commission-model">$500 One-Time Bounty</div>
-                        <div class="text-sm text-gray-600 mt-1">Current model</div>
-                    </div>
-                    <div id="upgrade-section" class="hidden">
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                            <p class="text-sm font-semibold text-blue-900 mb-2">💡 Upgrade Available!</p>
-                            <p class="text-sm text-blue-800 mb-3">You have <span id="active-referrals-count">7</span> active referrals!</p>
-                            <p class="text-sm text-blue-800 mb-3">Switch to $50/month recurring:</p>
-                            <p class="text-sm font-bold text-blue-900 mb-3">→ Earn $<span id="recurring-annual">4,200</span>/year instead of one-time</p>
-                            <div class="flex gap-2">
-                                <button onclick="showModelComparison()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-semibold">
-                                    Compare Models
-                                </button>
-                                <button onclick="switchToRecurring()" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-semibold">
-                                    Switch to Recurring
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Payout Info -->
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">Next Payout</h2>
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-600">Scheduled for: <span class="font-semibold text-gray-900">March 1st</span></p>
-                        <p class="text-sm text-gray-500 mt-1">Via ACH transfer</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-2xl font-bold text-green-600" id="next-payout">$600</p>
-                    </div>
-                </div>
-            </div>
         </div>
-    </section>
-
-    <!-- Footer -->
-    <footer id="footer" class="py-8 px-4 sm:px-6 lg:px-8 bg-gray-900 text-gray-300">
-        <div class="max-w-6xl mx-auto">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="mb-4 md:mb-0">
-                    <p>&copy; 2025 LienDeadline.com. All rights reserved.</p>
-                </div>
-                <div class="flex gap-6">
-                    <a href="index.html#faq" class="hover:text-white">FAQ</a>
-                    <a href="index.html#pricing" class="hover:text-white">Pricing</a>
-                    <a href="/partners.html" class="hover:text-white">Become a Partner</a>
-                    <a href="terms.html" class="hover:text-white">Terms</a>
-                </div>
-            </div>
-        </div>
-    </footer>
-
+    </div>
+    
     <script>
-        // Broker info (in production, fetch from API)
-        const brokerInfo = {
-            name: 'John',
-            referralCode: 'broker_john_123',
-            commissionPerCustomer: 50
-        };
-
-        // Email template
-        function getEmailTemplate() {
-            return `Subject: Save $15K/year on mechanics lien compliance
-
-Hi [Client Name],
-
-I found a tool that auto-calculates mechanics lien deadlines for your suppliers. Costs $299/month, saves thousands in missed lien rights.
-
-Benefits:
-- Never miss another lien deadline
-- Covers all 50 states
-- $299/month (saves $15K+ in missed liens)
-
-Check it out: lien-api.com?ref=${brokerInfo.referralCode}
-
-Let me know if you have questions!
-
-${brokerInfo.name}`;
+        let currentBrokerEmail = localStorage.getItem('brokerEmail');
+        
+        if (currentBrokerEmail) {
+            loadDashboard();
         }
-
-        // Copy referral link
-        document.getElementById('copy-link-btn').addEventListener('click', function() {
-            copyToClipboard(`lien-api.com?ref=${brokerInfo.referralCode}`);
-            showNotification('✅ Referral link copied!');
-        });
-
-        document.getElementById('copy-link-input-btn').addEventListener('click', function() {
-            const input = document.getElementById('referral-link');
-            input.select();
+        
+        function login(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            localStorage.setItem('brokerEmail', email);
+            currentBrokerEmail = email;
+            loadDashboard();
+        }
+        
+        function logout() {
+            localStorage.removeItem('brokerEmail');
+            location.reload();
+        }
+        
+        async function loadDashboard() {
+            try {
+                const response = await fetch(`/api/v1/broker/dashboard?email=${encodeURIComponent(currentBrokerEmail)}`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    alert('Login failed. Please check your email.');
+                    logout();
+                    return;
+                }
+                
+                // Show dashboard, hide login
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                
+                // Update stats
+                document.getElementById('brokerName').textContent = data.broker_name;
+                document.getElementById('totalReferrals').textContent = data.total_referrals;
+                document.getElementById('pendingCommissions').textContent = `$${data.total_pending.toFixed(2)}`;
+                document.getElementById('paidCommissions').textContent = `$${data.total_paid.toFixed(2)}`;
+                document.getElementById('referralLink').value = data.referral_link;
+                
+                const commissionText = data.commission_model === 'bounty' 
+                    ? '$500 per referral (one-time)' 
+                    : '$50/month per referral (recurring)';
+                document.getElementById('commissionModel').textContent = commissionText;
+                
+                // Populate table
+                const tbody = document.getElementById('referralsTable');
+                tbody.innerHTML = '';
+                
+                if (data.referrals.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No referrals yet</td></tr>';
+                } else {
+                    data.referrals.forEach(ref => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="px-6 py-4">${ref.customer_email}</td>
+                            <td class="px-6 py-4">${new Date(ref.created_at).toLocaleDateString()}</td>
+                            <td class="px-6 py-4">$${ref.amount.toFixed(2)}</td>
+                            <td class="px-6 py-4 font-semibold">$${ref.payout.toFixed(2)}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 text-xs rounded ${
+                                    ref.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                }">
+                                    ${ref.status.toUpperCase()}
+                                </span>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Dashboard load error:', error);
+                alert('Failed to load dashboard');
+            }
+        }
+        
+        function copyLink() {
+            const linkInput = document.getElementById('referralLink');
+            linkInput.select();
             document.execCommand('copy');
-            showNotification('✅ Referral link copied!');
-        });
-
-        // Copy email template
-        document.getElementById('copy-email-btn').addEventListener('click', function() {
-            const template = getEmailTemplate();
-            copyToClipboard(template);
-            showNotification('✅ Email template copied! Paste into your email client.');
-        });
-
-        // Download invoice (demo - in production, generate PDF)
-        document.getElementById('download-invoice-btn').addEventListener('click', function() {
-            showNotification('📄 Invoice download will be available after first payout.');
-        });
-
-        // Helper function to copy to clipboard
-        function copyToClipboard(text) {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text);
-            } else {
-                // Fallback for older browsers
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                textarea.style.position = 'fixed';
-                textarea.style.opacity = '0';
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-            }
+            alert('Referral link copied!');
         }
-
-        // Show notification
-        function showNotification(message) {
-            // Create notification element
-            const notification = document.createElement('div');
-            notification.className = 'fixed top-20 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-            notification.textContent = message;
-            document.body.appendChild(notification);
-
-            // Remove after 3 seconds
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                notification.style.transition = 'opacity 0.3s';
-                setTimeout(() => {
-                    document.body.removeChild(notification);
-                }, 300);
-            }, 3000);
-        }
-
-        // In production, this would fetch from your API
-        // For demo purposes, we'll simulate tracking
-        function updateDashboard() {
-            // This would be called when Stripe webhook fires
-            // For now, just display the sample data
-            const customers = [
-                { name: 'ABC Supply Co', commission: 50, since: 'Jan 2025', status: 'Active' },
-                { name: 'BuildTech Materials', commission: 50, since: 'Feb 2025', status: 'Active' },
-                { name: 'Texas Lumber Yard', commission: 50, since: 'Feb 2025', status: 'Active' }
-            ];
-
-            const totalCustomers = customers.length;
-            const monthlyCommission = totalCustomers * brokerInfo.commissionPerCustomer;
-            const totalEarned = 3200; // Would calculate from database
-
-            document.getElementById('total-customers').textContent = totalCustomers;
-            document.getElementById('monthly-commission').innerHTML = `$${monthlyCommission}<span class="text-lg text-gray-600">/mo</span>`;
-            document.getElementById('total-earned').textContent = `$${totalEarned.toLocaleString()}`;
-            document.getElementById('next-payout').textContent = `$${monthlyCommission}`;
-        }
-
-        // Check if upgrade available (7+ customers)
-        function checkUpgradeEligibility() {
-            const totalCustomers = parseInt(document.getElementById('total-customers').textContent);
-            if (totalCustomers >= 7) {
-                document.getElementById('upgrade-section').classList.remove('hidden');
-                document.getElementById('active-referrals-count').textContent = totalCustomers;
-                const recurringAnnual = totalCustomers * 50 * 12;
-                document.getElementById('recurring-annual').textContent = recurringAnnual.toLocaleString();
-            }
-        }
-
-        function showModelComparison() {
-            const totalCustomers = parseInt(document.getElementById('total-customers').textContent);
-            const bountyTotal = totalCustomers * 500;
-            const recurringYear1 = totalCustomers * 600;
-            const recurringYear2 = totalCustomers * 600;
-            const recurringTotal = recurringYear1 + recurringYear2;
-            
-            alert(`Model Comparison (${totalCustomers} customers):\n\n` +
-                  `One-Time Bounty:\n` +
-                  `Year 1: $${bountyTotal.toLocaleString()}\n` +
-                  `Year 2: $0\n` +
-                  `Total: $${bountyTotal.toLocaleString()}\n\n` +
-                  `Recurring ($50/mo):\n` +
-                  `Year 1: $${recurringYear1.toLocaleString()}\n` +
-                  `Year 2: $${recurringYear2.toLocaleString()}\n` +
-                  `Total: $${recurringTotal.toLocaleString()}\n\n` +
-                  `Recurring earns $${(recurringTotal - bountyTotal).toLocaleString()} more over 2 years!`);
-        }
-
-        function switchToRecurring() {
-            if (confirm('Switch to $50/month recurring model? This cannot be undone.')) {
-                // In production, call API to switch model
-                alert('✅ Switched to recurring model! You will now earn $50/month per active customer.');
-                document.getElementById('commission-model').textContent = '$50/month Recurring';
-                document.getElementById('upgrade-section').classList.add('hidden');
-                updateDashboard();
-            }
-        }
-
-        // Initialize dashboard
-        updateDashboard();
-        checkUpgradeEligibility();
-
-        // Simulate new signup (for demo - in production, this comes from Stripe webhook)
-        // Uncomment to test:
-        /*
-        setTimeout(() => {
-            console.log('Simulating new signup...');
-            // This would be triggered by Stripe webhook in production
-            // addNewCustomer('New Customer Co', 'Mar 2025');
-        }, 5000);
-        */
     </script>
 </body>
 </html>
-
