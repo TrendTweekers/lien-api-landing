@@ -255,6 +255,7 @@ def init_db():
                         commission_model VARCHAR DEFAULT 'bounty',
                         status VARCHAR DEFAULT 'pending',
                         applied_at TIMESTAMP DEFAULT NOW(),
+                        created_at TIMESTAMP DEFAULT NOW(),
                         approved_at TIMESTAMP,
                         notes TEXT,
                         timestamp VARCHAR,
@@ -264,6 +265,48 @@ def init_db():
                 """)
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_email ON partner_applications(email)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_status ON partner_applications(status)")
+                
+                # Add missing columns if they don't exist (PostgreSQL)
+                cursor.execute("""
+                    DO $$ 
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_name = 'partner_applications' 
+                            AND column_name = 'created_at'
+                        ) THEN
+                            ALTER TABLE partner_applications ADD COLUMN created_at TIMESTAMP DEFAULT NOW();
+                        END IF;
+                        
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_name = 'partner_applications' 
+                            AND column_name = 'applied_at'
+                        ) THEN
+                            ALTER TABLE partner_applications ADD COLUMN applied_at TIMESTAMP DEFAULT NOW();
+                        END IF;
+                        
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_name = 'partner_applications' 
+                            AND column_name = 'commission_model'
+                        ) THEN
+                            ALTER TABLE partner_applications ADD COLUMN commission_model VARCHAR DEFAULT 'bounty';
+                        END IF;
+                        
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_name = 'partner_applications' 
+                            AND column_name = 'company'
+                        ) THEN
+                            ALTER TABLE partner_applications ADD COLUMN company VARCHAR;
+                        END IF;
+                    END $$;
+                """)
+                
+                # Update existing rows with current timestamp
+                cursor.execute("UPDATE partner_applications SET created_at = NOW() WHERE created_at IS NULL")
+                cursor.execute("UPDATE partner_applications SET applied_at = NOW() WHERE applied_at IS NULL")
                 
                 # Brokers table (PostgreSQL)
                 cursor.execute("""
@@ -343,6 +386,7 @@ def init_db():
                         commission_model TEXT DEFAULT 'bounty',
                         status TEXT DEFAULT 'pending',
                         applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         approved_at TIMESTAMP,
                         notes TEXT,
                         timestamp TEXT,
@@ -352,6 +396,28 @@ def init_db():
                 """)
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_email ON partner_applications(email)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_status ON partner_applications(status)")
+                
+                # Add missing columns if they don't exist (SQLite)
+                try:
+                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+                except:
+                    pass  # Column already exists
+                try:
+                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+                except:
+                    pass  # Column already exists
+                try:
+                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN commission_model TEXT DEFAULT 'bounty'")
+                except:
+                    pass  # Column already exists
+                try:
+                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN company TEXT")
+                except:
+                    pass  # Column already exists
+                
+                # Update existing rows with current timestamp
+                cursor.execute("UPDATE partner_applications SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL")
+                cursor.execute("UPDATE partner_applications SET applied_at = CURRENT_TIMESTAMP WHERE applied_at IS NULL")
                 
                 # Brokers table (SQLite)
                 cursor.execute("""
@@ -3063,23 +3129,78 @@ async def get_pending_brokers():
                 print("DEBUG: partner_applications table doesn't exist yet")
                 return {"pending": [], "count": 0, "message": "Table not initialized"}
             
-            # Get pending applications - simplified query
+            # Check table columns to build resilient query
             if DB_TYPE == 'postgresql':
-                cursor.execute('''
-                    SELECT id, name, email, company, commission_model, 
-                           status, COALESCE(applied_at::text, created_at::text, timestamp) as applied_at
-                    FROM partner_applications 
-                    WHERE status = 'pending' OR status IS NULL
-                    ORDER BY COALESCE(applied_at, created_at, timestamp::timestamp) DESC
-                ''')
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'partner_applications'
+                """)
+                columns = [row[0] if isinstance(row, tuple) else row.get('column_name') if isinstance(row, dict) else str(row) for row in cursor.fetchall()]
             else:
-                cursor.execute('''
-                    SELECT id, name, email, company, commission_model, 
-                           status, COALESCE(applied_at, created_at, timestamp) as applied_at
+                cursor.execute("PRAGMA table_info(partner_applications)")
+                columns = []
+                for row in cursor.fetchall():
+                    if isinstance(row, dict):
+                        columns.append(row.get('name'))
+                    elif isinstance(row, tuple):
+                        columns.append(row[1])  # Column name is at index 1
+                    else:
+                        columns.append(str(row))
+            
+            print(f"DEBUG: Table columns: {columns}")
+            
+            # Build query based on available columns
+            available_columns = ['id']  # Always include id
+            
+            if 'name' in columns:
+                available_columns.append('name')
+            if 'email' in columns:
+                available_columns.append('email')
+            if 'company' in columns:
+                available_columns.append('company')
+            if 'commission_model' in columns:
+                available_columns.append('commission_model')
+            if 'status' in columns:
+                available_columns.append('status')
+            
+            # Use created_at or applied_at or fallback
+            date_column = None
+            if 'applied_at' in columns:
+                date_column = 'applied_at'
+            elif 'created_at' in columns:
+                date_column = 'created_at'
+            elif 'timestamp' in columns:
+                date_column = 'timestamp'
+            
+            if date_column:
+                available_columns.append(date_column)
+            
+            if len(available_columns) <= 1:  # Only id column
+                print("DEBUG: No valid columns found")
+                return {"pending": [], "count": 0, "message": "No valid columns found"}
+            
+            # Build query
+            columns_str = ', '.join(available_columns)
+            order_by = date_column if date_column else 'id'
+            
+            if DB_TYPE == 'postgresql':
+                query = f'''
+                    SELECT {columns_str}
                     FROM partner_applications 
                     WHERE status = 'pending' OR status IS NULL
-                    ORDER BY COALESCE(applied_at, created_at, timestamp) DESC
-                ''')
+                    ORDER BY {order_by} DESC
+                '''
+            else:
+                query = f'''
+                    SELECT {columns_str}
+                    FROM partner_applications 
+                    WHERE status = 'pending' OR status IS NULL
+                    ORDER BY {order_by} DESC
+                '''
+            
+            print(f"DEBUG: Query: {query}")
+            cursor.execute(query)
             
             rows = cursor.fetchall()
             
@@ -3091,15 +3212,15 @@ async def get_pending_brokers():
             else:
                 # SQLite Row objects
                 for row in rows:
-                    pending.append({
-                        'id': row['id'],
-                        'name': row['name'],
-                        'email': row['email'],
-                        'company': row.get('company', ''),
-                        'commission_model': row.get('commission_model', 'bounty'),
-                        'status': row.get('status', 'pending'),
-                        'applied_at': row.get('applied_at') or row.get('created_at') or row.get('timestamp')
-                    })
+                    row_dict = {}
+                    for i, col in enumerate(available_columns):
+                        if isinstance(row, dict):
+                            row_dict[col] = row.get(col)
+                        elif isinstance(row, tuple):
+                            row_dict[col] = row[i] if i < len(row) else None
+                        else:
+                            row_dict[col] = None
+                    pending.append(row_dict)
             
             print(f"DEBUG: Found {len(pending)} pending brokers")
             return {"pending": pending, "count": len(pending)}
