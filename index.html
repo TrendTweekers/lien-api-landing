@@ -421,6 +421,21 @@
 </head>
 <body class="min-h-screen bg-background text-foreground antialiased">
     
+    <!-- SUCCESS BANNER (appears after Stripe redirect) -->
+    <div id="stripeSuccessBanner" class="hidden fixed top-0 left-0 right-0 bg-green-600 text-white p-4 text-center z-[100] shadow-lg">
+        <div class="max-w-4xl mx-auto flex items-center justify-center gap-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span class="font-semibold">
+                🎉 Payment successful! Check your inbox for login credentials (arrives within 2 minutes).
+            </span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 underline hover:no-underline">
+                Close
+            </button>
+        </div>
+    </div>
+    
     <!-- Header -->
     <header class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -1633,6 +1648,26 @@
             document.getElementById('upgradeModal').classList.add('hidden');
         }
         
+        // Toast notification function
+        function showSuccessToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3';
+            toast.innerHTML = `
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(toast);
+            
+            // Auto-remove after 4 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+        
         // Modal email form handler - AJAX version (no redirect)
         document.getElementById('modalEmailForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1665,11 +1700,10 @@
                 }
                 
                 // Show success toast
-                const toast = document.createElement('div');
-                toast.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2';
-                toast.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Email saved! 7 more calculations unlocked.</span>';
-                document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 4000);
+                showSuccessToast('✅ Email saved! You now have 7 more calculations (10 total).');
+                
+                // Re-enable scrolling
+                document.body.style.overflow = 'auto';
                 
             } catch (error) {
                 console.error('Email capture error:', error);
