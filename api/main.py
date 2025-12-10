@@ -130,114 +130,118 @@ def init_db():
     schema_path = BASE_DIR / "database" / "schema.sql"
     if not schema_path.exists():
         print(f"⚠️ Schema file not found: {schema_path}")
-        return
+        # Still create essential tables even without schema.sql
+        pass
+    else:
+        # Only run schema.sql if it exists (usually for SQLite)
+        if DB_TYPE == 'sqlite':
+            import sqlite3
+            db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+            db = sqlite3.connect(str(db_path))
+            try:
+                with open(schema_path, 'r') as f:
+                    db.executescript(f.read())
+                db.commit()
+                
+                # Run migrations
+                migrations_dir = BASE_DIR / "database" / "migrations"
+                if migrations_dir.exists():
+                    for migration_file in sorted(migrations_dir.glob("*.sql")):
+                        try:
+                            with open(migration_file, 'r') as f:
+                                db.executescript(f.read())
+                            db.commit()
+                            print(f"✅ Migration applied: {migration_file.name}")
+                        except Exception as e:
+                            print(f"⚠️ Migration error ({migration_file.name}): {e}")
+            finally:
+                db.close()
+        # For PostgreSQL, schema should be managed via migrations or manual setup
     
-    db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
-    db = sqlite3.connect(str(db_path))
+    # Create essential tables if they don't exist (works for both DB types)
     try:
-        with open(schema_path, 'r') as f:
-            db.executescript(f.read())
-        db.commit()
-        
-        # Run migrations
-        migrations_dir = BASE_DIR / "database" / "migrations"
-        if migrations_dir.exists():
-            for migration_file in sorted(migrations_dir.glob("*.sql")):
-                try:
-                    with open(migration_file, 'r') as f:
-                        db.executescript(f.read())
-                    db.commit()
-                    print(f"✅ Migration applied: {migration_file.name}")
-                except Exception as e:
-                    print(f"⚠️ Migration error ({migration_file.name}): {e}")
-        
-        # Create additional tables if they don't exist
-        if DB_TYPE == 'postgresql':
+        with get_db() as db:
             cursor = get_db_cursor(db)
             
-            # Failed emails table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS failed_emails (
-                    id SERIAL PRIMARY KEY,
-                    email VARCHAR NOT NULL,
-                    password VARCHAR NOT NULL,
-                    reason TEXT,
-                    created_at TIMESTAMP DEFAULT NOW()
-                )
-            """)
+            if DB_TYPE == 'postgresql':
+                # Failed emails table
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS failed_emails (
+                        id SERIAL PRIMARY KEY,
+                        email VARCHAR NOT NULL,
+                        password VARCHAR NOT NULL,
+                        reason TEXT,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                
+                # Password reset tokens table
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                        id SERIAL PRIMARY KEY,
+                        email VARCHAR NOT NULL,
+                        token VARCHAR UNIQUE NOT NULL,
+                        expires_at TIMESTAMP NOT NULL,
+                        used INTEGER DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(token)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_reset_email ON password_reset_tokens(email)")
+                
+                # Error logs table
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS error_logs (
+                        id SERIAL PRIMARY KEY,
+                        url VARCHAR,
+                        method VARCHAR,
+                        error_message TEXT,
+                        stack_trace TEXT,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+            else:
+                # SQLite tables
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS failed_emails (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        email TEXT NOT NULL,
+                        password TEXT NOT NULL,
+                        reason TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        email TEXT NOT NULL,
+                        token TEXT UNIQUE NOT NULL,
+                        expires_at TIMESTAMP NOT NULL,
+                        used INTEGER DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(token)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_reset_email ON password_reset_tokens(email)")
+                
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS error_logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        url TEXT,
+                        method TEXT,
+                        error_message TEXT,
+                        stack_trace TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
             
-            # Password reset tokens table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS password_reset_tokens (
-                    id SERIAL PRIMARY KEY,
-                    email VARCHAR NOT NULL,
-                    token VARCHAR UNIQUE NOT NULL,
-                    expires_at TIMESTAMP NOT NULL,
-                    used INTEGER DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT NOW()
-                )
-            """)
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(token)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_reset_email ON password_reset_tokens(email)")
-            
-            # Error logs table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS error_logs (
-                    id SERIAL PRIMARY KEY,
-                    url VARCHAR,
-                    method VARCHAR,
-                    error_message TEXT,
-                    stack_trace TEXT,
-                    created_at TIMESTAMP DEFAULT NOW()
-                )
-            """)
-        else:
-            cursor = db.cursor()
-            
-            # Failed emails table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS failed_emails (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    email TEXT NOT NULL,
-                    password TEXT NOT NULL,
-                    reason TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # Password reset tokens table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS password_reset_tokens (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    email TEXT NOT NULL,
-                    token TEXT UNIQUE NOT NULL,
-                    expires_at TIMESTAMP NOT NULL,
-                    used INTEGER DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(token)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_reset_email ON password_reset_tokens(email)")
-            
-            # Error logs table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS error_logs (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    url TEXT,
-                    method TEXT,
-                    error_message TEXT,
-                    stack_trace TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-        
-        db.commit()
-        
-        print("✅ Database initialized")
+            db.commit()
+            print("✅ Database initialized")
     except Exception as e:
         print(f"❌ Database initialization error: {e}")
-    finally:
-        db.close()
+        import traceback
+        traceback.print_exc()
 
 # Initialize Stripe
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY', '')
