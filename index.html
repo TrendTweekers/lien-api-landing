@@ -1191,6 +1191,113 @@
                 }
             });
         });
+        
+        // Modal functions
+        function showEmailCaptureModal() {
+            document.getElementById('emailCaptureModal').classList.remove('hidden');
+        }
+        
+        function hideEmailCaptureModal() {
+            document.getElementById('emailCaptureModal').classList.add('hidden');
+        }
+        
+        function showUpgradeModal() {
+            document.getElementById('upgradeModal').classList.remove('hidden');
+        }
+        
+        function hideUpgradeModal() {
+            document.getElementById('upgradeModal').classList.add('hidden');
+        }
+        
+        // Modal email form handler
+        document.getElementById('modalEmailForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('modalEmail').value;
+            
+            if (!email || !email.includes('@')) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/v1/capture-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, timestamp: new Date().toISOString() })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('userEmail', email);
+                    hideEmailCaptureModal();
+                    
+                    // Show success and retry calculation
+                    const successMsg = document.createElement('div');
+                    successMsg.className = 'fixed top-4 right-4 bg-success text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                    successMsg.textContent = '✓ Email saved! Retrying calculation...';
+                    document.body.appendChild(successMsg);
+                    
+                    setTimeout(() => {
+                        successMsg.remove();
+                        // Retry the calculation
+                        document.getElementById('calculatorForm').requestSubmit();
+                    }, 1500);
+                } else {
+                    alert('Error saving email: ' + (data.detail || 'Please try again.'));
+                }
+            } catch (error) {
+                console.error('Email capture error:', error);
+                alert('Error saving email. Please try again.');
+            }
+        });
+        
+        // Close modals when clicking outside
+        document.getElementById('emailCaptureModal').addEventListener('click', (e) => {
+            if (e.target.id === 'emailCaptureModal') {
+                hideEmailCaptureModal();
+            }
+        });
+        
+        document.getElementById('upgradeModal').addEventListener('click', (e) => {
+            if (e.target.id === 'upgradeModal') {
+                hideUpgradeModal();
+            }
+        });
     </script>
+    
+    <!-- Email Capture Modal -->
+    <div id="emailCaptureModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-serif mb-2">You've used your 3 free calculations</h3>
+                <p class="text-muted-foreground">Enter your email to get 7 more calculations (10 total)</p>
+            </div>
+            <form id="modalEmailForm" class="space-y-4">
+                <input type="email" id="modalEmail" required placeholder="Enter your work email" class="w-full h-14 px-4 rounded-lg border border-border focus:ring-2 focus:ring-accent/30 focus:outline-none text-lg"/>
+                <button type="submit" class="w-full h-14 rounded-lg bg-accent text-white font-semibold hover:bg-accent/90 transition-colors">Get 7 More Calculations →</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Upgrade Modal -->
+    <div id="upgradeModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+            <div class="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <h3 class="text-2xl font-serif mb-2">You've used all 10 free calculations</h3>
+            <p class="text-muted-foreground mb-6">Upgrade to unlimited for $299/month</p>
+            <button onclick="window.location.href='mailto:sales@liendeadline.com?subject=Upgrade Request'" class="w-full h-14 rounded-lg bg-accent text-white font-semibold hover:bg-accent/90 transition-colors mb-3">Upgrade Now</button>
+            <button onclick="document.getElementById('upgradeModal').classList.add('hidden')" class="w-full h-12 rounded-lg border border-border hover:bg-secondary transition-colors">Maybe Later</button>
+        </div>
+    </div>
 </body>
 </html>
