@@ -1,5 +1,6 @@
 # admin.py - Admin routes for FastAPI backend
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import Request as FastAPIRequest
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from datetime import datetime, timedelta
 import uuid
@@ -258,8 +259,9 @@ def approve_broker(
     }
 
 @router.post("/approve-partner/{application_id}")
-def approve_partner(
+async def approve_partner(
     application_id: int,
+    request: FastAPIRequest,
     user: str = Depends(verify_admin)
 ):
     """Approve a partner application and send referral link"""
@@ -267,6 +269,14 @@ def approve_partner(
     cur = con.cursor()
     
     try:
+        # Get commission model from request body if provided
+        commission_model_override = None
+        try:
+            body = await request.json()
+            commission_model_override = body.get('commission_model')
+        except:
+            pass
+        
         # Fetch application
         cur.execute("SELECT * FROM partner_applications WHERE id = ?", (application_id,))
         app = cur.fetchone()
@@ -280,7 +290,7 @@ def approve_partner(
             'name': app[2] if len(app) > 2 else '',
             'email': app[1] if len(app) > 1 else '',
             'company': app[3] if len(app) > 3 else '',
-            'commission_model': app[6] if len(app) > 6 else 'bounty'
+            'commission_model': commission_model_override or (app[6] if len(app) > 6 else 'bounty')
         }
         
         # Generate unique referral code

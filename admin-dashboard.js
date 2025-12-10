@@ -837,7 +837,7 @@ async function loadPartnerApplications() {
         console.error('❌ Error loading applications:', error);
         table.innerHTML = `
             <tr>
-                <td colspan="5" class="py-4 px-6 text-center text-red-500">
+                <td colspan="6" class="py-4 px-6 text-center text-red-500">
                     Error loading applications: ${error.message}
                 </td>
             </tr>
@@ -861,13 +861,42 @@ function formatTimeAgo(date) {
 }
 
 // Approve application
-async function approveApplication(id) {
-    if (!confirm('Approve this partner application?')) return;
+async function approveApplication(id, commissionModel) {
+    const modelText = commissionModel === 'bounty' ? '$500 bounty' : '$50/month recurring';
+    if (!confirm(`Approve this partner application with ${modelText} commission?`)) return;
     
     try {
-        await approveAndCopy(id, '');
+        const adminUser = window.ADMIN_USER || ADMIN_USER;
+        const adminPass = window.ADMIN_PASS || ADMIN_PASS;
+        
+        // Call approve endpoint with commission model
+        const response = await fetch(`${API_BASE}/admin/approve-partner/${id}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ commission_model: commissionModel || 'bounty' })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to approve application');
+        }
+        
+        const data = await response.json();
+        
+        if (data.referral_link) {
+            navigator.clipboard.writeText(data.referral_link);
+            alert(`✅ Application approved!\n\nReferral link copied:\n${data.referral_link}`);
+        } else {
+            alert('✅ Application approved successfully!');
+        }
+        
         loadPartnerApplications();
+        updatePendingCounts();
     } catch (error) {
+        console.error('Error approving application:', error);
         alert('Error approving application: ' + error.message);
     }
 }
