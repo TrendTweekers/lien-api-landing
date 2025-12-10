@@ -6,317 +6,535 @@
     <meta name="description" content="Partner with LienDeadline - Earn $500 for every contractor or supplier you refer.">
     <title>Partner With Us - LienDeadline</title>
     
-    <!-- Preconnect to Tailwind CDN for faster loading -->
-    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/styles.css">
+    
+    <!-- Lovable Scale Stylesheet (load first) -->
+    <link rel="stylesheet" href="/lovable-scale.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: 'hsl(40 33% 98%)',
+                        foreground: 'hsl(220 20% 15%)',
+                        primary: 'hsl(220 60% 20%)',
+                        'primary-foreground': 'hsl(40 33% 98%)',
+                        secondary: 'hsl(40 30% 94%)',
+                        'secondary-foreground': 'hsl(220 20% 15%)',
+                        accent: 'hsl(16 85% 55%)',
+                        'accent-foreground': 'hsl(0 0% 100%)',
+                        success: 'hsl(152 60% 42%)',
+                        warning: 'hsl(38 95% 50%)',
+                        muted: 'hsl(40 20% 92%)',
+                        'muted-foreground': 'hsl(220 10% 45%)',
+                        border: 'hsl(40 20% 88%)',
+                    },
+                    fontFamily: {
+                        serif: ['Instrument Serif', 'serif'],
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Instrument Serif', serif;
+        }
+        
+        h1 {
+            font-variation-settings: 'wght' 825;
+        }
+        
+        .text-gradient {
+            background: linear-gradient(135deg, hsl(16 85% 55%) 0%, hsl(24 90% 50%) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .shadow-card {
+            box-shadow: 0 0 0 1px hsl(40 20% 88%), 0 4px 20px -4px hsla(220, 20%, 15%, 0.08);
+        }
+        
+        .shadow-elegant {
+            box-shadow: 0 20px 25px -5px hsla(220, 20%, 15%, 0.1), 0 8px 10px -6px hsla(220, 20%, 15%, 0.08);
+        }
+    </style>
 </head>
-<body class="bg-white text-gray-900">
-    <!-- Navigation -->
-    <nav id="nav" class="fixed top-0 w-full bg-white shadow-sm z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center gap-2">
-                    <svg width="40" height="40" viewBox="0 0 40 40" class="text-blue-600">
-                        <rect x="4" y="4" width="32" height="32" rx="4" fill="currentColor"/>
-                        <text x="20" y="26" text-anchor="middle" fill="white" font-size="16" font-weight="bold">LD</text>
+<body class="min-h-screen bg-background text-foreground antialiased">
+    
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="/" class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span class="font-serif text-xl font-semibold text-foreground">LienDeadline<span class="text-muted-foreground">.com</span></span>
+                </a>
+                
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex items-center gap-8">
+                    <a href="/#calculator" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Calculator</a>
+                    <a href="/#features" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Features</a>
+                    <a href="/#pricing" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+                    <a href="/partners.html" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Partners</a>
+                </nav>
+                
+                <!-- CTA Button -->
+                <div class="hidden md:block">
+                    <a href="/#calculator" class="inline-flex items-center justify-center px-6 py-2 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors">
+                        Start Free Trial
+                    </a>
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <button id="mobileMenuBtn" class="md:hidden p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
-                    <a href="/" class="text-xl font-bold text-gray-900">LienDeadline.com</a>
-                </div>
-                <div class="flex gap-4">
-                    <a href="/test-api" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Test API</a>
-                    <a href="/partners.html" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Partners</a>
-                    <a href="/#pricing" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Pricing</a>
-                </div>
+                </button>
             </div>
         </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <section class="pt-32 pb-16 px-6 md:px-8 bg-white border-b border-slate-200">
-        <div class="max-w-4xl mx-auto text-center">
-            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight text-slate-900 tracking-tight">
-                Partner With Us
-            </h1>
-            <p class="text-xl sm:text-2xl mb-6 text-slate-900 font-bold">
-                Earn $500 for every contractor or supplier you refer.
-            </p>
-            <p class="text-lg text-slate-700 mb-8 font-medium">
-                Help your clients never miss a lien deadline while earning passive income. 
-                Perfect for insurance brokers, construction consultants, and trade associations.
-            </p>
+    </header>
+    
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="hidden fixed inset-0 z-50 bg-background md:hidden">
+        <div class="flex justify-between items-center p-6 border-b border-border">
+            <span class="font-serif text-xl font-semibold">LienDeadline.com</span>
+            <button id="closeMobileMenu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
-    </section>
-
-    <!-- How It Works Section -->
-    <section class="py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-slate-50">
-        <div class="max-w-6xl mx-auto">
-            <h2 class="text-3xl font-bold text-center mb-12 text-slate-900 tracking-tight">How It Works</h2>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div class="text-center">
-                    <div class="text-4xl font-bold text-blue-600 mb-4 bg-white rounded-full w-16 h-16 flex items-center justify-center mx-auto shadow-md">1</div>
-                    <h3 class="text-xl font-semibold mb-2">Send Your Clients a Referral Link</h3>
-                    <p class="text-gray-600">Share your unique partner link with contractors and suppliers in your network.</p>
-                </div>
-                <div class="text-center">
-                    <div class="text-4xl font-bold text-blue-600 mb-4 bg-white rounded-full w-16 h-16 flex items-center justify-center mx-auto shadow-md">2</div>
-                    <h3 class="text-xl font-semibold mb-2">They Sign Up for $299/month</h3>
-                    <p class="text-gray-600">Your clients get unlimited lien deadline calculations and never miss a filing deadline.</p>
-                </div>
-                <div class="text-center">
-                    <div class="text-4xl font-bold text-blue-600 mb-4 bg-white rounded-full w-16 h-16 flex items-center justify-center mx-auto shadow-md">3</div>
-                    <h3 class="text-xl font-semibold mb-2">You Get $500 After 30 Days</h3>
-                    <p class="text-gray-600">We pay you $500 per referral after 30 days (anti-churn protection).</p>
-                </div>
-                <div class="text-center">
-                    <div class="text-4xl font-bold text-blue-600 mb-4 bg-white rounded-full w-16 h-16 flex items-center justify-center mx-auto shadow-md">4</div>
-                    <h3 class="text-xl font-semibold mb-2">They Save Thousands</h3>
-                    <p class="text-gray-600">Your clients avoid $75K+ in annual losses from missed deadlines.</p>
-                </div>
-            </div>
+        <div class="flex flex-col p-6 gap-6">
+            <a href="/#calculator" class="py-3 border-b border-border text-lg font-medium">Calculator</a>
+            <a href="/#features" class="py-3 border-b border-border text-lg font-medium">Features</a>
+            <a href="/#pricing" class="py-3 border-b border-border text-lg font-medium">Pricing</a>
+            <a href="/partners.html" class="py-3 border-b border-border text-lg font-medium">Partners</a>
+            <a href="/#calculator" class="bg-accent text-white px-6 py-3 rounded-lg text-center font-semibold mt-4">
+                Start Free Trial
+            </a>
         </div>
-    </section>
-
-    <!-- Commission Model Comparison Section -->
-    <section class="py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-white">
-        <div class="max-w-6xl mx-auto">
-            <h2 class="text-3xl font-bold text-center mb-12 text-slate-900 tracking-tight">Choose Your Commission Model</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- One-Time Bounty Card -->
-                <div id="card-bounty" class="commission-card bg-white border border-slate-200 rounded-xl p-8 shadow-sm relative transition-all">
-                    <!-- Selection Checkmark -->
-                    <div class="selection-checkmark" style="display: none; position: absolute; top: -12px; right: -12px; background: #2563eb; color: white; width: 40px; height: 40px; border-radius: 50%; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); z-index: 10;">
-                        ✓
-                    </div>
-                    <h3 class="text-2xl font-bold mb-4">$500 One-Time Bounty</h3>
-                    <div class="mb-6">
-                        <div class="text-4xl font-bold text-gray-900 mb-2">$500</div>
-                        <p class="text-gray-600">per referral</p>
-                    </div>
-                    <ul class="space-y-3 mb-6">
-                        <li class="flex items-start">
-                            <svg class="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <span>Paid after 30 days</span>
-                        </li>
-                        <li class="flex items-start">
-                            <svg class="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <span>Quick cash, no tracking</span>
-                        </li>
-                        <li class="flex items-start">
-                            <svg class="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <span>Best for brokers with &lt;10 customers</span>
-                        </li>
-                    </ul>
-                    <button onclick="selectCommissionModel('one-time')" class="w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm hover:shadow-md">
-                        Choose This Plan →
-                    </button>
-                </div>
-
-                <!-- Recurring Revenue Card -->
-                <div id="card-recurring" class="commission-card bg-white border border-slate-200 rounded-xl p-8 shadow-sm relative transition-all">
-                    <div class="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-                        MOST POPULAR
-                    </div>
-                    <!-- Selection Checkmark -->
-                    <div class="selection-checkmark" style="display: none; position: absolute; top: -12px; right: -12px; background: #2563eb; color: white; width: 40px; height: 40px; border-radius: 50%; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); z-index: 10;">
-                        ✓
-                    </div>
-                    <h3 class="text-2xl font-bold mb-4">$50/month Recurring</h3>
-                    <div class="mb-6">
-                        <div class="text-4xl font-bold text-gray-900 mb-2">$50</div>
-                        <p class="text-gray-600">per active customer/month</p>
-                    </div>
-                    <ul class="space-y-3 mb-6">
-                        <li class="flex items-start">
-                            <svg class="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <span>Passive income every month</span>
-                        </li>
-                        <li class="flex items-start">
-                            <svg class="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <span>Compounds over time</span>
-                        </li>
-                        <li class="flex items-start">
-                            <svg class="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <span>Best for brokers with 10+ customers</span>
-                        </li>
-                    </ul>
-                    <button onclick="selectCommissionModel('recurring')" class="w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm hover:shadow-md">
-                        Choose This Plan →
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Earnings Calculator Section -->
-    <section class="py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-slate-50">
-        <div class="max-w-4xl mx-auto">
-            <h2 class="text-3xl font-bold text-center mb-8 text-slate-900 tracking-tight">Which Earns More?</h2>
-            <p class="text-center text-gray-600 mb-8">Compare earnings over 2 years</p>
-            
-            <!-- Slider -->
-            <div class="mb-8">
-                <label for="customer-count" class="block text-sm font-medium mb-4 text-center">
-                    Number of customers: <span id="customer-display" class="font-bold text-blue-600">10</span>
-                </label>
-                <input type="range" id="customer-count" min="1" max="50" value="10" 
-                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-            </div>
-
-            <!-- Comparison Table -->
-            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Model</th>
-                            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Year 1</th>
-                            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Year 2</th>
-                            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">$500 One-Time Bounty</td>
-                            <td class="px-6 py-4 text-sm text-gray-600 text-center" id="bounty-year1">$5,000</td>
-                            <td class="px-6 py-4 text-sm text-gray-600 text-center" id="bounty-year2">$0</td>
-                            <td class="px-6 py-4 text-sm font-semibold text-gray-900 text-center" id="bounty-total">$5,000</td>
-                        </tr>
-                        <tr class="bg-green-50" id="recurring-row">
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">$50/month Recurring</td>
-                            <td class="px-6 py-4 text-sm text-gray-600 text-center" id="recurring-year1">$6,000</td>
-                            <td class="px-6 py-4 text-sm text-gray-600 text-center" id="recurring-year2">$6,000</td>
-                            <td class="px-6 py-4 text-sm font-semibold text-green-700 text-center" id="recurring-total">$12,000</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            
-            <div class="mt-6 text-center">
-                <p class="text-lg font-semibold text-green-700" id="winner-message">
-                    Recurring earns $7,000 more over 2 years!
-                </p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Ideal Partners Section -->
-    <section class="py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-white">
-        <div class="max-w-4xl mx-auto">
-            <h2 class="text-3xl font-bold text-center mb-8 text-slate-900 tracking-tight">🎯 Ideal Partners</h2>
-            <div class="bg-white border border-slate-200 p-6 rounded-xl shadow-sm">
-                <ul class="space-y-3 text-gray-700">
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                        <span><strong>Insurance brokers</strong> with 50+ contractor/supplier clients</span>
-                    </li>
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                        <span><strong>Construction consultants</strong> & risk advisors</span>
-                    </li>
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                        <span><strong>Trade association</strong> representatives</span>
-                    </li>
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                        <span><strong>Surety bond</strong> specialists</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </section>
-
-    <!-- Apply Now Section -->
-    <section id="apply" class="py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-slate-50">
-        <div class="max-w-2xl mx-auto">
-            <h2 class="text-3xl font-bold text-center mb-8 text-slate-900 tracking-tight">Apply Now</h2>
-            <h3 class="text-2xl font-bold text-center mb-6 text-slate-900">
-                Complete Your Application
-            </h3>
-            <form id="partner-form" class="bg-white border border-slate-200 rounded-xl shadow-sm p-8">
-                <div class="space-y-6">
-                    <!-- Selected Model Display -->
-                    <div id="modelDisplay" style="display: none; background: #DBEAFE; border: 2px solid #3B82F6; padding: 16px; border-radius: 12px; margin-bottom: 24px; text-align: center; font-size: 18px; font-weight: 600; color: #1E40AF;">
-                        ✅ Selected: <strong id="modelText"></strong>
+    </div>
+    
+    <main class="pt-16">
+        
+        <!-- Hero Section -->
+        <section class="pt-32 pb-24 lg:pt-40 lg:pb-32 overflow-hidden">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-4xl mx-auto text-center">
+                    <!-- Badge -->
+                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-border mb-6">
+                        <span class="w-2 h-2 rounded-full bg-success"></span>
+                        <span class="text-xs font-medium text-muted-foreground">
+                            Partner Program
+                        </span>
                     </div>
                     
-                    <!-- Hidden field for commission model -->
-                    <input type="hidden" id="selectedModel" name="commission_model" value="">
+                    <!-- Headline -->
+                    <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl text-foreground leading-[1.1] tracking-tight mb-6">
+                        Partner With Us
+                    </h1>
                     
-                    <div>
-                        <label for="partnerName" class="block text-sm font-medium mb-2">Name</label>
-                        <input type="text" id="partnerName" name="name" required 
-                               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <!-- Subhead -->
+                    <p class="text-xl sm:text-2xl text-foreground font-semibold mb-4">
+                        Earn <span class="text-gradient">$500</span> for every contractor or supplier you refer.
+                    </p>
+                    
+                    <p class="text-lg text-muted-foreground mb-8 leading-relaxed max-w-2xl mx-auto">
+                        Help your clients never miss a lien deadline while earning passive income. 
+                        Perfect for insurance brokers, construction consultants, and trade associations.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works Section -->
+        <section class="py-20 bg-white border-y border-border">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-6xl mx-auto">
+                    <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-center mb-12 text-foreground">
+                        How It Works
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <div class="text-center">
+                            <div class="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-6">
+                                <span class="text-3xl font-serif font-bold text-accent">1</span>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-3 text-foreground">Send Your Clients a Referral Link</h3>
+                            <p class="text-muted-foreground leading-relaxed">Share your unique partner link with contractors and suppliers in your network.</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-6">
+                                <span class="text-3xl font-serif font-bold text-accent">2</span>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-3 text-foreground">They Sign Up for $299/month</h3>
+                            <p class="text-muted-foreground leading-relaxed">Your clients get unlimited lien deadline calculations and never miss a filing deadline.</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-6">
+                                <span class="text-3xl font-serif font-bold text-accent">3</span>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-3 text-foreground">You Get $500 After 30 Days</h3>
+                            <p class="text-muted-foreground leading-relaxed">We pay you $500 per referral after 30 days (anti-churn protection).</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-6">
+                                <span class="text-3xl font-serif font-bold text-accent">4</span>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-3 text-foreground">They Save Thousands</h3>
+                            <p class="text-muted-foreground leading-relaxed">Your clients avoid $75K+ in annual losses from missed deadlines.</p>
+                        </div>
                     </div>
-                    <div>
-                        <label for="partnerEmail" class="block text-sm font-medium mb-2">Email</label>
-                        <input type="email" id="partnerEmail" name="email" required 
-                               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+        </section>
+
+        <!-- Commission Model Comparison Section -->
+        <section class="py-20 bg-background">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-6xl mx-auto">
+                    <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-center mb-12 text-foreground">
+                        Choose Your Commission Model
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- One-Time Bounty Card -->
+                        <div id="card-bounty" class="bg-white rounded-2xl shadow-card border border-border p-8 relative transition-all hover:shadow-elegant">
+                            <!-- Selection Checkmark -->
+                            <div class="selection-checkmark" style="display: none; position: absolute; top: -12px; right: -12px; background: hsl(16 85% 55%); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); z-index: 10;">
+                                ✓
+                            </div>
+                            <h3 class="font-serif text-2xl font-bold mb-4 text-foreground">$500 One-Time Bounty</h3>
+                            <div class="mb-6">
+                                <div class="text-4xl font-serif font-bold text-foreground mb-2">$500</div>
+                                <p class="text-muted-foreground">per referral</p>
+                            </div>
+                            <ul class="space-y-3 mb-6">
+                                <li class="flex items-start">
+                                    <svg class="w-5 h-5 text-success mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span class="text-muted-foreground">Paid after 30 days</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <svg class="w-5 h-5 text-success mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span class="text-muted-foreground">Quick cash, no tracking</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <svg class="w-5 h-5 text-success mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span class="text-muted-foreground">Best for brokers with &lt;10 customers</span>
+                                </li>
+                            </ul>
+                            <button onclick="selectCommissionModel('one-time')" class="w-full h-14 px-6 rounded-lg bg-accent text-white font-semibold hover:bg-accent/90 transition-colors text-lg shadow-lg hover:shadow-xl">
+                                Choose This Plan →
+                            </button>
+                        </div>
+
+                        <!-- Recurring Revenue Card -->
+                        <div id="card-recurring" class="bg-white rounded-2xl shadow-card border border-border p-8 relative transition-all hover:shadow-elegant">
+                            <div class="absolute top-4 right-4 bg-accent text-white px-3 py-1 rounded-full text-sm font-bold">
+                                MOST POPULAR
+                            </div>
+                            <!-- Selection Checkmark -->
+                            <div class="selection-checkmark" style="display: none; position: absolute; top: -12px; right: -12px; background: hsl(16 85% 55%); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); z-index: 10;">
+                                ✓
+                            </div>
+                            <h3 class="font-serif text-2xl font-bold mb-4 text-foreground">$50/month Recurring</h3>
+                            <div class="mb-6">
+                                <div class="text-4xl font-serif font-bold text-foreground mb-2">$50</div>
+                                <p class="text-muted-foreground">per active customer/month</p>
+                            </div>
+                            <ul class="space-y-3 mb-6">
+                                <li class="flex items-start">
+                                    <svg class="w-5 h-5 text-success mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span class="text-muted-foreground">Passive income every month</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <svg class="w-5 h-5 text-success mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span class="text-muted-foreground">Compounds over time</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <svg class="w-5 h-5 text-success mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span class="text-muted-foreground">Best for brokers with 10+ customers</span>
+                                </li>
+                            </ul>
+                            <button onclick="selectCommissionModel('recurring')" class="w-full h-14 px-6 rounded-lg bg-accent text-white font-semibold hover:bg-accent/90 transition-colors text-lg shadow-lg hover:shadow-xl">
+                                Choose This Plan →
+                            </button>
+                        </div>
                     </div>
-                    <div>
-                        <label for="partnerCompany" class="block text-sm font-medium mb-2">Company Name</label>
-                        <input type="text" id="partnerCompany" name="company" required 
-                               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+        </section>
+
+        <!-- Earnings Calculator Section -->
+        <section class="py-20 bg-white border-y border-border">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-center mb-4 text-foreground">
+                        Which Earns More?
+                    </h2>
+                    <p class="text-center text-muted-foreground mb-8 text-lg">Compare earnings over 2 years</p>
+                    
+                    <!-- Slider -->
+                    <div class="mb-8">
+                        <label for="customer-count" class="block text-sm font-medium mb-4 text-center text-foreground">
+                            Number of customers: <span id="customer-display" class="font-bold text-accent">10</span>
+                        </label>
+                        <input type="range" id="customer-count" min="1" max="50" value="10" 
+                               class="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-accent">
                     </div>
-                    <div>
-                        <label for="clientCount" class="block text-sm font-medium mb-2">Client Count</label>
-                        <input type="number" id="clientCount" name="client-count" min="1" required 
-                               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                               placeholder="How many contractor/supplier clients do you have?">
+
+                    <!-- Comparison Table -->
+                    <div class="bg-white rounded-2xl shadow-card border border-border overflow-hidden">
+                        <table class="min-w-full divide-y divide-border">
+                            <thead class="bg-secondary">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold text-foreground">Model</th>
+                                    <th class="px-6 py-4 text-center text-sm font-semibold text-foreground">Year 1</th>
+                                    <th class="px-6 py-4 text-center text-sm font-semibold text-foreground">Year 2</th>
+                                    <th class="px-6 py-4 text-center text-sm font-semibold text-foreground">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border bg-white">
+                                <tr>
+                                    <td class="px-6 py-4 text-sm font-medium text-foreground">$500 One-Time Bounty</td>
+                                    <td class="px-6 py-4 text-sm text-muted-foreground text-center" id="bounty-year1">$5,000</td>
+                                    <td class="px-6 py-4 text-sm text-muted-foreground text-center" id="bounty-year2">$0</td>
+                                    <td class="px-6 py-4 text-sm font-semibold text-foreground text-center" id="bounty-total">$5,000</td>
+                                </tr>
+                                <tr class="bg-success/5" id="recurring-row">
+                                    <td class="px-6 py-4 text-sm font-medium text-foreground">$50/month Recurring</td>
+                                    <td class="px-6 py-4 text-sm text-muted-foreground text-center" id="recurring-year1">$6,000</td>
+                                    <td class="px-6 py-4 text-sm text-muted-foreground text-center" id="recurring-year2">$6,000</td>
+                                    <td class="px-6 py-4 text-sm font-semibold text-success text-center" id="recurring-total">$12,000</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <div>
-                        <label for="partnerMessage" class="block text-sm font-medium mb-2">Message (Optional)</label>
-                        <textarea id="partnerMessage" name="message" rows="3"
-                               class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                               placeholder="Tell us about your business..."></textarea>
+                    
+                    <div class="mt-6 text-center">
+                        <p class="text-lg font-semibold text-success" id="winner-message">
+                            Recurring earns $7,000 more over 2 years!
+                        </p>
                     </div>
-                    <button type="submit" 
-                            class="w-full bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 font-medium shadow-sm hover:shadow-md transition">
+                </div>
+            </div>
+        </section>
+
+        <!-- Ideal Partners Section -->
+        <section class="py-20 bg-background">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-center mb-8 text-foreground">
+                        🎯 Ideal Partners
+                    </h2>
+                    <div class="bg-white rounded-2xl shadow-card border border-border p-8">
+                        <ul class="space-y-4 text-muted-foreground">
+                            <li class="flex items-start">
+                                <svg class="w-5 h-5 text-success mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span><strong class="text-foreground">Insurance brokers</strong> with 50+ contractor/supplier clients</span>
+                            </li>
+                            <li class="flex items-start">
+                                <svg class="w-5 h-5 text-success mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span><strong class="text-foreground">Construction consultants</strong> & risk advisors</span>
+                            </li>
+                            <li class="flex items-start">
+                                <svg class="w-5 h-5 text-success mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span><strong class="text-foreground">Trade association</strong> representatives</span>
+                            </li>
+                            <li class="flex items-start">
+                                <svg class="w-5 h-5 text-success mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span><strong class="text-foreground">Surety bond</strong> specialists</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Apply Now Section -->
+        <section id="apply" class="py-20 bg-white border-y border-border">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mx-auto">
+                    <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-center mb-4 text-foreground">
                         Apply Now
-                    </button>
+                    </h2>
+                    <h3 class="text-xl text-center mb-8 text-muted-foreground">
+                        Complete Your Application
+                    </h3>
+                    <form id="partner-form" class="bg-white rounded-2xl shadow-card border border-border p-8">
+                        <div class="space-y-6">
+                            <!-- Selected Model Display -->
+                            <div id="modelDisplay" style="display: none; background: hsl(16 85% 55% / 0.1); border: 2px solid hsl(16 85% 55%); padding: 16px; border-radius: 12px; margin-bottom: 24px; text-align: center; font-size: 18px; font-weight: 600; color: hsl(16 85% 55%);">
+                                ✅ Selected: <strong id="modelText"></strong>
+                            </div>
+                            
+                            <!-- Hidden field for commission model -->
+                            <input type="hidden" id="selectedModel" name="commission_model" value="">
+                            
+                            <div>
+                                <label for="partnerName" class="block text-sm font-medium mb-2 text-foreground">Name</label>
+                                <input type="text" id="partnerName" name="name" required 
+                                       class="w-full h-14 px-4 rounded-lg border border-border bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all text-lg">
+                            </div>
+                            <div>
+                                <label for="partnerEmail" class="block text-sm font-medium mb-2 text-foreground">Email</label>
+                                <input type="email" id="partnerEmail" name="email" required 
+                                       class="w-full h-14 px-4 rounded-lg border border-border bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all text-lg">
+                            </div>
+                            <div>
+                                <label for="partnerCompany" class="block text-sm font-medium mb-2 text-foreground">Company Name</label>
+                                <input type="text" id="partnerCompany" name="company" required 
+                                       class="w-full h-14 px-4 rounded-lg border border-border bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all text-lg">
+                            </div>
+                            <div>
+                                <label for="clientCount" class="block text-sm font-medium mb-2 text-foreground">Client Count</label>
+                                <input type="number" id="clientCount" name="client-count" min="1" required 
+                                       class="w-full h-14 px-4 rounded-lg border border-border bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all text-lg"
+                                       placeholder="How many contractor/supplier clients do you have?">
+                            </div>
+                            <div>
+                                <label for="partnerMessage" class="block text-sm font-medium mb-2 text-foreground">Message (Optional)</label>
+                                <textarea id="partnerMessage" name="message" rows="3"
+                                       class="w-full px-4 py-3 rounded-lg border border-border bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all text-lg"
+                                       placeholder="Tell us about your business..."></textarea>
+                            </div>
+                            <button type="submit" 
+                                    class="w-full h-14 px-6 rounded-lg bg-accent text-white font-semibold hover:bg-accent/90 transition-colors text-lg shadow-lg hover:shadow-xl">
+                                Apply Now
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </form>
-        </div>
-    </section>
-
+            </div>
+        </section>
+    </main>
+    
     <!-- Footer -->
-    <footer id="footer" class="py-8 px-4 sm:px-6 lg:px-8 bg-gray-900 text-gray-300">
-        <div class="max-w-6xl mx-auto">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="mb-4 md:mb-0">
-                    <p>&copy; 2025 LienDeadline.com. All rights reserved.</p>
+    <footer class="bg-white border-t border-border py-12">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-5 gap-8 mb-8">
+                <!-- Logo & Tagline -->
+                <div class="md:col-span-1">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <span class="font-serif text-lg font-semibold">LienDeadline</span>
+                    </div>
+                    <p class="text-sm text-muted-foreground">
+                        Never miss a mechanics lien deadline again.
+                    </p>
                 </div>
-                <div class="flex gap-6">
-                    <a href="/#faq" class="hover:text-white">FAQ</a>
-                    <a href="/#pricing" class="hover:text-white">Pricing</a>
-                    <a href="/test-api" class="hover:text-white">API Tester</a>
-                    <a href="/" class="hover:text-white">Home</a>
+                
+                <!-- Product -->
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/#calculator" class="text-muted-foreground hover:text-foreground">Calculator</a></li>
+                        <li><a href="/api.html" class="text-muted-foreground hover:text-foreground">API Docs</a></li>
+                        <li><a href="/#pricing" class="text-muted-foreground hover:text-foreground">Pricing</a></li>
+                        <li><a href="/changelog.html" class="text-muted-foreground hover:text-foreground">Changelog</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Company -->
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/about.html" class="text-muted-foreground hover:text-foreground">About</a></li>
+                        <li><a href="/blog.html" class="text-muted-foreground hover:text-foreground">Blog</a></li>
+                        <li><a href="/careers.html" class="text-muted-foreground hover:text-foreground">Careers</a></li>
+                        <li><a href="/contact.html" class="text-muted-foreground hover:text-foreground">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Legal -->
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/privacy.html" class="text-muted-foreground hover:text-foreground">Privacy</a></li>
+                        <li><a href="/terms.html" class="text-muted-foreground hover:text-foreground">Terms</a></li>
+                        <li><a href="/security.html" class="text-muted-foreground hover:text-foreground">Security</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Resources -->
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/help.html" class="text-muted-foreground hover:text-foreground">Help Center</a></li>
+                        <li><a href="/partners.html" class="text-muted-foreground hover:text-foreground">Partner Program</a></li>
+                        <li><a href="/state-coverage.html" class="text-muted-foreground hover:text-foreground">State Coverage</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <p class="text-sm text-muted-foreground">
+                        © 2025 LienDeadline.com. Not legal advice.
+                    </p>
+                    <p class="mt-2 text-xs text-gray-500">
+                        Need state-specific rules? See our
+                        <a href="/lien-deadlines/" class="underline">lien deadlines by state</a>.
+                    </p>
+                </div>
+                <div class="flex justify-center gap-6 text-sm">
+                    <a href="/privacy.html" class="text-muted-foreground hover:text-foreground">Privacy Policy</a>
+                    <a href="/terms.html" class="text-muted-foreground hover:text-foreground">Terms of Service</a>
+                    <a href="/partners.html" class="text-muted-foreground hover:text-foreground">Become a Partner</a>
                 </div>
             </div>
         </div>
     </footer>
 
     <script>
+        // Mobile menu toggle
+        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+            document.getElementById('mobileMenu').classList.remove('hidden');
+        });
+        
+        document.getElementById('closeMobileMenu').addEventListener('click', function() {
+            document.getElementById('mobileMenu').classList.add('hidden');
+        });
+        
         // Earnings Calculator Logic
         const customerSlider = document.getElementById('customer-count');
         const customerDisplay = document.getElementById('customer-display');
@@ -355,10 +573,10 @@
             const difference = recurringSum - bountySum;
             if (difference > 0) {
                 winnerMessage.textContent = `Recurring earns $${difference.toLocaleString()} more over 2 years!`;
-                winnerMessage.className = 'text-lg font-semibold text-green-700';
+                winnerMessage.className = 'text-lg font-semibold text-success';
             } else {
                 winnerMessage.textContent = 'Both models earn the same';
-                winnerMessage.className = 'text-lg font-semibold text-gray-700';
+                winnerMessage.className = 'text-lg font-semibold text-muted-foreground';
             }
         }
 
@@ -369,15 +587,8 @@
         function selectCommissionModel(model) {
             // Remove previous selections
             document.querySelectorAll('.commission-card').forEach(card => {
-                card.classList.remove('border-blue-600', 'border-4', 'bg-blue-50');
-                card.classList.add('border-gray-200', 'border', 'opacity-100');
-                if (card.id === 'card-bounty') {
-                    card.classList.remove('bg-blue-50');
-                    card.classList.add('bg-white');
-                } else if (card.id === 'card-recurring') {
-                    card.classList.remove('bg-blue-50');
-                    card.classList.add('bg-blue-50');
-                }
+                card.classList.remove('border-accent', 'border-4', 'bg-accent/5');
+                card.classList.add('border-border', 'border');
             });
             
             // Highlight selected card
@@ -385,8 +596,8 @@
             const otherCard = document.getElementById(model === 'one-time' ? 'card-recurring' : 'card-bounty');
             
             // Style selected card
-            selectedCard.classList.remove('border-gray-200', 'border', 'opacity-50');
-            selectedCard.classList.add('border-blue-600', 'border-4', 'bg-blue-50');
+            selectedCard.classList.remove('border-border', 'border');
+            selectedCard.classList.add('border-accent', 'border-4', 'bg-accent/5');
             
             // Dim other card
             otherCard.classList.add('opacity-50');
@@ -406,21 +617,6 @@
             
             // Scroll to form
             document.getElementById('partner-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-
-        // Quick CTA functions - direct to payment
-        function chooseBounty() {
-            // Set model and redirect to payment
-            document.getElementById('selectedModel').value = 'one-time';
-            // For now, redirect to Stripe checkout - update with actual partner signup flow
-            window.location.href = "https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00";
-        }
-        
-        function chooseRecurring() {
-            // Set model and redirect to payment
-            document.getElementById('selectedModel').value = 'recurring';
-            // For now, redirect to Stripe checkout - update with actual partner signup flow
-            window.location.href = "https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00";
         }
 
         // Form submission
@@ -451,6 +647,7 @@
                 if (response.ok) {
                     alert('Thank you! We\'ll contact you within 24 hours.');
                     e.target.reset();
+                    document.getElementById('modelDisplay').style.display = 'none';
                 } else {
                     const errorData = await response.json();
                     alert('Error submitting application. Please try again.');
