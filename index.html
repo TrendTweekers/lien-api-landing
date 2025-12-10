@@ -918,9 +918,30 @@
         });
         
         // Hero email form - scroll to calculator instead of redirect
-        document.getElementById('heroEmailForm').addEventListener('submit', (e) => {
+        document.getElementById('heroEmailForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('heroEmail').value;
+            
+            try {
+                const response = await fetch('/api/v1/capture-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, timestamp: new Date().toISOString() })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('userEmail', email);
+                    alert('✅ Email saved! You now have 7 more calculations. Scrolling to calculator...');
+                    document.getElementById('calculator').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert('Error saving email. Please try again.');
+                }
+            } catch (error) {
+                console.error('Email capture error:', error);
+                alert('Error saving email. Please try again.');
+            }
             if (email && email.includes('@')) {
                 localStorage.setItem('userEmail', email);
                 // Show success message

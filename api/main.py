@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, timedelta, date
 from pathlib import Path
+from starlette.middleware.base import BaseHTTPMiddleware
 import json
 import sqlite3
 import secrets
@@ -23,6 +24,23 @@ app = FastAPI(title="Lien Deadline API")
 # Rate limiting setup
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# HTTPS Redirect Middleware
+class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        # Check if behind a proxy (Railway/Cloudflare)
+        forwarded_proto = request.headers.get("x-forwarded-proto")
+        
+        if forwarded_proto == "http":
+            # Redirect to HTTPS
+            url = str(request.url).replace("http://", "https://", 1)
+            return RedirectResponse(url=url, status_code=301)
+        
+        response = await call_next(request)
+        return response
+
+# Add HTTPS redirect middleware (before CORS)
+app.add_middleware(HTTPSRedirectMiddleware)
 
 # CORS
 app.add_middleware(
@@ -52,11 +70,25 @@ def init_db():
         print(f"⚠️ Schema file not found: {schema_path}")
         return
     
-    db = get_db()
+    db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+    db = sqlite3.connect(str(db_path))
     try:
         with open(schema_path, 'r') as f:
             db.executescript(f.read())
         db.commit()
+        
+        # Run migrations
+        migrations_dir = BASE_DIR / "database" / "migrations"
+        if migrations_dir.exists():
+            for migration_file in sorted(migrations_dir.glob("*.sql")):
+                try:
+                    with open(migration_file, 'r') as f:
+                        db.executescript(f.read())
+                    db.commit()
+                    print(f"✅ Migration applied: {migration_file.name}")
+                except Exception as e:
+                    print(f"⚠️ Migration error ({migration_file.name}): {e}")
+        
         print("✅ Database initialized")
     except Exception as e:
         print(f"❌ Database initialization error: {e}")
@@ -146,6 +178,15 @@ class CalculateDeadlineRequest(BaseModel):
     role: str = "supplier"
     project_type: str = "commercial"
 
+def get_client_ip(request: Request) -> str:
+    """Get real client IP from headers (works with Railway/Cloudflare)"""
+    return (
+        request.headers.get("cf-connecting-ip") or 
+        request.headers.get("x-forwarded-for", "").split(",")[0].strip() or
+        request.headers.get("x-real-ip") or
+        (request.client.host if request.client else "unknown")
+    )
+
 @app.post("/v1/calculate")
 @app.post("/api/v1/calculate-deadline")
 @limiter.limit("10/minute")
@@ -159,8 +200,82 @@ async def calculate_deadline(
     project_type = request_data.project_type
     state_code = state.upper()
     
+    # Get client IP for email gate tracking
+    client_ip = get_client_ip(request)
+    
+    # Email gate tracking - check if IP has exceeded free limit
+    db = get_db()
+    try:
+        # Create email_gate_tracking table if it doesn't exist
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS email_gate_tracking (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ip_address TEXT NOT NULL,
+                email TEXT,
+                calculation_count INTEGER DEFAULT 1,
+                first_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                email_captured_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        db.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_ip ON email_gate_tracking(ip_address)")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_email ON email_gate_tracking(email)")
+        
+        # Check if IP has exceeded free limit without providing email
+        tracking = db.execute("""
+            SELECT calculation_count, email, email_captured_at 
+            FROM email_gate_tracking 
+            WHERE ip_address = ? 
+            ORDER BY last_calculation_at DESC 
+            LIMIT 1
+        """, (client_ip,)).fetchone()
+        
+        if tracking:
+            count = tracking[0] if tracking else 0
+            email = tracking[1] if tracking and len(tracking) > 1 else None
+            
+            # If no email and already used 3 calculations
+            if not email and count >= 3:
+                db.close()
+                raise HTTPException(
+                    status_code=403,
+                    detail="Free trial limit reached. Please provide your email for 7 more calculations."
+                )
+            
+            # If email provided but exceeded 10 total
+            if email and count >= 10:
+                db.close()
+                raise HTTPException(
+                    status_code=403,
+                    detail="Free trial limit reached (10 calculations). Upgrade to unlimited for $299/month."
+                )
+            
+            # Update count
+            db.execute("""
+                UPDATE email_gate_tracking 
+                SET calculation_count = calculation_count + 1,
+                    last_calculation_at = CURRENT_TIMESTAMP
+                WHERE ip_address = ?
+            """, (client_ip,))
+        else:
+            # First calculation from this IP
+            db.execute("""
+                INSERT INTO email_gate_tracking (ip_address, calculation_count)
+                VALUES (?, 1)
+            """, (client_ip,))
+        
+        db.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in email gate tracking: {e}")
+        # Continue with calculation even if tracking fails
+    
     # Validate state
     if state_code not in STATE_RULES:
+        if db:
+            db.close()
         return {
             "error": f"State {state_code} not supported",
             "available_states": list(STATE_RULES.keys()),
@@ -694,6 +809,56 @@ async def partner_application(data: dict):
         print(f"Error saving partner application: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/v1/capture-email")
+async def capture_email(request: Request, request_data: TrackEmailRequest):
+    """Store email and extend calculation limit to 10"""
+    db = get_db()
+    try:
+        # Create email_gate_tracking table if it doesn't exist
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS email_gate_tracking (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ip_address TEXT NOT NULL,
+                email TEXT,
+                calculation_count INTEGER DEFAULT 1,
+                first_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                email_captured_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        client_ip = get_client_ip(request)
+        
+        # Update email for this IP
+        cursor = db.execute("""
+            UPDATE email_gate_tracking 
+            SET email = ?,
+                email_captured_at = CURRENT_TIMESTAMP
+            WHERE ip_address = ?
+        """, (request_data.email, client_ip))
+        
+        if cursor.rowcount == 0:
+            # No existing record, create one
+            db.execute("""
+                INSERT INTO email_gate_tracking (ip_address, email, email_captured_at)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+            """, (client_ip, request_data.email))
+        
+        db.commit()
+        print(f"📧 Email captured: {request_data.email} from IP: {client_ip}")
+        
+        return {
+            "status": "success",
+            "message": "Email captured! You now have 7 more calculations (10 total).",
+            "new_limit": 10
+        }
+    except Exception as e:
+        print(f"Error capturing email: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+
 @app.post("/track-email")
 async def track_email(request_data: TrackEmailRequest, request: Request):
     """Track email submissions from calculator email gate"""
@@ -753,6 +918,42 @@ async def stripe_webhook(request: Request):
         raise HTTPException(status_code=400, detail="Invalid signature")
     
     db = get_db()
+    
+    # IDEMPOTENCY CHECK - Check if we've already processed this event
+    try:
+        # Create stripe_events table if it doesn't exist
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS stripe_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_id TEXT UNIQUE NOT NULL,
+                event_type TEXT NOT NULL,
+                processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        db.execute("CREATE INDEX IF NOT EXISTS idx_stripe_events_event_id ON stripe_events(event_id)")
+        
+        # Check if we've already processed this event
+        existing = db.execute(
+            "SELECT 1 FROM stripe_events WHERE event_id = ?",
+            (event['id'],)
+        ).fetchone()
+        
+        if existing:
+            print(f"⚠️ Duplicate event {event['id']} - skipping")
+            return {"status": "duplicate", "message": "Event already processed"}
+        
+        # Record this event
+        db.execute(
+            "INSERT INTO stripe_events (event_id, event_type) VALUES (?, ?)",
+            (event['id'], event['type'])
+        )
+        db.commit()
+    except Exception as e:
+        print(f"Error checking idempotency: {e}")
+        # Continue processing even if idempotency check fails
+    
+    try:
     
     try:
         # New subscription

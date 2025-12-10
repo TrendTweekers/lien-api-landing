@@ -7,6 +7,11 @@ import os
 import sqlite3
 import stripe
 import json
+import secrets
+import string
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Initialize Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
@@ -203,6 +208,152 @@ def approve_broker(
         "model": model
     }
 
+@router.post("/approve-partner/{application_id}")
+def approve_partner(
+    application_id: int,
+    user: str = Depends(verify_admin)
+):
+    """Approve a partner application and send referral link"""
+    con = sqlite3.connect(get_db_path())
+    try:
+        # Get application
+        cur = con.cursor()
+        cur.execute("SELECT * FROM partner_applications WHERE id = ?", (application_id,))
+        app = cur.fetchone()
+        
+        if not app:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        # Check if already approved
+        try:
+            cur.execute("SELECT approved_at FROM partner_applications WHERE id = ?", (application_id,))
+            approved_at = cur.fetchone()
+            if approved_at and approved_at[0]:
+                raise HTTPException(status_code=400, detail="Already approved")
+        except sqlite3.OperationalError:
+            # Column doesn't exist yet, check status
+            if len(app) > 7 and app[7] == 'approved':
+                raise HTTPException(status_code=400, detail="Already approved")
+        
+        # Generate unique referral code
+        referral_code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+        referral_link = f"https://liendeadline.com?ref={referral_code}"
+        
+        # Try to add approval columns if they don't exist
+        try:
+            cur.execute("ALTER TABLE partner_applications ADD COLUMN approved_at TIMESTAMP")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            cur.execute("ALTER TABLE partner_applications ADD COLUMN referral_link TEXT")
+        except sqlite3.OperationalError:
+            pass
+        
+        # Update application
+        cur.execute("""
+            UPDATE partner_applications 
+            SET approved_at = CURRENT_TIMESTAMP,
+                referral_link = ?,
+                status = 'approved'
+            WHERE id = ?
+        """, (referral_link, application_id))
+        
+        # Create approved_brokers table if needed
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS approved_brokers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                partner_application_id INTEGER NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                referral_code TEXT UNIQUE NOT NULL,
+                commission_type TEXT NOT NULL,
+                total_referrals INTEGER DEFAULT 0,
+                total_earnings REAL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Add to approved_brokers
+        email = app[1] if len(app) > 1 else ''
+        commission_type = app[6] if len(app) > 6 else 'bounty'
+        
+        cur.execute("""
+            INSERT OR REPLACE INTO approved_brokers 
+            (partner_application_id, email, referral_code, commission_type)
+            VALUES (?, ?, ?, ?)
+        """, (application_id, email, referral_code, commission_type))
+        
+        con.commit()
+        logger.info(f"Partner approved: {email} - Referral code: {referral_code}")
+        
+        return {
+            "status": "approved",
+            "email": email,
+            "referral_code": referral_code,
+            "referral_link": referral_link,
+            "commission_type": commission_type
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error approving partner: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        con.close()
+
+@router.get("/partner-applications")
+def get_partner_applications(
+    status: str = "pending",
+    user: str = Depends(verify_admin)
+):
+    """Get partner applications filtered by status"""
+    con = sqlite3.connect(get_db_path())
+    try:
+        cur = con.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS partner_applications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                company TEXT NOT NULL,
+                client_count TEXT,
+                message TEXT,
+                commission_model TEXT,
+                timestamp TEXT NOT NULL,
+                status TEXT DEFAULT 'pending'
+            )
+        """)
+        
+        if status == "pending":
+            query = "SELECT * FROM partner_applications WHERE status = 'pending' OR status IS NULL ORDER BY timestamp DESC"
+        elif status == "approved":
+            query = "SELECT * FROM partner_applications WHERE status = 'approved' ORDER BY timestamp DESC"
+        else:
+            query = "SELECT * FROM partner_applications ORDER BY timestamp DESC"
+        
+        applications = cur.execute(query).fetchall()
+        
+        return {
+            "applications": [
+                {
+                    "id": app[0],
+                    "email": app[1] if len(app) > 1 else '',
+                    "name": app[2] if len(app) > 2 else '',
+                    "company": app[3] if len(app) > 3 else '',
+                    "commission_type": app[6] if len(app) > 6 else '',
+                    "created_at": app[7] if len(app) > 7 else '',
+                    "approved_at": None,
+                    "referral_link": None
+                }
+                for app in applications
+            ],
+            "total": len(applications)
+        }
+    except Exception as e:
+        logger.error(f"Error getting partner applications: {e}")
+        return {"applications": [], "total": 0}
+    finally:
+        con.close()
+
 @router.get("/brokers")
 def list_brokers(user: str = Depends(verify_admin)):
     """List all brokers"""
@@ -375,6 +526,42 @@ async def stripe_webhook(request: Request):
     except stripe.error.SignatureVerificationError:
         raise HTTPException(status_code=400, detail="Invalid signature")
     
+    # IDEMPOTENCY CHECK - Check if we've already processed this event
+    con = sqlite3.connect(get_db_path())
+    try:
+        # Create stripe_events table if it doesn't exist
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS stripe_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_id TEXT UNIQUE NOT NULL,
+                event_type TEXT NOT NULL,
+                processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        con.execute("CREATE INDEX IF NOT EXISTS idx_stripe_events_event_id ON stripe_events(event_id)")
+        
+        # Check if we've already processed this event
+        existing = con.execute(
+            "SELECT 1 FROM stripe_events WHERE event_id = ?",
+            (event['id'],)
+        ).fetchone()
+        
+        if existing:
+            print(f"⚠️ Duplicate event {event['id']} - skipping")
+            con.close()
+            return {"status": "duplicate", "message": "Event already processed"}
+        
+        # Record this event
+        con.execute(
+            "INSERT INTO stripe_events (event_id, event_type) VALUES (?, ?)",
+            (event['id'], event['type'])
+        )
+        con.commit()
+    except Exception as e:
+        print(f"Error checking idempotency: {e}")
+        # Continue processing even if idempotency check fails
+    
     # Handle invoice payment succeeded (monthly subscription payment)
     if event['type'] == 'invoice.payment_succeeded':
         invoice = event['data']['object']
@@ -402,38 +589,43 @@ async def stripe_webhook(request: Request):
                     
                     if broker_ref:
                         # Get broker commission model
-                        con = sqlite3.connect(get_db_path())
-                        cur = con.execute(
-                            "SELECT model, stripe_account_id FROM brokers WHERE id = ?",
-                            (broker_ref,)
-                        )
-                        broker = cur.fetchone()
-                        
-                        if broker:
-                            model = broker[0]
-                            stripe_account_id = broker[1]
+                        try:
+                            cur = con.cursor()
+                            cur.execute(
+                                "SELECT model, stripe_account_id FROM brokers WHERE id = ?",
+                                (broker_ref,)
+                            )
+                            broker = cur.fetchone()
                             
-                            # Determine payout amount based on model
-                            if model == 'bounty':
-                                amount = 500.0
-                            else:  # recurring
-                                amount = 50.0
-                            
-                            # Queue payout (don't pay yet - requires manual approval)
-                            con.execute("""
-                                INSERT INTO referrals(
-                                    broker_ref, customer_email, customer_id, 
-                                    amount, status, days_active
-                                )
-                                VALUES (?, ?, ?, ?, 'ready', ?)
-                            """, (broker_ref, customer_email, customer_id, amount, int(days_active)))
-                            
-                            con.commit()
-                        con.close()
+                            if broker:
+                                model = broker[0]
+                                stripe_account_id = broker[1]
+                                
+                                # Determine payout amount based on model
+                                if model == 'bounty':
+                                    amount = 500.0
+                                else:  # recurring
+                                    amount = 50.0
+                                
+                                # Queue payout (don't pay yet - requires manual approval)
+                                cur.execute("""
+                                    INSERT INTO referrals(
+                                        broker_ref, customer_email, customer_id, 
+                                        amount, status, days_active
+                                    )
+                                    VALUES (?, ?, ?, ?, 'ready', ?)
+                                """, (broker_ref, customer_email, customer_id, amount, int(days_active)))
+                                
+                                con.commit()
+                        except Exception as e:
+                            print(f"Error processing broker referral: {e}")
         
         except Exception as e:
             # Log error but don't fail webhook
             print(f"Webhook error: {e}")
+        finally:
+            if con:
+                con.close()
     
     # Handle customer.subscription.deleted (cancellation)
     elif event['type'] == 'customer.subscription.deleted':
@@ -441,14 +633,18 @@ async def stripe_webhook(request: Request):
         customer_id = subscription.get('customer')
         
         # Mark any pending payouts as cancelled
-        con = sqlite3.connect(get_db_path())
-        con.execute("""
-            UPDATE referrals 
-            SET status = 'cancelled' 
-            WHERE customer_id = ? AND status = 'pending'
-        """, (customer_id,))
-        con.commit()
-        con.close()
+        try:
+            cur = con.cursor()
+            cur.execute("""
+                UPDATE referrals 
+                SET status = 'cancelled' 
+                WHERE customer_id = ? AND status = 'pending'
+            """, (customer_id,))
+            con.commit()
+        except Exception as e:
+            print(f"Error updating cancelled subscriptions: {e}")
+        finally:
+            con.close()
     
     return {"status": "ok"}
 
