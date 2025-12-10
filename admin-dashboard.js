@@ -28,23 +28,24 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Load dashboard data
     updateStats();
-    updateQuickStats(); // New quick stats
+    updateQuickStats();
     loadCustomers();
     loadBrokers();
-    loadBrokersList(); // Load brokers for middle column
+    loadBrokersList();
     loadPendingPayouts();
     loadTestKeys();
-    // loadQuickStats(); // Disabled - analytics endpoint returns 404
     loadPartnerApplications();
     loadEmailCaptures();
     loadFlaggedReferrals();
     updateActivityFeed();
     updateLiveStats();
+    updateQuickStatsRow();
     
-    // Refresh quick stats every 30 seconds
+    // Refresh stats
     setInterval(updateQuickStats, 30000);
     setInterval(updateActivityFeed, 60000);
     setInterval(updateLiveStats, 60000);
+    setInterval(updateQuickStatsRow, 60000);
     
     // Refresh stats every 60 seconds
     // setInterval(loadQuickStats, 60000); // Disabled - analytics endpoint returns 404
@@ -1024,6 +1025,60 @@ function renderCustomer(customer) {
     `;
 }
 window.renderCustomer = renderCustomer;
+
+// Update quick stats row
+function updateQuickStatsRow() {
+    // Update today's revenue
+    const todayRevenue = document.getElementById('todayRevenue');
+    if (todayRevenue) {
+        // This would normally fetch from analytics
+        todayRevenue.textContent = '$0';
+    }
+    
+    // Update active customers
+    const activeCustomers = document.getElementById('activeCustomers');
+    if (activeCustomers) {
+        fetch(`${API_BASE}/admin/customers`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        })
+        .then(r => r.json())
+        .then(customers => {
+            const active = Array.isArray(customers) ? customers.filter(c => c.status === 'active').length : 0;
+            activeCustomers.textContent = active;
+        })
+        .catch(() => {
+            activeCustomers.textContent = '0';
+        });
+    }
+    
+    // Update calculations today
+    const calculationsToday = document.getElementById('calculationsToday');
+    if (calculationsToday) {
+        // This would normally fetch from analytics
+        calculationsToday.textContent = '0';
+    }
+    
+    // Update pending payouts
+    const pendingPayouts = document.getElementById('pendingPayouts');
+    if (pendingPayouts) {
+        fetch(`${API_BASE}/admin/ready-payouts`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            const count = data.ready ? data.ready.length : 0;
+            pendingPayouts.textContent = count;
+        })
+        .catch(() => {
+            pendingPayouts.textContent = '0';
+        });
+    }
+}
+window.updateQuickStatsRow = updateQuickStatsRow;
 
 // Dashboard initialization is now handled in the auth check above
 
