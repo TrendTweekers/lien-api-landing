@@ -163,12 +163,79 @@
 
             <!-- RIGHT COLUMN: Analytics & Quick Actions -->
             <div class="space-y-8">
-                <!-- System Health -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">System Health</h3>
-                    <div class="flex items-center space-x-2">
-                        <span class="w-3 h-3 rounded-full bg-green-500"></span>
-                        <span class="text-sm text-gray-700">All systems operational</span>
+                <!-- System & Quick Actions -->
+                <div class="bg-white rounded-xl shadow-sm border">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">System & Quick Actions</h2>
+                    </div>
+                    
+                    <div class="p-6">
+                        <!-- System Status -->
+                        <div class="mb-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-medium text-gray-900">System Health</h3>
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    <span class="w-2 h-2 rounded-full bg-green-600 mr-2"></span>
+                                    All Systems Operational
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div class="flex items-center">
+                                    <span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                                    <span class="text-gray-700">API: Online</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                                    <span class="text-gray-700">Database: Healthy</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                                    <span class="text-gray-700">Email: Connected</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                                    <span class="text-gray-700">Stripe: Active</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Action Buttons -->
+                        <div class="mb-6">
+                            <h3 class="font-medium text-gray-900 mb-3">Quick Actions</h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="approveAllPending()" class="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
+                                    Approve All Pending
+                                </button>
+                                <button onclick="payAllReady()" class="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+                                    Pay All Ready ($0)
+                                </button>
+                                <button onclick="generateTestKey()" class="px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium">
+                                    Generate Test Key
+                                </button>
+                                <button onclick="runBackup()" class="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium">
+                                    Run Backup Now
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Pending Counts -->
+                        <div class="border-t pt-4">
+                            <h3 class="font-medium text-gray-900 mb-3">Pending Items</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-700">Partner Applications</span>
+                                    <span id="pendingAppsCount" class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-700">Ready to Pay</span>
+                                    <span id="readyToPayCount" class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">$0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-700">Flagged Referrals</span>
+                                    <span id="flaggedCount" class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">0</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -185,22 +252,6 @@
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">Email Funnel</h3>
                     <p class="text-3xl font-bold text-gray-900"><span id="emailCaptures">0</span></p>
                     <p class="text-sm text-gray-500 mt-1">emails captured</p>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                    <div class="space-y-2">
-                        <button onclick="bulkPayout()" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
-                            Pay All Ready
-                        </button>
-                        <button onclick="generateTestKey()" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-                            Generate Test Key
-                        </button>
-                        <button onclick="showApproveBrokerModal()" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-                            Approve Broker
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>

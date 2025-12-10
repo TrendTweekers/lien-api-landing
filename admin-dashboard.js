@@ -40,12 +40,14 @@ document.addEventListener('DOMContentLoaded', () => {
     updateActivityFeed();
     updateLiveStats();
     updateQuickStatsRow();
+    updatePendingCounts();
     
     // Refresh stats
     setInterval(updateQuickStats, 30000);
     setInterval(updateActivityFeed, 60000);
     setInterval(updateLiveStats, 60000);
     setInterval(updateQuickStatsRow, 60000);
+    setInterval(updatePendingCounts, 60000);
     
     // Refresh stats every 60 seconds
     // setInterval(loadQuickStats, 60000); // Disabled - analytics endpoint returns 404
