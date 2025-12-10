@@ -1107,50 +1107,151 @@ async def stripe_webhook(request: Request):
     finally:
         db.close()
 
-def send_welcome_email(email: str, password: str):
+def send_welcome_email(email: str, temp_password: str):
     """Send welcome email with login credentials"""
     try:
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail, Email, To
-        
-        sg = SendGridAPIClient(api_key=os.getenv('SENDGRID_API_KEY', ''))
-        
-        if not os.getenv('SENDGRID_API_KEY'):
-            print(f"⚠️ SENDGRID_API_KEY not set - skipping email to {email}")
-            print(f"   Temporary password: {password}")
-            return
-        
-        message = Mail(
-            from_email=Email("support@liendeadline.com"),
-            to_emails=To(email),
-            subject="Welcome to LienDeadline - Your Login Credentials",
-            html_content=f"""
-            <h2>Welcome to LienDeadline!</h2>
-            <p>Your account is now active. Here are your login credentials:</p>
+        # Try SendGrid first (if configured)
+        sendgrid_key = os.getenv('SENDGRID_API_KEY')
+        if sendgrid_key:
+            from sendgrid import SendGridAPIClient
+            from sendgrid.helpers.mail import Mail, Email, To
             
-            <p><strong>Login:</strong> <a href="https://liendeadline.com/dashboard">https://liendeadline.com/dashboard</a></p>
-            <p><strong>Email:</strong> {email}</p>
-            <p><strong>Temporary Password:</strong> {password}</p>
+            sg = SendGridAPIClient(api_key=sendgrid_key)
             
-            <p><em>Please change your password after your first login for security.</em></p>
-            
-            <h3>Getting Started:</h3>
-            <ol>
-                <li>Login to your dashboard</li>
-                <li>Use the calculator for unlimited lien deadline calculations</li>
-                <li>Access covers 23 states (TX, CA, FL, NY, PA, IL, GA, NC, WA, OH, AZ, CO, VA, MI, TN, MA, NJ, MD, WI, MN, IN, MO, SC)</li>
-            </ol>
-            
-            <p>Questions? Reply to this email or contact support@liendeadline.com</p>
-            
-            <p>Best,<br>The LienDeadline Team</p>
+            html = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 30px; border-radius: 10px; text-align: center;">
+                    <h1 style="margin: 0;">Welcome to LienDeadline! 🎉</h1>
+                    <p style="margin: 10px 0 0 0; opacity: 0.9;">Your account is ready to protect your receivables</p>
+                </div>
+                
+                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h2 style="color: #1e293b; margin-top: 0;">Your Login Credentials</h2>
+                    <p style="margin: 10px 0;"><strong>Email:</strong> {email}</p>
+                    <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background: white; padding: 5px 10px; border-radius: 4px; font-size: 16px;">{temp_password}</code></p>
+                    <p style="margin: 20px 0 0 0;">
+                        <a href="https://liendeadline.com/dashboard.html" style="display: inline-block; background: #c1554e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                            Login to Dashboard →
+                        </a>
+                    </p>
+                </div>
+                
+                <div style="margin: 30px 0;">
+                    <h3 style="color: #1e293b;">What's Next?</h3>
+                    <ul style="color: #475569; line-height: 1.8;">
+                        <li>Change your password in Account Settings</li>
+                        <li>Run <strong>unlimited</strong> lien deadline calculations</li>
+                        <li>View your calculation history anytime</li>
+                        <li>Save calculations as PDF (coming soon)</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0;">
+                    <p style="margin: 0; color: #92400e;"><strong>Pro Tip:</strong> Bookmark the calculator page for instant access when you need to check deadlines.</p>
+                </div>
+                
+                <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e2e8f0; margin-top: 30px;">
+                    <p style="color: #64748b; font-size: 14px; margin: 0;">
+                        Questions? Just reply to this email.<br>
+                        Thank you for trusting LienDeadline to protect your receivables.
+                    </p>
+                </div>
+            </body>
+            </html>
             """
-        )
-        
-        response = sg.send(message)
-        print(f"✅ Welcome email sent to {email}")
+            
+            message = Mail(
+                from_email=Email("support@liendeadline.com"),
+                to_emails=To(email),
+                subject="🎉 Welcome to LienDeadline - Your Account is Ready",
+                html_content=html
+            )
+            
+            sg.send(message)
+            print(f"✅ Welcome email sent to {email}")
+            return True
+        else:
+            # Fallback: Try SMTP if SendGrid not configured
+            smtp_email = os.getenv('SMTP_EMAIL')
+            smtp_password = os.getenv('SMTP_PASSWORD')
+            
+            if smtp_email and smtp_password:
+                import smtplib
+                from email.mime.text import MIMEText
+                from email.mime.multipart import MIMEMultipart
+                
+                msg = MIMEMultipart('alternative')
+                msg['Subject'] = '🎉 Welcome to LienDeadline - Your Account is Ready'
+                msg['From'] = smtp_email
+                msg['To'] = email
+                
+                html = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 30px; border-radius: 10px; text-align: center;">
+                        <h1 style="margin: 0;">Welcome to LienDeadline! 🎉</h1>
+                        <p style="margin: 10px 0 0 0; opacity: 0.9;">Your account is ready to protect your receivables</p>
+                    </div>
+                    
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h2 style="color: #1e293b; margin-top: 0;">Your Login Credentials</h2>
+                        <p style="margin: 10px 0;"><strong>Email:</strong> {email}</p>
+                        <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background: white; padding: 5px 10px; border-radius: 4px; font-size: 16px;">{temp_password}</code></p>
+                        <p style="margin: 20px 0 0 0;">
+                            <a href="https://liendeadline.com/dashboard.html" style="display: inline-block; background: #c1554e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                                Login to Dashboard →
+                            </a>
+                        </p>
+                    </div>
+                    
+                    <div style="margin: 30px 0;">
+                        <h3 style="color: #1e293b;">What's Next?</h3>
+                        <ul style="color: #475569; line-height: 1.8;">
+                            <li>Change your password in Account Settings</li>
+                            <li>Run <strong>unlimited</strong> lien deadline calculations</li>
+                            <li>View your calculation history anytime</li>
+                            <li>Save calculations as PDF (coming soon)</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0;">
+                        <p style="margin: 0; color: #92400e;"><strong>Pro Tip:</strong> Bookmark the calculator page for instant access when you need to check deadlines.</p>
+                    </div>
+                    
+                    <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e2e8f0; margin-top: 30px;">
+                        <p style="color: #64748b; font-size: 14px; margin: 0;">
+                            Questions? Just reply to this email.<br>
+                            Thank you for trusting LienDeadline to protect your receivables.
+                        </p>
+                    </div>
+                </body>
+                </html>
+                """
+                
+                msg.attach(MIMEText(html, 'html'))
+                
+                # Try Gmail SMTP
+                try:
+                    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                        server.login(smtp_email, smtp_password)
+                        server.send_message(msg)
+                    print(f"✅ Welcome email sent via SMTP to {email}")
+                    return True
+                except Exception as smtp_error:
+                    print(f"⚠️ SMTP failed: {smtp_error}")
+            
+            # If no email service configured, just log
+            print(f"⚠️ No email service configured - skipping email to {email}")
+            print(f"   Temporary password: {temp_password}")
+            print(f"   Email: {email}")
+            return False
+            
     except Exception as e:
-        print(f"❌ Email failed: {e}")
+        print(f"❌ Welcome email failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 def send_broker_welcome_email(email: str, name: str, link: str, code: str):
     """Send broker welcome email with referral link"""
