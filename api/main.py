@@ -3018,53 +3018,51 @@ async def get_pending_brokers():
     """Get pending broker applications"""
     try:
         print("DEBUG: Starting get_pending_brokers")
-        print(f"DEBUG: DB_TYPE = {DB_TYPE}")
+        
+        # Initialize database first (ensures tables exist)
+        init_db()
         
         with get_db() as conn:
-            print("DEBUG: Got database connection")
-            
             cursor = get_db_cursor(conn)
-            print("DEBUG: Created cursor")
             
-            # SIMPLE TEST QUERY FIRST
+            # Check if table exists
             if DB_TYPE == 'postgresql':
-                cursor.execute("SELECT 1 as test")
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'partner_applications'
+                    )
+                """)
+                result = cursor.fetchone()
+                table_exists = result[0] if isinstance(result, tuple) else (result.get('exists') if isinstance(result, dict) else False)
             else:
-                cursor.execute("SELECT 1 as test")
-            test_result = cursor.fetchone()
-            print(f"DEBUG: Test query result: {test_result}")
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='partner_applications'")
+                table_exists = cursor.fetchone() is not None
             
-            # Now try the real query - simplified to avoid column issues
+            if not table_exists:
+                print("DEBUG: partner_applications table doesn't exist yet")
+                return {"pending": [], "count": 0, "message": "Table not initialized"}
+            
+            # Get pending applications - simplified query
             if DB_TYPE == 'postgresql':
                 cursor.execute('''
                     SELECT id, name, email, company, commission_model, 
-                           status, COALESCE(created_at::text, timestamp) as applied_at
+                           status, COALESCE(applied_at::text, created_at::text, timestamp) as applied_at
                     FROM partner_applications 
                     WHERE status = 'pending' OR status IS NULL
-                    ORDER BY COALESCE(created_at, timestamp::timestamp) DESC
+                    ORDER BY COALESCE(applied_at, created_at, timestamp::timestamp) DESC
                 ''')
             else:
-                # SQLite - check if table exists first
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='partner_applications'")
-                table_exists = cursor.fetchone()
-                print(f"DEBUG: partner_applications table exists: {table_exists is not None}")
-                
-                if table_exists:
-                    cursor.execute('''
-                        SELECT id, name, email, company, commission_model, 
-                               status, COALESCE(created_at, timestamp) as applied_at
-                        FROM partner_applications 
-                        WHERE status = 'pending' OR status IS NULL
-                        ORDER BY COALESCE(created_at, timestamp) DESC
-                    ''')
-                else:
-                    print("DEBUG: Table doesn't exist, returning empty list")
-                    return {"pending": [], "count": 0}
-            
-            print("DEBUG: Query executed")
+                cursor.execute('''
+                    SELECT id, name, email, company, commission_model, 
+                           status, COALESCE(applied_at, created_at, timestamp) as applied_at
+                    FROM partner_applications 
+                    WHERE status = 'pending' OR status IS NULL
+                    ORDER BY COALESCE(applied_at, created_at, timestamp) DESC
+                ''')
             
             rows = cursor.fetchall()
-            print(f"DEBUG: Found {len(rows)} rows")
             
             # Convert to list of dicts
             pending = []
@@ -3078,24 +3076,21 @@ async def get_pending_brokers():
                         'id': row['id'],
                         'name': row['name'],
                         'email': row['email'],
-                        'company': row['company'],
+                        'company': row.get('company', ''),
                         'commission_model': row.get('commission_model', 'bounty'),
-                        'status': row['status'],
-                        'applied_at': row.get('created_at') or row.get('timestamp')
+                        'status': row.get('status', 'pending'),
+                        'applied_at': row.get('applied_at') or row.get('created_at') or row.get('timestamp')
                     })
             
-            print(f"DEBUG: Returning {len(pending)} pending brokers")
-            
+            print(f"DEBUG: Found {len(pending)} pending brokers")
             return {"pending": pending, "count": len(pending)}
         
     except Exception as e:
         print(f"DEBUG: ERROR in get_pending_brokers: {str(e)}")
         import traceback
         traceback.print_exc()
-        return JSONResponse(
-            status_code=500,
-            content={"error": "Database error", "details": str(e)}
-        )
+        
+        return {"pending": [], "count": 0, "error": str(e)}
 
 @app.get("/api/v1/broker/dashboard")
 async def broker_dashboard(request: Request, email: str):
