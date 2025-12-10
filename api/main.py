@@ -807,49 +807,84 @@ class TrackEmailRequest(BaseModel):
     timestamp: str
 
 @app.post("/partner-application")
-async def partner_application(data: dict):
+@app.post("/api/v1/apply-partner")
+async def apply_partner(request: Request):
     """Handle partner application form submission"""
     try:
-        db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
-        con = sqlite3.connect(str(db_path))
-        cur = con.cursor()
+        data = await request.json()
         
-        # Create table if it doesn't exist
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS partner_applications (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT NOT NULL,
-                company TEXT NOT NULL,
-                client_count TEXT,
-                message TEXT,
-                commission_model TEXT,
-                timestamp TEXT NOT NULL,
-                status TEXT DEFAULT 'pending'
+        name = data.get('name')
+        email = data.get('email')
+        company = data.get('company')
+        phone = data.get('phone', '')
+        client_count = data.get('client_count')
+        commission_model = data.get('commission_model')
+        message = data.get('message', '')
+        
+        # Validate required fields
+        if not name or not email or not company or not client_count or not commission_model:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Missing required fields"}
             )
-        """)
         
-        # Insert application
-        cur.execute("""
-            INSERT INTO partner_applications 
-            (name, email, company, client_count, message, commission_model, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            data.get('name', ''),
-            data.get('email', ''),
-            data.get('company', ''),
-            data.get('client_count', ''),
-            data.get('message', ''),
-            data.get('commission_model', ''),
-            datetime.now().isoformat()
-        ))
+        # Use get_db() for consistent database access
+        with get_db() as conn:
+            cursor = conn.cursor()
+            
+            # Create table if it doesn't exist (with phone field)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS partner_applications (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    company TEXT NOT NULL,
+                    phone TEXT,
+                    client_count TEXT,
+                    commission_model TEXT,
+                    message TEXT,
+                    timestamp TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    status TEXT DEFAULT 'pending'
+                )
+            """)
+            
+            # Insert application
+            cursor.execute("""
+                INSERT INTO partner_applications 
+                (name, email, company, phone, client_count, commission_model, message, timestamp, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+            """, (
+                name,
+                email,
+                company,
+                phone,
+                str(client_count),
+                commission_model,
+                message,
+                datetime.now().isoformat()
+            ))
+            
+            application_id = cursor.lastrowid
+            conn.commit()
         
-        con.commit()
-        con.close()
-        return {"status": "success", "message": "Application submitted!"}
+        print(f"✅ Partner application saved: {email} (ID: {application_id})")
+        
+        return {
+            "status": "success",
+            "message": "Application submitted successfully",
+            "application_id": application_id
+        }
+        
     except Exception as e:
-        print(f"Error saving partner application: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"❌ Error saving partner application: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
 
 @app.post("/api/v1/capture-email")
 async def capture_email(request: Request, request_data: TrackEmailRequest):
