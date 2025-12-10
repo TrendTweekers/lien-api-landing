@@ -194,17 +194,22 @@ def init_db():
                 rows = cursor.fetchall()
                 existing_tables = []
                 for row in rows:
-                    if isinstance(row, dict):
-                        existing_tables.append(row.get('name'))
-                    elif isinstance(row, tuple):
+                    if isinstance(row, dict) and 'name' in row:
+                        existing_tables.append(row['name'])
+                    elif isinstance(row, tuple) and len(row) > 0:
                         existing_tables.append(row[0])
+                    elif hasattr(row, '_fields') and 'name' in row._fields:
+                        existing_tables.append(row['name'])
                     else:
-                        # Handle sqlite3.Row objects
+                        # Handle sqlite3.Row objects - try dictionary access
                         try:
                             existing_tables.append(row['name'])
-                        except (TypeError, KeyError):
-                            # Fallback: try to get first element
-                            existing_tables.append(str(row))
+                        except (TypeError, KeyError, IndexError):
+                            # Last fallback: try to get first element or convert to string
+                            try:
+                                existing_tables.append(row[0])
+                            except:
+                                existing_tables.append(str(row))
             print(f"📊 Existing tables: {existing_tables}")
             
             if DB_TYPE == 'postgresql':
@@ -408,47 +413,67 @@ def init_db():
                     print("✅ Created activity_logs table")
                 
                 # Partner applications table (SQLite)
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS partner_applications (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT NOT NULL,
-                        email TEXT NOT NULL UNIQUE,
-                        company TEXT,
-                        commission_model TEXT DEFAULT 'bounty',
-                        status TEXT DEFAULT 'pending',
-                        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        approved_at TIMESTAMP,
-                        notes TEXT,
-                        timestamp TEXT,
-                        client_count TEXT,
-                        message TEXT
-                    )
-                """)
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_email ON partner_applications(email)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_status ON partner_applications(status)")
-                
-                # Add missing columns if they don't exist (SQLite)
-                try:
-                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-                except:
-                    pass  # Column already exists
-                try:
-                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-                except:
-                    pass  # Column already exists
-                try:
-                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN commission_model TEXT DEFAULT 'bounty'")
-                except:
-                    pass  # Column already exists
-                try:
-                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN company TEXT")
-                except:
-                    pass  # Column already exists
-                
-                # Update existing rows with current timestamp
-                cursor.execute("UPDATE partner_applications SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL")
-                cursor.execute("UPDATE partner_applications SET applied_at = CURRENT_TIMESTAMP WHERE applied_at IS NULL")
+                if 'partner_applications' not in existing_tables:
+                    print("Creating partner_applications table...")
+                    cursor.execute("""
+                        CREATE TABLE partner_applications (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            name TEXT NOT NULL,
+                            email TEXT NOT NULL UNIQUE,
+                            company TEXT,
+                            commission_model TEXT DEFAULT 'bounty',
+                            status TEXT DEFAULT 'pending',
+                            applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            approved_at TIMESTAMP,
+                            notes TEXT,
+                            timestamp TEXT,
+                            client_count TEXT,
+                            message TEXT
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_email ON partner_applications(email)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_status ON partner_applications(status)")
+                    print("✅ Created partner_applications table")
+                    
+                    # Insert sample data immediately after creation
+                    try:
+                        cursor.execute('''
+                            INSERT INTO partner_applications (name, email, company, commission_model, status)
+                            VALUES 
+                            ('John Smith', 'john@insurance.com', 'Smith Insurance', 'bounty', 'pending'),
+                            ('Jane Doe', 'jane@consulting.com', 'Doe Consulting', 'recurring', 'pending'),
+                            ('Bob Wilson', 'bob@brokerage.com', 'Wilson Brokerage', 'bounty', 'pending')
+                        ''')
+                        print("✅ Inserted 3 sample partner applications")
+                    except Exception as e:
+                        print(f"Note: Could not insert sample data: {e}")
+                else:
+                    # Add missing columns if they don't exist (SQLite)
+                    try:
+                        cursor.execute("ALTER TABLE partner_applications ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+                        print("✅ Added created_at column to partner_applications")
+                    except:
+                        pass  # Column already exists
+                    try:
+                        cursor.execute("ALTER TABLE partner_applications ADD COLUMN applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+                        print("✅ Added applied_at column to partner_applications")
+                    except:
+                        pass  # Column already exists
+                    try:
+                        cursor.execute("ALTER TABLE partner_applications ADD COLUMN commission_model TEXT DEFAULT 'bounty'")
+                        print("✅ Added commission_model column to partner_applications")
+                    except:
+                        pass  # Column already exists
+                    try:
+                        cursor.execute("ALTER TABLE partner_applications ADD COLUMN company TEXT")
+                        print("✅ Added company column to partner_applications")
+                    except:
+                        pass  # Column already exists
+                    
+                    # Update existing rows with current timestamp
+                    cursor.execute("UPDATE partner_applications SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL")
+                    cursor.execute("UPDATE partner_applications SET applied_at = CURRENT_TIMESTAMP WHERE applied_at IS NULL")
                 
                 # Brokers table (SQLite)
                 if 'brokers' not in existing_tables:
