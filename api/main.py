@@ -225,6 +225,44 @@ def init_db():
                 """)
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_type ON activity_logs(type)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at)")
+                
+                # Partner applications table (PostgreSQL)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS partner_applications (
+                        id SERIAL PRIMARY KEY,
+                        name VARCHAR NOT NULL,
+                        email VARCHAR NOT NULL UNIQUE,
+                        company VARCHAR,
+                        commission_model VARCHAR DEFAULT 'bounty',
+                        status VARCHAR DEFAULT 'pending',
+                        applied_at TIMESTAMP DEFAULT NOW(),
+                        approved_at TIMESTAMP,
+                        notes TEXT,
+                        timestamp VARCHAR,
+                        client_count VARCHAR,
+                        message TEXT
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_email ON partner_applications(email)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_status ON partner_applications(status)")
+                
+                # Brokers table (PostgreSQL)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS brokers (
+                        id SERIAL PRIMARY KEY,
+                        name VARCHAR NOT NULL,
+                        email VARCHAR NOT NULL UNIQUE,
+                        company VARCHAR,
+                        commission_model VARCHAR DEFAULT 'bounty',
+                        referral_code VARCHAR UNIQUE,
+                        status VARCHAR DEFAULT 'active',
+                        approved_at TIMESTAMP DEFAULT NOW(),
+                        total_referrals INTEGER DEFAULT 0,
+                        total_earned DECIMAL(10, 2) DEFAULT 0
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_email ON brokers(email)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_referral_code ON brokers(referral_code)")
             else:
                 # SQLite tables
                 cursor.execute("""
@@ -275,6 +313,44 @@ def init_db():
                 """)
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_type ON activity_logs(type)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at)")
+                
+                # Partner applications table (SQLite)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS partner_applications (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        email TEXT NOT NULL UNIQUE,
+                        company TEXT,
+                        commission_model TEXT DEFAULT 'bounty',
+                        status TEXT DEFAULT 'pending',
+                        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        approved_at TIMESTAMP,
+                        notes TEXT,
+                        timestamp TEXT,
+                        client_count TEXT,
+                        message TEXT
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_email ON partner_applications(email)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_status ON partner_applications(status)")
+                
+                # Brokers table (SQLite)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS brokers (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        email TEXT NOT NULL UNIQUE,
+                        company TEXT,
+                        commission_model TEXT DEFAULT 'bounty',
+                        referral_code TEXT UNIQUE,
+                        status TEXT DEFAULT 'active',
+                        approved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        total_referrals INTEGER DEFAULT 0,
+                        total_earned DECIMAL(10, 2) DEFAULT 0
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_email ON brokers(email)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_referral_code ON brokers(referral_code)")
             
             # Create triggers for SQLite
             if DB_TYPE == 'sqlite':
