@@ -187,6 +187,114 @@ async function loadBrokers() {
     }
 }
 
+// Load brokers list (card-based display)
+async function loadBrokersList() {
+    const brokersList = document.getElementById('brokersList');
+    const noBrokers = document.getElementById('noBrokers');
+    const brokerCount = document.getElementById('brokerCount');
+    
+    if (!brokersList) {
+        console.error('Brokers list container not found');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/admin/brokers`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const brokers = await response.json();
+        
+        // Ensure brokers is an array
+        const brokersArray = Array.isArray(brokers) ? brokers : [];
+        
+        // Update broker count
+        if (brokerCount) {
+            brokerCount.textContent = brokersArray.length;
+        }
+        
+        if (brokersArray.length === 0) {
+            brokersList.innerHTML = '';
+            if (noBrokers) {
+                noBrokers.style.display = 'block';
+            }
+            return;
+        }
+        
+        if (noBrokers) {
+            noBrokers.style.display = 'none';
+        }
+        
+        // Render broker cards
+        brokersList.innerHTML = brokersArray.map(broker => {
+            const name = broker.name || broker.email || 'Unknown';
+            const email = broker.email || '';
+            const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 1);
+            const referrals = broker.referrals || broker.referral_count || 0;
+            const earned = broker.earned || broker.total_earned || 0;
+            const conversion = referrals > 0 ? Math.round((broker.conversions || 0) / referrals * 100) : 0;
+            const brokerId = broker.id || broker.broker_id || 0;
+            
+            return `
+                <div class="p-6 hover:bg-gray-50">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span class="text-blue-600 font-semibold text-lg">${initials}</span>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900">${name}</h3>
+                                <p class="text-sm text-gray-500">${email}</p>
+                            </div>
+                        </div>
+                        <button onclick="viewBroker(${brokerId})" class="text-blue-600 text-sm hover:text-blue-800">
+                            View Details →
+                        </button>
+                    </div>
+                    
+                    <div class="mt-4 grid grid-cols-3 gap-4">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-gray-900">${referrals}</p>
+                            <p class="text-xs text-gray-500">Referrals</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-green-600">$${earned.toLocaleString()}</p>
+                            <p class="text-xs text-gray-500">Earned</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-blue-600">${conversion}%</p>
+                            <p class="text-xs text-gray-500">Conversion</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        console.log('✅ Brokers rendered successfully');
+        
+    } catch (error) {
+        console.error('❌ Error loading brokers:', error);
+        brokersList.innerHTML = '';
+        if (noBrokers) {
+            noBrokers.style.display = 'block';
+            noBrokers.querySelector('p').textContent = 'Error loading brokers: ' + error.message;
+        }
+    }
+}
+
+// View broker details
+function viewBroker(id) {
+    // Open modal or navigate to broker detail page
+    alert('View broker details for ID: ' + id);
+}
+window.viewBroker = viewBroker;
+
 // Generate Test API Key Modal
 function showGenerateKeyModal() {
     document.getElementById('generate-key-modal').classList.remove('hidden');

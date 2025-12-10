@@ -128,10 +128,27 @@
                 </div>
 
                 <!-- Active Brokers Section -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Active Brokers</h2>
-                    <div id="brokersList" class="space-y-3">
-                        <!-- populated -->
+                <div class="bg-white rounded-xl shadow-sm border">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-lg font-semibold text-gray-900">Active Brokers</h2>
+                            <div class="text-sm text-gray-500">
+                                <span id="brokerCount">0</span> brokers
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="brokersList" class="divide-y divide-gray-200">
+                        <!-- Dynamic broker cards will go here -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="noBrokers" class="py-12 text-center">
+                        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <span class="text-gray-400 text-2xl">👥</span>
+                        </div>
+                        <p class="text-gray-500">No active brokers yet</p>
+                        <p class="text-sm text-gray-400 mt-2">Approved partner applications will appear here</p>
                     </div>
                 </div>
 
