@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Load dashboard data
     updateStats();
+    updateQuickStats(); // New quick stats
     loadCustomers();
     loadBrokers();
     loadPendingPayouts();
@@ -35,6 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // loadQuickStats(); // Disabled - analytics endpoint returns 404
     loadPartnerApplications();
     loadEmailCaptures();
+    
+    // Refresh quick stats every 30 seconds
+    setInterval(updateQuickStats, 30000);
     
     // Refresh stats every 60 seconds
     // setInterval(loadQuickStats, 60000); // Disabled - analytics endpoint returns 404
@@ -677,11 +681,19 @@ async function loadPartnerApplications() {
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         ${status === 'pending' ? `
-                            <button onclick="approvePartner('${app.email}')" 
-                                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-semibold text-sm">
-                                Approve
+                            <button onclick="approveAndCopy(${app.id}, '${app.email}')" 
+                                    class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                                Approve & Copy Link
                             </button>
-                        ` : '<span class="text-green-600 font-semibold">✅ Approved</span>'}
+                        ` : `
+                            <span class="text-green-600 font-semibold">✅ Approved</span>
+                            ${app.referral_link ? `
+                                <button onclick="copyLink('${app.referral_link}')" 
+                                        class="ml-2 text-blue-600 hover:underline text-xs">
+                                    Copy Link
+                                </button>
+                            ` : ''}
+                        `}
                     </td>
                 </tr>
             `;

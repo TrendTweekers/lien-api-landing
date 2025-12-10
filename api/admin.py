@@ -666,6 +666,98 @@ async def stripe_webhook(request: Request):
     
     return {"status": "ok"}
 
+@router.get("/ready-payouts")
+def get_ready_payouts(user: str = Depends(verify_admin)):
+    """Get all payouts ready for payment (status = 'ready')"""
+    con = None
+    try:
+        db_path = get_db_path()
+        con = sqlite3.connect(db_path)
+        
+        # Check if table exists
+        cur = con.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [row[0] for row in cur.fetchall()]
+        
+        if 'referrals' not in tables:
+            return {"ready": []}
+        
+        # Query for ready payouts
+        try:
+            cur = con.execute("""
+                SELECT r.id, r.broker_ref, r.customer_email, r.amount, r.payout, r.days_active,
+                       b.name as broker_name, b.email as broker_email
+                FROM referrals r
+                LEFT JOIN brokers b ON r.broker_ref = b.id OR r.broker_id = b.id
+                WHERE r.status = 'ready'
+                ORDER BY r.created_at ASC
+            """)
+        except sqlite3.OperationalError:
+            try:
+                cur = con.execute("""
+                    SELECT r.id, r.broker_id, r.customer_email, r.amount, r.payout, 0 as days_active,
+                           b.name as broker_name, b.email as broker_email
+                    FROM referrals r
+                    LEFT JOIN brokers b ON r.broker_id = b.id
+                    WHERE r.status = 'ready' OR r.status = 'on_hold'
+                    ORDER BY r.created_at ASC
+                """)
+            except sqlite3.OperationalError as e:
+                print(f"Error querying ready payouts: {e}")
+                return {"ready": []}
+        
+        rows = cur.fetchall()
+        
+        return {
+            "ready": [
+                {
+                    "id": row[0] if len(row) > 0 else 0,
+                    "broker_ref": row[1] if len(row) > 1 else "",
+                    "customer_email": row[2] if len(row) > 2 else "",
+                    "amount": float(row[3]) if len(row) > 3 else 0,
+                    "payout": float(row[4]) if len(row) > 4 else (float(row[3]) if len(row) > 3 else 0),
+                    "days_active": row[5] if len(row) > 5 else 0,
+                    "broker_name": row[6] if len(row) > 6 else "Unknown",
+                    "broker_email": row[7] if len(row) > 7 else ""
+                }
+                for row in rows
+            ]
+        }
+    except Exception as e:
+        print(f"Error in get_ready_payouts: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"ready": []}
+    finally:
+        if con:
+            con.close()
+
+@router.post("/mark-paid/{ref_id}")
+def mark_paid(ref_id: int, user: str = Depends(verify_admin)):
+    """Mark a referral as paid"""
+    con = None
+    try:
+        db_path = get_db_path()
+        con = sqlite3.connect(db_path)
+        
+        # Update status to paid
+        con.execute("""
+            UPDATE referrals 
+            SET status = 'paid', paid_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (ref_id,))
+        
+        con.commit()
+        
+        return {"status": "ok", "message": "Marked as paid"}
+    except Exception as e:
+        print(f"Error marking as paid: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(e)}
+    finally:
+        if con:
+            con.close()
+
 @router.get("/payouts/pending")
 def get_pending_payouts(user: str = Depends(verify_admin)):
     """Get all payouts ready for approval"""
