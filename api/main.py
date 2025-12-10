@@ -1060,13 +1060,29 @@ async def apply_partner(request: Request):
                         email VARCHAR NOT NULL,
                         company VARCHAR NOT NULL,
                         client_count VARCHAR,
-                        commission_model VARCHAR,
+                        commission_model VARCHAR DEFAULT 'bounty',
                         message TEXT,
                         timestamp VARCHAR NOT NULL,
                         created_at TIMESTAMP DEFAULT NOW(),
                         status VARCHAR DEFAULT 'pending'
                     )
                 """)
+                # Add commission_model column if it doesn't exist (PostgreSQL)
+                cursor.execute("""
+                    DO $$ 
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 
+                            FROM information_schema.columns 
+                            WHERE table_name = 'partner_applications' 
+                            AND column_name = 'commission_model'
+                        ) THEN
+                            ALTER TABLE partner_applications ADD COLUMN commission_model VARCHAR DEFAULT 'bounty';
+                        END IF;
+                    END $$;
+                """)
+                # Update existing records
+                cursor.execute("UPDATE partner_applications SET commission_model = 'bounty' WHERE commission_model IS NULL")
                 
                 # Insert application
                 cursor.execute("""
@@ -1094,13 +1110,20 @@ async def apply_partner(request: Request):
                         email TEXT NOT NULL,
                         company TEXT NOT NULL,
                         client_count TEXT,
-                        commission_model TEXT,
+                        commission_model TEXT DEFAULT 'bounty',
                         message TEXT,
                         timestamp TEXT NOT NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         status TEXT DEFAULT 'pending'
                     )
                 """)
+                # Add commission_model column if it doesn't exist (SQLite)
+                try:
+                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN commission_model TEXT DEFAULT 'bounty'")
+                except sqlite3.OperationalError:
+                    pass  # Column already exists
+                # Update existing records
+                cursor.execute("UPDATE partner_applications SET commission_model = 'bounty' WHERE commission_model IS NULL")
                 
                 # Insert application
                 cursor.execute("""

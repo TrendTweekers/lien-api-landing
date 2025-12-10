@@ -2,6 +2,37 @@
 // Hard-coded data for now - wire to API later
 // Version: 2025-01-XX - Analytics disabled to fix 404 error
 
+// Safe DOM element getter with warning
+function getElement(id) {
+    const element = document.getElementById(id);
+    if (!element) {
+        console.warn(`⚠️ Element #${id} not found in DOM`);
+    }
+    return element;
+}
+
+// Safe text content update
+function safeSetText(id, text) {
+    const element = getElement(id);
+    if (element) element.textContent = text;
+}
+
+// Safe HTML update
+function safeSetHTML(id, html) {
+    const element = getElement(id);
+    if (element) element.innerHTML = html;
+}
+
+// Safe function call
+function safeCall(fn) {
+    try {
+        return fn();
+    } catch (error) {
+        console.warn(`⚠️ Error in function:`, error);
+        return null;
+    }
+}
+
 // Admin authentication
 const ADMIN_USER = 'admin';
 const ADMIN_PASS = 'LienAPI2025'; // Match Railway env var

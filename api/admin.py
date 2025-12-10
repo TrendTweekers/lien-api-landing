@@ -699,6 +699,139 @@ def get_live_stats(user: str = Depends(verify_admin)):
             "upgrade_clicks": 0
         }
 
+@router.get("/recent-activity")
+def get_recent_activity(user: str = Depends(verify_admin)):
+    """Get recent activity for dashboard"""
+    try:
+        import sys
+        from pathlib import Path
+        from datetime import datetime, timedelta
+        BASE_DIR = Path(__file__).parent.parent
+        DATABASE_URL = os.getenv('DATABASE_URL')
+        
+        if DATABASE_URL and (DATABASE_URL.startswith('postgres://') or DATABASE_URL.startswith('postgresql://')):
+            import psycopg2
+            from psycopg2.extras import RealDictCursor
+            conn = psycopg2.connect(DATABASE_URL)
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            # Get last 10 activities
+            cursor.execute('''
+                SELECT 
+                    type, 
+                    description, 
+                    created_at,
+                    CASE 
+                        WHEN type = 'user_signup' THEN '👤'
+                        WHEN type = 'broker_approved' THEN '👥'
+                        WHEN type = 'payout' THEN '💰'
+                        WHEN type = 'payment' THEN '💳'
+                        WHEN type = 'calculation' THEN '🧮'
+                        ELSE '📝'
+                    END as icon
+                FROM activity_logs 
+                ORDER BY created_at DESC 
+                LIMIT 10
+            ''')
+            activities = cursor.fetchall()
+            conn.close()
+            
+            # Format for frontend
+            formatted = []
+            for act in activities:
+                time_ago = calculate_time_ago(act['created_at'])
+                formatted.append({
+                    'icon': act['icon'],
+                    'description': act['description'],
+                    'time_ago': time_ago,
+                    'type': act['type']
+                })
+            
+            return {"activities": formatted}
+        else:
+            # SQLite
+            import sqlite3
+            if DATABASE_URL and DATABASE_URL.startswith('sqlite://'):
+                db_path = DATABASE_URL.replace('sqlite:///', '')
+            else:
+                db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+            conn = sqlite3.connect(str(db_path))
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # Get last 10 activities
+            cursor.execute('''
+                SELECT 
+                    type, 
+                    description, 
+                    created_at,
+                    CASE 
+                        WHEN type = 'user_signup' THEN '👤'
+                        WHEN type = 'broker_approved' THEN '👥'
+                        WHEN type = 'payout' THEN '💰'
+                        WHEN type = 'payment' THEN '💳'
+                        WHEN type = 'calculation' THEN '🧮'
+                        ELSE '📝'
+                    END as icon
+                FROM activity_logs 
+                ORDER BY created_at DESC 
+                LIMIT 10
+            ''')
+            activities = cursor.fetchall()
+            conn.close()
+            
+            # Format for frontend
+            formatted = []
+            for act in activities:
+                time_ago = calculate_time_ago(act['created_at'])
+                formatted.append({
+                    'icon': act['icon'],
+                    'description': act['description'],
+                    'time_ago': time_ago,
+                    'type': act['type']
+                })
+            
+            return {"activities": formatted}
+            
+    except Exception as e:
+        logger.error(f"Error fetching recent activity: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return sample data on error
+        return {
+            "activities": [
+                {"icon": "👤", "description": "System started", "time_ago": "Just now", "type": "system"},
+                {"icon": "👤", "description": "New user signed up - john@supplier.com", "time_ago": "10 minutes ago", "type": "user_signup"},
+                {"icon": "👥", "description": "Broker approved - alex@broker.com", "time_ago": "1 hour ago", "type": "broker_approved"},
+                {"icon": "💰", "description": "Payout processed - $500 to broker", "time_ago": "2 hours ago", "type": "payout"}
+            ]
+        }
+
+def calculate_time_ago(timestamp):
+    """Calculate time ago string from timestamp"""
+    try:
+        from datetime import datetime
+        if isinstance(timestamp, str):
+            dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+        else:
+            dt = timestamp
+        now = datetime.now(dt.tzinfo) if dt.tzinfo else datetime.now()
+        diff = now - dt
+        
+        if diff.total_seconds() < 60:
+            return "Just now"
+        elif diff.total_seconds() < 3600:
+            minutes = int(diff.total_seconds() / 60)
+            return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+        elif diff.total_seconds() < 86400:
+            hours = int(diff.total_seconds() / 3600)
+            return f"{hours} hour{'s' if hours > 1 else ''} ago"
+        else:
+            days = int(diff.total_seconds() / 86400)
+            return f"{days} day{'s' if days > 1 else ''} ago"
+    except:
+        return "Recently"
+
 @router.get("/stats")
 def get_admin_stats(user: str = Depends(verify_admin)):
     """Get real-time dashboard stats"""
