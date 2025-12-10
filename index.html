@@ -1068,20 +1068,43 @@
                     if (response.status === 403) {
                         try {
                             const errorData = await response.json();
-                            console.error('API 403 error:', errorData);
+                            console.log('403 error data:', errorData);
                             
-                            if (errorData.detail && errorData.detail.includes('email')) {
-                                // Show email capture modal
+                            // Get current count and email status
+                            const calcCount = parseInt(localStorage.getItem('calculationCount') || '0');
+                            const userEmail = localStorage.getItem('userEmail');
+                            
+                            console.log('Current state:', { calcCount, userEmail });
+                            
+                            // Decision tree:
+                            if (calcCount >= 10) {
+                                // User hit 10 limit - show upgrade modal
+                                showUpgradeModal();
+                            } else if (calcCount >= 3 && !userEmail) {
+                                // User hit 3 limit without email - show email modal
                                 showEmailCaptureModal();
                             } else {
-                                // Show upgrade modal
-                                showUpgradeModal();
+                                // Fallback - check API error message
+                                if (errorData.detail && (errorData.detail.includes('10') || errorData.detail.includes('Upgrade'))) {
+                                    showUpgradeModal();
+                                } else if (errorData.detail && errorData.detail.includes('email')) {
+                                    showEmailCaptureModal();
+                                } else {
+                                    alert('Calculation limit reached. Please contact support.');
+                                }
                             }
                             return;
                         } catch (e) {
                             // If JSON parsing fails, try text
                             const errorText = await response.text();
-                            if (errorText.includes('email') || errorText.includes('Email')) {
+                            const calcCount = parseInt(localStorage.getItem('calculationCount') || '0');
+                            const userEmail = localStorage.getItem('userEmail');
+                            
+                            if (calcCount >= 10) {
+                                showUpgradeModal();
+                            } else if (calcCount >= 3 && !userEmail) {
+                                showEmailCaptureModal();
+                            } else if (errorText.includes('email') || errorText.includes('Email')) {
                                 showEmailCaptureModal();
                             } else {
                                 showUpgradeModal();
@@ -1164,9 +1187,23 @@
                 let count = parseInt(localStorage.getItem('calculationCount') || '0');
                 count++;
                 localStorage.setItem('calculationCount', count);
+                
+                // Update display
                 const countElement = document.getElementById('calculationCount');
                 if (countElement) {
-                    countElement.textContent = count;
+                    const userEmail = localStorage.getItem('userEmail');
+                    const limit = userEmail ? 10 : 3;
+                    countElement.textContent = `${count} / ${limit}`;
+                }
+                
+                // Also check if we should show modals based on count (backup check)
+                const userEmail = localStorage.getItem('userEmail');
+                if (count >= 10) {
+                    // Don't show modal here - API will handle it with 403
+                    console.log('Reached 10 calculations - upgrade required');
+                } else if (count >= 3 && !userEmail) {
+                    // Don't show modal here - API will handle it with 403
+                    console.log('Reached 3 calculations without email - email capture required');
                 }
                 
                 // Note: Email gate and upgrade modals are now handled by API 403 responses
