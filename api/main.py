@@ -210,6 +210,21 @@ def init_db():
                         created_at TIMESTAMP DEFAULT NOW()
                     )
                 """)
+                
+                # Activity logs table (PostgreSQL)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS activity_logs (
+                        id SERIAL PRIMARY KEY,
+                        type VARCHAR NOT NULL,
+                        description TEXT NOT NULL,
+                        user_id INTEGER,
+                        broker_id INTEGER,
+                        amount DECIMAL(10, 2),
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_type ON activity_logs(type)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at)")
             else:
                 # SQLite tables
                 cursor.execute("""
@@ -244,6 +259,44 @@ def init_db():
                         stack_trace TEXT,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
+                """)
+                
+                # Activity logs table (SQLite)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS activity_logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        type TEXT NOT NULL,
+                        description TEXT NOT NULL,
+                        user_id INTEGER,
+                        broker_id INTEGER,
+                        amount DECIMAL(10, 2),
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_type ON activity_logs(type)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at)")
+            
+            # Create triggers for SQLite (PostgreSQL triggers created separately)
+            if DB_TYPE == 'sqlite':
+                # Trigger to log user signups (SQLite)
+                cursor.execute("""
+                    CREATE TRIGGER IF NOT EXISTS log_user_signup
+                    AFTER INSERT ON users
+                    BEGIN
+                        INSERT INTO activity_logs (type, description, user_id)
+                        VALUES ('user_signup', 'New user signed up - ' || NEW.email, NEW.id);
+                    END
+                """)
+                
+                # Trigger to log broker approvals (SQLite)
+                cursor.execute("""
+                    CREATE TRIGGER IF NOT EXISTS log_broker_approval
+                    AFTER UPDATE ON partner_applications
+                    WHEN NEW.status = 'approved' AND OLD.status != 'approved'
+                    BEGIN
+                        INSERT INTO activity_logs (type, description, broker_id)
+                        VALUES ('broker_approved', 'Broker approved - ' || NEW.email, NEW.id);
+                    END
                 """)
             
             db.commit()
