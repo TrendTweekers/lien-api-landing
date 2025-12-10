@@ -53,57 +53,126 @@
     </style>
 </head>
 <body class="min-h-screen bg-background text-foreground">
+    <!-- Dark-Mode Toggle -->
+    <button id="themeToggle" class="fixed top-4 right-4 z-50 w-10 h-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur border border-border flex items-center justify-center text-lg shadow-lg">
+        <span class="dark:hidden">🌙</span><span class="hidden dark:inline">☀️</span>
+    </button>
+
     <!-- Header -->
-    <header class="border-b border-border bg-white/80 backdrop-blur">
+    <header class="border-b border-border bg-white/80 dark:bg-gray-900/80 backdrop-blur">
         <div class="container mx-auto px-6 py-4 flex items-center justify-between">
-            <h1 class="text-2xl font-serif font-bold">Admin</h1>
-            <nav class="flex gap-6 text-sm">
-                <a href="/" class="text-muted-foreground hover:text-foreground">Landing Page</a>
-                <a href="/partners.html" class="text-muted-foreground hover:text-foreground">Partners</a>
-                <button onclick="logout()" class="text-muted-foreground hover:text-foreground">Logout</button>
-            </nav>
+            <h1 class="text-3xl font-serif font-bold">Admin</h1>
+            <div class="flex gap-4 items-center">
+                <input id="globalSearch" type="text" placeholder="Search anything…" class="px-4 py-2 rounded-lg border border-border bg-white dark:bg-gray-800 w-64">
+                <button onclick="exportCurrentView()" class="btn btn-secondary">Export CSV</button>
+                <nav class="flex gap-4 text-sm">
+                    <a href="/" class="text-muted-foreground hover:text-foreground">Landing</a>
+                    <a href="/partners.html" class="text-muted-foreground hover:text-foreground">Partners</a>
+                    <button onclick="logout()" class="text-muted-foreground hover:text-foreground">Logout</button>
+                </nav>
+            </div>
         </div>
     </header>
 
-    <!-- Quick Stats -->
-    <section class="container mx-auto px-6 py-8">
-        <div class="grid grid-cols-auto gap-6">
-            <div class="card"><p class="text-sm text-muted-foreground">Today</p><p class="text-3xl font-bold" id="todayCalc">0</p></div>
-            <div class="card"><p class="text-sm text-muted-foreground">Pending Brokers</p><p class="text-3xl font-bold" id="pendingBrokers">0</p></div>
-            <div class="card"><p class="text-sm text-muted-foreground">Ready to Pay</p><p class="text-3xl font-bold text-green-600" id="readyPayout">0</p></div>
-            <div class="card"><p class="text-sm text-muted-foreground">This Month</p><p class="text-3xl font-bold" id="monthRevenue">$0</p></div>
-        </div>
-    </section>
-
-    <!-- Flagged Referrals (Fraud Review) -->
-    <section class="container mx-auto px-6 pb-8">
-        <h2 class="section-title mb-6 text-red-600">🚨 Flagged Referrals</h2>
-        <div id="flaggedReferralsList" class="grid gap-4">
-            <!-- populated by JS -->
-        </div>
-    </section>
-
-    <!-- Partner Applications -->
-    <section class="container mx-auto px-6 pb-8">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="section-title">Partner Applications</h2>
-            <div class="flex gap-2">
-                <button onclick="generateTestKey()" class="btn btn-blue">Generate Test Key</button>
-                <button onclick="bulkPayout()" class="btn btn-green">Pay All Ready ($<span id="readyTotal">0</span>)</button>
+    <!-- 3-Column Grid -->
+    <main class="container mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- LEFT: Quick Actions & Status -->
+        <aside class="lg:col-span-1 space-y-6">
+            <div class="card">
+                <h3 class="section-title text-lg">Today</h3>
+                <p class="text-3xl font-bold" id="todayCalc">0</p>
             </div>
-        </div>
-        <div id="applicationsList" class="grid gap-4">
-            <!-- populated by JS -->
-        </div>
-    </section>
+            <div class="card">
+                <h3 class="section-title text-lg">Ready to Pay</h3>
+                <p class="text-3xl font-bold text-green-600" id="readyPayout">0</p>
+                <p class="text-sm text-muted-foreground mt-1">$<span id="readyTotal">0</span> total</p>
+            </div>
+            <div class="card space-y-3">
+                <h3 class="section-title text-lg">Quick Actions</h3>
+                <button onclick="bulkPayout()" class="btn btn-green w-full">Pay All Ready</button>
+                <button onclick="generateTestKey()" class="btn btn-secondary w-full">Generate Test Key</button>
+                <button onclick="showApproveBrokerModal()" class="btn btn-blue w-full">Approve Broker</button>
+            </div>
+            <div class="card">
+                <h3 class="section-title text-lg">System Health</h3>
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                    <span class="text-sm">All systems operational</span>
+                </div>
+            </div>
+            <div class="card">
+                <h3 class="section-title text-lg">Pending Brokers</h3>
+                <p class="text-3xl font-bold" id="pendingBrokers">0</p>
+            </div>
+        </aside>
 
-    <!-- Customers -->
-    <section class="container mx-auto px-6 pb-8">
-        <h2 class="section-title mb-6">Customers</h2>
-        <div id="customersList" class="grid gap-4">
-            <!-- populated by JS -->
-        </div>
-    </section>
+        <!-- MIDDLE: Core Management -->
+        <section class="lg:col-span-2 space-y-8">
+            <!-- Partner Applications -->
+            <div class="card">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="section-title">Partner Applications</h2>
+                    <div class="flex gap-2">
+                        <button onclick="filterApps('all')" class="pill pill-yellow">All</button>
+                        <button onclick="filterApps('pending')" class="pill pill-yellow">Pending</button>
+                        <button onclick="filterApps('approved')" class="pill pill-green">Approved</button>
+                        <button onclick="filterApps('flagged')" class="pill pill-red">Flagged</button>
+                    </div>
+                </div>
+                <input id="partnerSearch" type="text" placeholder="Search partners…" class="w-full mb-4 px-4 py-2 rounded-lg border border-border bg-white dark:bg-gray-800" oninput="searchPartners(this.value)">
+                <div id="applicationsList" class="space-y-3">
+                    <!-- populated -->
+                </div>
+            </div>
+
+            <!-- Active Brokers -->
+            <div class="card">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="section-title">Active Brokers</h2>
+                    <select id="brokerSort" onchange="sortBrokers(this.value)" class="px-3 py-1 rounded-lg border border-border bg-white dark:bg-gray-800">
+                        <option>Most Active</option>
+                        <option>Highest Earners</option>
+                        <option>Newest</option>
+                    </select>
+                </div>
+                <div id="brokersList" class="space-y-3">
+                    <!-- populated -->
+                </div>
+            </div>
+
+            <!-- Customers -->
+            <div class="card">
+                <h2 class="section-title mb-4">Customers</h2>
+                <div id="customersList" class="space-y-3">
+                    <!-- populated -->
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT: Analytics & Monitoring -->
+        <aside class="lg:col-span-1 space-y-6">
+            <div class="card">
+                <h3 class="section-title text-lg">Live Calculations</h3>
+                <p class="text-3xl font-bold"><span id="liveCounter">0</span> today</p>
+            </div>
+            <div class="card">
+                <h3 class="section-title text-lg">Email Funnel</h3>
+                <p class="text-3xl font-bold"><span id="emailCaptures">0</span> captured</p>
+            </div>
+            <div class="card">
+                <h3 class="section-title text-lg">Flagged Referrals</h3>
+                <div id="flaggedList" class="space-y-2">
+                    <!-- populated -->
+                </div>
+            </div>
+            <div class="card">
+                <h3 class="section-title text-lg">Recent Activity</h3>
+                <div id="activityFeed" class="space-y-2 text-sm text-muted-foreground">
+                    <!-- populated -->
+                </div>
+            </div>
+        </aside>
+    </main>
 
     <!-- Keep existing modals -->
 

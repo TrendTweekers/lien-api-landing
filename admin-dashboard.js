@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateQuickStats(); // New quick stats
     loadCustomers();
     loadBrokers();
+    loadBrokersList(); // Load brokers for middle column
     loadPendingPayouts();
     loadTestKeys();
     // loadQuickStats(); // Disabled - analytics endpoint returns 404
@@ -38,10 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loadEmailCaptures();
     loadFlaggedReferrals();
     updateActivityFeed();
+    updateLiveStats();
     
     // Refresh quick stats every 30 seconds
     setInterval(updateQuickStats, 30000);
     setInterval(updateActivityFeed, 60000);
+    setInterval(updateLiveStats, 60000);
     
     // Refresh stats every 60 seconds
     // setInterval(loadQuickStats, 60000); // Disabled - analytics endpoint returns 404
