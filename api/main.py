@@ -173,6 +173,25 @@ def init_db():
         with get_db() as db:
             cursor = get_db_cursor(db)
             
+            # Check which tables exist (for debugging)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT table_name 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'public'
+                """)
+            else:
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            existing_tables = []
+            for row in cursor.fetchall():
+                if isinstance(row, dict):
+                    existing_tables.append(row.get('name') or row.get('table_name'))
+                elif isinstance(row, tuple):
+                    existing_tables.append(row[0])
+                else:
+                    existing_tables.append(str(row))
+            print(f"📊 Existing tables: {existing_tables}")
+            
             if DB_TYPE == 'postgresql':
                 # Failed emails table
                 cursor.execute("""
