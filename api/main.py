@@ -1049,6 +1049,143 @@ async def track_email(request_data: TrackEmailRequest, request: Request):
         print(f"Error tracking email: {e}")
         return {"success": False, "error": str(e)}
 
+# Fraud Detection Functions
+def check_fraud_signals(broker_id: str, customer_email: str, customer_stripe_id: str, session_data: dict):
+    """
+    Multi-layer fraud detection for broker referrals.
+    Returns: (fraud_flags: list, risk_score: int, should_flag: bool)
+    """
+    flags = []
+    risk_score = 0
+    
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            
+            # Get broker info
+            cursor.execute("""
+                SELECT email, stripe_customer_id, created_at, ip_address 
+                FROM brokers 
+                WHERE referral_code = ?
+            """, (broker_id,))
+            broker = cursor.fetchone()
+            
+            if not broker:
+                return [], 0, False
+            
+            broker_email = broker[0]
+            broker_stripe_id = broker[1] if len(broker) > 1 else None
+            broker_created = broker[2] if len(broker) > 2 else None
+            broker_ip = broker[3] if len(broker) > 3 else None
+            
+            # LAYER 1: Payment Method Check (Strongest) ⭐⭐⭐
+            if broker_stripe_id and customer_stripe_id:
+                # Check if same Stripe customer (catches shared payment methods)
+                if broker_stripe_id == customer_stripe_id:
+                    flags.append('SAME_STRIPE_CUSTOMER')
+                    risk_score += 50  # Critical flag
+            
+            # LAYER 2: Email Similarity Check ⭐⭐
+            broker_base = broker_email.split('@')[0].lower()
+            customer_base = customer_email.split('@')[0].lower()
+            broker_domain = broker_email.split('@')[1].lower()
+            customer_domain = customer_email.split('@')[1].lower()
+            
+            # Check for similar usernames
+            from difflib import SequenceMatcher
+            similarity = SequenceMatcher(None, broker_base, customer_base).ratio()
+            
+            if similarity > 0.8:  # 80% similar
+                flags.append('SIMILAR_EMAIL')
+                risk_score += 30
+            
+            # Check for sequential numbers (john1@, john2@)
+            import re
+            broker_no_nums = re.sub(r'\d+', '', broker_base)
+            customer_no_nums = re.sub(r'\d+', '', customer_base)
+            if broker_no_nums == customer_no_nums:
+                flags.append('SEQUENTIAL_EMAIL')
+                risk_score += 25
+            
+            # Same domain (company.com)
+            if broker_domain == customer_domain and broker_domain not in ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com']:
+                flags.append('SAME_COMPANY_DOMAIN')
+                risk_score += 20
+            
+            # LAYER 3: Timing Analysis ⭐⭐
+            if broker_created:
+                from datetime import datetime
+                try:
+                    broker_created_dt = datetime.fromisoformat(broker_created.replace('Z', '+00:00'))
+                    signup_time = datetime.now()
+                    time_diff = (signup_time - broker_created_dt.replace(tzinfo=None)).total_seconds() / 3600  # hours
+                    
+                    if time_diff < 1:  # Signup within 1 hour
+                        flags.append('IMMEDIATE_SIGNUP')
+                        risk_score += 35
+                    elif time_diff < 24:  # Within 24 hours
+                        flags.append('FAST_SIGNUP')
+                        risk_score += 15
+                except:
+                    pass
+            
+            # LAYER 4: IP Address Check (if available)
+            customer_ip = session_data.get('customer_details', {}).get('ip_address')
+            if broker_ip and customer_ip and broker_ip == customer_ip:
+                flags.append('SAME_IP')
+                risk_score += 40
+            
+            # LAYER 5: Stripe Risk Evaluation (if available)
+            stripe_risk = session_data.get('payment_intent', {}).get('charges', {}).get('data', [{}])[0].get('outcome', {}).get('risk_level')
+            if stripe_risk in ['elevated', 'highest']:
+                flags.append(f'STRIPE_RISK_{stripe_risk.upper()}')
+                risk_score += 30 if stripe_risk == 'elevated' else 50
+            
+            # LAYER 6: Check for multiple referrals from same broker
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM referrals 
+                WHERE broker_id = ? AND created_at < datetime('now', '-7 days')
+            """, (broker_id,))
+            referral_count = cursor.fetchone()[0]
+            
+            if referral_count == 0:
+                # First referral = more scrutiny
+                flags.append('FIRST_REFERRAL')
+                risk_score += 10
+            
+            # LAYER 7: Email Age Check (new Gmail accounts are suspicious)
+            # Note: This requires external API, skip for now or add later
+            
+            # LAYER 8: Device Fingerprint (if available)
+            # Note: Requires frontend implementation, skip for now
+            
+            # Determine if should flag for manual review
+            should_flag = risk_score >= 50 or 'SAME_STRIPE_CUSTOMER' in flags
+            
+            return flags, risk_score, should_flag
+            
+    except Exception as e:
+        print(f"❌ Fraud check error: {e}")
+        import traceback
+        traceback.print_exc()
+        return ['ERROR_DURING_CHECK'], 0, False
+
+
+def send_admin_fraud_alert(broker_email: str, customer_email: str, flags: list, risk_score: int):
+    """Send admin alert for flagged referrals"""
+    print(f"""
+    🚨 FRAUD ALERT 🚨
+    Broker: {broker_email}
+    Customer: {customer_email}
+    Risk Score: {risk_score}
+    Flags: {', '.join(flags)}
+    
+    Review at: https://liendeadline.com/admin-dashboard
+    """)
+    # TODO: Send email/Slack notification in production
+
+
 # Stripe Webhook Handler
 @app.post("/webhooks/stripe")
 async def stripe_webhook(request: Request):
@@ -1174,21 +1311,28 @@ async def stripe_webhook(request: Request):
                     ).fetchone()
                     
                     if broker:
-                        # Create referrals table if it doesn't exist
+                        # Create referrals table if it doesn't exist (with fraud detection fields)
                         db.execute("""
                             CREATE TABLE IF NOT EXISTS referrals (
                                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 broker_id TEXT NOT NULL,
                                 broker_email TEXT NOT NULL,
                                 customer_email TEXT NOT NULL,
-                                customer_id TEXT NOT NULL,
-                                amount REAL NOT NULL,
-                                payout REAL NOT NULL,
+                                customer_stripe_id TEXT,
+                                amount DECIMAL(10,2) NOT NULL,
+                                payout DECIMAL(10,2) NOT NULL,
                                 payout_type TEXT NOT NULL,
-                                status TEXT NOT NULL,
-                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                                status TEXT DEFAULT 'on_hold',
+                                fraud_flags TEXT,
+                                hold_until DATE,
+                                clawback_until DATE,
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                paid_at TIMESTAMP,
+                                FOREIGN KEY (broker_id) REFERENCES brokers(referral_code)
                             )
                         """)
+                        db.execute("CREATE INDEX IF NOT EXISTS idx_referral_status ON referrals(status)")
+                        db.execute("CREATE INDEX IF NOT EXISTS idx_referral_broker ON referrals(broker_id)")
                         
                         # Determine payout based on broker's commission model
                         commission_model = broker.get('commission_model', 'bounty')
@@ -1199,19 +1343,40 @@ async def stripe_webhook(request: Request):
                             payout_amount = 500.00
                             payout_type = 'bounty'
                         
-                        # Create referral record (pending for 30 days)
+                        # RUN FRAUD DETECTION
+                        fraud_flags, risk_score, should_flag = check_fraud_signals(
+                            referral_code, 
+                            email, 
+                            customer_id,
+                            session
+                        )
+                        
+                        # Calculate hold dates
+                        from datetime import datetime, timedelta
+                        hold_until = datetime.now() + timedelta(days=30)
+                        clawback_until = datetime.now() + timedelta(days=90)
+                        
+                        # Determine status
+                        status = 'flagged_for_review' if should_flag else 'on_hold'
+                        
+                        # Store referral with fraud data
                         db.execute("""
                             INSERT INTO referrals 
-                            (broker_id, broker_email, customer_email, customer_id, 
-                             amount, payout, payout_type, status, created_at)
-                            VALUES (?, ?, ?, ?, 299.00, ?, ?, 'pending', datetime('now'))
+                            (broker_id, broker_email, customer_email, customer_stripe_id,
+                             amount, payout, payout_type, status, fraud_flags, 
+                             hold_until, clawback_until, created_at)
+                            VALUES (?, ?, ?, ?, 299.00, ?, ?, ?, ?, ?, ?, datetime('now'))
                         """, (
                             broker['referral_code'],
                             broker['email'],
                             email,
                             customer_id,
                             payout_amount,
-                            payout_type
+                            payout_type,
+                            status,
+                            json.dumps({'flags': fraud_flags, 'risk_score': risk_score}),
+                            hold_until,
+                            clawback_until
                         ))
                         
                         # Update broker pending count
@@ -1223,10 +1388,15 @@ async def stripe_webhook(request: Request):
                         
                         db.commit()
                         
-                        print(f"✓ Referral tracked: {email} → {broker['email']} (${payout_amount} {payout_type} pending)")
+                        print(f"✓ Referral tracked: {email} → {broker['email']} (${payout_amount} {payout_type} {status})")
+                        print(f"   Risk Score: {risk_score}, Flags: {fraud_flags}")
                         
-                        # Notify broker
-                        send_broker_notification(broker['email'], email)
+                        # Send alerts
+                        if should_flag:
+                            print(f"🚨 FLAGGED FOR REVIEW: {referral_code}")
+                            send_admin_fraud_alert(broker['email'], email, fraud_flags, risk_score)
+                        else:
+                            send_broker_notification(broker['email'], email)
                 
             except sqlite3.IntegrityError:
                 # User already exists - just update subscription
@@ -1247,6 +1417,35 @@ async def stripe_webhook(request: Request):
                 SET subscription_status = 'cancelled'
                 WHERE stripe_customer_id = ?
             """, (customer_id,))
+            
+            # Check if this was a referral that should be clawed back
+            cursor = db.cursor()
+            
+            # Find referral
+            cursor.execute("""
+                SELECT id, payout, status, created_at
+                FROM referrals
+                WHERE customer_stripe_id = ?
+                  AND status IN ('on_hold', 'ready', 'paid')
+            """, (customer_id,))
+            
+            referral = cursor.fetchone()
+            
+            if referral:
+                from datetime import datetime
+                created = datetime.fromisoformat(referral[3])
+                days_active = (datetime.now() - created).days
+                
+                # If cancelled before 90 days, claw back
+                if days_active < 90:
+                    cursor.execute("""
+                        UPDATE referrals
+                        SET status = 'clawed_back',
+                            notes = 'Customer cancelled before 90 days'
+                        WHERE id = ?
+                    """, (referral[0],))
+                    
+                    print(f"🚨 CLAWBACK: Referral {referral[0]} cancelled after {days_active} days")
             
             db.execute("""
                 UPDATE customers 
@@ -1984,6 +2183,96 @@ async def approve_partner_api(data: dict, username: str = Depends(verify_admin))
         return {"status": "ok", "message": "Partner approved"}
     finally:
         con.close()
+
+@app.get("/api/v1/admin/flagged-referrals")
+async def get_flagged_referrals(request: Request):
+    """Get all referrals flagged for manual review"""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT 
+                    r.id,
+                    r.broker_id,
+                    r.broker_email,
+                    r.customer_email,
+                    r.payout,
+                    r.payout_type,
+                    r.fraud_flags,
+                    r.status,
+                    r.hold_until,
+                    r.created_at,
+                    b.name as broker_name
+                FROM referrals r
+                LEFT JOIN brokers b ON r.broker_id = b.referral_code
+                WHERE r.status = 'flagged_for_review'
+                ORDER BY r.created_at DESC
+            """)
+            
+            flagged = []
+            for row in cursor.fetchall():
+                fraud_data = json.loads(row[6]) if row[6] else {}
+                flagged.append({
+                    'id': row[0],
+                    'broker_id': row[1],
+                    'broker_email': row[2],
+                    'broker_name': row[10],
+                    'customer_email': row[3],
+                    'payout': row[4],
+                    'payout_type': row[5],
+                    'fraud_flags': fraud_data.get('flags', []),
+                    'risk_score': fraud_data.get('risk_score', 0),
+                    'status': row[7],
+                    'hold_until': row[8],
+                    'created_at': row[9]
+                })
+            
+            return {'flagged_referrals': flagged}
+            
+    except Exception as e:
+        print(f"❌ Error fetching flagged referrals: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
+
+
+@app.post("/api/v1/admin/approve-referral/{referral_id}")
+async def approve_referral(referral_id: int):
+    """Manually approve a flagged referral"""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE referrals 
+                SET status = 'on_hold'
+                WHERE id = ?
+            """, (referral_id,))
+            conn.commit()
+        
+        return {"status": "approved"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.post("/api/v1/admin/deny-referral/{referral_id}")
+async def deny_referral(referral_id: int):
+    """Deny a fraudulent referral"""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE referrals 
+                SET status = 'denied'
+                WHERE id = ?
+            """, (referral_id,))
+            conn.commit()
+        
+        return {"status": "denied"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
 
 @app.get("/api/admin/payouts/pending")
 async def get_pending_payouts_api(username: str = Depends(verify_admin)):

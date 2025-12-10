@@ -85,6 +85,16 @@
                 </div>
             </div>
 
+            <!-- Flagged Referrals Section -->
+            <div class="mb-8 bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-4 text-red-600">🚨 Flagged Referrals (Manual Review)</h2>
+                
+                <div id="flaggedReferralsList" class="space-y-4">
+                    <!-- Populated by JavaScript -->
+                    <p class="text-gray-500">Loading...</p>
+                </div>
+            </div>
+
             <!-- Email Captures Table -->
             <div class="mb-8">
                 <h2 class="text-xl font-semibold mb-4">EMAIL CAPTURES</h2>
@@ -391,12 +401,113 @@
             }
         }
 
+        // Load flagged referrals
+        async function loadFlaggedReferrals() {
+            try {
+                const response = await fetch('/api/v1/admin/flagged-referrals');
+                const data = await response.json();
+                
+                const container = document.getElementById('flaggedReferralsList');
+                
+                if (!data.flagged_referrals || data.flagged_referrals.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500">No flagged referrals</p>';
+                    return;
+                }
+                
+                container.innerHTML = data.flagged_referrals.map(ref => `
+                    <div class="border border-red-300 bg-red-50 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-bold">🚨 Risk Score: ${ref.risk_score}</h3>
+                                <p class="text-sm text-gray-600">Created: ${new Date(ref.created_at).toLocaleString()}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="approveReferral(${ref.id})" 
+                                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+                                    ✅ Approve
+                                </button>
+                                <button onclick="denyReferral(${ref.id})" 
+                                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+                                    ❌ Deny
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-3">
+                            <div>
+                                <p class="text-sm font-semibold">Broker:</p>
+                                <p class="text-sm">${ref.broker_name || 'Unknown'}</p>
+                                <p class="text-sm text-gray-600">${ref.broker_email}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold">Customer:</p>
+                                <p class="text-sm">${ref.customer_email}</p>
+                                <p class="text-sm text-gray-600">Payout: $${ref.payout}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded p-3">
+                            <p class="text-sm font-semibold mb-2">Fraud Flags:</p>
+                            <div class="flex flex-wrap gap-2">
+                                ${ref.fraud_flags.map(flag => `
+                                    <span class="px-3 py-1 bg-red-200 text-red-800 text-xs rounded-full font-semibold">
+                                        ${flag.replace(/_/g, ' ')}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading flagged referrals:', error);
+                document.getElementById('flaggedReferralsList').innerHTML = 
+                    '<p class="text-red-500">Error loading flagged referrals</p>';
+            }
+        }
+
+        async function approveReferral(id) {
+            if (!confirm('Approve this referral? It will move to normal 30-day hold.')) return;
+            
+            try {
+                const response = await fetch(`/api/v1/admin/approve-referral/${id}`, { method: 'POST' });
+                if (response.ok) {
+                    alert('✅ Referral approved');
+                    loadFlaggedReferrals();
+                } else {
+                    alert('❌ Error approving referral');
+                }
+            } catch (error) {
+                console.error('Error approving referral:', error);
+                alert('❌ Error approving referral');
+            }
+        }
+
+        async function denyReferral(id) {
+            if (!confirm('DENY this referral? Broker will NOT be paid.')) return;
+            
+            try {
+                const response = await fetch(`/api/v1/admin/deny-referral/${id}`, { method: 'POST' });
+                if (response.ok) {
+                    alert('❌ Referral denied');
+                    loadFlaggedReferrals();
+                } else {
+                    alert('❌ Error denying referral');
+                }
+            } catch (error) {
+                console.error('Error denying referral:', error);
+                alert('❌ Error denying referral');
+            }
+        }
+
         // Load brokers when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadPendingBrokers();
+            loadFlaggedReferrals();
             
             // Refresh every 30 seconds
             setInterval(loadPendingBrokers, 30000);
+            setInterval(loadFlaggedReferrals, 30000);
         });
         
         // Make approveBroker globally available
