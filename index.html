@@ -625,9 +625,9 @@
                                 <span>Monthly law updates</span>
                             </li>
                         </ul>
-                        <a href="#calculator" class="block w-full h-14 px-6 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors text-center leading-[3.5rem] text-lg">
+                        <button onclick="alert('Stripe checkout coming soon! Email sales@liendeadline.com to get started.')" class="block w-full h-14 px-6 rounded-lg bg-accent text-white font-semibold text-lg hover:bg-accent/90 transition-colors">
                             Start Free Trial →
-                        </a>
+                        </button>
                     </div>
                     
                     <!-- Enterprise Plan -->
@@ -1047,63 +1047,44 @@
                 const data = await response.json();
                 console.log('API data received:', JSON.stringify(data, null, 2));
                 
-                // Handle different possible response structures
-                let prelimNotice, lienFiling, daysUntilPrelim, daysUntilLien;
+                // Parse API response - handle nested objects
+                let prelimNotice = 'N/A';
+                let lienFiling = 'N/A';
+                let daysUntilPrelim = 'N/A';
+                let daysUntilLien = 'N/A';
                 
-                console.log('Raw API data:', data);
+                console.log('Full API response:', JSON.stringify(data, null, 2));
                 
+                // Extract preliminary notice
                 if (data.preliminary_notice) {
-                    // Check if preliminary_notice is an object or string
-                    if (typeof data.preliminary_notice === 'object') {
-                        prelimNotice = data.preliminary_notice.deadline || data.preliminary_notice.date || JSON.stringify(data.preliminary_notice);
+                    if (typeof data.preliminary_notice === 'object' && data.preliminary_notice !== null) {
+                        prelimNotice = data.preliminary_notice.deadline || data.preliminary_notice.date || 'N/A';
                         daysUntilPrelim = data.preliminary_notice.days_from_now || data.preliminary_notice.days_remaining || 'N/A';
                     } else {
                         prelimNotice = data.preliminary_notice;
-                        daysUntilPrelim = data.days_until_preliminary || 'N/A';
                     }
-                    
-                    // Check if lien_filing is an object or string
-                    if (typeof data.lien_filing === 'object') {
-                        lienFiling = data.lien_filing.deadline || data.lien_filing.date || JSON.stringify(data.lien_filing);
+                }
+                
+                // Extract lien filing
+                if (data.lien_filing) {
+                    if (typeof data.lien_filing === 'object' && data.lien_filing !== null) {
+                        lienFiling = data.lien_filing.deadline || data.lien_filing.date || 'N/A';
                         daysUntilLien = data.lien_filing.days_from_now || data.lien_filing.days_remaining || 'N/A';
                     } else {
                         lienFiling = data.lien_filing;
-                        daysUntilLien = data.days_until_lien || 'N/A';
                     }
-                } else if (data.deadlines) {
-                    // Nested structure
-                    const deadlines = data.deadlines;
-                    
-                    if (typeof deadlines.preliminary_notice === 'object') {
-                        prelimNotice = deadlines.preliminary_notice.deadline || deadlines.preliminary_notice.date;
-                        daysUntilPrelim = deadlines.preliminary_notice.days_from_now || 'N/A';
-                    } else {
-                        prelimNotice = deadlines.preliminary_notice;
-                        daysUntilPrelim = deadlines.days_until_preliminary || 'N/A';
-                    }
-                    
-                    if (typeof deadlines.lien_filing === 'object') {
-                        lienFiling = deadlines.lien_filing.deadline || deadlines.lien_filing.date;
-                        daysUntilLien = deadlines.lien_filing.days_from_now || 'N/A';
-                    } else {
-                        lienFiling = deadlines.lien_filing;
-                        daysUntilLien = deadlines.days_until_lien || 'N/A';
-                    }
-                } else {
-                    console.error('Unknown API response structure:', data);
-                    throw new Error('Unexpected API response format. Check console for details.');
                 }
                 
-                console.log('Parsed dates:', { prelimNotice, lienFiling, daysUntilPrelim, daysUntilLien });
+                console.log('Extracted values:', { prelimNotice, lienFiling, daysUntilPrelim, daysUntilLien });
                 
-                // Display results
+                // Display results with formatted dates
                 const resultsDiv = document.getElementById('calculatorResults');
                 resultsDiv.innerHTML = `
                     <div class="p-6 rounded-xl bg-green-50 border border-green-200">
                         <div class="flex items-start justify-between">
                             <div>
                                 <p class="text-sm font-medium text-success mb-1">PRELIMINARY NOTICE</p>
-                                <p class="text-3xl font-serif text-foreground">${prelimNotice || 'N/A'}</p>
+                                <p class="text-3xl font-serif text-foreground">${prelimNotice}</p>
                                 <p class="text-sm text-muted-foreground mt-1">${daysUntilPrelim} days remaining</p>
                             </div>
                             <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1116,7 +1097,7 @@
                         <div class="flex items-start justify-between">
                             <div>
                                 <p class="text-sm font-medium text-warning mb-1">LIEN FILING DEADLINE</p>
-                                <p class="text-3xl font-serif text-foreground">${lienFiling || 'N/A'}</p>
+                                <p class="text-3xl font-serif text-foreground">${lienFiling}</p>
                                 <p class="text-sm text-muted-foreground mt-1">${daysUntilLien} days remaining</p>
                             </div>
                             <svg class="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
