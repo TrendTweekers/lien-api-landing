@@ -215,29 +215,59 @@ def approve_partner(
 ):
     """Approve a partner application and send referral link"""
     con = sqlite3.connect(get_db_path())
+    cur = con.cursor()
+    
     try:
-        # Get application
-        cur = con.cursor()
+        # Fetch application
         cur.execute("SELECT * FROM partner_applications WHERE id = ?", (application_id,))
         app = cur.fetchone()
         
         if not app:
             raise HTTPException(status_code=404, detail="Application not found")
         
-        # Check if already approved
-        try:
-            cur.execute("SELECT approved_at FROM partner_applications WHERE id = ?", (application_id,))
-            approved_at = cur.fetchone()
-            if approved_at and approved_at[0]:
-                raise HTTPException(status_code=400, detail="Already approved")
-        except sqlite3.OperationalError:
-            # Column doesn't exist yet, check status
-            if len(app) > 7 and app[7] == 'approved':
-                raise HTTPException(status_code=400, detail="Already approved")
+        # Convert tuple to dict-like access (handle different column counts)
+        app_dict = {
+            'id': app[0] if len(app) > 0 else None,
+            'name': app[2] if len(app) > 2 else '',
+            'email': app[1] if len(app) > 1 else '',
+            'company': app[3] if len(app) > 3 else '',
+            'commission_model': app[6] if len(app) > 6 else 'bounty'
+        }
         
         # Generate unique referral code
-        referral_code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+        referral_code = f"broker_{secrets.token_urlsafe(8).upper()}"
         referral_link = f"https://liendeadline.com?ref={referral_code}"
+        
+        # Create brokers table if it doesn't exist
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS brokers (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                company TEXT,
+                referral_code TEXT UNIQUE NOT NULL,
+                referral_link TEXT NOT NULL,
+                commission_model TEXT NOT NULL,
+                pending_commissions INTEGER DEFAULT 0,
+                paid_commissions REAL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Create broker record
+        cur.execute("""
+            INSERT INTO brokers (id, name, email, company, referral_code, referral_link, 
+                               commission_model, pending_commissions, paid_commissions)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)
+        """, (
+            referral_code,
+            app_dict['name'],
+            app_dict['email'],
+            app_dict['company'],
+            referral_code,
+            referral_link,
+            app_dict['commission_model']
+        ))
         
         # Try to add approval columns if they don't exist
         try:
@@ -249,53 +279,41 @@ def approve_partner(
         except sqlite3.OperationalError:
             pass
         
-        # Update application
+        # Mark application as approved
         cur.execute("""
             UPDATE partner_applications 
-            SET approved_at = CURRENT_TIMESTAMP,
-                referral_link = ?,
-                status = 'approved'
+            SET status = 'approved',
+                approved_at = CURRENT_TIMESTAMP,
+                referral_link = ?
             WHERE id = ?
         """, (referral_link, application_id))
         
-        # Create approved_brokers table if needed
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS approved_brokers (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                partner_application_id INTEGER NOT NULL,
-                email TEXT NOT NULL UNIQUE,
-                referral_code TEXT UNIQUE NOT NULL,
-                commission_type TEXT NOT NULL,
-                total_referrals INTEGER DEFAULT 0,
-                total_earnings REAL DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Add to approved_brokers
-        email = app[1] if len(app) > 1 else ''
-        commission_type = app[6] if len(app) > 6 else 'bounty'
-        
-        cur.execute("""
-            INSERT OR REPLACE INTO approved_brokers 
-            (partner_application_id, email, referral_code, commission_type)
-            VALUES (?, ?, ?, ?)
-        """, (application_id, email, referral_code, commission_type))
-        
         con.commit()
-        logger.info(f"Partner approved: {email} - Referral code: {referral_code}")
+        
+        # Import send_broker_welcome_email from main.py
+        from api.main import send_broker_welcome_email
+        
+        # Send welcome email
+        send_broker_welcome_email(
+            app_dict['email'],
+            app_dict['name'],
+            referral_link,
+            referral_code
+        )
+        
+        logger.info(f"Partner approved: {app_dict['email']} - Referral code: {referral_code}")
         
         return {
             "status": "approved",
-            "email": email,
             "referral_code": referral_code,
-            "referral_link": referral_link,
-            "commission_type": commission_type
+            "referral_link": referral_link
         }
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error approving partner: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         con.close()

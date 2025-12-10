@@ -1235,6 +1235,21 @@
     
     <!-- JavaScript -->
     <script>
+        // Capture referral code from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const ref = urlParams.get('ref');
+        if (ref && ref.startsWith('broker_')) {
+            localStorage.setItem('referralCode', ref);
+            console.log('✓ Referral code captured:', ref);
+            
+            // Show small badge
+            const badge = document.createElement('div');
+            badge.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg text-sm z-50';
+            badge.textContent = '✓ Referred by partner';
+            document.body.appendChild(badge);
+            setTimeout(() => badge.remove(), 5000);
+        }
+        
         /* US date mask + native calendar integration */
         const display = document.getElementById('invoiceDateDisplay');
         const picker = document.getElementById('invoiceDatePicker');
@@ -1618,46 +1633,47 @@
             document.getElementById('upgradeModal').classList.add('hidden');
         }
         
-        // Modal email form handler
+        // Modal email form handler - AJAX version (no redirect)
         document.getElementById('modalEmailForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('modalEmail').value;
+            const email = document.getElementById('modalEmail').value.trim();
             
             if (!email || !email.includes('@')) {
-                alert('Please enter a valid email address.');
+                alert('Please enter a valid email address');
                 return;
             }
             
             try {
-                const response = await fetch('/api/v1/capture-email', {
+                // Store email locally FIRST (instant)
+                localStorage.setItem('userEmail', email);
+                
+                // Call API async (don't wait for response)
+                fetch('/api/v1/capture-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, timestamp: new Date().toISOString() })
-                });
+                }).catch(err => console.error('Email tracking error:', err));
                 
-                const data = await response.json();
+                // Hide modal immediately
+                document.getElementById('emailCaptureModal').classList.add('hidden');
                 
-                if (response.ok) {
-                    localStorage.setItem('userEmail', email);
-                    hideEmailCaptureModal();
-                    
-                    // Show success and retry calculation
-                    const successMsg = document.createElement('div');
-                    successMsg.className = 'fixed top-4 right-4 bg-success text-white px-6 py-3 rounded-lg shadow-lg z-50';
-                    successMsg.textContent = '✓ Email saved! Retrying calculation...';
-                    document.body.appendChild(successMsg);
-                    
-                    setTimeout(() => {
-                        successMsg.remove();
-                        // Retry the calculation
-                        document.getElementById('calculatorForm').requestSubmit();
-                    }, 1500);
-                } else {
-                    alert('Error saving email: ' + (data.detail || 'Please try again.'));
+                // Update counter display to show new limit (10)
+                const countElement = document.getElementById('calculationCount');
+                if (countElement) {
+                    const count = parseInt(localStorage.getItem('calculationCount') || '0');
+                    countElement.textContent = count;
                 }
+                
+                // Show success toast
+                const toast = document.createElement('div');
+                toast.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2';
+                toast.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Email saved! 7 more calculations unlocked.</span>';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 4000);
+                
             } catch (error) {
                 console.error('Email capture error:', error);
-                alert('Error saving email. Please try again.');
+                alert('Something went wrong. Please try again.');
             }
         });
         
