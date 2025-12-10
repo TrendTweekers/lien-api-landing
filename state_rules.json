@@ -566,32 +566,163 @@
     ],
     "notes": "Straightforward process: 10-day pre-filing notice, then 6-month filing window. One of the longer deadlines. Serve on owner after filing."
   },
-  "SC": {
-    "state_name": "South Carolina",
-    "complexity": "low",
-    "preliminary_notice": {
-      "name": "None Required (Optional Notice of Furnishing)",
-      "days": 0,
-      "trigger": "none",
-      "description": "No mandatory preliminary notice; optional Notice of Furnishing recommended before final payment"
+    "SC": {
+      "state_name": "South Carolina",
+      "complexity": "low",
+      "preliminary_notice": {
+        "name": "None Required (Optional Notice of Furnishing)",
+        "days": 0,
+        "trigger": "none",
+        "description": "No mandatory preliminary notice; optional Notice of Furnishing recommended before final payment"
+      },
+      "lien_filing": {
+        "name": "Mechanic's Lien",
+        "days": 90,
+        "trigger": "from_last_delivery",
+        "description": "Must be filed within 90 days after last furnishing"
+      },
+      "serving_requirements": ["property_owner"],
+      "statute_citations": [
+        "S.C. Code Ann. § 29-5-90 (Mechanic's Liens)",
+        "S.C. Code Ann. § 29-5-100 (Filing Requirements)"
+      ],
+      "critical_warnings": [
+        "⚠️ Enforcement suit PLUS lis pendens required within 6 months of filing",
+        "Failure to file lawsuit within 6 months = lien expires",
+        "'Last furnishing' excludes corrective work"
+      ],
+      "notes": "Simple filing process: no preliminary notice required. 90-day filing deadline. Critical: must file enforcement lawsuit within 6 months or lien expires automatically."
     },
-    "lien_filing": {
-      "name": "Mechanic's Lien",
-      "days": 90,
-      "trigger": "from_last_delivery",
-      "description": "Must be filed within 90 days after last furnishing"
+    "OR": {
+      "state_name": "Oregon",
+      "complexity": "medium",
+      "preliminary_notice": {
+        "name": "Notice of Right to Lien",
+        "days": 8,
+        "trigger": "from_first_delivery",
+        "description": "Notice required within 8 business days after first furnishing labor or materials"
+      },
+      "lien_filing": {
+        "name": "Mechanic's Lien",
+        "days": 75,
+        "trigger": "from_last_delivery",
+        "description": "Lien must be filed within 75 days after last furnishing (excluding corrective work)"
+      },
+      "serving_requirements": ["property_owner"],
+      "statute_citations": [
+        "ORS Chapter 87"
+      ],
+      "critical_warnings": [
+        "⚠️ Notice must be served on the owner",
+        "⚠️ Lien expires 120 days after filing unless foreclosure suit is filed",
+        "Corrective work does not extend deadlines"
+      ],
+      "notes": "Notice of Right to Lien required within 8 business days after first furnishing. Lien must be filed within 75 days after last furnishing (excluding corrective work). No major residential/commercial deadline differences. No major changes in 2025."
     },
-    "serving_requirements": ["property_owner"],
-    "statute_citations": [
-      "S.C. Code Ann. § 29-5-90 (Mechanic's Liens)",
-      "S.C. Code Ann. § 29-5-100 (Filing Requirements)"
-    ],
-    "critical_warnings": [
-      "⚠️ Enforcement suit PLUS lis pendens required within 6 months of filing",
-      "Failure to file lawsuit within 6 months = lien expires",
-      "'Last furnishing' excludes corrective work"
-    ],
-    "notes": "Simple filing process: no preliminary notice required. 90-day filing deadline. Critical: must file enforcement lawsuit within 6 months or lien expires automatically."
-  }
+    "NV": {
+      "state_name": "Nevada",
+      "complexity": "medium",
+      "preliminary_notice": {
+        "name": "Notice of Right to Lien",
+        "days": 31,
+        "trigger": "from_first_delivery",
+        "description": "Notice required within 31 days after first furnishing"
+      },
+      "lien_filing": {
+        "name": "Mechanic's Lien",
+        "days": 90,
+        "trigger": "from_last_delivery",
+        "description": "Lien filing deadline is 90 days after last furnishing or substantial completion"
+      },
+      "serving_requirements": ["property_owner"],
+      "statute_citations": [
+        "NRS Chapter 108"
+      ],
+      "critical_warnings": [
+        "⚠️ Lien must be served on the owner",
+        "⚠️ Foreclosure suit required within 6 months after recording",
+        "Bonding off requires 150% of lien"
+      ],
+      "notes": "Notice of Right to Lien required within 31 days after first furnishing. Lien filing deadline is 90 days after last furnishing or substantial completion. No major residential/commercial distinctions. Corrective/warranty work does not extend deadlines. No major changes in 2025."
+    },
+    "AL": {
+      "state_name": "Alabama",
+      "complexity": "low",
+      "preliminary_notice": {
+        "name": "None Required (Optional Notice of Unpaid Balance)",
+        "days": 0,
+        "trigger": "none",
+        "description": "Alabama does not require a standard preliminary notice for subcontractors or suppliers, but suppliers to subs may need a Notice of Unpaid Balance to secure full-price lien rights"
+      },
+      "lien_filing": {
+        "name": "Mechanic's Lien",
+        "days": 120,
+        "trigger": "from_last_delivery",
+        "description": "Subcontractors and suppliers have 4 months (120 days) after last furnishing; general contractors have 6 months (180 days)"
+      },
+      "serving_requirements": ["property_owner"],
+      "statute_citations": [
+        "Ala. Code § 35-11-210 et seq."
+      ],
+      "critical_warnings": [
+        "⚠️ No preliminary notice required for most claimants",
+        "⚠️ Suppliers to subcontractors may need Notice of Unpaid Balance",
+        "Corrective work does not extend deadlines"
+      ],
+      "notes": "Alabama does not require a standard preliminary notice for subcontractors or suppliers, but suppliers to subs may need a Notice of Unpaid Balance to secure full-price lien rights. Lien filing deadlines: subcontractors and suppliers have 4 months (120 days) after last furnishing; general contractors have 6 months (180 days). No major residential/commercial differences. No major changes in 2025."
+    },
+    "KY": {
+      "state_name": "Kentucky",
+      "complexity": "medium",
+      "preliminary_notice": {
+        "name": "Notice of Intention",
+        "days": 120,
+        "trigger": "from_last_delivery",
+        "description": "Notice must be filed within 120 days after last furnishing for claims over $1000; 75 days for claims $1000 or less"
+      },
+      "lien_filing": {
+        "name": "Mechanic's Lien",
+        "days": 180,
+        "trigger": "from_last_delivery",
+        "description": "Lien filing deadline is 6 months (180 days) after last furnishing"
+      },
+      "serving_requirements": ["property_owner"],
+      "statute_citations": [
+        "KRS Chapter 376"
+      ],
+      "critical_warnings": [
+        "⚠️ Owner must be served",
+        "⚠️ Suit to enforce must be filed within 1 year of lien recording",
+        "Warranty/corrective work does not extend deadlines"
+      ],
+      "notes": "Notice of Intention must be filed within 120 days after last furnishing for claims over $1000; 75 days for claims $1000 or less. Lien filing deadline is 6 months (180 days) after last furnishing. No major residential/commercial distinctions. No major changes in 2025."
+    },
+    "UT": {
+      "state_name": "Utah",
+      "complexity": "high",
+      "preliminary_notice": {
+        "name": "Preliminary Notice (State Construction Registry)",
+        "days": 20,
+        "trigger": "from_first_delivery",
+        "description": "Preliminary notice must be filed in the State Construction Registry within 20 days after first furnishing; late notices are effective 5 days after filing"
+      },
+      "lien_filing": {
+        "name": "Notice of Claim",
+        "days": 180,
+        "trigger": "from_last_delivery",
+        "description": "Original contractors must file a Notice of Claim within 180 days after final completion; subcontractors and suppliers must file within 90 days after last furnishing if they remain unpaid"
+      },
+      "serving_requirements": ["property_owner"],
+      "statute_citations": [
+        "Utah Code § 38-1a-501"
+      ],
+      "critical_warnings": [
+        "⚠️ Must file preliminary notice in State Construction Registry",
+        "⚠️ Late notices are effective 5 days after filing",
+        "⚠️ Different deadlines for original contractors (180 days) vs subcontractors (90 days)",
+        "Corrective/warranty work does not extend deadlines"
+      ],
+      "notes": "Preliminary notice must be filed in the State Construction Registry within 20 days after first furnishing; late notices are effective 5 days after filing. Lien filing deadlines vary: original contractors must file a Notice of Claim within 180 days after final completion; subcontractors and suppliers must file within 90 days after last furnishing if they remain unpaid. No major changes in 2025."
+    }
 }
 

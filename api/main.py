@@ -868,6 +868,67 @@ async def capture_email(request: Request, request_data: TrackEmailRequest):
     finally:
         db.close()
 
+# UTM tracking endpoint
+class UTMTrackingRequest(BaseModel):
+    source: str = None
+    medium: str = None
+    campaign: str = None
+    term: str = None
+    content: str = None
+    timestamp: str
+
+@app.post("/api/v1/track-utm")
+async def track_utm(request: Request, utm_data: UTMTrackingRequest):
+    """Track UTM parameters for marketing attribution"""
+    db = get_db()
+    try:
+        # Create utm_tracking table if it doesn't exist
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS utm_tracking (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ip_address TEXT NOT NULL,
+                utm_source TEXT,
+                utm_medium TEXT,
+                utm_campaign TEXT,
+                utm_term TEXT,
+                utm_content TEXT,
+                timestamp TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        db.execute("CREATE INDEX IF NOT EXISTS idx_utm_ip ON utm_tracking(ip_address)")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_utm_source ON utm_tracking(utm_source)")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_utm_campaign ON utm_tracking(utm_campaign)")
+        
+        client_ip = get_client_ip(request)
+        
+        # Insert UTM data
+        db.execute("""
+            INSERT INTO utm_tracking 
+            (ip_address, utm_source, utm_medium, utm_campaign, utm_term, utm_content, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            client_ip,
+            utm_data.source,
+            utm_data.medium,
+            utm_data.campaign,
+            utm_data.term,
+            utm_data.content,
+            utm_data.timestamp
+        ))
+        
+        db.commit()
+        print(f"📊 UTM tracked: source={utm_data.source}, medium={utm_data.medium}, campaign={utm_data.campaign} from IP: {client_ip}")
+        
+        return {"status": "success", "message": "UTM parameters tracked"}
+    except Exception as e:
+        print(f"❌ UTM tracking error: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(e)}
+    finally:
+        db.close()
+
 @app.post("/track-email")
 async def track_email(request_data: TrackEmailRequest, request: Request):
     """Track email submissions from calculator email gate"""
@@ -1256,63 +1317,171 @@ def send_welcome_email(email: str, temp_password: str):
 def send_broker_welcome_email(email: str, name: str, link: str, code: str):
     """Send broker welcome email with referral link"""
     try:
-        # For now, just log it (add SendGrid later)
-        print(f"""
-        ===== BROKER WELCOME EMAIL =====
-        To: {email}
-        Subject: Welcome to LienDeadline Partner Program!
-        
-        Congrats {name}!
-        
-        Your referral link: {link}
-        Your referral code: {code}
-        
-        Share this link with construction clients.
-        You earn $500 per signup (after 30 days).
-        
-        Track referrals: https://liendeadline.com/broker-dashboard
-        ================================
-        """)
-        
-        # TODO: Add SendGrid email here
-        
+        sendgrid_key = os.getenv('SENDGRID_API_KEY')
+        if sendgrid_key:
+            from sendgrid import SendGridAPIClient
+            from sendgrid.helpers.mail import Mail, Email, To
+            
+            sg = SendGridAPIClient(api_key=sendgrid_key)
+            
+            html = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 30px; border-radius: 10px; text-align: center;">
+                    <h1 style="margin: 0;">Welcome to LienDeadline Partner Program! 🎉</h1>
+                    <p style="margin: 10px 0 0 0; opacity: 0.9;">Start earning commissions today</p>
+                </div>
+                
+                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h2 style="color: #1e293b; margin-top: 0;">Congratulations, {name}!</h2>
+                    <p style="color: #475569; line-height: 1.8;">Your partner account is now active. Share your referral link with construction clients and start earning commissions.</p>
+                </div>
+                
+                <div style="background: white; border: 2px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #1e293b; margin-top: 0;">Your Referral Details</h3>
+                    <p style="margin: 10px 0;"><strong>Referral Code:</strong> <code style="background: #f1f5f9; padding: 5px 10px; border-radius: 4px; font-size: 16px;">{code}</code></p>
+                    <p style="margin: 10px 0;"><strong>Referral Link:</strong></p>
+                    <p style="margin: 10px 0;">
+                        <a href="{link}" style="color: #2563eb; word-break: break-all;">{link}</a>
+                    </p>
+                </div>
+                
+                <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0;">
+                    <h3 style="color: #92400e; margin-top: 0;">💰 Commission Structure</h3>
+                    <ul style="color: #92400e; line-height: 1.8; margin: 0;">
+                        <li><strong>$500 one-time</strong> per signup (bounty model)</li>
+                        <li><strong>$50/month recurring</strong> per active subscriber (recurring model)</li>
+                        <li>Commissions paid after 30-day customer retention period</li>
+                    </ul>
+                </div>
+                
+                <div style="margin: 30px 0;">
+                    <h3 style="color: #1e293b;">How It Works</h3>
+                    <ol style="color: #475569; line-height: 1.8;">
+                        <li>Share your referral link with construction clients</li>
+                        <li>When they sign up for LienDeadline Pro ($299/month), you earn a commission</li>
+                        <li>Track all referrals in your dashboard</li>
+                        <li>Get paid monthly via PayPal or bank transfer</li>
+                    </ol>
+                </div>
+                
+                <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e2e8f0; margin-top: 30px;">
+                    <a href="https://liendeadline.com/broker-dashboard" style="display: inline-block; background: #c1554e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-bottom: 15px;">
+                        View Your Dashboard →
+                    </a>
+                    <p style="color: #64748b; font-size: 14px; margin: 0;">
+                        Questions? Reply to this email or contact partners@liendeadline.com
+                    </p>
+                </div>
+            </body>
+            </html>
+            """
+            
+            message = Mail(
+                from_email=Email("partners@liendeadline.com"),
+                to_emails=To(email),
+                subject="🎉 Welcome to LienDeadline Partner Program!",
+                html_content=html
+            )
+            
+            sg.send(message)
+            print(f"✅ Broker welcome email sent to {email}")
+            return True
+        else:
+            # Fallback: log it
+            print(f"""
+            ===== BROKER WELCOME EMAIL =====
+            To: {email}
+            Subject: Welcome to LienDeadline Partner Program!
+            
+            Congrats {name}!
+            
+            Your referral link: {link}
+            Your referral code: {code}
+            
+            Share this link with construction clients.
+            You earn $500 per signup (after 30 days).
+            
+            Track referrals: https://liendeadline.com/broker-dashboard
+            ================================
+            """)
+            return False
+            
     except Exception as e:
         print(f"Error sending broker email: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 def send_broker_notification(broker_email: str, customer_email: str):
     """Notify broker of new referral"""
     try:
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail, Email, To
-        
-        if not os.getenv('SENDGRID_API_KEY'):
-            print(f"⚠️ SENDGRID_API_KEY not set - skipping broker notification")
-            return
-        
-        sg = SendGridAPIClient(api_key=os.getenv('SENDGRID_API_KEY'))
-        
-        message = Mail(
-            from_email=Email("support@liendeadline.com"),
-            to_emails=To(broker_email),
-            subject="New Referral - $500 Commission Earned!",
-            html_content=f"""
-            <h2>Congratulations! New Referral</h2>
-            <p>Your referral just signed up:</p>
+        sendgrid_key = os.getenv('SENDGRID_API_KEY')
+        if sendgrid_key:
+            from sendgrid import SendGridAPIClient
+            from sendgrid.helpers.mail import Mail, Email, To
             
-            <p><strong>Customer:</strong> {customer_email}</p>
-            <p><strong>Plan:</strong> Unlimited ($299/month)</p>
-            <p><strong>Your Commission:</strong> $500 (payable after 30 days)</p>
+            sg = SendGridAPIClient(api_key=sendgrid_key)
             
-            <p>Track your earnings: <a href="https://liendeadline.com/broker-dashboard">Broker Dashboard</a></p>
-            
-            <p>Best,<br>The LienDeadline Team</p>
+            html = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 30px; border-radius: 10px; text-align: center;">
+                    <h1 style="margin: 0;">💰 New Referral! 🎉</h1>
+                    <p style="margin: 10px 0 0 0; opacity: 0.9;">You just earned a commission</p>
+                </div>
+                
+                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h2 style="color: #1e293b; margin-top: 0;">Congratulations!</h2>
+                    <p style="color: #475569; line-height: 1.8;">Your referral just signed up for LienDeadline Pro.</p>
+                </div>
+                
+                <div style="background: white; border: 2px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #1e293b; margin-top: 0;">Referral Details</h3>
+                    <p style="margin: 10px 0;"><strong>Customer Email:</strong> {customer_email}</p>
+                    <p style="margin: 10px 0;"><strong>Plan:</strong> Professional ($299/month)</p>
+                    <p style="margin: 10px 0;"><strong>Commission Status:</strong> <span style="color: #f59e0b; font-weight: bold;">Pending (30-day retention period)</span></p>
+                    <p style="margin: 10px 0;"><strong>Commission Amount:</strong> <span style="color: #059669; font-size: 20px; font-weight: bold;">$500</span> (one-time bounty)</p>
+                </div>
+                
+                <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0;">
+                    <p style="margin: 0; color: #92400e;">
+                        <strong>⏰ Payment Timeline:</strong> Your commission will be paid after the customer completes their 30-day retention period. You'll receive an email when payment is processed.
+                    </p>
+                </div>
+                
+                <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e2e8f0; margin-top: 30px;">
+                    <a href="https://liendeadline.com/broker-dashboard" style="display: inline-block; background: #c1554e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-bottom: 15px;">
+                        View All Referrals →
+                    </a>
+                    <p style="color: #64748b; font-size: 14px; margin: 0;">
+                        Keep sharing your referral link to earn more commissions!
+                    </p>
+                </div>
+            </body>
+            </html>
             """
-        )
-        
-        sg.send(message)
-        print(f"✅ Broker notification sent to {broker_email}")
+            
+            message = Mail(
+                from_email=Email("partners@liendeadline.com"),
+                to_emails=To(broker_email),
+                subject="💰 New Referral - $500 Commission Earned!",
+                html_content=html
+            )
+            
+            sg.send(message)
+            print(f"✅ Broker notification sent to {broker_email}")
+            return True
+        else:
+            print(f"⚠️ SENDGRID_API_KEY not set - skipping broker notification to {broker_email}")
+            print(f"   New referral: {customer_email}")
+            return False
+            
     except Exception as e:
         print(f"❌ Broker notification failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 # Serve JS files
 @app.get("/calculator.js")
