@@ -1051,10 +1051,10 @@ async function loadEmailCaptures() {
         }
         
         const captures = await response.json();
-        const tbody = document.getElementById('emailCapturesTable');
+        const tbody = getEl('emailCapturesTable');
         
         if (!tbody) {
-            console.error('Email captures table not found');
+            // This is okay - maybe the table doesn't exist on this page
             return;
         }
         
@@ -1073,7 +1073,7 @@ async function loadEmailCaptures() {
         `).join('');
     } catch (error) {
         console.error('Error loading email captures:', error);
-        const tbody = document.getElementById('emailCapturesTable');
+        const tbody = getEl('emailCapturesTable');
         if (tbody) {
             tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Error loading email captures</td></tr>';
         }
