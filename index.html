@@ -71,6 +71,62 @@
             box-shadow: 0 20px 25px -5px hsla(220, 20%, 15%, 0.1), 0 8px 10px -6px hsla(220, 20%, 15%, 0.08);
         }
         
+        /* Lovable-scale global overrides */
+        h1, h2, h3 {
+            font-variation-settings: 'wght' 825;
+        }
+        
+        h2 {
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        
+        h3 {
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+        
+        /* Cards - deeper shadows and larger radius */
+        .shadow-card,
+        .shadow-elegant {
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+        
+        /* Buttons - larger and bolder */
+        button[type="submit"],
+        a[class*="bg-accent"]:not([class*="text-sm"]):not([class*="text-xs"]) {
+            min-height: 64px;
+            font-size: 1.25rem;
+            font-weight: 600;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+        }
+        
+        button[type="submit"]:hover,
+        a[class*="bg-accent"]:hover:not([class*="text-sm"]):not([class*="text-xs"]) {
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+        }
+        
+        /* Inputs - larger height */
+        input[type="date"],
+        input[type="email"],
+        select {
+            min-height: 64px;
+            font-size: 1.125rem;
+        }
+        
+        /* Section spacing - only apply to sections without explicit padding */
+        section:not([class*="py-"]):not([class*="pt-"]):not([class*="pb-"]) {
+            padding-top: 6rem;
+            padding-bottom: 6rem;
+        }
+        
+        @media (min-width: 1024px) {
+            section:not([class*="py-"]):not([class*="pt-"]):not([class*="pb-"]) {
+                padding-top: 8rem;
+                padding-bottom: 8rem;
+            }
+        }
+        
         @keyframes fadeUp {
             from {
                 opacity: 0;
