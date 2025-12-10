@@ -316,6 +316,121 @@
                 padding-bottom: 10rem;
             }
         }
+        
+        /* Lovable-perfect final override */
+        
+        /* 1. Base reset */
+        html {
+            font-family: "Inter", system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        body {
+            background: hsl(40 33% 98%);
+        }
+        
+        /* 2. Typography scale (exact from repo) */
+        h1 {
+            font-size: 4.5rem;
+            line-height: 1;
+            font-weight: 800;
+            letter-spacing: -.05em;
+            word-spacing: -.02em;
+            font-variation-settings: 'wght' 825;
+        }
+        
+        h2 {
+            font-size: 3rem;
+            line-height: 1;
+            font-weight: 800;
+            letter-spacing: -.03em;
+            font-variation-settings: 'wght' 825;
+        }
+        
+        h3 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            letter-spacing: -.01em;
+            font-variation-settings: 'wght' 825;
+        }
+        
+        /* 3. Color palette */
+        :root {
+            --foreground: #0f172a;
+            --muted-foreground: #475569;
+            --accent: #f59e0b;
+            --background: #ffffff;
+            --border: #e2e8f0;
+        }
+        
+        /* 4. Buttons (h-16, text-xl, rounded-xl) */
+        button, .btn, [class*="bg-accent"] {
+            height: 4rem;
+            padding: 0 2rem;
+            font-size: 1.25rem;
+            border-radius: .75rem;
+            font-weight: 600;
+            box-shadow: 0 10px 20px -5px rgba(0,0,0,.15);
+            transition: all .2s;
+            transform: translateY(-2px);
+        }
+        
+        button:hover, .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,.1);
+        }
+        
+        /* 5. Cards (rounded-3xl, p-12, deep shadow) */
+        .shadow-card, .shadow-elegant {
+            border-radius: 1.5rem;
+            padding: 3rem;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,.25);
+            transition: transform .25s ease, box-shadow .25s ease;
+        }
+        
+        .shadow-card:hover {
+            transform: translateY(-4px);
+        }
+        
+        /* 6. Inputs (h-16, border-2, text-lg) */
+        input[type="date"], input[type="email"], input[type="text"], select {
+            height: 4rem;
+            font-size: 1.125rem;
+            border-radius: .75rem;
+            border-width: 2px;
+            padding: 0 1.25rem;
+        }
+        
+        input:focus, select:focus {
+            box-shadow: 0 0 0 3px rgba(245,158,11,.3);
+            outline: none;
+        }
+        
+        /* 7. Section rhythm (py-32 / lg:py-40) */
+        section {
+            padding-top: 8rem;
+            padding-bottom: 8rem;
+            scroll-margin-top: 96px;
+        }
+        
+        @media (min-width: 1024px) {
+            section {
+                padding-top: 10rem;
+                padding-bottom: 10rem;
+            }
+        }
+        
+        /* 8. Micro-interactions */
+        .text-gradient {
+            background: linear-gradient(135deg, hsl(16 85% 55%) 0%, hsl(24 90% 50%) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-background text-foreground antialiased">
