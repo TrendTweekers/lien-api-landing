@@ -276,17 +276,20 @@ def init_db():
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_type ON activity_logs(type)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at)")
             
-            # Create triggers for SQLite (PostgreSQL triggers created separately)
+            # Create triggers for SQLite
             if DB_TYPE == 'sqlite':
-                # Trigger to log user signups (SQLite)
-                cursor.execute("""
-                    CREATE TRIGGER IF NOT EXISTS log_user_signup
-                    AFTER INSERT ON users
-                    BEGIN
-                        INSERT INTO activity_logs (type, description, user_id)
-                        VALUES ('user_signup', 'New user signed up - ' || NEW.email, NEW.id);
-                    END
-                """)
+                # Check if users table exists before creating trigger
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+                if cursor.fetchone():
+                    # Trigger to log user signups (SQLite)
+                    cursor.execute("""
+                        CREATE TRIGGER IF NOT EXISTS log_user_signup
+                        AFTER INSERT ON users
+                        BEGIN
+                            INSERT INTO activity_logs (type, description, user_id)
+                            VALUES ('user_signup', 'New user signed up - ' || NEW.email, NEW.id);
+                        END
+                    """)
                 
                 # Trigger to log broker approvals (SQLite)
                 cursor.execute("""
@@ -297,6 +300,54 @@ def init_db():
                         INSERT INTO activity_logs (type, description, broker_id)
                         VALUES ('broker_approved', 'Broker approved - ' || NEW.email, NEW.id);
                     END
+                """)
+            
+            # Create PostgreSQL triggers
+            if DB_TYPE == 'postgresql':
+                # Check if users table exists
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_name = 'users'
+                    )
+                """)
+                if cursor.fetchone()[0]:
+                    # Trigger function to log user signups (PostgreSQL)
+                    cursor.execute("""
+                        CREATE OR REPLACE FUNCTION log_user_signup()
+                        RETURNS TRIGGER AS $$
+                        BEGIN
+                            INSERT INTO activity_logs (type, description, user_id)
+                            VALUES ('user_signup', 'New user signed up - ' || NEW.email, NEW.id);
+                            RETURN NEW;
+                        END;
+                        $$ LANGUAGE plpgsql;
+                    """)
+                    cursor.execute("""
+                        DROP TRIGGER IF EXISTS log_user_signup ON users;
+                        CREATE TRIGGER log_user_signup
+                        AFTER INSERT ON users
+                        FOR EACH ROW EXECUTE FUNCTION log_user_signup();
+                    """)
+                
+                # Trigger function to log broker approvals (PostgreSQL)
+                cursor.execute("""
+                    CREATE OR REPLACE FUNCTION log_broker_approval()
+                    RETURNS TRIGGER AS $$
+                    BEGIN
+                        IF NEW.status = 'approved' AND OLD.status != 'approved' THEN
+                            INSERT INTO activity_logs (type, description, broker_id)
+                            VALUES ('broker_approved', 'Broker approved - ' || NEW.email, NEW.id);
+                        END IF;
+                        RETURN NEW;
+                    END;
+                    $$ LANGUAGE plpgsql;
+                """)
+                cursor.execute("""
+                    DROP TRIGGER IF EXISTS log_broker_approval ON partner_applications;
+                    CREATE TRIGGER log_broker_approval
+                    AFTER UPDATE ON partner_applications
+                    FOR EACH ROW EXECUTE FUNCTION log_broker_approval();
                 """)
             
             db.commit()
