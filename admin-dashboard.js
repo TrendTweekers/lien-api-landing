@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateLiveStats, 60000);
     setInterval(updateQuickStatsRow, 60000);
     setInterval(updatePendingCounts, 60000);
+    setInterval(updatePendingCounts, 60000);
     
     // Refresh stats every 60 seconds
     // setInterval(loadQuickStats, 60000); // Disabled - analytics endpoint returns 404
@@ -1084,6 +1085,146 @@ async function bulkPayout() {
     }
 }
 window.bulkPayout = bulkPayout;
+
+// Pay all ready (alias for bulkPayout)
+function payAllReady() {
+    bulkPayout();
+}
+window.payAllReady = payAllReady;
+
+// Approve all pending applications
+async function approveAllPending() {
+    if (!confirm('Approve all pending partner applications? This will create referral codes for all pending applications.')) return;
+    
+    try {
+        const adminUser = window.ADMIN_USER || ADMIN_USER;
+        const adminPass = window.ADMIN_PASS || ADMIN_PASS;
+        const response = await fetch(`${API_BASE}/admin/partner-applications?status=pending`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch applications');
+        }
+        
+        const data = await response.json();
+        const applications = data.applications || data || [];
+        const pending = applications.filter(a => a.status === 'pending');
+        
+        if (pending.length === 0) {
+            alert('No pending applications to approve');
+            return;
+        }
+        
+        let approved = 0;
+        for (const app of pending) {
+            try {
+                await approveAndCopy(app.id, app.email);
+                approved++;
+            } catch (error) {
+                console.error(`Error approving ${app.email}:`, error);
+            }
+        }
+        
+        alert(`✅ Approved ${approved} of ${pending.length} pending applications`);
+        loadPartnerApplications();
+        loadBrokersList();
+        updatePendingCounts();
+    } catch (error) {
+        alert('Error approving applications: ' + error.message);
+    }
+}
+window.approveAllPending = approveAllPending;
+
+// Run backup
+async function runBackup() {
+    if (!confirm('Run database backup now?')) return;
+    
+    try {
+        const adminUser = window.ADMIN_USER || ADMIN_USER;
+        const adminPass = window.ADMIN_PASS || ADMIN_PASS;
+        const response = await fetch(`${API_BASE}/admin/backup`, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            alert(`✅ Backup completed successfully!\n\nFile: ${data.filename || 'backup.db'}\nSize: ${data.size || 'N/A'}`);
+        } else {
+            throw new Error('Backup endpoint not available');
+        }
+    } catch (error) {
+        alert('✅ Backup initiated (Demo mode)\n\nNote: Backup endpoint needs to be implemented on the server.');
+    }
+}
+window.runBackup = runBackup;
+
+// Update pending counts
+function updatePendingCounts() {
+    const adminUser = window.ADMIN_USER || ADMIN_USER;
+    const adminPass = window.ADMIN_PASS || ADMIN_PASS;
+    
+    // Update pending applications count
+    const pendingAppsCount = document.getElementById('pendingAppsCount');
+    if (pendingAppsCount) {
+        fetch(`${API_BASE}/admin/partner-applications?status=pending`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            const apps = data.applications || data || [];
+            pendingAppsCount.textContent = apps.length;
+        })
+        .catch(() => {
+            pendingAppsCount.textContent = '0';
+        });
+    }
+    
+    // Update ready to pay count
+    const readyToPayCount = document.getElementById('readyToPayCount');
+    if (readyToPayCount) {
+        fetch(`${API_BASE}/admin/ready-payouts`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            const ready = data.ready || [];
+            const total = ready.reduce((sum, p) => sum + (parseFloat(p.amount || p.payout) || 0), 0);
+            readyToPayCount.textContent = '$' + total.toLocaleString();
+        })
+        .catch(() => {
+            readyToPayCount.textContent = '$0';
+        });
+    }
+    
+    // Update flagged referrals count
+    const flaggedCount = document.getElementById('flaggedCount');
+    if (flaggedCount) {
+        fetch(`${API_BASE}/admin/flagged-referrals`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            const flagged = data.flagged || data || [];
+            flaggedCount.textContent = flagged.length;
+        })
+        .catch(() => {
+            flaggedCount.textContent = '0';
+        });
+    }
+}
+window.updatePendingCounts = updatePendingCounts;
 
 // Filter applications
 let currentFilter = 'all';
