@@ -180,16 +180,31 @@ def init_db():
                     FROM information_schema.tables 
                     WHERE table_schema = 'public'
                 """)
+                rows = cursor.fetchall()
+                existing_tables = []
+                for row in rows:
+                    if isinstance(row, dict):
+                        existing_tables.append(row.get('table_name'))
+                    elif isinstance(row, tuple):
+                        existing_tables.append(row[0])
+                    else:
+                        existing_tables.append(str(row))
             else:
                 cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            existing_tables = []
-            for row in cursor.fetchall():
-                if isinstance(row, dict):
-                    existing_tables.append(row.get('name') or row.get('table_name'))
-                elif isinstance(row, tuple):
-                    existing_tables.append(row[0])
-                else:
-                    existing_tables.append(str(row))
+                rows = cursor.fetchall()
+                existing_tables = []
+                for row in rows:
+                    if isinstance(row, dict):
+                        existing_tables.append(row.get('name'))
+                    elif isinstance(row, tuple):
+                        existing_tables.append(row[0])
+                    else:
+                        # Handle sqlite3.Row objects
+                        try:
+                            existing_tables.append(row['name'])
+                        except (TypeError, KeyError):
+                            # Fallback: try to get first element
+                            existing_tables.append(str(row))
             print(f"📊 Existing tables: {existing_tables}")
             
             if DB_TYPE == 'postgresql':
@@ -231,100 +246,113 @@ def init_db():
                 """)
                 
                 # Activity logs table (PostgreSQL)
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS activity_logs (
-                        id SERIAL PRIMARY KEY,
-                        type VARCHAR NOT NULL,
-                        description TEXT NOT NULL,
-                        user_id INTEGER,
-                        broker_id INTEGER,
-                        amount DECIMAL(10, 2),
-                        created_at TIMESTAMP DEFAULT NOW()
-                    )
-                """)
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_type ON activity_logs(type)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at)")
+                if 'activity_logs' not in existing_tables:
+                    print("Creating activity_logs table...")
+                    cursor.execute("""
+                        CREATE TABLE activity_logs (
+                            id SERIAL PRIMARY KEY,
+                            type VARCHAR NOT NULL,
+                            description TEXT NOT NULL,
+                            user_id INTEGER,
+                            broker_id INTEGER,
+                            amount DECIMAL(10, 2),
+                            created_at TIMESTAMP DEFAULT NOW()
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_type ON activity_logs(type)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at)")
+                    print("✅ Created activity_logs table")
                 
                 # Partner applications table (PostgreSQL)
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS partner_applications (
-                        id SERIAL PRIMARY KEY,
-                        name VARCHAR NOT NULL,
-                        email VARCHAR NOT NULL UNIQUE,
-                        company VARCHAR,
-                        commission_model VARCHAR DEFAULT 'bounty',
-                        status VARCHAR DEFAULT 'pending',
-                        applied_at TIMESTAMP DEFAULT NOW(),
-                        created_at TIMESTAMP DEFAULT NOW(),
-                        approved_at TIMESTAMP,
-                        notes TEXT,
-                        timestamp VARCHAR,
-                        client_count VARCHAR,
-                        message TEXT
-                    )
-                """)
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_email ON partner_applications(email)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_status ON partner_applications(status)")
-                
-                # Add missing columns if they don't exist (PostgreSQL)
-                cursor.execute("""
-                    DO $$ 
-                    BEGIN
-                        IF NOT EXISTS (
-                            SELECT 1 FROM information_schema.columns 
-                            WHERE table_name = 'partner_applications' 
-                            AND column_name = 'created_at'
-                        ) THEN
-                            ALTER TABLE partner_applications ADD COLUMN created_at TIMESTAMP DEFAULT NOW();
-                        END IF;
-                        
-                        IF NOT EXISTS (
-                            SELECT 1 FROM information_schema.columns 
-                            WHERE table_name = 'partner_applications' 
-                            AND column_name = 'applied_at'
-                        ) THEN
-                            ALTER TABLE partner_applications ADD COLUMN applied_at TIMESTAMP DEFAULT NOW();
-                        END IF;
-                        
-                        IF NOT EXISTS (
-                            SELECT 1 FROM information_schema.columns 
-                            WHERE table_name = 'partner_applications' 
-                            AND column_name = 'commission_model'
-                        ) THEN
-                            ALTER TABLE partner_applications ADD COLUMN commission_model VARCHAR DEFAULT 'bounty';
-                        END IF;
-                        
-                        IF NOT EXISTS (
-                            SELECT 1 FROM information_schema.columns 
-                            WHERE table_name = 'partner_applications' 
-                            AND column_name = 'company'
-                        ) THEN
-                            ALTER TABLE partner_applications ADD COLUMN company VARCHAR;
-                        END IF;
-                    END $$;
-                """)
-                
-                # Update existing rows with current timestamp
-                cursor.execute("UPDATE partner_applications SET created_at = NOW() WHERE created_at IS NULL")
-                cursor.execute("UPDATE partner_applications SET applied_at = NOW() WHERE applied_at IS NULL")
+                if 'partner_applications' not in existing_tables:
+                    print("Creating partner_applications table...")
+                    cursor.execute("""
+                        CREATE TABLE partner_applications (
+                            id SERIAL PRIMARY KEY,
+                            name VARCHAR NOT NULL,
+                            email VARCHAR NOT NULL UNIQUE,
+                            company VARCHAR,
+                            commission_model VARCHAR DEFAULT 'bounty',
+                            status VARCHAR DEFAULT 'pending',
+                            applied_at TIMESTAMP DEFAULT NOW(),
+                            created_at TIMESTAMP DEFAULT NOW(),
+                            approved_at TIMESTAMP,
+                            notes TEXT,
+                            timestamp VARCHAR,
+                            client_count VARCHAR,
+                            message TEXT
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_email ON partner_applications(email)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_partner_app_status ON partner_applications(status)")
+                    print("✅ Created partner_applications table")
+                else:
+                    # Add missing columns if they don't exist (PostgreSQL)
+                    cursor.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'partner_applications' 
+                                AND column_name = 'created_at'
+                            ) THEN
+                                ALTER TABLE partner_applications ADD COLUMN created_at TIMESTAMP DEFAULT NOW();
+                                RAISE NOTICE 'Added created_at column';
+                            END IF;
+                            
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'partner_applications' 
+                                AND column_name = 'applied_at'
+                            ) THEN
+                                ALTER TABLE partner_applications ADD COLUMN applied_at TIMESTAMP DEFAULT NOW();
+                                RAISE NOTICE 'Added applied_at column';
+                            END IF;
+                            
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'partner_applications' 
+                                AND column_name = 'commission_model'
+                            ) THEN
+                                ALTER TABLE partner_applications ADD COLUMN commission_model VARCHAR DEFAULT 'bounty';
+                                RAISE NOTICE 'Added commission_model column';
+                            END IF;
+                            
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'partner_applications' 
+                                AND column_name = 'company'
+                            ) THEN
+                                ALTER TABLE partner_applications ADD COLUMN company VARCHAR;
+                                RAISE NOTICE 'Added company column';
+                            END IF;
+                        END $$;
+                    """)
+                    
+                    # Update existing rows with current timestamp
+                    cursor.execute("UPDATE partner_applications SET created_at = NOW() WHERE created_at IS NULL")
+                    cursor.execute("UPDATE partner_applications SET applied_at = NOW() WHERE applied_at IS NULL")
                 
                 # Brokers table (PostgreSQL)
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS brokers (
-                        id SERIAL PRIMARY KEY,
-                        name VARCHAR NOT NULL,
-                        email VARCHAR NOT NULL UNIQUE,
-                        company VARCHAR,
-                        commission_model VARCHAR DEFAULT 'bounty',
-                        referral_code VARCHAR UNIQUE,
-                        status VARCHAR DEFAULT 'active',
-                        approved_at TIMESTAMP DEFAULT NOW(),
-                        total_referrals INTEGER DEFAULT 0,
-                        total_earned DECIMAL(10, 2) DEFAULT 0
-                    )
-                """)
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_email ON brokers(email)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_referral_code ON brokers(referral_code)")
+                if 'brokers' not in existing_tables:
+                    print("Creating brokers table...")
+                    cursor.execute("""
+                        CREATE TABLE brokers (
+                            id SERIAL PRIMARY KEY,
+                            name VARCHAR NOT NULL,
+                            email VARCHAR NOT NULL UNIQUE,
+                            company VARCHAR,
+                            commission_model VARCHAR DEFAULT 'bounty',
+                            referral_code VARCHAR UNIQUE,
+                            status VARCHAR DEFAULT 'active',
+                            approved_at TIMESTAMP DEFAULT NOW(),
+                            total_referrals INTEGER DEFAULT 0,
+                            total_earned DECIMAL(10, 2) DEFAULT 0
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_email ON brokers(email)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_referral_code ON brokers(referral_code)")
+                    print("✅ Created brokers table")
             else:
                 # SQLite tables
                 cursor.execute("""
@@ -362,19 +390,22 @@ def init_db():
                 """)
                 
                 # Activity logs table (SQLite)
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS activity_logs (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        type TEXT NOT NULL,
-                        description TEXT NOT NULL,
-                        user_id INTEGER,
-                        broker_id INTEGER,
-                        amount DECIMAL(10, 2),
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_type ON activity_logs(type)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at)")
+                if 'activity_logs' not in existing_tables:
+                    print("Creating activity_logs table...")
+                    cursor.execute("""
+                        CREATE TABLE activity_logs (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            type TEXT NOT NULL,
+                            description TEXT NOT NULL,
+                            user_id INTEGER,
+                            broker_id INTEGER,
+                            amount DECIMAL(10, 2),
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_type ON activity_logs(type)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at)")
+                    print("✅ Created activity_logs table")
                 
                 # Partner applications table (SQLite)
                 cursor.execute("""
@@ -420,22 +451,25 @@ def init_db():
                 cursor.execute("UPDATE partner_applications SET applied_at = CURRENT_TIMESTAMP WHERE applied_at IS NULL")
                 
                 # Brokers table (SQLite)
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS brokers (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT NOT NULL,
-                        email TEXT NOT NULL UNIQUE,
-                        company TEXT,
-                        commission_model TEXT DEFAULT 'bounty',
-                        referral_code TEXT UNIQUE,
-                        status TEXT DEFAULT 'active',
-                        approved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        total_referrals INTEGER DEFAULT 0,
-                        total_earned DECIMAL(10, 2) DEFAULT 0
-                    )
-                """)
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_email ON brokers(email)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_referral_code ON brokers(referral_code)")
+                if 'brokers' not in existing_tables:
+                    print("Creating brokers table...")
+                    cursor.execute("""
+                        CREATE TABLE brokers (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            name TEXT NOT NULL,
+                            email TEXT NOT NULL UNIQUE,
+                            company TEXT,
+                            commission_model TEXT DEFAULT 'bounty',
+                            referral_code TEXT UNIQUE,
+                            status TEXT DEFAULT 'active',
+                            approved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            total_referrals INTEGER DEFAULT 0,
+                            total_earned DECIMAL(10, 2) DEFAULT 0
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_email ON brokers(email)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_referral_code ON brokers(referral_code)")
+                    print("✅ Created brokers table")
             
             # Create triggers for SQLite
             if DB_TYPE == 'sqlite':
