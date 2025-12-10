@@ -1843,5 +1843,471 @@
             <button onclick="document.getElementById('upgradeModal').classList.add('hidden')" class="w-full h-12 rounded-lg border border-border hover:bg-secondary transition-colors">Maybe Later</button>
         </div>
     </div>
+
+// ==========================================
+// LIENDEADLINE.COM - COMPLETE JAVASCRIPT FIXES
+// Add this to the bottom of index.html before </body>
+// ==========================================
+
+<script>
+// ==========================================
+// 1. REFERRAL CODE PERSISTENCE
+// ==========================================
+
+(function() {
+    // Capture referral code on ANY page load
+    const urlParams = new URLSearchParams(window.location.search);
+    const ref = urlParams.get('ref');
+    
+    if (ref && ref.trim() !== '') {
+        // Store in both localStorage AND sessionStorage
+        localStorage.setItem('referral_code', ref);
+        sessionStorage.setItem('referral_code', ref);
+        console.log('✅ Referral code captured:', ref);
+    }
+    
+    // Helper function to get referral code
+    window.getReferralCode = function() {
+        return localStorage.getItem('referral_code') || 
+               sessionStorage.getItem('referral_code') || 
+               'direct';
+    };
+    
+    // Helper function to build Stripe URL with referral
+    window.buildStripeUrl = function(baseUrl) {
+        const referralCode = window.getReferralCode();
+        const userEmail = localStorage.getItem('userEmail') || '';
+        
+        const params = new URLSearchParams();
+        if (userEmail) params.append('prefilled_email', userEmail);
+        params.append('client_reference_id', referralCode);
+        params.append('success_url', window.location.origin + '?success=true&ref=' + referralCode);
+        params.append('cancel_url', window.location.origin);
+        
+        return baseUrl + (baseUrl.includes('?') ? '&' : '?') + params.toString();
+    };
+    
+    console.log('✅ Referral system initialized. Current code:', window.getReferralCode());
+})();
+
+// ==========================================
+// 2. STRIPE SUCCESS DETECTION (ENHANCED)
+// ==========================================
+
+window.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Multiple checks for Stripe success
+    const hasSessionId = urlParams.has('session_id');
+    const hasSuccess = urlParams.get('success') === 'true';
+    const hasPaymentIntent = urlParams.has('payment_intent');
+    
+    if (hasSessionId || hasSuccess || hasPaymentIntent) {
+        console.log('✅ Stripe success detected!');
+        
+        // Show success banner
+        const banner = document.getElementById('stripeSuccessBanner');
+        if (banner) {
+            banner.classList.remove('hidden');
+            
+            // Scroll to top so they see it
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Clear localStorage (user has paid, reset trial)
+            localStorage.removeItem('calcCount');
+            localStorage.removeItem('userEmail');
+            
+            console.log('✅ Trial data cleared - user has paid');
+            
+            // Clean URL after 10 seconds
+            setTimeout(() => {
+                const cleanUrl = window.location.origin + window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+                console.log('✅ URL cleaned');
+            }, 10000);
+        } else {
+            console.error('❌ Success banner element not found!');
+        }
+    }
+});
+
+// ==========================================
+// 3. UTM TRACKING
+// ==========================================
+
+(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const utmSource = urlParams.get('utm_source');
+    const utmMedium = urlParams.get('utm_medium');
+    const utmCampaign = urlParams.get('utm_campaign');
+    const utmTerm = urlParams.get('utm_term');
+    const utmContent = urlParams.get('utm_content');
+    
+    if (utmSource) {
+        // Store for later attribution
+        localStorage.setItem('utm_source', utmSource);
+        localStorage.setItem('utm_medium', utmMedium || '');
+        localStorage.setItem('utm_campaign', utmCampaign || '');
+        
+        console.log('✅ UTM tracked:', utmSource, utmMedium, utmCampaign);
+        
+        // Send to backend async
+        fetch('/api/v1/track-utm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                utm_source: utmSource,
+                utm_medium: utmMedium,
+                utm_campaign: utmCampaign,
+                utm_term: utmTerm,
+                utm_content: utmContent
+            })
+        }).catch(err => console.error('UTM tracking error:', err));
+    }
+})();
+
+// ==========================================
+// 4. DATE VALIDATION
+// ==========================================
+
+function validateDates() {
+    const noticeDateInput = document.getElementById('noticeDate');
+    const workDateInput = document.getElementById('workDate');
+    
+    if (!noticeDateInput || !workDateInput) {
+        console.error('Date inputs not found');
+        return true; // Allow submission if inputs don't exist
+    }
+    
+    const noticeDate = new Date(noticeDateInput.value);
+    const workDate = new Date(workDateInput.value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Check if dates are valid
+    if (isNaN(noticeDate.getTime()) || isNaN(workDate.getTime())) {
+        showErrorToast('❌ Please enter valid dates');
+        return false;
+    }
+    
+    // Check if work date is in the future
+    if (workDate > today) {
+        showErrorToast('❌ Last work date cannot be in the future');
+        workDateInput.focus();
+        return false;
+    }
+    
+    // Check if notice date is after work date
+    if (noticeDate > workDate) {
+        showErrorToast('❌ Notice date cannot be after last work date');
+        noticeDateInput.focus();
+        return false;
+    }
+    
+    // Check if dates are ridiculously old (>10 years)
+    const tenYearsAgo = new Date();
+    tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10);
+    
+    if (workDate < tenYearsAgo) {
+        const confirmed = confirm('⚠️ Work date is more than 10 years ago. Are you sure this is correct?');
+        if (!confirmed) {
+            workDateInput.focus();
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// ==========================================
+// 5. TOAST NOTIFICATIONS
+// ==========================================
+
+function showSuccessToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 animate-slide-in';
+    toast.innerHTML = `
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+function showErrorToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-20 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 animate-slide-in';
+    toast.innerHTML = `
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+// ==========================================
+// 6. CALCULATOR FORM WITH LOADING STATES
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    const calculatorForm = document.getElementById('calculatorForm');
+    if (!calculatorForm) return;
+    
+    calculatorForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Validate dates first
+        if (!validateDates()) {
+            return;
+        }
+        
+        const submitBtn = document.getElementById('calculateBtn');
+        const originalText = submitBtn.innerHTML;
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+            <svg class="animate-spin h-5 w-5 inline mr-2" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Calculating...
+        `;
+        
+        try {
+            // Get form data
+            const formData = new FormData(this);
+            const data = {
+                state: formData.get('state'),
+                notice_date: formData.get('notice_date'),
+                last_work_date: formData.get('last_work_date')
+            };
+            
+            console.log('📊 Calculating deadlines:', data);
+            
+            // Call API
+            const response = await fetch('/api/v1/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Calculation failed');
+            }
+            
+            const result = await response.json();
+            console.log('✅ Calculation result:', result);
+            
+            // Display results (your existing display logic)
+            displayResults(result);
+            
+            // Increment calculation counter
+            let calcCount = parseInt(localStorage.getItem('calcCount') || '0') + 1;
+            localStorage.setItem('calcCount', calcCount);
+            
+            // Update counter display
+            updateCounterDisplay();
+            
+            // Check if modals should appear
+            checkCalculationLimits(calcCount);
+            
+        } catch (error) {
+            console.error('❌ Calculation error:', error);
+            showErrorToast(error.message || 'Calculation failed. Please try again.');
+        } finally {
+            // Restore button state
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+});
+
+// ==========================================
+// 7. CALCULATION COUNTER & MODAL LOGIC
+// ==========================================
+
+function updateCounterDisplay() {
+    const calcCount = parseInt(localStorage.getItem('calcCount') || '0');
+    const userEmail = localStorage.getItem('userEmail');
+    const counterElement = document.getElementById('calculationCounter');
+    
+    if (counterElement) {
+        if (userEmail) {
+            // Has email - show X / 10
+            counterElement.textContent = `${calcCount} / 10`;
+        } else {
+            // No email - show X / 3
+            counterElement.textContent = `${Math.min(calcCount, 3)} / 3`;
+        }
+    }
+}
+
+function checkCalculationLimits(calcCount) {
+    const userEmail = localStorage.getItem('userEmail');
+    
+    if (calcCount >= 10) {
+        // Show upgrade modal regardless of email
+        showUpgradeModal();
+    } else if (calcCount >= 3 && !userEmail) {
+        // Show email capture modal
+        showEmailCaptureModal();
+    }
+}
+
+function showEmailCaptureModal() {
+    const modal = document.getElementById('emailCaptureModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        console.log('📧 Email capture modal shown');
+    }
+}
+
+function showUpgradeModal() {
+    const modal = document.getElementById('upgradeModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        console.log('💳 Upgrade modal shown');
+    }
+}
+
+// ==========================================
+// 8. EMAIL MODAL HANDLER (AJAX, NO REDIRECT)
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    const emailForm = document.getElementById('emailForm');
+    if (!emailForm) return;
+    
+    emailForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const emailInput = document.getElementById('modalEmail');
+        const email = emailInput.value.trim().toLowerCase();
+        
+        // Validate email
+        if (!email || !email.includes('@') || !email.includes('.')) {
+            showErrorToast('❌ Please enter a valid email address');
+            emailInput.focus();
+            return;
+        }
+        
+        console.log('📧 Capturing email:', email);
+        
+        // Save to localStorage FIRST (instant)
+        localStorage.setItem('userEmail', email);
+        
+        // Update counter display
+        updateCounterDisplay();
+        
+        // Close modal immediately (no redirect!)
+        document.getElementById('emailCaptureModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        
+        // Show success toast
+        showSuccessToast('✅ Email saved! You now have 7 more calculations (10 total).');
+        
+        // Save to backend async (don't wait)
+        try {
+            const response = await fetch('/api/v1/capture-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    email: email,
+                    timestamp: new Date().toISOString()
+                })
+            });
+            
+            if (response.ok) {
+                console.log('✅ Email saved to backend');
+            } else {
+                console.warn('⚠️ Email save failed, but continuing (saved locally)');
+            }
+        } catch (err) {
+            console.error('❌ Email backend error:', err);
+            // Don't show error to user - email is saved locally
+        }
+    });
+});
+
+// ==========================================
+// 9. UPGRADE MODAL STRIPE BUTTON
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    const upgradeBtn = document.getElementById('upgradeButton');
+    if (!upgradeBtn) return;
+    
+    upgradeBtn.addEventListener('click', function() {
+        // Replace with your actual Stripe payment link
+        const baseStripeUrl = 'https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00';
+        const fullUrl = window.buildStripeUrl(baseStripeUrl);
+        
+        console.log('💳 Redirecting to Stripe:', fullUrl);
+        console.log('📊 Referral code:', window.getReferralCode());
+        console.log('📧 Email:', localStorage.getItem('userEmail') || 'none');
+        
+        window.location.href = fullUrl;
+    });
+});
+
+// ==========================================
+// 10. INITIALIZE COUNTERS ON LOAD
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Update counter display on load
+    updateCounterDisplay();
+    
+    // Log current state for debugging
+    console.log('🚀 LienDeadline initialized');
+    console.log('📊 Calculation count:', localStorage.getItem('calcCount') || '0');
+    console.log('📧 User email:', localStorage.getItem('userEmail') || 'none');
+    console.log('🔗 Referral code:', window.getReferralCode());
+    console.log('📈 UTM source:', localStorage.getItem('utm_source') || 'none');
+});
+
+// ==========================================
+// 11. ADD CSS FOR ANIMATIONS
+// ==========================================
+
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slide-in {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    .animate-slide-in {
+        animation: slide-in 0.3s ease-out;
+    }
+`;
+document.head.appendChild(style);
+
+console.log('✅ All JavaScript fixes loaded successfully');
+</script>
 </body>
 </html>
