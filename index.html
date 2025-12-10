@@ -1064,6 +1064,33 @@
                 console.log('API response status:', response.status);
                 
                 if (!response.ok) {
+                    // Handle 403 errors (rate limit / email gate)
+                    if (response.status === 403) {
+                        try {
+                            const errorData = await response.json();
+                            console.error('API 403 error:', errorData);
+                            
+                            if (errorData.detail && errorData.detail.includes('email')) {
+                                // Show email capture modal
+                                showEmailCaptureModal();
+                            } else {
+                                // Show upgrade modal
+                                showUpgradeModal();
+                            }
+                            return;
+                        } catch (e) {
+                            // If JSON parsing fails, try text
+                            const errorText = await response.text();
+                            if (errorText.includes('email') || errorText.includes('Email')) {
+                                showEmailCaptureModal();
+                            } else {
+                                showUpgradeModal();
+                            }
+                            return;
+                        }
+                    }
+                    
+                    // Other errors
                     const errorText = await response.text();
                     console.error('API error response:', errorText);
                     throw new Error(`API returned ${response.status}: ${errorText}`);
@@ -1142,16 +1169,8 @@
                     countElement.textContent = count;
                 }
                 
-                // Check if email gate should show (after 3 calculations)
-                if (count === 3 && !localStorage.getItem('userEmail')) {
-                    alert('You have used your 3 free calculations. Please enter your email for 7 more!');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-                
-                // Check if upgrade should show (after 10 calculations)
-                if (count >= 10 && !localStorage.getItem('isPaidUser')) {
-                    alert('You have used all 10 free calculations. Upgrade to unlimited for $299/month!');
-                }
+                // Note: Email gate and upgrade modals are now handled by API 403 responses
+                // This local check is kept as backup but API should handle it
                 
             } catch (error) {
                 console.error('Full error details:', error);
