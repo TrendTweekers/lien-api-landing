@@ -946,42 +946,90 @@ async def apply_partner(request: Request):
         
         # Use get_db() for consistent database access
         with get_db() as conn:
-            cursor = conn.cursor()
+            cursor = get_db_cursor(conn)
             
             # Create table if it doesn't exist (with phone field)
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS partner_applications (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    email TEXT NOT NULL,
-                    company TEXT NOT NULL,
-                    phone TEXT,
-                    client_count TEXT,
-                    commission_model TEXT,
-                    message TEXT,
-                    timestamp TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    status TEXT DEFAULT 'pending'
-                )
-            """)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS partner_applications (
+                        id SERIAL PRIMARY KEY,
+                        name VARCHAR NOT NULL,
+                        email VARCHAR NOT NULL,
+                        company VARCHAR NOT NULL,
+                        phone VARCHAR,
+                        client_count VARCHAR,
+                        commission_model VARCHAR,
+                        message TEXT,
+                        timestamp VARCHAR NOT NULL,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        status VARCHAR DEFAULT 'pending'
+                    )
+                """)
+                
+                # Add phone column if it doesn't exist (for existing tables)
+                try:
+                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN phone VARCHAR")
+                except Exception:
+                    pass  # Column already exists
+                
+                # Insert application
+                cursor.execute("""
+                    INSERT INTO partner_applications 
+                    (name, email, company, phone, client_count, commission_model, message, timestamp, status)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pending')
+                    RETURNING id
+                """, (
+                    name,
+                    email,
+                    company,
+                    phone,
+                    str(client_count),
+                    commission_model,
+                    message,
+                    datetime.now().isoformat()
+                ))
+                result = cursor.fetchone()
+                application_id = result['id'] if isinstance(result, dict) else result[0]
+            else:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS partner_applications (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        email TEXT NOT NULL,
+                        company TEXT NOT NULL,
+                        phone TEXT,
+                        client_count TEXT,
+                        commission_model TEXT,
+                        message TEXT,
+                        timestamp TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        status TEXT DEFAULT 'pending'
+                    )
+                """)
+                
+                # Add phone column if it doesn't exist (for existing tables)
+                try:
+                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN phone TEXT")
+                except Exception:
+                    pass  # Column already exists
+                
+                # Insert application
+                cursor.execute("""
+                    INSERT INTO partner_applications 
+                    (name, email, company, phone, client_count, commission_model, message, timestamp, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+                """, (
+                    name,
+                    email,
+                    company,
+                    phone,
+                    str(client_count),
+                    commission_model,
+                    message,
+                    datetime.now().isoformat()
+                ))
+                application_id = cursor.lastrowid
             
-            # Insert application
-            cursor.execute("""
-                INSERT INTO partner_applications 
-                (name, email, company, phone, client_count, commission_model, message, timestamp, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-            """, (
-                name,
-                email,
-                company,
-                phone,
-                str(client_count),
-                commission_model,
-                message,
-                datetime.now().isoformat()
-            ))
-            
-            application_id = cursor.lastrowid
             conn.commit()
         
         print(f"✅ Partner application saved: {email} (ID: {application_id})")
