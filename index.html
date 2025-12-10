@@ -1292,8 +1292,13 @@
             
             <div class="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
                 <p class="text-sm text-muted-foreground">
-                    © 2025 LienDeadline.com. All rights reserved.
+                    © 2025 LienDeadline.com. Not legal advice.
                 </p>
+                <div class="flex justify-center gap-6 text-sm">
+                    <a href="/privacy.html" class="text-muted-foreground hover:text-foreground">Privacy Policy</a>
+                    <a href="/terms.html" class="text-muted-foreground hover:text-foreground">Terms of Service</a>
+                    <a href="/partners.html" class="text-muted-foreground hover:text-foreground">Become a Partner</a>
+                </div>
                 <div class="flex gap-4 text-sm">
                     <a href="/privacy.html" class="text-muted-foreground hover:text-foreground">Privacy</a>
                     <a href="/terms.html" class="text-muted-foreground hover:text-foreground">Terms</a>
@@ -2308,6 +2313,34 @@ style.textContent = `
 document.head.appendChild(style);
 
 console.log('✅ All JavaScript fixes loaded successfully');
+</script>
+
+<!-- Cookie Consent Banner -->
+<div id="cookieBanner" class="hidden fixed bottom-0 left-0 right-0 bg-gray-900 text-white p-4 shadow-lg z-50">
+    <div class="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+        <p class="text-sm">
+            We use browser storage to track calculation counts. No third-party cookies. 
+            <a href="/privacy.html" class="underline">Learn more</a>
+        </p>
+        <button onclick="acceptCookies()" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded text-sm whitespace-nowrap">
+            Accept
+        </button>
+    </div>
+</div>
+
+<script>
+// Cookie consent banner
+function acceptCookies() {
+    localStorage.setItem('cookieConsent', 'accepted');
+    document.getElementById('cookieBanner').classList.add('hidden');
+}
+
+// Show banner if not accepted
+window.addEventListener('DOMContentLoaded', function() {
+    if (!localStorage.getItem('cookieConsent')) {
+        document.getElementById('cookieBanner').classList.remove('hidden');
+    }
+});
 </script>
 </body>
 </html>

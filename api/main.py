@@ -811,62 +811,101 @@ async def partner_application(data: dict):
 
 @app.post("/api/v1/capture-email")
 async def capture_email(request: Request, request_data: TrackEmailRequest):
-    """Store email and extend calculation limit to 10"""
-    db = get_db()
+    """Store email and extend calculation limit to 10 with validation"""
+    from fastapi.responses import JSONResponse
+    import re
+    
     try:
-        # Create email_gate_tracking table if it doesn't exist
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS email_gate_tracking (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ip_address TEXT NOT NULL,
-                email TEXT,
-                calculation_count INTEGER DEFAULT 1,
-                first_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                email_captured_at TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        email = request_data.email.strip().lower() if request_data.email else ''
+        
+        # ENHANCED VALIDATION
+        # Check basic format
+        if not email or len(email) > 254:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Invalid email address"}
             )
-        """)
-        db.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_ip ON email_gate_tracking(ip_address)")
-        db.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_email ON email_gate_tracking(email)")
         
-        client_ip = get_client_ip(request)
+        # Regex validation
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Please enter a valid email address"}
+            )
         
-        # Check if record exists for this IP
-        existing = db.execute("""
-            SELECT id, calculation_count FROM email_gate_tracking WHERE ip_address = ?
-        """, (client_ip,)).fetchone()
+        # Check for common disposable domains (optional but recommended)
+        disposable_domains = ['tempmail.com', 'throwaway.email', '10minutemail.com', 'guerrillamail.com']
+        email_domain = email.split('@')[-1]
+        if email_domain in disposable_domains:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Please use a permanent email address"}
+            )
         
-        if existing:
-            # Update existing record with email
+        db = get_db()
+        try:
+            # Create email_gate_tracking table if it doesn't exist
             db.execute("""
-                UPDATE email_gate_tracking 
-                SET email = ?,
-                    email_captured_at = CURRENT_TIMESTAMP
-                WHERE ip_address = ?
-            """, (request_data.email, client_ip))
-        else:
-            # Create new record with email
-            db.execute("""
-                INSERT INTO email_gate_tracking (ip_address, email, email_captured_at, calculation_count)
-                VALUES (?, ?, CURRENT_TIMESTAMP, 0)
-            """, (client_ip, request_data.email))
-        
-        db.commit()
-        print(f"📧 Email captured: {request_data.email} from IP: {client_ip}")
-        
-        return {
-            "status": "success",
-            "message": "Email captured! You now have 7 more calculations (10 total).",
-            "new_limit": 10
-        }
+                CREATE TABLE IF NOT EXISTS email_gate_tracking (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ip_address TEXT NOT NULL,
+                    email TEXT,
+                    calculation_count INTEGER DEFAULT 1,
+                    first_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    email_captured_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            db.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_ip ON email_gate_tracking(ip_address)")
+            db.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_email ON email_gate_tracking(email)")
+            
+            client_ip = get_client_ip(request)
+            
+            # Check if record exists for this IP
+            existing = db.execute("""
+                SELECT id, calculation_count FROM email_gate_tracking WHERE ip_address = ?
+            """, (client_ip,)).fetchone()
+            
+            if existing:
+                # Update existing record with email
+                db.execute("""
+                    UPDATE email_gate_tracking 
+                    SET email = ?,
+                        email_captured_at = CURRENT_TIMESTAMP
+                    WHERE ip_address = ?
+                """, (email, client_ip))
+            else:
+                # Create new record with email
+                db.execute("""
+                    INSERT INTO email_gate_tracking (ip_address, email, email_captured_at, calculation_count)
+                    VALUES (?, ?, CURRENT_TIMESTAMP, 0)
+                """, (client_ip, email))
+            
+            db.commit()
+            print(f"📧 Email captured: {email} from IP: {client_ip}")
+            
+            return {
+                "status": "success",
+                "message": "Email captured! You now have 7 more calculations (10 total).",
+                "new_limit": 10
+            }
+        except Exception as e:
+            print(f"Error capturing email: {e}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=str(e))
+        finally:
+            db.close()
     except Exception as e:
-        print(f"Error capturing email: {e}")
+        print(f"Validation error: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "message": "Invalid email address"}
+        )
 
 # UTM tracking endpoint
 class UTMTrackingRequest(BaseModel):
