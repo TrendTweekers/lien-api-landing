@@ -827,22 +827,29 @@ async def capture_email(request: Request, request_data: TrackEmailRequest):
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        db.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_ip ON email_gate_tracking(ip_address)")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_email ON email_gate_tracking(email)")
         
         client_ip = get_client_ip(request)
         
-        # Update email for this IP
-        cursor = db.execute("""
-            UPDATE email_gate_tracking 
-            SET email = ?,
-                email_captured_at = CURRENT_TIMESTAMP
-            WHERE ip_address = ?
-        """, (request_data.email, client_ip))
+        # Check if record exists for this IP
+        existing = db.execute("""
+            SELECT id, calculation_count FROM email_gate_tracking WHERE ip_address = ?
+        """, (client_ip,)).fetchone()
         
-        if cursor.rowcount == 0:
-            # No existing record, create one
+        if existing:
+            # Update existing record with email
             db.execute("""
-                INSERT INTO email_gate_tracking (ip_address, email, email_captured_at)
-                VALUES (?, ?, CURRENT_TIMESTAMP)
+                UPDATE email_gate_tracking 
+                SET email = ?,
+                    email_captured_at = CURRENT_TIMESTAMP
+                WHERE ip_address = ?
+            """, (request_data.email, client_ip))
+        else:
+            # Create new record with email
+            db.execute("""
+                INSERT INTO email_gate_tracking (ip_address, email, email_captured_at, calculation_count)
+                VALUES (?, ?, CURRENT_TIMESTAMP, 0)
             """, (client_ip, request_data.email))
         
         db.commit()
@@ -855,6 +862,8 @@ async def capture_email(request: Request, request_data: TrackEmailRequest):
         }
     except Exception as e:
         print(f"Error capturing email: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()

@@ -917,10 +917,15 @@
             });
         });
         
-        // Hero email form - scroll to calculator instead of redirect
+        // Hero email form - capture email and extend calculation limits
         document.getElementById('heroEmailForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('heroEmail').value;
+            
+            if (!email || !email.includes('@')) {
+                alert('Please enter a valid email address.');
+                return;
+            }
             
             try {
                 const response = await fetch('/api/v1/capture-email', {
@@ -933,29 +938,28 @@
                 
                 if (response.ok) {
                     localStorage.setItem('userEmail', email);
-                    alert('✅ Email saved! You now have 7 more calculations. Scrolling to calculator...');
-                    document.getElementById('calculator').scrollIntoView({ behavior: 'smooth' });
+                    
+                    // Show success message
+                    const form = e.target;
+                    const successMsg = document.createElement('p');
+                    successMsg.className = 'text-sm text-success mt-2';
+                    successMsg.textContent = '✓ Email saved! You now have 7 more calculations (10 total). Scrolling to calculator...';
+                    form.appendChild(successMsg);
+                    setTimeout(() => successMsg.remove(), 5000);
+                    
+                    // Scroll to calculator
+                    setTimeout(() => {
+                        const calculatorSection = document.getElementById('calculator');
+                        if (calculatorSection) {
+                            calculatorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }, 500);
                 } else {
-                    alert('Error saving email. Please try again.');
+                    alert('Error saving email: ' + (data.detail || 'Please try again.'));
                 }
             } catch (error) {
                 console.error('Email capture error:', error);
-                alert('Error saving email. Please try again.');
-            }
-            if (email && email.includes('@')) {
-                localStorage.setItem('userEmail', email);
-                // Show success message
-                const form = e.target;
-                const successMsg = document.createElement('p');
-                successMsg.className = 'text-sm text-success mt-2';
-                successMsg.textContent = '✓ Email saved! Scroll down to try the calculator.';
-                form.appendChild(successMsg);
-                setTimeout(() => successMsg.remove(), 3000);
-                // Scroll to calculator
-                const calculatorSection = document.getElementById('calculator');
-                if (calculatorSection) {
-                    calculatorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
+                alert('Error saving email. Please check your connection and try again.');
             }
         });
         
