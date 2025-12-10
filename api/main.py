@@ -2744,8 +2744,46 @@ def send_password_reset_email(email: str, reset_link: str):
         return False
 
 # ==========================================
-# BROKER DASHBOARD ENDPOINT
+# BROKER ENDPOINTS
 # ==========================================
+@app.get("/api/v1/broker/pending")
+async def get_pending_brokers(username: str = Depends(verify_admin)):
+    """Get pending broker applications"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute('''
+                    SELECT * FROM partner_applications 
+                    WHERE status = 'pending'
+                    ORDER BY created_at DESC
+                ''')
+            else:
+                cursor.execute('''
+                    SELECT * FROM partner_applications 
+                    WHERE status = 'pending'
+                    ORDER BY created_at DESC
+                ''')
+            
+            if DB_TYPE == 'postgresql':
+                pending = cursor.fetchall()
+                pending_list = [dict(row) for row in pending]
+            else:
+                pending = cursor.fetchall()
+                pending_list = [dict(row) for row in pending]
+            
+            return {"pending": pending_list, "count": len(pending_list)}
+            
+    except Exception as e:
+        print(f"Error fetching pending brokers: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e), "pending": [], "count": 0}
+        )
+
 @app.get("/api/v1/broker/dashboard")
 async def broker_dashboard(request: Request, email: str):
     """Get broker dashboard data"""
