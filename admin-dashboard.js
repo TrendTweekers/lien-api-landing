@@ -900,18 +900,18 @@ async function filterApps(status) {
         document.getElementById('flaggedCount').textContent = allApps.filter(a => a.status === 'flagged').length;
         
         // Render filtered applications as cards
-        const container = document.getElementById('applicationsList');
-        if (!container) {
-            console.error('applicationsList container not found');
-            return;
+        const cardContainer = document.getElementById('applicationsList');
+        if (cardContainer) {
+            if (applications.length === 0) {
+                cardContainer.innerHTML = '<div class="card text-center text-muted-foreground">No applications found</div>';
+            } else {
+                cardContainer.innerHTML = applications.map(app => renderApplication(app)).join('');
+            }
         }
         
-        if (applications.length === 0) {
-            container.innerHTML = '<div class="card text-center text-muted-foreground">No applications found</div>';
-            return;
-        }
-        
-        container.innerHTML = applications.map(app => renderApplication(app)).join('');
+        // Also update table for backward compatibility
+        const container = document.getElementById('partnerApplicationsTable');
+        if (!container) return;
     } catch (error) {
         console.error('Error filtering applications:', error);
         alert('Error filtering applications: ' + error.message);
