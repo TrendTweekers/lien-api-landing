@@ -285,7 +285,15 @@
     <!-- KPI Fetching -->
     <script>
         // Fetch and display today's KPIs
+        // DISABLED - Analytics endpoint returns 404, dashboard works fine without it
         async function loadKPIs() {
+            // Analytics endpoint disabled - show default values
+            document.getElementById('calcToday').innerText = '0';
+            document.getElementById('visitorsToday').innerText = '0';
+            document.getElementById('paymentsToday').innerText = '0';
+            return;
+            
+            /* DISABLED - Analytics endpoint not available
             try {
                 const response = await fetch('/analytics/today');
                 const data = await response.json();
@@ -296,6 +304,7 @@
             } catch (error) {
                 console.error('Failed to load KPIs:', error);
             }
+            */
         }
         
         // Load KPIs on page load
@@ -306,7 +315,7 @@
     
     <!-- Broker Approval Functionality -->
     <script>
-        const API_BASE = ''; // Use relative URLs (same domain)
+        // API_BASE is defined in admin-dashboard.js - don't redeclare here
         const ADMIN_USER = 'admin';
         const ADMIN_PASS = 'LienAPI2025';
 
@@ -403,11 +412,18 @@
 
         // Load flagged referrals
         async function loadFlaggedReferrals() {
+            const container = document.getElementById('flaggedReferralsList');
+            
             try {
-                const response = await fetch('/api/v1/admin/flagged-referrals');
-                const data = await response.json();
+                container.innerHTML = '<p class="text-gray-500">Loading...</p>';
                 
-                const container = document.getElementById('flaggedReferralsList');
+                const response = await fetch('/api/v1/admin/flagged-referrals');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
                 
                 if (!data.flagged_referrals || data.flagged_referrals.length === 0) {
                     container.innerHTML = '<p class="text-gray-500">No flagged referrals</p>';
@@ -449,7 +465,7 @@
                         <div class="bg-white rounded p-3">
                             <p class="text-sm font-semibold mb-2">Fraud Flags:</p>
                             <div class="flex flex-wrap gap-2">
-                                ${ref.fraud_flags.map(flag => `
+                                ${(ref.fraud_flags || []).map(flag => `
                                     <span class="px-3 py-1 bg-red-200 text-red-800 text-xs rounded-full font-semibold">
                                         ${flag.replace(/_/g, ' ')}
                                     </span>
@@ -461,8 +477,12 @@
                 
             } catch (error) {
                 console.error('Error loading flagged referrals:', error);
-                document.getElementById('flaggedReferralsList').innerHTML = 
-                    '<p class="text-red-500">Error loading flagged referrals</p>';
+                container.innerHTML = `
+                    <div class="text-red-600">
+                        Error: ${error.message}
+                        <button onclick="loadFlaggedReferrals()" class="underline ml-2">Retry</button>
+                    </div>
+                `;
             }
         }
 

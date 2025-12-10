@@ -616,6 +616,13 @@ function displayTestKeys(keys) {
 
 // Load partner applications
 async function loadPartnerApplications() {
+    const tbody = document.getElementById('partnerApplicationsTable');
+    
+    if (!tbody) {
+        console.error('Partner applications table not found');
+        return;
+    }
+    
     try {
         const response = await fetch(`${API_BASE}/admin/partner-applications`, {
             headers: {
@@ -624,19 +631,13 @@ async function loadPartnerApplications() {
         });
         
         if (!response.ok) {
-            throw new Error('Failed to load partner applications');
+            throw new Error(`HTTP ${response.status}`);
         }
         
         const applications = await response.json();
-        const tbody = document.getElementById('partnerApplicationsTable');
         
-        if (!tbody) {
-            console.error('Partner applications table not found');
-            return;
-        }
-        
-        if (applications.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No applications yet</td></tr>';
+        if (!applications || applications.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No applications yet</td></tr>';
             return;
         }
         
@@ -668,10 +669,14 @@ async function loadPartnerApplications() {
         }).join('');
     } catch (error) {
         console.error('Error loading partner applications:', error);
-        const tbody = document.getElementById('partnerApplicationsTable');
-        if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Error loading applications</td></tr>';
-        }
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-6 py-4 text-center text-red-500">
+                    Error loading applications: ${error.message}
+                    <button onclick="loadPartnerApplications()" class="underline ml-2">Retry</button>
+                </td>
+            </tr>
+        `;
     }
 }
 
