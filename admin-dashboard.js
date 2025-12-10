@@ -1,37 +1,61 @@
-// Admin Dashboard Functionality
-// Hard-coded data for now - wire to API later
-// Version: 2025-01-XX - Analytics disabled to fix 404 error
+// ==================== SAFETY FUNCTIONS ====================
+const DEBUG = true;
 
-// Safe DOM element getter with warning
-function getElement(id) {
-    const element = document.getElementById(id);
-    if (!element) {
-        console.warn(`⚠️ Element #${id} not found in DOM`);
+function log(message, data = null) {
+    if (DEBUG) {
+        console.log(`[Admin] ${message}`, data || '');
     }
-    return element;
 }
 
-// Safe text content update
-function safeSetText(id, text) {
-    const element = getElement(id);
-    if (element) element.textContent = text;
+function warn(message, elementId = null) {
+    console.warn(`[Admin] ⚠️ ${message}`, elementId ? `#${elementId}` : '');
 }
 
-// Safe HTML update
-function safeSetHTML(id, html) {
-    const element = getElement(id);
-    if (element) element.innerHTML = html;
+function getEl(id) {
+    const el = document.getElementById(id);
+    if (!el && DEBUG) {
+        warn(`Element not found`, id);
+    }
+    return el;
 }
 
-// Safe function call
-function safeCall(fn) {
+function safeText(id, text) {
+    const el = getEl(id);
+    if (el) el.textContent = text;
+}
+
+function safeHtml(id, html) {
+    const el = getEl(id);
+    if (el) el.innerHTML = html;
+}
+
+function safeCall(func, funcName = 'anonymous') {
     try {
-        return fn();
+        return func();
     } catch (error) {
-        console.warn(`⚠️ Error in function:`, error);
+        console.error(`[Admin] Error in ${funcName}:`, error);
         return null;
     }
 }
+
+// Legacy aliases for backward compatibility
+function getElement(id) {
+    return getEl(id);
+}
+
+function safeSetText(id, text) {
+    safeText(id, text);
+}
+
+function safeSetHTML(id, html) {
+    safeHtml(id, html);
+}
+
+// ==================== END SAFETY FUNCTIONS ====================
+
+// Admin Dashboard Functionality
+// Hard-coded data for now - wire to API later
+// Version: 2025-01-XX - Analytics disabled to fix 404 error
 
 // Admin authentication
 const ADMIN_USER = 'admin';
@@ -626,14 +650,19 @@ async function loadPendingPayouts() {
 }
 
 function displayPendingPayouts(payouts) {
-    const container = document.getElementById('pending-payouts-container');
-    
-    if (payouts.length === 0) {
-        container.innerHTML = '<p class="text-gray-500 text-center py-4">No pending payouts</p>';
+    const container = getEl('pending-payouts-container') || getEl('pendingPayoutsList');
+    if (!container) {
+        warn('pending-payouts-container or pendingPayoutsList element not found');
         return;
     }
     
-    container.innerHTML = payouts.map(payout => `
+    if (payouts.length === 0) {
+        safeHtml('pending-payouts-container', '<p class="text-gray-500 text-center py-4">No pending payouts</p>');
+        safeHtml('pendingPayoutsList', '<p class="text-gray-500 text-center py-4">No pending payouts</p>');
+        return;
+    }
+    
+    const html = payouts.map(payout => `
         <div class="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between">
             <div class="flex-1">
                 <div class="font-semibold text-gray-900">${payout.broker_name}</div>
@@ -653,6 +682,9 @@ function displayPendingPayouts(payouts) {
             </div>
         </div>
     `).join('');
+    
+    safeHtml('pending-payouts-container', html);
+    safeHtml('pendingPayoutsList', html);
 }
 
 // Approve payout
@@ -741,14 +773,19 @@ async function loadTestKeys() {
 }
 
 function displayTestKeys(keys) {
-    const table = document.getElementById('test-keys-table');
-    
-    if (keys.length === 0) {
-        table.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No active test keys</td></tr>';
+    const table = getEl('test-keys-table') || getEl('testKeysList');
+    if (!table) {
+        warn('test-keys-table or testKeysList element not found');
         return;
     }
     
-    table.innerHTML = keys.map(key => {
+    if (keys.length === 0) {
+        safeHtml('test-keys-table', '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No active test keys</td></tr>');
+        safeHtml('testKeysList', '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No active test keys</td></tr>');
+        return;
+    }
+    
+    const html = keys.map(key => {
         const expiryDate = new Date(key.expiry_date || key.expiry);
         const isExpired = expiryDate < new Date() || key.calls_used >= (key.max_calls || 50);
         const statusClass = isExpired ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
@@ -765,6 +802,9 @@ function displayTestKeys(keys) {
             </tr>
         `;
     }).join('');
+    
+    safeHtml('test-keys-table', html);
+    safeHtml('testKeysList', html);
 }
 
 // Load partner applications
@@ -1598,6 +1638,82 @@ function renderCustomer(customer) {
     `;
 }
 window.renderCustomer = renderCustomer;
+
+// Load flagged referrals
+async function loadFlaggedReferrals() {
+    const container = getEl('flaggedReferralsList');
+    if (!container) {
+        warn('flaggedReferralsList element not found, skipping');
+        return;
+    }
+    
+    try {
+        const adminUser = window.ADMIN_USER || ADMIN_USER;
+        const adminPass = window.ADMIN_PASS || ADMIN_PASS;
+        const response = await fetch(`${API_BASE}/admin/flagged-referrals`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const flagged = data.flagged || data || [];
+            
+            if (flagged.length === 0) {
+                safeHtml('flaggedReferralsList', '<div class="text-center text-gray-500 py-4">No flagged referrals</div>');
+                return;
+            }
+            
+            const html = flagged.map(ref => renderFlagged(ref)).join('');
+            safeHtml('flaggedReferralsList', html);
+        } else {
+            safeHtml('flaggedReferralsList', '<div class="text-center text-gray-500 py-4">Error loading flagged referrals</div>');
+        }
+    } catch (error) {
+        console.error('Error loading flagged referrals:', error);
+        safeHtml('flaggedReferralsList', '<div class="text-center text-red-500 py-4">Error loading flagged referrals</div>');
+    }
+}
+window.loadFlaggedReferrals = loadFlaggedReferrals;
+
+// Load pending brokers
+async function loadPendingBrokers() {
+    const container = getEl('pendingBrokersList');
+    if (!container) {
+        warn('pendingBrokersList element not found, skipping');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/v1/broker/pending`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            const pending = data.pending || data || [];
+            
+            if (pending.length === 0) {
+                safeHtml('pendingBrokersList', '<div class="text-center text-gray-500 py-4">No pending brokers</div>');
+                return;
+            }
+            
+            const html = pending.map(broker => `
+                <div class="card">
+                    <p class="font-semibold">${broker.name || 'N/A'}</p>
+                    <p class="text-sm text-muted-foreground">${broker.email || 'N/A'}</p>
+                    <p class="text-xs text-muted-foreground">${broker.company || 'N/A'}</p>
+                </div>
+            `).join('');
+            safeHtml('pendingBrokersList', html);
+        } else {
+            safeHtml('pendingBrokersList', '<div class="text-center text-gray-500 py-4">Error loading pending brokers</div>');
+        }
+    } catch (error) {
+        console.error('Error loading pending brokers:', error);
+        safeHtml('pendingBrokersList', '<div class="text-center text-red-500 py-4">Error loading pending brokers</div>');
+    }
+}
+window.loadPendingBrokers = loadPendingBrokers;
 
 // Update quick stats row
 function updateQuickStatsRow() {
