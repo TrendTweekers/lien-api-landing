@@ -85,14 +85,14 @@
             <!-- LEFT COLUMN: Pending Actions -->
             <div class="lg:col-span-2 space-y-8">
                 <!-- Partner Applications Section -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="bg-white rounded-xl shadow-sm border">
                     <div class="p-6 border-b border-gray-200">
                         <div class="flex justify-between items-center">
                             <h2 class="text-lg font-semibold text-gray-900">Partner Applications</h2>
                             <div class="flex items-center space-x-2">
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
                                     <span class="w-2 h-2 rounded-full bg-yellow-600 mr-2"></span>
-                                    <span id="pendingCount">0</span> Pending
+                                    <span id="pendingCount">1</span> Pending
                                 </span>
                                 <button onclick="exportApplications()" class="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
                                     Export CSV
@@ -118,7 +118,7 @@
                         </table>
                         
                         <!-- Empty State -->
-                        <div id="noApplications" class="py-12 text-center hidden">
+                        <div id="noApplications" class="py-12 text-center">
                             <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                                 <span class="text-gray-400 text-2xl">📋</span>
                             </div>

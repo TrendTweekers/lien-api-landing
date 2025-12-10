@@ -669,27 +669,32 @@ async function loadPartnerApplications() {
         
         if (applications.length === 0) {
             table.innerHTML = '';
-            if (emptyState) emptyState.classList.remove('hidden');
+            if (emptyState) {
+                emptyState.style.display = 'block';
+            }
             return;
         }
         
-        if (emptyState) emptyState.classList.add('hidden');
+        if (emptyState) {
+            emptyState.style.display = 'none';
+        }
         
-        // Render applications as table rows
+        // Render applications as table rows (matching exact template)
         table.innerHTML = applications.map(app => {
             const date = app.timestamp || app.created_at ? formatTimeAgo(new Date(app.timestamp || app.created_at)) : 'N/A';
             const status = app.status || 'pending';
-            const initials = (app.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            const initials = (app.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 1);
             const statusClass = status === 'approved' ? 'bg-green-100 text-green-800' : 
                               status === 'flagged' ? 'bg-red-100 text-red-800' : 
                               'bg-yellow-100 text-yellow-800';
+            const statusText = status.charAt(0).toUpperCase() + status.slice(1);
             
             return `
                 <tr class="hover:bg-gray-50">
                     <td class="py-4 px-6">
                         <div class="flex items-center">
                             <div class="h-10 w-10 flex-shrink-0 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span class="text-blue-600 font-semibold text-sm">${initials}</span>
+                                <span class="text-blue-600 font-semibold">${initials}</span>
                             </div>
                             <div class="ml-4">
                                 <div class="text-sm font-medium text-gray-900">${app.name || 'N/A'}</div>
@@ -701,15 +706,13 @@ async function loadPartnerApplications() {
                     <td class="py-4 px-6 text-sm text-gray-500">${date}</td>
                     <td class="py-4 px-6">
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusClass}">
-                            ${status.charAt(0).toUpperCase() + status.slice(1)}
+                            ${statusText}
                         </span>
                     </td>
                     <td class="py-4 px-6 text-sm font-medium">
                         <div class="flex space-x-2">
-                            ${status === 'pending' ? `
-                                <button onclick="approveApplication(${app.id})" class="text-green-600 hover:text-green-900">Approve</button>
-                                <button onclick="rejectApplication(${app.id})" class="text-red-600 hover:text-red-900">Reject</button>
-                            ` : ''}
+                            <button onclick="approveApplication(${app.id})" class="text-green-600 hover:text-green-900">Approve</button>
+                            <button onclick="rejectApplication(${app.id})" class="text-red-600 hover:text-red-900">Reject</button>
                             <button onclick="viewApplication(${app.id})" class="text-blue-600 hover:text-blue-900">View</button>
                         </div>
                     </td>
