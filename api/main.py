@@ -2972,8 +2972,30 @@ def send_password_reset_email(email: str, reset_link: str):
 async def get_calculations_today():
     """Get today's calculation count"""
     try:
+        # Initialize database first (ensures tables exist)
+        init_db()
+        
         with get_db() as conn:
             cursor = get_db_cursor(conn)
+            
+            # Check if calculations table exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'calculations'
+                    )
+                """)
+                result = cursor.fetchone()
+                table_exists = result[0] if isinstance(result, tuple) else (result.get('exists') if isinstance(result, dict) else False)
+            else:
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='calculations'")
+                table_exists = cursor.fetchone() is not None
+            
+            if not table_exists:
+                print("DEBUG: calculations table doesn't exist yet")
+                return {"calculations_today": 0, "message": "Calculations table not found"}
             
             # Get today's date
             today = datetime.now().strftime('%Y-%m-%d')
@@ -2999,16 +3021,13 @@ async def get_calculations_today():
                 result = cursor.fetchone()
                 count = result['count'] if result and result['count'] else 0
             
-            return {"calculations_today": count}
+            return {"calculations_today": count, "date": today}
             
     except Exception as e:
         print(f"ERROR in get_calculations_today: {str(e)}")
         import traceback
         traceback.print_exc()
-        return JSONResponse(
-            status_code=500,
-            content={"error": str(e), "calculations_today": 0}
-        )
+        return {"calculations_today": 0, "error": str(e)}
 
 # ==========================================
 # BROKER ENDPOINTS
