@@ -315,9 +315,8 @@
     
     <!-- Broker Approval Functionality -->
     <script>
-        // API_BASE is defined in admin-dashboard.js - don't redeclare here
-        const ADMIN_USER = 'admin';
-        const ADMIN_PASS = 'LienAPI2025';
+        // ADMIN_USER and ADMIN_PASS are defined in admin-dashboard.js - don't redeclare here
+        // Access them via window.ADMIN_USER or use the ones from admin-dashboard.js
 
         // Load pending broker applications
         async function loadPendingBrokers() {
@@ -381,11 +380,13 @@
             }
             
             try {
+                const adminUser = window.ADMIN_USER || 'admin';
+                const adminPass = window.ADMIN_PASS || 'LienAPI2025';
                 const response = await fetch(`${API_BASE}/v1/broker/approve`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+                        'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
                     },
                     body: JSON.stringify({ email: email })
                 });
@@ -532,6 +533,36 @@
         
         // Make approveBroker globally available
         window.approveBroker = approveBroker;
+        
+        // Test partner endpoint function
+        async function testPartnerEndpoint() {
+            try {
+                const adminUser = window.ADMIN_USER || 'admin';
+                const adminPass = window.ADMIN_PASS || 'LienAPI2025';
+                const response = await fetch('/api/admin/partner-applications', {
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+                    }
+                });
+                const data = await response.json();
+                console.log('=== ENDPOINT TEST ===');
+                console.log('Status:', response.status);
+                console.log('Data:', data);
+                console.log('Type of data:', typeof data);
+                console.log('Is array?', Array.isArray(data));
+                console.log('Has applications key?', 'applications' in data);
+                if (data.applications) {
+                    console.log('Applications type:', typeof data.applications);
+                    console.log('Applications is array?', Array.isArray(data.applications));
+                    console.log('Applications length:', data.applications.length);
+                }
+                alert('Check console for endpoint test results');
+            } catch (error) {
+                console.error('Test failed:', error);
+                alert('Test failed: ' + error.message);
+            }
+        }
+        window.testPartnerEndpoint = testPartnerEndpoint;
     </script>
 </body>
 </html>

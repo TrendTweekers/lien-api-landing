@@ -2079,32 +2079,38 @@ async def get_partner_applications_api(username: str = Depends(verify_admin)):
         """)
         if not cur.fetchone():
             con.close()
-            return []  # Return empty list if table doesn't exist
+            return {"applications": []}  # Return empty list wrapped in object
         
         cur.execute("""
-            SELECT name, email, company, client_count, timestamp, status, message, commission_model
+            SELECT id, name, email, company, client_count, timestamp, status, message, commission_model
             FROM partner_applications 
             ORDER BY timestamp DESC
         """)
         apps = cur.fetchall()
         
-        return [
+        applications = [
             {
-                "name": app[0] if app[0] else "N/A",
-                "email": app[1] if app[1] else "N/A",
-                "company": app[2] if app[2] else "N/A",
-                "client_count": app[3] if app[3] else "N/A",
-                "timestamp": app[4] if app[4] else None,
-                "status": app[5] if app[5] else "pending",
-                "message": app[6] if app[6] else "",
-                "commission_model": app[7] if len(app) > 7 and app[7] else ""
+                "id": app[0],
+                "name": app[1] if app[1] else "N/A",
+                "email": app[2] if app[2] else "N/A",
+                "company": app[3] if app[3] else "N/A",
+                "client_count": app[4] if app[4] else "N/A",
+                "timestamp": app[5] if app[5] else None,
+                "created_at": app[5] if app[5] else None,  # Alias for frontend compatibility
+                "status": app[6] if app[6] else "pending",
+                "message": app[7] if app[7] else "",
+                "commission_model": app[8] if len(app) > 8 and app[8] else ""
             }
             for app in apps
         ]
+        
+        return {"applications": applications}
     except Exception as e:
         print(f"Error loading partner applications: {e}")
+        import traceback
+        traceback.print_exc()
         con.close()
-        return []  # Return empty list on error
+        return {"applications": []}  # Return empty list wrapped in object on error
     finally:
         if con:
             con.close()

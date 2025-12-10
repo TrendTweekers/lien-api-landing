@@ -616,43 +616,62 @@ function displayTestKeys(keys) {
 
 // Load partner applications
 async function loadPartnerApplications() {
-    const tbody = document.getElementById('partnerApplicationsTable');
+    const container = document.getElementById('partnerApplicationsTable');
     
-    if (!tbody) {
-        console.error('Partner applications table not found');
+    if (!container) {
+        console.error('Partner applications container not found');
         return;
     }
     
     try {
+        container.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Loading applications...</td></tr>';
+        
+        console.log('Fetching: /api/admin/partner-applications');
+        
         const response = await fetch(`${API_BASE}/admin/partner-applications`, {
             headers: {
                 'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
         });
         
+        console.log('Response status:', response.status);
+        
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
-        const applications = await response.json();
+        const data = await response.json();
+        console.log('Received data:', data);
         
-        if (!applications || applications.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No applications yet</td></tr>';
+        // CRITICAL: Extract applications array
+        const applications = data.applications || data || [];
+        
+        console.log('Applications array:', applications);
+        console.log('Array length:', applications.length);
+        console.log('Is array?', Array.isArray(applications));
+        
+        if (!Array.isArray(applications)) {
+            throw new Error('Applications is not an array: ' + typeof applications + ' - ' + JSON.stringify(data));
+        }
+        
+        if (applications.length === 0) {
+            container.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No applications yet</td></tr>';
             return;
         }
         
-        tbody.innerHTML = applications.map(app => {
-            const date = app.timestamp ? new Date(app.timestamp).toLocaleDateString() : 'N/A';
+        // Render applications
+        container.innerHTML = applications.map(app => {
+            const date = app.timestamp || app.created_at ? new Date(app.timestamp || app.created_at).toLocaleDateString() : 'N/A';
             const status = app.status || 'pending';
             return `
-                <tr>
+                <tr class="border-b">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${app.name || 'N/A'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.email || 'N/A'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.company || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.client_count || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.client_count || 0}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${date}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
                             ${status}
                         </span>
                     </td>
@@ -662,18 +681,26 @@ async function loadPartnerApplications() {
                                     class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-semibold text-sm">
                                 Approve
                             </button>
-                        ` : '<span class="text-green-600 font-semibold">Approved ✓</span>'}
+                        ` : '<span class="text-green-600 font-semibold">✅ Approved</span>'}
                     </td>
                 </tr>
             `;
         }).join('');
+        
+        console.log('✅ Applications rendered successfully');
+        
     } catch (error) {
-        console.error('Error loading partner applications:', error);
-        tbody.innerHTML = `
+        console.error('❌ Error loading applications:', error);
+        container.innerHTML = `
             <tr>
-                <td colspan="7" class="px-6 py-4 text-center text-red-500">
-                    Error loading applications: ${error.message}
-                    <button onclick="loadPartnerApplications()" class="underline ml-2">Retry</button>
+                <td colspan="7" class="px-6 py-4 text-center">
+                    <div class="text-red-600 mb-2">
+                        Error: ${error.message}
+                    </div>
+                    <button onclick="loadPartnerApplications()" 
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                        🔄 Retry
+                    </button>
                 </td>
             </tr>
         `;
