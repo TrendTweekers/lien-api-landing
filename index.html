@@ -14,6 +14,9 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Lovable Scale Stylesheet (load first) -->
+    <link rel="stylesheet" href="/lovable-scale.css">
+    
     <script>
         tailwind.config = {
             theme: {
@@ -43,10 +46,8 @@
     </script>
     
     <style>
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background-color: hsl(40 33% 98%);
-        }
+        /* Note: Base body/html styles now in lovable-scale.css */
+        /* Only component-specific overrides here */
         
         h1, h2, h3, h4, h5, h6 {
             font-family: 'Instrument Serif', serif;
@@ -187,10 +188,7 @@
         }
         
         /* 2. Typography – tighter, heavier, crisper */
-        html {
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
+        /* Note: Base html styles now in lovable-scale.css */
         
         h1, h2, h3 {
             font-feature-settings: "ss01" on; /* Inter stylistic set */
@@ -241,12 +239,7 @@
         }
         
         /* Lovable exact scale overrides */
-        
-        /* ---------- Typography (from tailwind.config.ts) ---------- */
-        html {
-            font-family: "Inter", system-ui, sans-serif;
-            -webkit-font-smoothing: antialiased;
-        }
+        /* Note: Base html/body styles now in lovable-scale.css */
         
         h1 {
             font-size: 4.5rem;    /* 72px */
@@ -319,15 +312,8 @@
         
         /* Lovable-perfect final override */
         
-        /* 1. Base reset */
-        html {
-            font-family: "Inter", system-ui, sans-serif;
-            -webkit-font-smoothing: antialiased;
-        }
-        
-        body {
-            background: hsl(40 33% 98%);
-        }
+        /* 1. Base reset - Note: Global reset and html font-size now in lovable-scale.css */
+        /* Override only if needed for specific cases */
         
         /* 2. Typography scale (exact from repo) */
         h1 {
@@ -502,7 +488,7 @@
             <div class="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                     <!-- Left: Copy -->
-                    <div class="max-w-xl">
+                    <div class="max-w-screen-xl">
                         <!-- Badge -->
                         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-border mb-6 animate-fade-up">
                             <span class="w-2 h-2 rounded-full bg-success animate-pulse-soft"></span>
@@ -671,7 +657,7 @@
         <!-- Features Section -->
         <section id="features" class="py-24 lg:py-32 bg-white">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center max-w-2xl mx-auto mb-16">
+                <div class="text-center max-w-screen-xl mx-auto mb-16">
                     <h2 class="font-serif text-5xl sm:text-6xl lg:text-7xl text-foreground mb-6">
                         Everything you need to <span class="italic text-accent">protect receivables</span>
                     </h2>
@@ -765,7 +751,7 @@
         <!-- Interactive Calculator -->
         <section id="calculator" class="py-32 lg:py-40 bg-background">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center max-w-3xl mx-auto mb-16">
+                <div class="text-center max-w-screen-xl mx-auto mb-16">
                     <h2 class="font-serif text-5xl lg:text-6xl font-extrabold leading-none tracking-tighter text-foreground mb-6">
                         Try it <span class="italic text-accent">right now</span>
                     </h2>
@@ -774,7 +760,7 @@
                     </p>
                 </div>
                 
-                <div class="max-w-3xl mx-auto">
+                <div class="max-w-screen-xl mx-auto">
                     <div class="bg-white rounded-3xl shadow-2xl border border-border p-10 lg:p-12">
                         <form id="calculatorForm" class="space-y-8">
                             <div class="grid sm:grid-cols-2 gap-6">
@@ -859,7 +845,7 @@
         <!-- Pricing Section -->
         <section id="pricing" class="py-24 lg:py-32 bg-white">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center max-w-2xl mx-auto mb-16">
+                <div class="text-center max-w-screen-xl mx-auto mb-16">
                     <h2 class="font-serif text-5xl sm:text-6xl lg:text-7xl text-foreground mb-6">
                         Simple, <span class="italic text-accent">transparent</span> pricing
                     </h2>
@@ -868,7 +854,7 @@
                     </p>
                 </div>
                 
-                <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <div class="grid md:grid-cols-3 gap-8 max-w-screen-xl mx-auto">
                     <!-- Starter Plan -->
                     <div class="p-8 rounded-2xl border border-border bg-white">
                         <h3 class="font-serif text-2xl font-semibold text-foreground mb-2">Starter</h3>
@@ -1127,7 +1113,7 @@
         <!-- CTA Section -->
         <section class="py-24 lg:py-32 bg-white">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center max-w-2xl mx-auto">
+                <div class="text-center max-w-screen-xl mx-auto">
                     <h2 class="font-serif text-5xl sm:text-6xl lg:text-7xl text-foreground mb-6">
                         Ready to <span class="italic text-accent">never miss</span> a deadline?
                     </h2>
