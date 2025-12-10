@@ -2877,51 +2877,49 @@ def send_password_reset_email(email: str, reset_link: str):
 async def get_pending_brokers():
     """Get pending broker applications"""
     try:
-        conn = get_db()
-        cursor = get_db_cursor(conn)
-        
-        # SIMPLIFIED query - just get pending applications
-        # Use created_at or timestamp as fallback for applied_at
-        if DB_TYPE == 'postgresql':
-            cursor.execute('''
-                SELECT id, name, email, company, commission_model, 
-                       status, COALESCE(created_at, timestamp) as applied_at
-                FROM partner_applications 
-                WHERE status = 'pending' OR status IS NULL
-                ORDER BY COALESCE(created_at, timestamp) DESC
-            ''')
-        else:
-            cursor.execute('''
-                SELECT id, name, email, company, commission_model, 
-                       status, COALESCE(created_at, timestamp) as applied_at
-                FROM partner_applications 
-                WHERE status = 'pending' OR status IS NULL
-                ORDER BY COALESCE(created_at, timestamp) DESC
-            ''')
-        
-        rows = cursor.fetchall()
-        
-        # Convert to list of dicts
-        pending = []
-        if DB_TYPE == 'postgresql':
-            for row in rows:
-                pending.append(dict(row))
-        else:
-            # SQLite Row objects
-            for row in rows:
-                pending.append({
-                    'id': row['id'],
-                    'name': row['name'],
-                    'email': row['email'],
-                    'company': row['company'],
-                    'commission_model': row.get('commission_model', 'bounty'),
-                    'status': row['status'],
-                    'applied_at': row.get('created_at') or row.get('timestamp')
-                })
-        
-        conn.close()
-        
-        return {"pending": pending, "count": len(pending)}
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # SIMPLIFIED query - just get pending applications
+            # Use created_at or timestamp as fallback for applied_at
+            if DB_TYPE == 'postgresql':
+                cursor.execute('''
+                    SELECT id, name, email, company, commission_model, 
+                           status, COALESCE(created_at::text, timestamp) as applied_at
+                    FROM partner_applications 
+                    WHERE status = 'pending' OR status IS NULL
+                    ORDER BY COALESCE(created_at, timestamp::timestamp) DESC
+                ''')
+            else:
+                cursor.execute('''
+                    SELECT id, name, email, company, commission_model, 
+                           status, COALESCE(created_at, timestamp) as applied_at
+                    FROM partner_applications 
+                    WHERE status = 'pending' OR status IS NULL
+                    ORDER BY COALESCE(created_at, timestamp) DESC
+                ''')
+            
+            rows = cursor.fetchall()
+            
+            # Convert to list of dicts
+            pending = []
+            if DB_TYPE == 'postgresql':
+                for row in rows:
+                    pending.append(dict(row))
+            else:
+                # SQLite Row objects
+                for row in rows:
+                    pending.append({
+                        'id': row['id'],
+                        'name': row['name'],
+                        'email': row['email'],
+                        'company': row['company'],
+                        'commission_model': row.get('commission_model', 'bounty'),
+                        'status': row['status'],
+                        'applied_at': row.get('created_at') or row.get('timestamp')
+                    })
+            
+            return {"pending": pending, "count": len(pending)}
         
     except Exception as e:
         print(f"Error fetching pending brokers: {e}")
