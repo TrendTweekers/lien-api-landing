@@ -2871,6 +2871,51 @@ def send_password_reset_email(email: str, reset_link: str):
         return False
 
 # ==========================================
+# ADMIN ENDPOINTS (in main.py for convenience)
+# ==========================================
+@app.get("/api/admin/calculations-today")
+async def get_calculations_today():
+    """Get today's calculation count"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get today's date
+            today = datetime.now().strftime('%Y-%m-%d')
+            
+            # Count calculations from today
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT COUNT(*) as count 
+                    FROM calculations 
+                    WHERE DATE(created_at) = %s
+                """, (today,))
+            else:
+                cursor.execute("""
+                    SELECT COUNT(*) as count 
+                    FROM calculations 
+                    WHERE DATE(created_at) = ?
+                """, (today,))
+            
+            if DB_TYPE == 'postgresql':
+                result = cursor.fetchone()
+                count = result['count'] if result else 0
+            else:
+                result = cursor.fetchone()
+                count = result['count'] if result and result['count'] else 0
+            
+            return {"calculations_today": count}
+            
+    except Exception as e:
+        print(f"ERROR in get_calculations_today: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e), "calculations_today": 0}
+        )
+
+# ==========================================
 # BROKER ENDPOINTS
 # ==========================================
 @app.get("/api/v1/broker/pending")

@@ -96,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLiveStats();
     updateQuickStatsRow();
     updatePendingCounts();
+    updateCalculationsCounter();
     
     // Refresh stats
     setInterval(updateQuickStats, 30000);
@@ -104,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateQuickStatsRow, 60000);
     setInterval(updatePendingCounts, 60000);
     setInterval(updateEmailConversion, 60000);
+    setInterval(updateCalculationsCounter, 30000);
     
     // Refresh stats every 60 seconds
     // setInterval(loadQuickStats, 60000); // Disabled - analytics endpoint returns 404
