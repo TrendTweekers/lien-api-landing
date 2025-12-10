@@ -134,7 +134,23 @@
 
             <!-- Partner Applications Table -->
             <div class="mb-8">
-                <h2 class="text-xl font-semibold mb-4">PARTNER APPLICATIONS</h2>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">PARTNER APPLICATIONS</h2>
+                    <div class="flex gap-2">
+                        <button onclick="filterApps('pending')" class="px-3 py-1 rounded text-sm bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+                            Pending <span id="pendingCount">0</span>
+                        </button>
+                        <button onclick="filterApps('approved')" class="px-3 py-1 rounded text-sm bg-green-100 text-green-800 hover:bg-green-200">
+                            Approved <span id="approvedCount">0</span>
+                        </button>
+                        <button onclick="filterApps('flagged')" class="px-3 py-1 rounded text-sm bg-red-100 text-red-800 hover:bg-red-200">
+                            Flagged <span id="flaggedCount">0</span>
+                        </button>
+                        <button onclick="filterApps('all')" class="px-3 py-1 rounded text-sm bg-gray-100 text-gray-800 hover:bg-gray-200">
+                            All
+                        </button>
+                    </div>
+                </div>
                 <div class="overflow-x-auto bg-white rounded-lg shadow">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">

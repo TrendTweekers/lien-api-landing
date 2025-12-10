@@ -794,5 +794,196 @@ async function approvePartner(email) {
 // Make approvePartner globally available
 window.approvePartner = approvePartner;
 
+// Approve and copy link function
+async function approveAndCopy(id, email) {
+    try {
+        const adminUser = window.ADMIN_USER || ADMIN_USER;
+        const adminPass = window.ADMIN_PASS || ADMIN_PASS;
+        const response = await fetch(`${API_BASE}/admin/approve-partner/${id}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.referral_link) {
+            navigator.clipboard.writeText(data.referral_link);
+            alert(`✅ Approved & link copied:\n${data.referral_link}`);
+            loadPartnerApplications(); // Refresh list
+            updateQuickStats(); // Refresh stats
+        } else {
+            alert('Approval failed: ' + (data.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error approving partner:', error);
+        alert('Error approving partner: ' + error.message);
+    }
+}
+window.approveAndCopy = approveAndCopy;
+
+// Copy link function
+function copyLink(link) {
+    navigator.clipboard.writeText(link);
+    alert(`✅ Link copied:\n${link}`);
+}
+window.copyLink = copyLink;
+
+// Bulk payout function
+async function bulkPayout() {
+    try {
+        const adminUser = window.ADMIN_USER || ADMIN_USER;
+        const adminPass = window.ADMIN_PASS || ADMIN_PASS;
+        const response = await fetch(`${API_BASE}/admin/ready-payouts`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+            }
+        });
+        
+        const data = await response.json();
+        const ready = data.ready || [];
+        
+        if (!ready.length) {
+            alert('Nothing to pay');
+            return;
+        }
+        
+        const total = ready.reduce((sum, r) => sum + (r.payout || r.amount || 0), 0);
+        if (!confirm(`Pay $${total.toFixed(2)} to ${ready.length} broker(s)?`)) return;
+        
+        for (const r of ready) {
+            await fetch(`${API_BASE}/admin/mark-paid/${r.id}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+                }
+            });
+        }
+        
+        alert('✅ All marked as paid (send money manually)');
+        location.reload();
+    } catch (error) {
+        console.error('Error in bulk payout:', error);
+        alert('Error processing bulk payout: ' + error.message);
+    }
+}
+window.bulkPayout = bulkPayout;
+
+// Filter applications
+let currentFilter = 'all';
+async function filterApps(status) {
+    currentFilter = status;
+    try {
+        const adminUser = window.ADMIN_USER || ADMIN_USER;
+        const adminPass = window.ADMIN_PASS || ADMIN_PASS;
+        const response = await fetch(`${API_BASE}/admin/partner-applications?status=${status}`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+            }
+        });
+        
+        const data = await response.json();
+        const applications = data.applications || [];
+        
+        // Update counts by fetching all
+        const allResponse = await fetch(`${API_BASE}/admin/partner-applications?status=all`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+            }
+        });
+        const allData = await allResponse.json();
+        const allApps = allData.applications || [];
+        
+        document.getElementById('pendingCount').textContent = allApps.filter(a => a.status === 'pending').length;
+        document.getElementById('approvedCount').textContent = allApps.filter(a => a.status === 'approved').length;
+        document.getElementById('flaggedCount').textContent = allApps.filter(a => a.status === 'flagged').length;
+        
+        // Render filtered applications using existing loadPartnerApplications logic
+        const container = document.getElementById('partnerApplicationsTable');
+        if (applications.length === 0) {
+            container.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No applications found</td></tr>';
+            return;
+        }
+        
+        container.innerHTML = applications.map(app => {
+            const date = app.timestamp || app.created_at ? new Date(app.timestamp || app.created_at).toLocaleDateString() : 'N/A';
+            const status = app.status || 'pending';
+            return `
+                <tr class="border-b">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${app.name || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.email || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.company || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.client_count || 0}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${status === 'approved' ? 'bg-green-100 text-green-800' : status === 'flagged' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
+                            ${status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        ${status === 'pending' ? `
+                            <button onclick="approveAndCopy(${app.id}, '${app.email}')" 
+                                    class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                                Approve & Copy Link
+                            </button>
+                        ` : `
+                            <span class="text-green-600 font-semibold">✅ Approved</span>
+                            ${app.referral_link ? `
+                                <button onclick="copyLink('${app.referral_link}')" 
+                                        class="ml-2 text-blue-600 hover:underline text-xs">
+                                    Copy Link
+                                </button>
+                            ` : ''}
+                        `}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error filtering applications:', error);
+        alert('Error filtering applications: ' + error.message);
+    }
+}
+window.filterApps = filterApps;
+
+// Update quick stats
+async function updateQuickStats() {
+    try {
+        const adminUser = window.ADMIN_USER || ADMIN_USER;
+        const adminPass = window.ADMIN_PASS || ADMIN_PASS;
+        
+        // Get today's calculations (placeholder - implement endpoint)
+        document.getElementById('todayCalc').textContent = '0';
+        
+        // Get pending brokers
+        const appsResponse = await fetch(`${API_BASE}/admin/partner-applications?status=pending`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+            }
+        });
+        const appsData = await appsResponse.json();
+        document.getElementById('pendingBrokers').textContent = (appsData.applications || []).length;
+        
+        // Get ready payouts
+        const payoutsResponse = await fetch(`${API_BASE}/admin/ready-payouts`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+            }
+        });
+        const payoutsData = await payoutsResponse.json();
+        const ready = payoutsData.ready || [];
+        document.getElementById('readyPayout').textContent = ready.length;
+        const total = ready.reduce((sum, r) => sum + (r.payout || r.amount || 0), 0);
+        document.getElementById('readyTotal').textContent = total.toFixed(0);
+        
+        // Get monthly revenue (placeholder - implement endpoint)
+        document.getElementById('monthRevenue').textContent = '$0';
+    } catch (error) {
+        console.error('Error updating quick stats:', error);
+    }
+}
+window.updateQuickStats = updateQuickStats;
+
 // Dashboard initialization is now handled in the auth check above
 
