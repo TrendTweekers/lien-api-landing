@@ -627,19 +627,21 @@ function displayTestKeys(keys) {
 
 // Load partner applications
 async function loadPartnerApplications() {
-    const container = document.getElementById('partnerApplicationsTable');
+    const table = document.getElementById('applicationsTable');
+    const emptyState = document.getElementById('noApplications');
+    const pendingCount = document.getElementById('pendingCount');
     
-    if (!container) {
-        console.error('Partner applications container not found');
+    if (!table) {
+        console.error('Applications table not found');
         return;
     }
     
     try {
-        container.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Loading applications...</td></tr>';
+        table.innerHTML = '<tr><td colspan="5" class="py-4 px-6 text-center text-gray-500">Loading applications...</td></tr>';
         
         console.log('Fetching: /api/admin/partner-applications');
         
-        const response = await fetch(`${API_BASE}/admin/partner-applications`, {
+        const response = await fetch(`${API_BASE}/admin/partner-applications?status=all`, {
             headers: {
                 'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
@@ -654,53 +656,62 @@ async function loadPartnerApplications() {
         const data = await response.json();
         console.log('Received data:', data);
         
-        // CRITICAL: Extract applications array
+        // Extract applications array
         const applications = data.applications || data || [];
         
-        console.log('Applications array:', applications);
-        console.log('Array length:', applications.length);
-        console.log('Is array?', Array.isArray(applications));
-        
         if (!Array.isArray(applications)) {
-            throw new Error('Applications is not an array: ' + typeof applications + ' - ' + JSON.stringify(data));
+            throw new Error('Applications is not an array: ' + typeof applications);
         }
         
+        // Update pending count
+        const pending = applications.filter(a => a.status === 'pending').length;
+        if (pendingCount) pendingCount.textContent = pending;
+        
         if (applications.length === 0) {
-            container.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No applications yet</td></tr>';
+            table.innerHTML = '';
+            if (emptyState) emptyState.classList.remove('hidden');
             return;
         }
         
-        // Render applications
-        container.innerHTML = applications.map(app => {
-            const date = app.timestamp || app.created_at ? new Date(app.timestamp || app.created_at).toLocaleDateString() : 'N/A';
+        if (emptyState) emptyState.classList.add('hidden');
+        
+        // Render applications as table rows
+        table.innerHTML = applications.map(app => {
+            const date = app.timestamp || app.created_at ? formatTimeAgo(new Date(app.timestamp || app.created_at)) : 'N/A';
             const status = app.status || 'pending';
+            const initials = (app.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            const statusClass = status === 'approved' ? 'bg-green-100 text-green-800' : 
+                              status === 'flagged' ? 'bg-red-100 text-red-800' : 
+                              'bg-yellow-100 text-yellow-800';
+            
             return `
-                <tr class="border-b">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${app.name || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.email || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.company || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.client_count || 0}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${date}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-                            ${status}
+                <tr class="hover:bg-gray-50">
+                    <td class="py-4 px-6">
+                        <div class="flex items-center">
+                            <div class="h-10 w-10 flex-shrink-0 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span class="text-blue-600 font-semibold text-sm">${initials}</span>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">${app.name || 'N/A'}</div>
+                                <div class="text-sm text-gray-500">${app.email || 'N/A'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4 px-6 text-sm text-gray-900">${app.company || 'N/A'}</td>
+                    <td class="py-4 px-6 text-sm text-gray-500">${date}</td>
+                    <td class="py-4 px-6">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusClass}">
+                            ${status.charAt(0).toUpperCase() + status.slice(1)}
                         </span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        ${status === 'pending' ? `
-                            <button onclick="approveAndCopy(${app.id}, '${app.email}')" 
-                                    class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
-                                Approve & Copy Link
-                            </button>
-                        ` : `
-                            <span class="text-green-600 font-semibold">✅ Approved</span>
-                            ${app.referral_link ? `
-                                <button onclick="copyLink('${app.referral_link}')" 
-                                        class="ml-2 text-blue-600 hover:underline text-xs">
-                                    Copy Link
-                                </button>
+                    <td class="py-4 px-6 text-sm font-medium">
+                        <div class="flex space-x-2">
+                            ${status === 'pending' ? `
+                                <button onclick="approveApplication(${app.id})" class="text-green-600 hover:text-green-900">Approve</button>
+                                <button onclick="rejectApplication(${app.id})" class="text-red-600 hover:text-red-900">Reject</button>
                             ` : ''}
-                        `}
+                            <button onclick="viewApplication(${app.id})" class="text-blue-600 hover:text-blue-900">View</button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -710,21 +721,105 @@ async function loadPartnerApplications() {
         
     } catch (error) {
         console.error('❌ Error loading applications:', error);
-        container.innerHTML = `
+        table.innerHTML = `
             <tr>
-                <td colspan="7" class="px-6 py-4 text-center">
-                    <div class="text-red-600 mb-2">
-                        Error: ${error.message}
-                    </div>
-                    <button onclick="loadPartnerApplications()" 
-                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
-                        🔄 Retry
-                    </button>
+                <td colspan="5" class="py-4 px-6 text-center text-red-500">
+                    Error loading applications: ${error.message}
                 </td>
             </tr>
         `;
     }
 }
+
+// Format time ago helper
+function formatTimeAgo(date) {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString();
+}
+
+// Approve application
+async function approveApplication(id) {
+    if (!confirm('Approve this partner application?')) return;
+    
+    try {
+        await approveAndCopy(id, '');
+        loadPartnerApplications();
+    } catch (error) {
+        alert('Error approving application: ' + error.message);
+    }
+}
+window.approveApplication = approveApplication;
+
+// Reject application
+async function rejectApplication(id) {
+    if (!confirm('Reject this partner application?')) return;
+    
+    try {
+        const adminUser = window.ADMIN_USER || ADMIN_USER;
+        const adminPass = window.ADMIN_PASS || ADMIN_PASS;
+        const response = await fetch(`${API_BASE}/admin/partner-applications/${id}/reject`, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+            }
+        });
+        
+        if (response.ok) {
+            alert('Application rejected');
+            loadPartnerApplications();
+        } else {
+            throw new Error('Failed to reject application');
+        }
+    } catch (error) {
+        alert('Error rejecting application: ' + error.message);
+    }
+}
+window.rejectApplication = rejectApplication;
+
+// View application
+function viewApplication(id) {
+    // Open modal or navigate to detail page
+    alert('View application details for ID: ' + id);
+}
+window.viewApplication = viewApplication;
+
+// Export applications
+function exportApplications() {
+    const rows = Array.from(document.querySelectorAll('#applicationsTable tr')).slice(1).map(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 4) return null;
+        return {
+            name: cells[0].querySelector('.text-sm.font-medium')?.textContent.trim() || '',
+            email: cells[0].querySelector('.text-sm.text-gray-500')?.textContent.trim() || '',
+            company: cells[1].textContent.trim() || '',
+            status: cells[3].textContent.trim() || ''
+        };
+    }).filter(r => r);
+    
+    if (rows.length === 0) {
+        alert('No data to export');
+        return;
+    }
+    
+    const csv = 'Name,Email,Company,Status\n' + rows.map(r => `"${r.name}","${r.email}","${r.company}","${r.status}"`).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'partner-applications-' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+window.exportApplications = exportApplications;
 
 // Load email captures
 async function loadEmailCaptures() {
