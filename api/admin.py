@@ -699,13 +699,51 @@ def get_live_stats(user: str = Depends(verify_admin)):
             "upgrade_clicks": 0
         }
 
+def calculate_time_ago(timestamp):
+    """Calculate time ago string from timestamp"""
+    try:
+        from datetime import datetime
+        now = datetime.now()
+        
+        if isinstance(timestamp, str):
+            # Try to parse the timestamp string
+            try:
+                created = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+            except:
+                # Fallback for SQLite datetime strings
+                created = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+        else:
+            created = timestamp
+        
+        # Handle timezone-aware vs naive datetimes
+        if created.tzinfo and not now.tzinfo:
+            now = datetime.now(created.tzinfo)
+        elif not created.tzinfo and now.tzinfo:
+            created = created.replace(tzinfo=now.tzinfo)
+        
+        diff = now - created
+        
+        if diff.days > 0:
+            return f"{diff.days} day{'s' if diff.days > 1 else ''} ago"
+        elif diff.seconds >= 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours > 1 else ''} ago"
+        elif diff.seconds >= 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+        else:
+            return "Just now"
+    except Exception as e:
+        logger.error(f"Error calculating time ago: {e}")
+        return "Recently"
+
 @router.get("/recent-activity")
 def get_recent_activity(user: str = Depends(verify_admin)):
-    """Get recent activity for dashboard"""
+    """Get real recent activity from database"""
     try:
         import sys
         from pathlib import Path
-        from datetime import datetime, timedelta
+        from datetime import datetime
         BASE_DIR = Path(__file__).parent.parent
         DATABASE_URL = os.getenv('DATABASE_URL')
         
@@ -717,37 +755,45 @@ def get_recent_activity(user: str = Depends(verify_admin)):
             
             # Get last 10 activities
             cursor.execute('''
-                SELECT 
-                    type, 
-                    description, 
-                    created_at,
-                    CASE 
-                        WHEN type = 'user_signup' THEN '👤'
-                        WHEN type = 'broker_approved' THEN '👥'
-                        WHEN type = 'payout' THEN '💰'
-                        WHEN type = 'payment' THEN '💳'
-                        WHEN type = 'calculation' THEN '🧮'
-                        ELSE '📝'
-                    END as icon
+                SELECT type, description, created_at
                 FROM activity_logs 
                 ORDER BY created_at DESC 
                 LIMIT 10
             ''')
-            activities = cursor.fetchall()
+            
+            rows = cursor.fetchall()
             conn.close()
             
-            # Format for frontend
-            formatted = []
-            for act in activities:
-                time_ago = calculate_time_ago(act['created_at'])
-                formatted.append({
-                    'icon': act['icon'],
-                    'description': act['description'],
+            # Format activities
+            activities = []
+            icons = {
+                'system': '⚙️',
+                'user_signup': '👤',
+                'broker_approved': '👥',
+                'payout': '💰',
+                'payment': '💳',
+                'calculation': '🧮'
+            }
+            
+            for row in rows:
+                time_ago = calculate_time_ago(row['created_at'])
+                activities.append({
+                    'icon': icons.get(row['type'], '📝'),
+                    'description': row['description'],
                     'time_ago': time_ago,
-                    'type': act['type']
+                    'type': row['type']
                 })
             
-            return {"activities": formatted}
+            # If no activities, return default
+            if not activities:
+                activities = [{
+                    'icon': '⚙️',
+                    'description': 'System started - no activities yet',
+                    'time_ago': 'Just now',
+                    'type': 'system'
+                }]
+            
+            return {"activities": activities}
         else:
             # SQLite
             import sqlite3
@@ -761,43 +807,51 @@ def get_recent_activity(user: str = Depends(verify_admin)):
             
             # Get last 10 activities
             cursor.execute('''
-                SELECT 
-                    type, 
-                    description, 
-                    created_at,
-                    CASE 
-                        WHEN type = 'user_signup' THEN '👤'
-                        WHEN type = 'broker_approved' THEN '👥'
-                        WHEN type = 'payout' THEN '💰'
-                        WHEN type = 'payment' THEN '💳'
-                        WHEN type = 'calculation' THEN '🧮'
-                        ELSE '📝'
-                    END as icon
+                SELECT type, description, created_at
                 FROM activity_logs 
                 ORDER BY created_at DESC 
                 LIMIT 10
             ''')
-            activities = cursor.fetchall()
+            
+            rows = cursor.fetchall()
             conn.close()
             
-            # Format for frontend
-            formatted = []
-            for act in activities:
-                time_ago = calculate_time_ago(act['created_at'])
-                formatted.append({
-                    'icon': act['icon'],
-                    'description': act['description'],
+            # Format activities
+            activities = []
+            icons = {
+                'system': '⚙️',
+                'user_signup': '👤',
+                'broker_approved': '👥',
+                'payout': '💰',
+                'payment': '💳',
+                'calculation': '🧮'
+            }
+            
+            for row in rows:
+                time_ago = calculate_time_ago(row['created_at'])
+                activities.append({
+                    'icon': icons.get(row['type'], '📝'),
+                    'description': row['description'],
                     'time_ago': time_ago,
-                    'type': act['type']
+                    'type': row['type']
                 })
             
-            return {"activities": formatted}
+            # If no activities, return default
+            if not activities:
+                activities = [{
+                    'icon': '⚙️',
+                    'description': 'System started - no activities yet',
+                    'time_ago': 'Just now',
+                    'type': 'system'
+                }]
+            
+            return {"activities": activities}
             
     except Exception as e:
         logger.error(f"Error fetching recent activity: {e}")
         import traceback
         traceback.print_exc()
-        # Return sample data on error
+        # Fallback to mock data
         return {
             "activities": [
                 {"icon": "👤", "description": "System started", "time_ago": "Just now", "type": "system"},
@@ -806,31 +860,6 @@ def get_recent_activity(user: str = Depends(verify_admin)):
                 {"icon": "💰", "description": "Payout processed - $500 to broker", "time_ago": "2 hours ago", "type": "payout"}
             ]
         }
-
-def calculate_time_ago(timestamp):
-    """Calculate time ago string from timestamp"""
-    try:
-        from datetime import datetime
-        if isinstance(timestamp, str):
-            dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-        else:
-            dt = timestamp
-        now = datetime.now(dt.tzinfo) if dt.tzinfo else datetime.now()
-        diff = now - dt
-        
-        if diff.total_seconds() < 60:
-            return "Just now"
-        elif diff.total_seconds() < 3600:
-            minutes = int(diff.total_seconds() / 60)
-            return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
-        elif diff.total_seconds() < 86400:
-            hours = int(diff.total_seconds() / 3600)
-            return f"{hours} hour{'s' if hours > 1 else ''} ago"
-        else:
-            days = int(diff.total_seconds() / 86400)
-            return f"{days} day{'s' if days > 1 else ''} ago"
-    except:
-        return "Recently"
 
 @router.get("/stats")
 def get_admin_stats(user: str = Depends(verify_admin)):
