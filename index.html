@@ -769,14 +769,24 @@
                                     <label class="block text-lg font-medium text-foreground mb-3">
                                         Invoice / Delivery Date
                                     </label>
-                                    <input
-                                        type="text"
-                                        id="invoiceDate"
-                                        placeholder="MM/DD/YYYY"
-                                        maxlength="10"
-                                        required
-                                        class="w-full h-16 px-5 rounded-xl border-2 border-border bg-white text-foreground text-lg focus:outline-none focus:ring-4 focus:ring-accent/20 focus:border-accent transition-all"
-                                    >
+                                    <!-- US date + hidden native calendar -->
+                                    <div class="relative w-full h-16">
+                                        <!-- Visible US mask -->
+                                        <input
+                                            id="invoiceDateDisplay"
+                                            type="text"
+                                            placeholder="MM/DD/YYYY"
+                                            maxlength="10"
+                                            required
+                                            class="w-full h-full px-5 rounded-xl border-2 border-border bg-white text-foreground text-lg focus:outline-none focus:ring-4 focus:ring-accent/20 focus:border-accent transition-all"
+                                        >
+                                        <!-- Invisible native calendar (click-through) -->
+                                        <input
+                                            id="invoiceDatePicker"
+                                            type="date"
+                                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        >
+                                    </div>
                                 </div>
                                 
                                 <!-- State Select -->
@@ -1225,23 +1235,41 @@
     
     <!-- JavaScript -->
     <script>
-        /* US date mask + ISO converter */
-        const dateInp = document.getElementById('invoiceDate');
-        if (dateInp) {
-            dateInp.addEventListener('input', e => {
+        /* US date mask + native calendar integration */
+        const display = document.getElementById('invoiceDateDisplay');
+        const picker = document.getElementById('invoiceDatePicker');
+        
+        if (display && picker) {
+            /* Manual typing: US mask formatting */
+            display.addEventListener('input', e => {
                 let val = e.target.value.replace(/\D/g,'').slice(0,8);
                 if (val.length >= 4) val = val.slice(0,2)+'/'+val.slice(2,4)+'/'+val.slice(4);
                 else if (val.length >= 2) val = val.slice(0,2)+'/'+val.slice(2);
                 e.target.value = val;
+                
+                /* Update native picker when user types */
+                if (val.length === 10) {
+                    const [m, d, y] = val.split('/');
+                    if (y && m && d) {
+                        picker.value = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+                    }
+                }
             });
-        }
-        
-        /* send ISO to API */
-        function getISODate(){
-            const dateInp = document.getElementById('invoiceDate');
-            if (!dateInp || !dateInp.value) return '';
-            const [m,d,y] = dateInp.value.split('/');
-            return y && m && d ? `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}` : '';
+            
+            /* Mirror native → US mask */
+            picker.addEventListener('change', e => {
+                const [y, m, d] = e.target.value.split('-');
+                if (y && m && d) {
+                    display.value = `${m}/${d}/${y}`;
+                }
+            });
+            
+            /* Open native calendar when user clicks the mask */
+            display.addEventListener('click', () => {
+                if (picker.showPicker) {
+                    picker.showPicker();
+                }
+            });
         }
         
         // Mobile menu toggle
@@ -1375,7 +1403,8 @@
         document.getElementById('calculatorForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const invoiceDate = getISODate();
+            const picker = document.getElementById('invoiceDatePicker');
+            const invoiceDate = picker ? picker.value : '';
             const state = document.getElementById('state').value;
             
             console.log('Form submitted:', { invoiceDate, state });
