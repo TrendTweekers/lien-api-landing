@@ -932,7 +932,6 @@ async def apply_partner(request: Request):
         name = data.get('name')
         email = data.get('email')
         company = data.get('company')
-        phone = data.get('phone', '')
         client_count = data.get('client_count')
         commission_model = data.get('commission_model')
         message = data.get('message', '')
@@ -956,7 +955,6 @@ async def apply_partner(request: Request):
                         name VARCHAR NOT NULL,
                         email VARCHAR NOT NULL,
                         company VARCHAR NOT NULL,
-                        phone VARCHAR,
                         client_count VARCHAR,
                         commission_model VARCHAR,
                         message TEXT,
@@ -965,12 +963,6 @@ async def apply_partner(request: Request):
                         status VARCHAR DEFAULT 'pending'
                     )
                 """)
-                
-                # Add phone column if it doesn't exist (for existing tables)
-                try:
-                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN phone VARCHAR")
-                except Exception:
-                    pass  # Column already exists
                 
                 # Insert application
                 cursor.execute("""
@@ -997,7 +989,6 @@ async def apply_partner(request: Request):
                         name TEXT NOT NULL,
                         email TEXT NOT NULL,
                         company TEXT NOT NULL,
-                        phone TEXT,
                         client_count TEXT,
                         commission_model TEXT,
                         message TEXT,
@@ -1007,22 +998,15 @@ async def apply_partner(request: Request):
                     )
                 """)
                 
-                # Add phone column if it doesn't exist (for existing tables)
-                try:
-                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN phone TEXT")
-                except Exception:
-                    pass  # Column already exists
-                
                 # Insert application
                 cursor.execute("""
                     INSERT INTO partner_applications 
-                    (name, email, company, phone, client_count, commission_model, message, timestamp, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+                    (name, email, company, client_count, commission_model, message, timestamp, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
                 """, (
                     name,
                     email,
                     company,
-                    phone,
                     str(client_count),
                     commission_model,
                     message,

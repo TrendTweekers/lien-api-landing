@@ -85,14 +85,6 @@
                                placeholder="Your Insurance Agency">
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-900 mb-2">
-                            Phone Number
-                        </label>
-                        <input type="tel" name="phone"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="+1 (555) 123-4567">
-                    </div>
 
                     <div>
                         <label class="block text-sm font-semibold text-gray-900 mb-2">
@@ -249,7 +241,6 @@
                 name: formData.get('name'),
                 email: formData.get('email'),
                 company: formData.get('company'),
-                phone: formData.get('phone') || '',
                 client_count: parseInt(formData.get('client_count')) || 0,
                 commission_model: formData.get('commission_model'),
                 message: formData.get('message') || ''
