@@ -545,6 +545,39 @@ def init_db():
                     FOR EACH ROW EXECUTE FUNCTION log_broker_approval();
                 """)
             
+            # Insert sample data if table is empty
+            try:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) as count FROM partner_applications")
+                    result = cursor.fetchone()
+                    count = result['count'] if isinstance(result, dict) else (result[0] if isinstance(result, tuple) else 0)
+                else:
+                    cursor.execute("SELECT COUNT(*) as count FROM partner_applications")
+                    result = cursor.fetchone()
+                    count = result['count'] if isinstance(result, dict) else (result[0] if isinstance(result, tuple) else 0)
+                
+                if count == 0:
+                    print("Inserting sample partner applications...")
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute('''
+                            INSERT INTO partner_applications (name, email, company, commission_model, status)
+                            VALUES 
+                            ('John Smith', 'john@insurance.com', 'Smith Insurance', 'bounty', 'pending'),
+                            ('Jane Doe', 'jane@consulting.com', 'Doe Consulting', 'recurring', 'pending'),
+                            ('Bob Wilson', 'bob@brokerage.com', 'Wilson Brokerage', 'bounty', 'pending')
+                        ''')
+                    else:
+                        cursor.execute('''
+                            INSERT INTO partner_applications (name, email, company, commission_model, status)
+                            VALUES 
+                            ('John Smith', 'john@insurance.com', 'Smith Insurance', 'bounty', 'pending'),
+                            ('Jane Doe', 'jane@consulting.com', 'Doe Consulting', 'recurring', 'pending'),
+                            ('Bob Wilson', 'bob@brokerage.com', 'Wilson Brokerage', 'bounty', 'pending')
+                        ''')
+                    print(f"✅ Inserted {3} sample partner applications")
+            except Exception as e:
+                print(f"Note: Could not insert sample data: {e}")
+            
             db.commit()
             print("✅ Database initialized")
     except Exception as e:
