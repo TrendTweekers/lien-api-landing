@@ -12,10 +12,17 @@ import secrets
 import os
 import bcrypt
 import stripe
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from api.rate_limiter import limiter
 from api.analytics import router as analytics_router
 from api.admin import router as admin_router
 
 app = FastAPI(title="Lien Deadline API")
+
+# Rate limiting setup
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS
 app.add_middleware(
@@ -141,9 +148,10 @@ class CalculateDeadlineRequest(BaseModel):
 
 @app.post("/v1/calculate")
 @app.post("/api/v1/calculate-deadline")
+@limiter.limit("10/minute")
 async def calculate_deadline(
-    request_data: CalculateDeadlineRequest,
-    request: Request = None
+    request: Request,
+    request_data: CalculateDeadlineRequest
 ):
     invoice_date = request_data.invoice_date
     state = request_data.state
@@ -530,7 +538,8 @@ class ChangePasswordRequest(BaseModel):
 
 # Authentication Endpoints
 @app.post("/api/login")
-async def login(req: LoginRequest):
+@limiter.limit("5/minute")
+async def login(request: Request, req: LoginRequest):
     """Login endpoint - validates credentials and returns session token"""
     db = get_db()
     

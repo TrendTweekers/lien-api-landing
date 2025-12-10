@@ -1045,15 +1045,13 @@
                 }
                 
                 const data = await response.json();
-                console.log('API data received:', JSON.stringify(data, null, 2));
+                console.log('Full API response:', JSON.stringify(data, null, 2));
                 
                 // Parse API response - handle nested objects
                 let prelimNotice = 'N/A';
                 let lienFiling = 'N/A';
                 let daysUntilPrelim = 'N/A';
                 let daysUntilLien = 'N/A';
-                
-                console.log('Full API response:', JSON.stringify(data, null, 2));
                 
                 // Extract preliminary notice
                 if (data.preliminary_notice) {
@@ -1062,6 +1060,7 @@
                         daysUntilPrelim = data.preliminary_notice.days_from_now || data.preliminary_notice.days_remaining || 'N/A';
                     } else {
                         prelimNotice = data.preliminary_notice;
+                        daysUntilPrelim = data.days_until_preliminary || 'N/A';
                     }
                 }
                 
@@ -1072,6 +1071,7 @@
                         daysUntilLien = data.lien_filing.days_from_now || data.lien_filing.days_remaining || 'N/A';
                     } else {
                         lienFiling = data.lien_filing;
+                        daysUntilLien = data.days_until_lien || 'N/A';
                     }
                 }
                 
