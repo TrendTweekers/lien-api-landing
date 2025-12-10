@@ -954,8 +954,6 @@ async def stripe_webhook(request: Request):
         # Continue processing even if idempotency check fails
     
     try:
-    
-    try:
         # New subscription
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
