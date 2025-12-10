@@ -1140,6 +1140,32 @@ def send_welcome_email(email: str, password: str):
     except Exception as e:
         print(f"❌ Email failed: {e}")
 
+def send_broker_welcome_email(email: str, name: str, link: str, code: str):
+    """Send broker welcome email with referral link"""
+    try:
+        # For now, just log it (add SendGrid later)
+        print(f"""
+        ===== BROKER WELCOME EMAIL =====
+        To: {email}
+        Subject: Welcome to LienDeadline Partner Program!
+        
+        Congrats {name}!
+        
+        Your referral link: {link}
+        Your referral code: {code}
+        
+        Share this link with construction clients.
+        You earn $500 per signup (after 30 days).
+        
+        Track referrals: https://liendeadline.com/broker-dashboard
+        ================================
+        """)
+        
+        # TODO: Add SendGrid email here
+        
+    except Exception as e:
+        print(f"Error sending broker email: {e}")
+
 def send_broker_notification(broker_email: str, customer_email: str):
     """Notify broker of new referral"""
     try:
