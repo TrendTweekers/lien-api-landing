@@ -509,6 +509,186 @@ def list_customers(user: str = Depends(verify_admin)):
         if con:
             con.close()
 
+@router.get("/today-stats")
+def get_today_stats(user: str = Depends(verify_admin)):
+    """Get today's statistics"""
+    try:
+        import sys
+        from pathlib import Path
+        from datetime import datetime
+        BASE_DIR = Path(__file__).parent.parent
+        DATABASE_URL = os.getenv('DATABASE_URL')
+        
+        today = datetime.now().strftime('%Y-%m-%d')
+        
+        if DATABASE_URL and (DATABASE_URL.startswith('postgres://') or DATABASE_URL.startswith('postgresql://')):
+            import psycopg2
+            from psycopg2.extras import RealDictCursor
+            conn = psycopg2.connect(DATABASE_URL)
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            # Revenue today (from Stripe payments)
+            cursor.execute('''
+                SELECT COALESCE(SUM(amount), 0) as revenue_today 
+                FROM payments 
+                WHERE DATE(created_at) = %s AND status = 'completed'
+            ''', (today,))
+            revenue_row = cursor.fetchone()
+            revenue = float(revenue_row['revenue_today']) if revenue_row['revenue_today'] else 0
+            
+            # Active customers
+            cursor.execute("SELECT COUNT(*) as count FROM users WHERE subscription_status = 'active'")
+            active_customers = cursor.fetchone()['count'] or 0
+            
+            # Calculations today
+            cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = %s", (today,))
+            calculations_today = cursor.fetchone()['count'] or 0
+            
+            # Pending payouts
+            cursor.execute("SELECT COALESCE(SUM(payout), 0) as total FROM referrals WHERE status = 'pending_payout'")
+            pending_row = cursor.fetchone()
+            pending_payouts = float(pending_row['total']) if pending_row['total'] else 0
+            
+            conn.close()
+            
+            return {
+                "revenue_today": revenue,
+                "active_customers": active_customers,
+                "calculations_today": calculations_today,
+                "pending_payouts": pending_payouts
+            }
+        else:
+            # SQLite
+            import sqlite3
+            if DATABASE_URL and DATABASE_URL.startswith('sqlite://'):
+                db_path = DATABASE_URL.replace('sqlite:///', '')
+            else:
+                db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+            conn = sqlite3.connect(str(db_path))
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # Revenue today (from Stripe payments)
+            cursor.execute('''
+                SELECT COALESCE(SUM(amount), 0) as revenue_today 
+                FROM payments 
+                WHERE DATE(created_at) = ? AND status = 'completed'
+            ''', (today,))
+            revenue_row = cursor.fetchone()
+            revenue = float(revenue_row['revenue_today']) if revenue_row and revenue_row['revenue_today'] else 0
+            
+            # Active customers
+            cursor.execute("SELECT COUNT(*) as count FROM users WHERE subscription_status = 'active'")
+            active_customers = cursor.fetchone()['count'] or 0
+            
+            # Calculations today
+            cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = ?", (today,))
+            calculations_today = cursor.fetchone()['count'] or 0
+            
+            # Pending payouts
+            cursor.execute("SELECT COALESCE(SUM(payout), 0) as total FROM referrals WHERE status = 'pending_payout'")
+            pending_row = cursor.fetchone()
+            pending_payouts = float(pending_row['total']) if pending_row and pending_row['total'] else 0
+            
+            conn.close()
+            
+            return {
+                "revenue_today": revenue,
+                "active_customers": active_customers,
+                "calculations_today": calculations_today,
+                "pending_payouts": pending_payouts
+            }
+            
+    except Exception as e:
+        logger.error(f"Error fetching today stats: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "revenue_today": 0,
+            "active_customers": 0,
+            "calculations_today": 0,
+            "pending_payouts": 0
+        }
+
+@router.get("/live-stats")
+def get_live_stats(user: str = Depends(verify_admin)):
+    """Get live statistics for dashboard"""
+    try:
+        import sys
+        from pathlib import Path
+        from datetime import datetime
+        BASE_DIR = Path(__file__).parent.parent
+        DATABASE_URL = os.getenv('DATABASE_URL')
+        
+        today = datetime.now().strftime('%Y-%m-%d')
+        
+        if DATABASE_URL and (DATABASE_URL.startswith('postgres://') or DATABASE_URL.startswith('postgresql://')):
+            import psycopg2
+            from psycopg2.extras import RealDictCursor
+            conn = psycopg2.connect(DATABASE_URL)
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            # Total calculations today
+            cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = %s", (today,))
+            total_calculations = cursor.fetchone()['count'] or 0
+            
+            # Email captures today
+            cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(created_at) = %s", (today,))
+            email_captures = cursor.fetchone()['count'] or 0
+            
+            # Upgrade clicks (placeholder - would need tracking table)
+            upgrade_clicks = 0
+            
+            conn.close()
+            
+            return {
+                "total_calculations": total_calculations,
+                "calculations_today": total_calculations,
+                "email_captures": email_captures,
+                "upgrade_clicks": upgrade_clicks
+            }
+        else:
+            # SQLite
+            import sqlite3
+            if DATABASE_URL and DATABASE_URL.startswith('sqlite://'):
+                db_path = DATABASE_URL.replace('sqlite:///', '')
+            else:
+                db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+            conn = sqlite3.connect(str(db_path))
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # Total calculations today
+            cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = ?", (today,))
+            total_calculations = cursor.fetchone()['count'] or 0
+            
+            # Email captures today
+            cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(created_at) = ?", (today,))
+            email_captures = cursor.fetchone()['count'] or 0
+            
+            # Upgrade clicks (placeholder - would need tracking table)
+            upgrade_clicks = 0
+            
+            conn.close()
+            
+            return {
+                "total_calculations": total_calculations,
+                "calculations_today": total_calculations,
+                "email_captures": email_captures,
+                "upgrade_clicks": upgrade_clicks
+            }
+            
+    except Exception as e:
+        logger.error(f"Error fetching live stats: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "total_calculations": 0,
+            "calculations_today": 0,
+            "email_captures": 0,
+            "upgrade_clicks": 0
+        }
+
 @router.get("/stats")
 def get_admin_stats(user: str = Depends(verify_admin)):
     """Get real-time dashboard stats"""

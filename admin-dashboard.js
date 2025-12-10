@@ -1432,34 +1432,47 @@ async function updateQuickStats() {
         const adminUser = window.ADMIN_USER || ADMIN_USER;
         const adminPass = window.ADMIN_PASS || ADMIN_PASS;
         
-        // Get today's calculations (placeholder - implement endpoint)
-        document.getElementById('todayCalc').textContent = '0';
-        
-        // Get pending brokers
-        const appsResponse = await fetch(`${API_BASE}/admin/partner-applications?status=pending`, {
+        const response = await fetch(`${API_BASE}/admin/today-stats`, {
             headers: {
                 'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
             }
         });
-        const appsData = await appsResponse.json();
-        document.getElementById('pendingBrokers').textContent = (appsData.applications || []).length;
         
-        // Get ready payouts
-        const payoutsResponse = await fetch(`${API_BASE}/admin/ready-payouts`, {
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+        if (!response.ok) {
+            throw new Error('Failed to fetch today stats');
+        }
+        
+        const data = await response.json();
+        
+        // Update elements only if they exist
+        const elements = {
+            'todayRevenue': data.revenue_today ? `$${data.revenue_today}` : '$0',
+            'activeCustomers': data.active_customers || '0',
+            'calculationsToday': data.calculations_today || '0',
+            'pendingPayouts': data.pending_payouts ? `$${data.pending_payouts}` : '$0'
+        };
+        
+        for (const [id, value] of Object.entries(elements)) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
             }
-        });
-        const payoutsData = await payoutsResponse.json();
-        const ready = payoutsData.ready || [];
-        document.getElementById('readyPayout').textContent = ready.length;
-        const total = ready.reduce((sum, r) => sum + (r.payout || r.amount || 0), 0);
-        document.getElementById('readyTotal').textContent = total.toFixed(0);
-        
-        // Get monthly revenue (placeholder - implement endpoint)
-        document.getElementById('monthRevenue').textContent = '$0';
+        }
     } catch (error) {
         console.error('Error updating quick stats:', error);
+        // Set defaults on error
+        const elements = {
+            'todayRevenue': '$0',
+            'activeCustomers': '0',
+            'calculationsToday': '0',
+            'pendingPayouts': '$0'
+        };
+        for (const [id, value] of Object.entries(elements)) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        }
     }
 }
 window.updateQuickStats = updateQuickStats;
