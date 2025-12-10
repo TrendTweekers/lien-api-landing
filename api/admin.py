@@ -337,7 +337,8 @@ def get_partner_applications(
                 message TEXT,
                 commission_model TEXT,
                 timestamp TEXT NOT NULL,
-                status TEXT DEFAULT 'pending'
+                status TEXT DEFAULT 'pending',
+                referral_link TEXT
             )
         """)
         
@@ -345,6 +346,10 @@ def get_partner_applications(
             query = "SELECT * FROM partner_applications WHERE status = 'pending' OR status IS NULL ORDER BY timestamp DESC"
         elif status == "approved":
             query = "SELECT * FROM partner_applications WHERE status = 'approved' ORDER BY timestamp DESC"
+        elif status == "flagged":
+            query = "SELECT * FROM partner_applications WHERE status = 'flagged' ORDER BY timestamp DESC"
+        elif status == "all":
+            query = "SELECT * FROM partner_applications ORDER BY timestamp DESC"
         else:
             query = "SELECT * FROM partner_applications ORDER BY timestamp DESC"
         
@@ -357,10 +362,13 @@ def get_partner_applications(
                     "email": app[1] if len(app) > 1 else '',
                     "name": app[2] if len(app) > 2 else '',
                     "company": app[3] if len(app) > 3 else '',
-                    "commission_type": app[6] if len(app) > 6 else '',
+                    "client_count": app[4] if len(app) > 4 else '',
+                    "message": app[5] if len(app) > 5 else '',
+                    "commission_model": app[6] if len(app) > 6 else '',
+                    "timestamp": app[7] if len(app) > 7 else '',
                     "created_at": app[7] if len(app) > 7 else '',
-                    "approved_at": None,
-                    "referral_link": None
+                    "status": app[8] if len(app) > 8 else 'pending',
+                    "referral_link": app[9] if len(app) > 9 else None
                 }
                 for app in applications
             ],
