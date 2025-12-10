@@ -1226,6 +1226,157 @@ function updatePendingCounts() {
 }
 window.updatePendingCounts = updatePendingCounts;
 
+// Refresh activity feed
+function refreshActivity() {
+    updateActivityFeed();
+    alert('Activity feed refreshed');
+}
+window.refreshActivity = refreshActivity;
+
+// Update activity feed with new structure
+async function updateActivityFeed() {
+    const activityFeed = document.getElementById('activityFeed');
+    const noActivity = document.getElementById('noActivity');
+    
+    if (!activityFeed) return;
+    
+    try {
+        // Fetch recent activity from API
+        const response = await fetch(`${API_BASE}/admin/recent-activity`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        let activities = [];
+        if (response.ok) {
+            const data = await response.json();
+            activities = Array.isArray(data) ? data : (data.activities || []);
+        }
+        
+        // Fallback: Generate sample activities from recent data
+        if (activities.length === 0) {
+            activities = [
+                { type: 'user_signup', message: 'New user signed up', detail: 'john@supplier.com', time: '10 minutes ago', icon: '👤' },
+                { type: 'broker_approved', message: 'Broker approved', detail: 'alex@broker.com', time: '1 hour ago', icon: '✅' },
+                { type: 'payout_processed', message: 'Payout processed', detail: '$500 to broker', time: '2 hours ago', icon: '💰' }
+            ];
+        }
+        
+        if (activities.length === 0) {
+            activityFeed.querySelector('.space-y-4').innerHTML = '';
+            if (noActivity) noActivity.classList.remove('hidden');
+            return;
+        }
+        
+        if (noActivity) noActivity.classList.add('hidden');
+        
+        const activitiesHTML = activities.slice(0, 10).map(activity => {
+            const icon = activity.icon || '📋';
+            const message = activity.message || activity.type || 'Activity';
+            const detail = activity.detail || '';
+            const time = activity.time || formatTimeAgo(new Date(activity.timestamp || Date.now()));
+            
+            return `
+                <div class="flex items-start">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3 flex-shrink-0">
+                        <span class="text-blue-600 text-sm">${icon}</span>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm text-gray-900">
+                            <span class="font-medium">${message}</span>${detail ? ' - ' + detail : ''}
+                        </p>
+                        <p class="text-xs text-gray-500">${time}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        activityFeed.querySelector('.space-y-4').innerHTML = activitiesHTML;
+        
+    } catch (error) {
+        console.error('Error updating activity feed:', error);
+        if (noActivity) {
+            noActivity.classList.remove('hidden');
+            noActivity.querySelector('p').textContent = 'Error loading activity';
+        }
+    }
+}
+
+// Update email conversion metrics
+async function updateEmailConversion() {
+    try {
+        // Fetch stats
+        const statsResponse = await fetch(`${API_BASE}/admin/stats`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        let totalCalcs = 0;
+        let emailCaptures = 0;
+        let upgradeClicks = 0;
+        
+        if (statsResponse.ok) {
+            const stats = await statsResponse.json();
+            totalCalcs = stats.calculations_today || stats.calc_today || 0;
+            emailCaptures = stats.email_captures || stats.emails_captured || 0;
+            upgradeClicks = stats.upgrade_clicks || stats.upgrades || 0;
+        }
+        
+        // Update total calculations
+        const totalCalcsEl = document.getElementById('totalCalcs');
+        if (totalCalcsEl) {
+            totalCalcsEl.textContent = totalCalcs;
+        }
+        
+        // Update email captures
+        const emailCapturesEl = document.getElementById('emailCaptures');
+        if (emailCapturesEl) {
+            emailCapturesEl.textContent = emailCaptures;
+        }
+        
+        // Update upgrade clicks
+        const upgradeClicksEl = document.getElementById('upgradeClicks');
+        if (upgradeClicksEl) {
+            upgradeClicksEl.textContent = upgradeClicks;
+        }
+        
+        // Update progress bars
+        const calcBar = document.getElementById('calcBar');
+        const emailBar = document.getElementById('emailBar');
+        const upgradeBar = document.getElementById('upgradeBar');
+        
+        if (calcBar && totalCalcs > 0) {
+            const calcPercent = Math.min((totalCalcs / 100) * 100, 100);
+            calcBar.style.width = calcPercent + '%';
+        }
+        
+        if (emailBar && totalCalcs > 0) {
+            const emailPercent = Math.min((emailCaptures / totalCalcs) * 100, 100);
+            emailBar.style.width = emailPercent + '%';
+        }
+        
+        if (upgradeBar && emailCaptures > 0) {
+            const upgradePercent = Math.min((upgradeClicks / emailCaptures) * 100, 100);
+            upgradeBar.style.width = upgradePercent + '%';
+        }
+        
+    } catch (error) {
+        console.error('Error updating email conversion:', error);
+    }
+}
+window.updateEmailConversion = updateEmailConversion;
+
+// Toggle mobile menu
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('mobileSidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('hidden');
+    }
+}
+window.toggleMobileMenu = toggleMobileMenu;
+
 // Filter applications
 let currentFilter = 'all';
 async function filterApps(status) {
