@@ -975,9 +975,8 @@ async def stripe_webhook(request: Request):
                 print("⚠️ No email in checkout session")
                 return {"status": "skipped"}
             
-            # Check for referral
-            metadata = session.get('metadata', {})
-            ref_code = metadata.get('ref_code', '')
+            # Get referral code from Stripe metadata (client_reference_id)
+            referral_code = session.get('client_reference_id', 'direct')
             
             # Generate secure temporary password
             temp_password = secrets.token_urlsafe(12)
@@ -1001,24 +1000,52 @@ async def stripe_webhook(request: Request):
                 # Send welcome email
                 send_welcome_email(email, temp_password)
                 
-                # Handle referral if exists
-                if ref_code and ref_code.startswith('broker_'):
-                    broker = db.execute("SELECT * FROM brokers WHERE id = ?", (ref_code,)).fetchone()
+                # If referral exists, create pending commission
+                if referral_code.startswith('broker_'):
+                    broker = db.execute(
+                        "SELECT * FROM brokers WHERE referral_code = ?", 
+                        (referral_code,)
+                    ).fetchone()
+                    
                     if broker:
-                        # Create referral record
+                        # Create referrals table if it doesn't exist
                         db.execute("""
-                            INSERT INTO referrals (broker_id, customer_email, customer_id, amount, payout, status)
-                            VALUES (?, ?, ?, 299.00, 500.00, 'pending')
-                        """, (ref_code, email, customer_id))
+                            CREATE TABLE IF NOT EXISTS referrals (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                broker_id TEXT NOT NULL,
+                                broker_email TEXT NOT NULL,
+                                customer_email TEXT NOT NULL,
+                                customer_id TEXT NOT NULL,
+                                amount REAL NOT NULL,
+                                payout REAL NOT NULL,
+                                status TEXT NOT NULL,
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                            )
+                        """)
                         
-                        # Update broker stats
+                        # Create referral record (pending for 30 days)
+                        db.execute("""
+                            INSERT INTO referrals 
+                            (broker_id, broker_email, customer_email, customer_id, 
+                             amount, payout, status, created_at)
+                            VALUES (?, ?, ?, ?, 299.00, 500.00, 'pending', datetime('now'))
+                        """, (
+                            broker['referral_code'],
+                            broker['email'],
+                            email,
+                            customer_id
+                        ))
+                        
+                        # Update broker pending count
                         db.execute("""
                             UPDATE brokers 
-                            SET referrals = referrals + 1 
-                            WHERE id = ?
-                        """, (ref_code,))
+                            SET pending_commissions = pending_commissions + 1 
+                            WHERE referral_code = ?
+                        """, (referral_code,))
                         
                         db.commit()
+                        
+                        print(f"✓ Referral tracked: {email} → {broker['email']} ($500 pending)")
                         
                         # Notify broker
                         send_broker_notification(broker['email'], email)
