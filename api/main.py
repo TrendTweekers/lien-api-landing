@@ -1018,22 +1018,34 @@ async def stripe_webhook(request: Request):
                                 customer_id TEXT NOT NULL,
                                 amount REAL NOT NULL,
                                 payout REAL NOT NULL,
+                                payout_type TEXT NOT NULL,
                                 status TEXT NOT NULL,
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                             )
                         """)
                         
+                        # Determine payout based on broker's commission model
+                        commission_model = broker.get('commission_model', 'bounty')
+                        if commission_model == 'recurring':
+                            payout_amount = 50.00
+                            payout_type = 'recurring'
+                        else:
+                            payout_amount = 500.00
+                            payout_type = 'bounty'
+                        
                         # Create referral record (pending for 30 days)
                         db.execute("""
                             INSERT INTO referrals 
                             (broker_id, broker_email, customer_email, customer_id, 
-                             amount, payout, status, created_at)
-                            VALUES (?, ?, ?, ?, 299.00, 500.00, 'pending', datetime('now'))
+                             amount, payout, payout_type, status, created_at)
+                            VALUES (?, ?, ?, ?, 299.00, ?, ?, 'pending', datetime('now'))
                         """, (
                             broker['referral_code'],
                             broker['email'],
                             email,
-                            customer_id
+                            customer_id,
+                            payout_amount,
+                            payout_type
                         ))
                         
                         # Update broker pending count
@@ -1045,7 +1057,7 @@ async def stripe_webhook(request: Request):
                         
                         db.commit()
                         
-                        print(f"✓ Referral tracked: {email} → {broker['email']} ($500 pending)")
+                        print(f"✓ Referral tracked: {email} → {broker['email']} (${payout_amount} {payout_type} pending)")
                         
                         # Notify broker
                         send_broker_notification(broker['email'], email)
