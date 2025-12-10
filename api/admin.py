@@ -24,6 +24,55 @@ def get_db_path():
 # Router without prefix - prefix will be added in main.py include_router call
 router = APIRouter(tags=["admin"])
 
+# Import get_db from main.py (will be imported at runtime)
+# For now, we'll use a helper function that works with both DB types
+def get_db_connection():
+    """Get database connection - works with both PostgreSQL and SQLite"""
+    import os
+    from pathlib import Path
+    BASE_DIR = Path(__file__).parent.parent
+    DATABASE_URL = os.getenv('DATABASE_URL')
+    
+    if DATABASE_URL and (DATABASE_URL.startswith('postgres://') or DATABASE_URL.startswith('postgresql://')):
+        import psycopg2
+        from psycopg2.extras import RealDictCursor
+        conn = psycopg2.connect(DATABASE_URL)
+        conn.set_session(autocommit=False)
+        return conn, RealDictCursor, 'postgresql'
+    else:
+        import sqlite3
+        if DATABASE_URL and DATABASE_URL.startswith('sqlite://'):
+            db_path = DATABASE_URL.replace('sqlite:///', '')
+        else:
+            db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        return conn, None, 'sqlite'
+
+def calculate_time_ago(timestamp):
+    """Calculate human-readable time ago"""
+    from datetime import datetime
+    if isinstance(timestamp, str):
+        try:
+            timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+        except:
+            return 'Recently'
+    
+    now = datetime.now(timestamp.tzinfo) if hasattr(timestamp, 'tzinfo') and timestamp.tzinfo else datetime.now()
+    diff = now - timestamp
+    
+    if diff.total_seconds() < 60:
+        return 'Just now'
+    elif diff.total_seconds() < 3600:
+        minutes = int(diff.total_seconds() / 60)
+        return f'{minutes} minute{"s" if minutes > 1 else ""} ago'
+    elif diff.total_seconds() < 86400:
+        hours = int(diff.total_seconds() / 3600)
+        return f'{hours} hour{"s" if hours > 1 else ""} ago'
+    else:
+        days = int(diff.total_seconds() / 86400)
+        return f'{days} day{"s" if days > 1 else ""} ago'
+
 # HTTP-Basic auth (env vars)
 security = HTTPBasic()
 
