@@ -8,11 +8,11 @@ from datetime import datetime, timedelta, date
 from pathlib import Path
 from starlette.middleware.base import BaseHTTPMiddleware
 import json
-import sqlite3
 import secrets
 import os
 import bcrypt
 import stripe
+from contextlib import contextmanager
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from api.rate_limiter import limiter
@@ -54,13 +54,75 @@ app.add_middleware(
 # Get project root
 BASE_DIR = Path(__file__).parent.parent
 
-# Database connection
-def get_db():
-    """Get database connection"""
-    db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
-    return conn
+# Database connection - PostgreSQL on Railway, SQLite locally
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+if DATABASE_URL:
+    # PostgreSQL (Railway production)
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+    
+    @contextmanager
+    def get_db():
+        """Get PostgreSQL database connection"""
+        conn = psycopg2.connect(DATABASE_URL)
+        conn.set_session(autocommit=False)
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+    
+    def get_db_cursor(conn):
+        """Get PostgreSQL cursor with dict-like row access"""
+        return conn.cursor(cursor_factory=RealDictCursor)
+    
+    DB_TYPE = 'postgresql'
+else:
+    # SQLite (local development)
+    import sqlite3
+    
+    @contextmanager
+    def get_db():
+        """Get SQLite database connection"""
+        db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+    
+    def get_db_cursor(conn):
+        """Get SQLite cursor"""
+        return conn.cursor()
+    
+    DB_TYPE = 'sqlite'
+
+# Helper function to execute queries with proper placeholders
+def execute_query(conn, query, params=None):
+    """Execute query with proper placeholders for PostgreSQL or SQLite"""
+    cursor = get_db_cursor(conn)
+    if DB_TYPE == 'postgresql':
+        # PostgreSQL uses %s placeholders
+        if params:
+            cursor.execute(query.replace('?', '%s'), params)
+        else:
+            cursor.execute(query.replace('?', '%s'))
+    else:
+        # SQLite uses ? placeholders
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+    return cursor
 
 # Initialize database
 def init_db():
@@ -90,44 +152,84 @@ def init_db():
                     print(f"⚠️ Migration error ({migration_file.name}): {e}")
         
         # Create additional tables if they don't exist
-        cursor = db.cursor()
-        
-        # Failed emails table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS failed_emails (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email TEXT NOT NULL,
-                password TEXT NOT NULL,
-                reason TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Password reset tokens table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS password_reset_tokens (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email TEXT NOT NULL,
-                token TEXT UNIQUE NOT NULL,
-                expires_at TIMESTAMP NOT NULL,
-                used INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(token)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_reset_email ON password_reset_tokens(email)")
-        
-        # Error logs table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS error_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                url TEXT,
-                method TEXT,
-                error_message TEXT,
-                stack_trace TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+        if DB_TYPE == 'postgresql':
+            cursor = get_db_cursor(db)
+            
+            # Failed emails table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS failed_emails (
+                    id SERIAL PRIMARY KEY,
+                    email VARCHAR NOT NULL,
+                    password VARCHAR NOT NULL,
+                    reason TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            
+            # Password reset tokens table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                    id SERIAL PRIMARY KEY,
+                    email VARCHAR NOT NULL,
+                    token VARCHAR UNIQUE NOT NULL,
+                    expires_at TIMESTAMP NOT NULL,
+                    used INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(token)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_reset_email ON password_reset_tokens(email)")
+            
+            # Error logs table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS error_logs (
+                    id SERIAL PRIMARY KEY,
+                    url VARCHAR,
+                    method VARCHAR,
+                    error_message TEXT,
+                    stack_trace TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+        else:
+            cursor = db.cursor()
+            
+            # Failed emails table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS failed_emails (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT NOT NULL,
+                    password TEXT NOT NULL,
+                    reason TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Password reset tokens table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT NOT NULL,
+                    token TEXT UNIQUE NOT NULL,
+                    expires_at TIMESTAMP NOT NULL,
+                    used INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(token)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_reset_email ON password_reset_tokens(email)")
+            
+            # Error logs table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS error_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    url TEXT,
+                    method TEXT,
+                    error_message TEXT,
+                    stack_trace TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
         
         db.commit()
         
