@@ -899,47 +899,19 @@ async function filterApps(status) {
         document.getElementById('approvedCount').textContent = allApps.filter(a => a.status === 'approved').length;
         document.getElementById('flaggedCount').textContent = allApps.filter(a => a.status === 'flagged').length;
         
-        // Render filtered applications using existing loadPartnerApplications logic
-        const container = document.getElementById('partnerApplicationsTable');
-        if (applications.length === 0) {
-            container.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No applications found</td></tr>';
+        // Render filtered applications as cards
+        const container = document.getElementById('applicationsList');
+        if (!container) {
+            console.error('applicationsList container not found');
             return;
         }
         
-        container.innerHTML = applications.map(app => {
-            const date = app.timestamp || app.created_at ? new Date(app.timestamp || app.created_at).toLocaleDateString() : 'N/A';
-            const status = app.status || 'pending';
-            return `
-                <tr class="border-b">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${app.name || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.email || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.company || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.client_count || 0}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${date}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${status === 'approved' ? 'bg-green-100 text-green-800' : status === 'flagged' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
-                            ${status}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        ${status === 'pending' ? `
-                            <button onclick="approveAndCopy(${app.id}, '${app.email}')" 
-                                    class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
-                                Approve & Copy Link
-                            </button>
-                        ` : `
-                            <span class="text-green-600 font-semibold">✅ Approved</span>
-                            ${app.referral_link ? `
-                                <button onclick="copyLink('${app.referral_link}')" 
-                                        class="ml-2 text-blue-600 hover:underline text-xs">
-                                    Copy Link
-                                </button>
-                            ` : ''}
-                        `}
-                    </td>
-                </tr>
-            `;
-        }).join('');
+        if (applications.length === 0) {
+            container.innerHTML = '<div class="card text-center text-muted-foreground">No applications found</div>';
+            return;
+        }
+        
+        container.innerHTML = applications.map(app => renderApplication(app)).join('');
     } catch (error) {
         console.error('Error filtering applications:', error);
         alert('Error filtering applications: ' + error.message);
@@ -984,6 +956,68 @@ async function updateQuickStats() {
     }
 }
 window.updateQuickStats = updateQuickStats;
+
+// Partner application card renderer
+function renderApplication(app) {
+    const date = app.timestamp || app.created_at ? new Date(app.timestamp || app.created_at).toLocaleDateString() : 'N/A';
+    const status = app.status || 'pending';
+    const statusPillClass = status === 'approved' ? 'pill-green' : status === 'flagged' ? 'pill-red' : 'pill-yellow';
+    
+    return `
+        <div class="card flex items-center justify-between">
+            <div>
+                <p class="font-semibold">${app.name || 'N/A'}</p>
+                <p class="text-sm text-muted-foreground">${app.company || 'N/A'} · ${app.client_count || 0} clients</p>
+                <p class="text-xs text-muted-foreground">${app.email || 'N/A'}</p>
+                <p class="text-xs text-muted-foreground mt-1">${date}</p>
+            </div>
+            <div class="flex gap-2 items-center">
+                <span class="pill ${statusPillClass}">${status}</span>
+                ${status === 'pending' ? `
+                    <button onclick="approveAndCopy(${app.id}, '${app.email}')" class="btn btn-green">Approve & Copy</button>
+                ` : app.referral_link ? `
+                    <button onclick="copyLink('${app.referral_link}')" class="btn btn-blue">Copy Link</button>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+window.renderApplication = renderApplication;
+
+// Flagged referral card renderer
+function renderFlagged(ref) {
+    const fraudFlags = ref.fraud_flags || ref.fraud_signals || [];
+    return `
+        <div class="card border-l-4 border-red-500">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <p class="font-bold text-red-700">Risk Score: ${ref.risk_score || 'N/A'}</p>
+                    <p class="text-sm text-muted-foreground">${ref.broker_name || 'Unknown'} → ${ref.customer_email || 'N/A'}</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="approveReferral(${ref.id})" class="btn btn-green">✅ Approve</button>
+                    <button onclick="denyReferral(${ref.id})" class="btn btn-red">❌ Deny</button>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                ${fraudFlags.map(f => `<span class="pill pill-yellow">${String(f).replace(/_/g, ' ')}</span>`).join('')}
+            </div>
+        </div>
+    `;
+}
+window.renderFlagged = renderFlagged;
+
+// Customer card renderer
+function renderCustomer(customer) {
+    return `
+        <div class="card">
+            <p class="font-semibold">${customer.email || 'N/A'}</p>
+            <p class="text-sm text-muted-foreground">${customer.calls || 0} calls</p>
+            <span class="pill ${customer.status === 'active' ? 'pill-green' : 'pill-yellow'}">${customer.status || 'unknown'}</span>
+        </div>
+    `;
+}
+window.renderCustomer = renderCustomer;
 
 // Dashboard initialization is now handled in the auth check above
 

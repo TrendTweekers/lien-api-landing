@@ -10,45 +10,87 @@
     <!-- Styles loaded via Tailwind CDN -->
     <!-- Privacy-friendly analytics by Plausible -->
     <script defer data-domain="liendeadline.com" src="https://plausible.io/js/script.js"></script>
+    
+    <!-- Lovable-scale admin overrides -->
+    <style>
+      html{ font-family:"Inter",system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+      body{ background:hsl(40 33% 98%); }
+      h1,h2,h3{ font-family:'Instrument Serif',serif; }
+      .card{ background:#fff; border-radius:1.5rem; box-shadow:0 25px 50px -12px rgba(0,0,0,.08); padding:2rem; }
+      .btn{ height:3rem; padding:0 1.5rem; font-size:1rem; border-radius:.75rem; font-weight:600; transition:all .2s; }
+      .btn-green{ background:#10b981; color:#fff; }
+      .btn-green:hover{ background:#059669; }
+      .btn-red{ background:#ef4444; color:#fff; }
+      .btn-red:hover{ background:#dc2626; }
+      .btn-blue{ background:#3b82f6; color:#fff; }
+      .btn-blue:hover{ background:#2563eb; }
+      .pill{ display:inline-flex; align-items:center; padding:.25rem .75rem; border-radius:9999px; font-size:.75rem; font-weight:600; }
+      .pill-yellow{ background:#fef3c7; color:#92400e; }
+      .pill-red{ background:#fee2e2; color:#b91c1c; }
+      .pill-green{ background:#d1fae5; color:#065f46; }
+      .section-title{ font-size:1.875rem; font-weight:700; letter-spacing:-.025em; }
+      .grid-cols-auto{ grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); }
+      .text-muted-foreground{ color:#6b7280; }
+      .text-foreground{ color:#111827; }
+      .border-border{ border-color:#e5e7eb; }
+      .bg-background{ background:hsl(40 33% 98%); }
+      .container{ max-width:1280px; margin-left:auto; margin-right:auto; }
+    </style>
 </head>
-<body class="bg-white text-gray-900">
-    <!-- Navigation (Same as landing page) -->
-    <nav id="nav" class="fixed top-0 w-full bg-white shadow-sm z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="text-xl font-bold text-gray-900">Admin – LienDeadline.com</div>
-                <div class="flex gap-4">
-                    <a href="index.html" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Landing Page</a>
-                    <a href="/partners.html" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium">Partners</a>
-                    <button onclick="logout()" class="px-4 py-2 text-red-600 hover:text-red-700 font-medium">Logout</button>
-                </div>
+<body class="min-h-screen bg-background text-foreground">
+    <!-- Header -->
+    <header class="border-b border-border bg-white/80 backdrop-blur">
+        <div class="container mx-auto px-6 py-4 flex items-center justify-between">
+            <h1 class="text-2xl font-serif font-bold">Admin</h1>
+            <nav class="flex gap-6 text-sm">
+                <a href="/" class="text-muted-foreground hover:text-foreground">Landing Page</a>
+                <a href="/partners.html" class="text-muted-foreground hover:text-foreground">Partners</a>
+                <button onclick="logout()" class="text-muted-foreground hover:text-foreground">Logout</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Quick Stats -->
+    <section class="container mx-auto px-6 py-8">
+        <div class="grid grid-cols-auto gap-6">
+            <div class="card"><p class="text-sm text-muted-foreground">Today</p><p class="text-3xl font-bold" id="todayCalc">0</p></div>
+            <div class="card"><p class="text-sm text-muted-foreground">Pending Brokers</p><p class="text-3xl font-bold" id="pendingBrokers">0</p></div>
+            <div class="card"><p class="text-sm text-muted-foreground">Ready to Pay</p><p class="text-3xl font-bold text-green-600" id="readyPayout">0</p></div>
+            <div class="card"><p class="text-sm text-muted-foreground">This Month</p><p class="text-3xl font-bold" id="monthRevenue">$0</p></div>
+        </div>
+    </section>
+
+    <!-- Flagged Referrals (Fraud Review) -->
+    <section class="container mx-auto px-6 pb-8">
+        <h2 class="section-title mb-6 text-red-600">🚨 Flagged Referrals</h2>
+        <div id="flaggedReferralsList" class="grid gap-4">
+            <!-- populated by JS -->
+        </div>
+    </section>
+
+    <!-- Partner Applications -->
+    <section class="container mx-auto px-6 pb-8">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="section-title">Partner Applications</h2>
+            <div class="flex gap-2">
+                <button onclick="generateTestKey()" class="btn btn-blue">Generate Test Key</button>
+                <button onclick="bulkPayout()" class="btn btn-green">Pay All Ready ($<span id="readyTotal">0</span>)</button>
             </div>
         </div>
-    </nav>
+        <div id="applicationsList" class="grid gap-4">
+            <!-- populated by JS -->
+        </div>
+    </section>
 
-    <div class="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-7xl mx-auto">
-            <!-- Quick Stats -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white rounded-xl shadow p-4">
-                    <p class="text-sm text-gray-500">Today</p>
-                    <p class="text-2xl font-bold" id="todayCalc">0</p>
-                </div>
-                <div class="bg-white rounded-xl shadow p-4">
-                    <p class="text-sm text-gray-500">Pending Brokers</p>
-                    <p class="text-2xl font-bold" id="pendingBrokers">0</p>
-                </div>
-                <div class="bg-white rounded-xl shadow p-4">
-                    <p class="text-sm text-gray-500">Ready to Pay</p>
-                    <p class="text-2xl font-bold text-green-600" id="readyPayout">0</p>
-                </div>
-                <div class="bg-white rounded-xl shadow p-4">
-                    <p class="text-sm text-gray-500">This Month</p>
-                    <p class="text-2xl font-bold" id="monthRevenue">$0</p>
-                </div>
-            </div>
+    <!-- Customers -->
+    <section class="container mx-auto px-6 pb-8">
+        <h2 class="section-title mb-6">Customers</h2>
+        <div id="customersList" class="grid gap-4">
+            <!-- populated by JS -->
+        </div>
+    </section>
 
-            <!-- Quick Actions -->
+    <!-- Keep existing modals -->
             <div class="mb-8 flex flex-wrap gap-4">
                 <button onclick="generateTestKey()" class="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold">
                     Generate Test Key
