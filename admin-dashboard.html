@@ -35,6 +35,21 @@
       .border-border{ border-color:#e5e7eb; }
       .bg-background{ background:hsl(40 33% 98%); }
       .container{ max-width:1280px; margin-left:auto; margin-right:auto; }
+      
+      /* Dark mode variables */
+      :root{ --foreground:#0f172a; --muted-foreground:#475569; --accent:#f59e0b; --background:#ffffff; --border:#e2e8f0; }
+      .dark{ --background:#111827; --foreground:#f9fafb; --border:#374151; }
+      .dark .card{ background:var(--background); }
+      .dark .text-foreground{ color:var(--foreground); }
+      .dark .text-muted-foreground{ color:#9ca3af; }
+      .dark .border-border{ border-color:var(--border); }
+      .dark .pill-yellow{ background:#78350f; color:#fde68a; }
+      .dark .pill-green{ background:#064e3b; color:#6ee7b7; }
+      .dark .pill-red{ background:#7f1d1d; color:#fca5a5; }
+      .btn-secondary{ background:var(--border); color:var(--foreground); }
+      .btn-secondary:hover{ background:#e5e7eb; }
+      .dark .btn-secondary{ background:var(--border); color:var(--foreground); }
+      .dark .btn-secondary:hover{ background:#4b5563; }
     </style>
 </head>
 <body class="min-h-screen bg-background text-foreground">
@@ -637,6 +652,65 @@
             }
         }
         window.testPartnerEndpoint = testPartnerEndpoint;
+
+        // Dark Mode Toggle
+        const toggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        const saved = localStorage.getItem('adminTheme');
+        if (saved === 'dark') html.classList.add('dark');
+        
+        if (toggle) {
+            toggle.addEventListener('click', () => {
+                html.classList.toggle('dark');
+                localStorage.setItem('adminTheme', html.classList.contains('dark') ? 'dark' : 'light');
+            });
+        }
+
+        // Export CSV function
+        function exportCurrentView() {
+            const rows = Array.from(document.querySelectorAll('#applicationsList .card')).map(card => {
+                const nameEl = card.querySelector('.font-semibold');
+                const emailEl = card.querySelector('.text-xs.text-muted-foreground') || card.querySelector('.text-xs');
+                const statusEl = card.querySelector('.pill');
+                return {
+                    name: nameEl ? nameEl.textContent.trim() : '',
+                    email: emailEl ? emailEl.textContent.trim() : '',
+                    status: statusEl ? statusEl.textContent.trim() : ''
+                };
+            }).filter(r => r.name || r.email);
+            
+            if (rows.length === 0) {
+                alert('No data to export');
+                return;
+            }
+            
+            const csv = 'Name,Email,Status\n' + rows.map(r => `"${r.name}","${r.email}","${r.status}"`).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'partners-' + new Date().toISOString().split('T')[0] + '.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        window.exportCurrentView = exportCurrentView;
+
+        // Search partners function
+        function searchPartners(query) {
+            const cards = document.querySelectorAll('#applicationsList .card');
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(query.toLowerCase()) ? '' : 'none';
+            });
+        }
+        window.searchPartners = searchPartners;
+
+        // Sort brokers function
+        function sortBrokers(sortBy) {
+            // This will be implemented when brokersList is populated
+            console.log('Sort brokers by:', sortBy);
+        }
+        window.sortBrokers = sortBrokers;
     </script>
 </body>
 </html>

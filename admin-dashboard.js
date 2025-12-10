@@ -36,9 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // loadQuickStats(); // Disabled - analytics endpoint returns 404
     loadPartnerApplications();
     loadEmailCaptures();
+    loadFlaggedReferrals();
+    updateActivityFeed();
     
     // Refresh quick stats every 30 seconds
     setInterval(updateQuickStats, 30000);
+    setInterval(updateActivityFeed, 60000);
     
     // Refresh stats every 60 seconds
     // setInterval(loadQuickStats, 60000); // Disabled - analytics endpoint returns 404
