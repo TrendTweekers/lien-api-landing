@@ -1717,6 +1717,34 @@ async function loadPendingBrokers() {
 }
 window.loadPendingBrokers = loadPendingBrokers;
 
+// Update calculations counter
+async function updateCalculationsCounter() {
+    try {
+        const adminUser = window.ADMIN_USER || ADMIN_USER;
+        const adminPass = window.ADMIN_PASS || ADMIN_PASS;
+        
+        const response = await fetch(`${API_BASE}/admin/calculations-today`, {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${adminUser}:${adminPass}`)
+            }
+        });
+        
+        if (!response.ok) {
+            warn('Failed to fetch calculations count');
+            return;
+        }
+        
+        const data = await response.json();
+        safeText('calculationsToday', data.calculations_today || '0');
+        
+        log(`Calculations today: ${data.calculations_today}`);
+        
+    } catch (error) {
+        console.error('Error updating calculations counter:', error);
+    }
+}
+window.updateCalculationsCounter = updateCalculationsCounter;
+
 // Update quick stats row
 function updateQuickStatsRow() {
     // This function now just calls updateQuickStats for consistency
