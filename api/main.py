@@ -57,7 +57,10 @@ BASE_DIR = Path(__file__).parent.parent
 # Database connection - PostgreSQL on Railway, SQLite locally
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-if DATABASE_URL:
+# Check if DATABASE_URL is a PostgreSQL connection string
+# PostgreSQL URLs start with postgres:// or postgresql://
+# SQLite URLs start with sqlite://
+if DATABASE_URL and (DATABASE_URL.startswith('postgres://') or DATABASE_URL.startswith('postgresql://')):
     # PostgreSQL (Railway production)
     import psycopg2
     from psycopg2.extras import RealDictCursor
@@ -82,13 +85,20 @@ if DATABASE_URL:
     
     DB_TYPE = 'postgresql'
 else:
-    # SQLite (local development)
+    # SQLite (local development or if DATABASE_URL is SQLite)
     import sqlite3
     
     @contextmanager
     def get_db():
         """Get SQLite database connection"""
-        db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+        # If DATABASE_URL is set but is SQLite, use it
+        # Otherwise use DATABASE_PATH or default
+        if DATABASE_URL and DATABASE_URL.startswith('sqlite://'):
+            # Extract path from sqlite:///path/to/db.db
+            db_path = DATABASE_URL.replace('sqlite:///', '')
+        else:
+            db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+        
         conn = sqlite3.connect(str(db_path))
         conn.row_factory = sqlite3.Row
         try:
