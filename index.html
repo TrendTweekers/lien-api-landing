@@ -1800,7 +1800,8 @@
                 }).catch(err => console.error('Email tracking error:', err));
                 
                 // Hide modal immediately
-                document.getElementById('emailCaptureModal').classList.add('hidden');
+                const emailModal = document.getElementById('emailCaptureModal');
+                if (emailModal) emailModal.classList.add('hidden');
                 
                 // Update counter display to show new limit (10)
                 const countElement = document.getElementById('calculationCount');
@@ -1823,13 +1824,15 @@
         
         // Close modals when clicking outside
         safeAddListener('emailCaptureModal', 'click', (e) => {
-            if (e.target.id === 'emailCaptureModal') {
+            const modal = document.getElementById('emailCaptureModal');
+            if (modal && e.target.id === 'emailCaptureModal') {
                 hideEmailCaptureModal();
             }
         });
         
         safeAddListener('upgradeModal', 'click', (e) => {
-            if (e.target.id === 'upgradeModal') {
+            const modal = document.getElementById('upgradeModal');
+            if (modal && e.target.id === 'upgradeModal') {
                 hideUpgradeModal();
             }
         });
@@ -2115,6 +2118,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const submitBtn = document.getElementById('calculateBtn');
+        if (!submitBtn) {
+            console.warn('Calculate button not found');
+            return;
+        }
+        
         const originalText = submitBtn.innerHTML;
         
         // Show loading state
@@ -2257,7 +2265,8 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCounterDisplay();
         
         // Close modal immediately (no redirect!)
-        document.getElementById('emailCaptureModal').classList.add('hidden');
+        const emailModal = document.getElementById('emailCaptureModal');
+        if (emailModal) emailModal.classList.add('hidden');
         document.body.style.overflow = 'auto';
         
         // Show success toast
