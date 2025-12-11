@@ -2535,6 +2535,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Save to localStorage FIRST (instant)
         localStorage.setItem('userEmail', email);
+        localStorage.setItem('emailGiven', 'true'); // Mark that email was given
+        
+        console.log(`✅ Email stored: ${email}`);
+        console.log(`✅ Email gate flag set: emailGiven = true`);
         
         // Update counter display
         updateCounterDisplay();
