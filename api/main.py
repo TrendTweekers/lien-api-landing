@@ -3194,78 +3194,122 @@ async def get_calculations_today():
 # ==========================================
 @app.get("/api/debug/tables")
 async def debug_tables():
-    """Debug endpoint - FIXED for context manager"""
+    """Debug endpoint - PROPERLY handle sqlite3.Row objects"""
     try:
         with get_db() as conn:
             cursor = conn.cursor()
             
-            # List all tables
+            # Get all tables
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     SELECT table_name 
                     FROM information_schema.tables 
                     WHERE table_schema = 'public'
+                    ORDER BY table_name
                 """)
+                table_results = cursor.fetchall()
+                # Extract table names from PostgreSQL results
+                table_names = []
+                for row in table_results:
+                    if isinstance(row, dict):
+                        table_names.append(row.get('table_name'))
+                    elif isinstance(row, tuple) and len(row) > 0:
+                        table_names.append(row[0])
+                    else:
+                        table_names.append(str(row))
             else:
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            
-            tables = cursor.fetchall()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+                table_results = cursor.fetchall()
+                
+                # Extract table names from sqlite3.Row objects
+                table_names = []
+                for row in table_results:
+                    if hasattr(row, '_fields') and 'name' in row._fields:
+                        table_names.append(row['name'])
+                    elif isinstance(row, tuple) and len(row) > 0:
+                        table_names.append(row[0])
+                    else:
+                        table_names.append(str(row))
             
             result = {"db_type": DB_TYPE, "tables": []}
             
-            for table_row in tables:
+            for table_name in table_names:
+                if not table_name:
+                    continue
+                    
                 try:
-                    # Extract table name
-                    if hasattr(table_row, '_fields'):
-                        table_name = table_row['name'] if 'name' in table_row._fields else table_row.get('table_name')
-                    elif isinstance(table_row, dict):
-                        table_name = table_row.get('name') or table_row.get('table_name')
+                    # Count rows (use quoted table name for safety)
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute(f'SELECT COUNT(*) as count FROM "{table_name}"')
                     else:
-                        table_name = table_row[0] if isinstance(table_row, tuple) else str(table_row)
+                        cursor.execute(f'SELECT COUNT(*) as count FROM "{table_name}"')
                     
-                    if not table_name:
-                        continue
+                    count_row = cursor.fetchone()
                     
-                    # Count rows
-                    cursor.execute(f"SELECT COUNT(*) as count FROM {table_name}")
-                    count_result = cursor.fetchone()
-                    if isinstance(count_result, tuple):
-                        count = count_result[0]
-                    elif isinstance(count_result, dict):
-                        count = count_result.get('count', 0)
-                    elif hasattr(count_result, '_fields'):
-                        count = count_result['count'] if 'count' in count_result._fields else 0
-                    else:
-                        count = 0
+                    count = 0
+                    if count_row:
+                        if hasattr(count_row, '_fields'):
+                            count = count_row['count']
+                        elif isinstance(count_row, tuple):
+                            count = count_row[0]
+                        elif isinstance(count_row, dict):
+                            count = count_row.get('count', 0)
                     
                     # Get sample data
-                    cursor.execute(f"SELECT * FROM {table_name} LIMIT 3")
-                    sample = cursor.fetchall()
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute(f'SELECT * FROM "{table_name}" LIMIT 3')
+                    else:
+                        cursor.execute(f'SELECT * FROM "{table_name}" LIMIT 3')
                     
-                    # Convert sample
-                    sample_list = []
-                    for row in sample:
-                        if hasattr(row, '_fields'):
-                            sample_list.append({key: str(row[key]) for key in row._fields})
-                        elif isinstance(row, dict):
-                            sample_list.append({k: str(v) for k, v in row.items()})
+                    sample_rows = cursor.fetchall()
+                    
+                    # Convert sample data
+                    sample_data = []
+                    for sample_row in sample_rows:
+                        if hasattr(sample_row, '_fields'):
+                            # sqlite3.Row to dict
+                            row_dict = {}
+                            for field in sample_row._fields:
+                                value = sample_row[field]
+                                # Convert to JSON-serializable
+                                if value is None:
+                                    row_dict[field] = None
+                                elif isinstance(value, (int, float, bool, str)):
+                                    row_dict[field] = value
+                                else:
+                                    row_dict[field] = str(value)
+                            sample_data.append(row_dict)
+                        elif isinstance(sample_row, dict):
+                            # PostgreSQL dict
+                            row_dict = {}
+                            for key, value in sample_row.items():
+                                if value is None:
+                                    row_dict[key] = None
+                                elif isinstance(value, (int, float, bool, str)):
+                                    row_dict[key] = value
+                                else:
+                                    row_dict[key] = str(value)
+                            sample_data.append(row_dict)
+                        elif isinstance(sample_row, tuple):
+                            # Tuple to list
+                            sample_data.append([str(item) if item is not None else None for item in sample_row])
                         else:
-                            sample_list.append([str(item) for item in row])
+                            sample_data.append(str(sample_row))
                     
                     result["tables"].append({
                         "name": table_name,
                         "row_count": count,
-                        "sample": sample_list
+                        "sample": sample_data
                     })
                     
                 except Exception as table_error:
                     result["tables"].append({
-                        "name": str(table_name) if 'table_name' in locals() else 'unknown',
+                        "name": table_name,
                         "error": str(table_error)
                     })
-        
-        return result
-        
+            
+            return result
+            
     except Exception as e:
         import traceback
         return {"error": str(e), "traceback": traceback.format_exc()}
