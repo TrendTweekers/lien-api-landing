@@ -1743,19 +1743,23 @@
         
         // Modal functions
         function showEmailCaptureModal() {
-            document.getElementById('emailCaptureModal').classList.remove('hidden');
+            const modal = document.getElementById('emailCaptureModal');
+            if (modal) modal.classList.remove('hidden');
         }
         
         function hideEmailCaptureModal() {
-            document.getElementById('emailCaptureModal').classList.add('hidden');
+            const modal = document.getElementById('emailCaptureModal');
+            if (modal) modal.classList.add('hidden');
         }
         
         function showUpgradeModal() {
-            document.getElementById('upgradeModal').classList.remove('hidden');
+            const modal = document.getElementById('upgradeModal');
+            if (modal) modal.classList.remove('hidden');
         }
         
         function hideUpgradeModal() {
-            document.getElementById('upgradeModal').classList.add('hidden');
+            const modal = document.getElementById('upgradeModal');
+            if (modal) modal.classList.add('hidden');
         }
         
         // Toast notification function
