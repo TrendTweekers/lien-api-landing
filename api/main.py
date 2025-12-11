@@ -3480,12 +3480,13 @@ async def get_calculations_today():
             
             # Count ALL calculations from today (UTC)
             if DB_TYPE == 'postgresql':
-                # PostgreSQL: Use calculation_date column and convert to UTC date
-                # Also check created_at as fallback
+                # PostgreSQL: calculation_date is DATE type, created_at is TIMESTAMP
+                # Compare calculation_date directly (it's already a date)
+                # Convert created_at TIMESTAMP to UTC date
                 cursor.execute('''
                     SELECT COUNT(*) as count 
                     FROM calculations 
-                    WHERE DATE(calculation_date AT TIME ZONE 'UTC') = %s
+                    WHERE calculation_date = %s
                        OR DATE(created_at AT TIME ZONE 'UTC') = %s
                 ''', (today_utc, today_utc))
             else:
