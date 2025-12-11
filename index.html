@@ -1396,12 +1396,25 @@
         }
         
         // Mobile menu toggle
-        document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-            document.getElementById('mobileMenu').classList.remove('hidden');
+        // Safe event listener helper
+        function safeAddListener(id, event, handler) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener(event, handler);
+                console.log(`✅ Added ${event} listener to #${id}`);
+            } else {
+                console.warn(`⚠️ Could not add ${event} listener - #${id} not found`);
+            }
+        }
+
+        safeAddListener('mobileMenuBtn', 'click', () => {
+            const menu = document.getElementById('mobileMenu');
+            if (menu) menu.classList.remove('hidden');
         });
-        
-        document.getElementById('closeMobileMenu').addEventListener('click', () => {
-            document.getElementById('mobileMenu').classList.add('hidden');
+
+        safeAddListener('closeMobileMenu', 'click', () => {
+            const menu = document.getElementById('mobileMenu');
+            if (menu) menu.classList.add('hidden');
         });
         
         // Close mobile menu when clicking a link
@@ -1412,7 +1425,7 @@
         });
         
         // Hero email form - capture email and extend calculation limits
-        document.getElementById('heroEmailForm').addEventListener('submit', async (e) => {
+        safeAddListener('heroEmailForm', 'submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('heroEmail').value;
             
@@ -1490,7 +1503,7 @@
             `;
             document.body.appendChild(modal);
             
-            document.getElementById('submitEmailBtn').addEventListener('click', () => {
+            safeAddListener('submitEmailBtn', 'click', () => {
                 const email = document.getElementById('emailInput').value;
                 if (email && email.includes('@')) {
                     localStorage.setItem('userEmail', email);
@@ -1523,7 +1536,7 @@
         }
         
         // Calculator form with trial flow
-        document.getElementById('calculatorForm').addEventListener('submit', async (e) => {
+        safeAddListener('calculatorForm', 'submit', async (e) => {
             e.preventDefault();
             
             const picker = document.getElementById('invoiceDatePicker');
@@ -1762,7 +1775,7 @@
         }
         
         // Modal email form handler - AJAX version (no redirect)
-        document.getElementById('modalEmailForm').addEventListener('submit', async (e) => {
+        safeAddListener('modalEmailForm', 'submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('modalEmail').value.trim();
             
@@ -1805,13 +1818,13 @@
         });
         
         // Close modals when clicking outside
-        document.getElementById('emailCaptureModal').addEventListener('click', (e) => {
+        safeAddListener('emailCaptureModal', 'click', (e) => {
             if (e.target.id === 'emailCaptureModal') {
                 hideEmailCaptureModal();
             }
         });
         
-        document.getElementById('upgradeModal').addEventListener('click', (e) => {
+        safeAddListener('upgradeModal', 'click', (e) => {
             if (e.target.id === 'upgradeModal') {
                 hideUpgradeModal();
             }
@@ -1904,6 +1917,17 @@
 // ==========================================
 // 2. STRIPE SUCCESS DETECTION (ENHANCED)
 // ==========================================
+
+// Safe event listener helper (global)
+function safeAddListener(id, event, handler) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.addEventListener(event, handler);
+        console.log(`✅ Added ${event} listener to #${id}`);
+    } else {
+        console.warn(`⚠️ Could not add ${event} listener - #${id} not found`);
+    }
+}
 
 window.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -2344,7 +2368,8 @@ function acceptCookies() {
 // Show banner if not accepted
 window.addEventListener('DOMContentLoaded', function() {
     if (!localStorage.getItem('cookieConsent')) {
-        document.getElementById('cookieBanner').classList.remove('hidden');
+        const banner = document.getElementById('cookieBanner');
+        if (banner) banner.classList.remove('hidden');
     }
 });
 </script>
