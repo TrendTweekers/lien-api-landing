@@ -617,7 +617,7 @@ def init_db():
             except Exception as e:
                 print(f"Note: Could not check/insert sample data: {e}")
             
-            db.commit()
+            # Commit is handled automatically by context manager
             print("✅ Database initialized")
     except Exception as e:
         print(f"❌ Database initialization error: {e}")
