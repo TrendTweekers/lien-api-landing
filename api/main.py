@@ -496,6 +496,36 @@ def init_db():
                     cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_referral_code ON brokers(referral_code)")
                     print("✅ Created brokers table")
                 
+                # Create calculations table (SQLite)
+                if 'calculations' not in existing_tables:
+                    print("Creating calculations table...")
+                    cursor.execute("""
+                        CREATE TABLE calculations (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            user_id INTEGER,
+                            state TEXT NOT NULL,
+                            notice_date DATE NOT NULL,
+                            calculation_date DATE NOT NULL,
+                            preliminary_notice DATE,
+                            lien_deadline DATE,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_calculations_created_at ON calculations(created_at)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_calculations_state ON calculations(state)")
+                    print("✅ Created calculations table")
+                    
+                    # Insert some sample calculations for testing
+                    cursor.execute("""
+                        INSERT INTO calculations (state, notice_date, calculation_date, preliminary_notice, lien_deadline)
+                        VALUES 
+                        ('CA', '2024-01-01', '2024-01-01', '2024-01-20', '2024-02-01'),
+                        ('TX', '2024-01-02', '2024-01-02', '2024-01-22', '2024-02-02'),
+                        ('FL', '2024-01-03', '2024-01-03', '2024-01-25', '2024-02-05')
+                    """)
+                    print("✅ Inserted sample calculations")
+            
+            if DB_TYPE == 'postgresql':
                 # Create calculations table (PostgreSQL)
                 if 'calculations' not in existing_tables:
                     print("Creating calculations table...")
