@@ -1420,7 +1420,7 @@ async def apply_partner(request: Request):
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Create table if it doesn't exist (with phone field)
+            # Create table if it doesn't exist
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS partner_applications (
