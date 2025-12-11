@@ -439,9 +439,6 @@ if (picker && display) {
         const [y, m, d] = e.target.value.split('-');
         display.value = `${m}/${d}/${y}`;
     });
-
-    /* click mask → open calendar (first click) */
-    display.addEventListener('click', () => picker.showPicker());
 }
 
 // Hide upgrade prompt if user is logged in (on page load)
