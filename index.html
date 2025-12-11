@@ -881,7 +881,7 @@
                     
                     <!-- Remaining Counter -->
                     <p class="text-center text-lg text-muted-foreground mt-8">
-                        <span id="remainingCalcsTop" class="font-medium"></span> free calculations remaining • Enter email for 7 more • All 28 states
+                        <span id="remainingCalcsTop" class="font-medium"></span> free calculations remaining • Enter email for 3 more • All 28 states
                     </p>
                 </div>
             </div>
@@ -926,7 +926,7 @@
                     
                     <!-- FAQ 5 -->
                     <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-xl font-bold mb-2">What happens after my 10 free calculations?</h3>
+                        <h3 class="text-xl font-bold mb-2">What happens after my 6 free calculations?</h3>
                         <p class="text-gray-700">You'll see an upgrade prompt. Subscribe for $299/month to get unlimited calculations, save your calculation history, and access premium features.</p>
                     </div>
                     
@@ -1235,7 +1235,7 @@
                             <svg class="w-4 h-4 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            3 free calculations • Enter email for 7 more • All 28 states
+                            3 free calculations • Enter email for 3 more • All 28 states
                         </span>
                     </p>
                 </div>
@@ -1465,7 +1465,7 @@
                     const form = e.target;
                     const successMsg = document.createElement('p');
                     successMsg.className = 'text-sm text-success mt-2';
-                    successMsg.textContent = '✓ Email saved! You now have 7 more calculations (10 total). Scrolling to calculator...';
+                    successMsg.textContent = '✓ Email saved! You now have 3 more calculations (6 total). Scrolling to calculator...';
                     form.appendChild(successMsg);
                     setTimeout(() => successMsg.remove(), 5000);
                     
@@ -1489,14 +1489,14 @@
         function updateCalculationCounter() {
             const calcCount = parseInt(localStorage.getItem('calcCount') || '0');
             const userEmail = localStorage.getItem('userEmail');
-            const limit = userEmail ? 10 : 3;
+            const limit = userEmail ? 6 : 3;
             const remaining = limit - calcCount;
             const counterElement = document.getElementById('calculationCount');
             if (counterElement) {
                 counterElement.textContent = calcCount;
                 const counterText = document.querySelector('#calculator p span');
                 if (counterText && counterText.parentElement) {
-                    counterText.parentElement.innerHTML = `Free calculations used: <span id="calculationCount">${calcCount}</span>/${limit} • ${userEmail ? 'Enter email for 7 more' : 'Enter email for 7 more'} • All 28 states`;
+                    counterText.parentElement.innerHTML = `Free calculations used: <span id="calculationCount">${calcCount}</span>/${limit} • ${userEmail ? '3 more available' : 'Enter email for 3 more'} • All 28 states`;
                 }
             }
             return { calcCount, limit, remaining, userEmail };
@@ -1508,8 +1508,8 @@
             modal.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
             modal.innerHTML = `
                 <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-elegant">
-                    <h3 class="text-2xl font-serif mb-4">Unlock 7 More Free Calculations</h3>
-                    <p class="text-muted-foreground mb-6">Enter your email to get 7 additional free calculations (10 total).</p>
+                    <h3 class="text-2xl font-serif mb-4">Unlock 3 More Free Calculations</h3>
+                    <p class="text-muted-foreground mb-6">Enter your email to get 3 additional free calculations (6 total).</p>
                     <input type="email" id="emailInput" placeholder="your@email.com" class="w-full h-12 px-4 rounded-lg border border-border mb-4 text-lg">
                     <button id="submitEmailBtn" class="w-full h-12 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-colors text-lg">
                         Continue Free Trial
@@ -1537,7 +1537,7 @@
             modal.innerHTML = `
                 <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-elegant">
                     <h3 class="text-2xl font-serif mb-4">Your Free Trial Has Ended</h3>
-                    <p class="text-muted-foreground mb-6">You've used all 10 free trial calculations. Upgrade to Pro for unlimited calculations, PDF reports, and calculation history.</p>
+                    <p class="text-muted-foreground mb-6">You've used all 6 free trial calculations. Upgrade to Pro for unlimited calculations, PDF reports, and calculation history.</p>
                     <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" class="block w-full h-12 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-colors text-center leading-[3rem] text-lg">
                         Upgrade Now - $299/month
                     </a>
@@ -1600,7 +1600,7 @@
                             console.log('Current state:', { calcCount, userEmail });
                             
                             // Decision tree:
-                            if (calcCount >= 10) {
+                            if (calcCount >= 6) {
                                 // User hit 10 limit - show upgrade modal
                                 showUpgradeModal();
                             } else if (calcCount >= 3 && !userEmail) {
@@ -1623,7 +1623,7 @@
                             const calcCount = parseInt(localStorage.getItem('calculationCount') || '0');
                             const userEmail = localStorage.getItem('userEmail');
                             
-                            if (calcCount >= 10) {
+                            if (calcCount >= 6) {
                                 showUpgradeModal();
                             } else if (calcCount >= 3 && !userEmail) {
                                 showEmailCaptureModal();
@@ -1715,7 +1715,7 @@
                 const countElement = document.getElementById('calculationCount');
                 if (countElement) {
                     const userEmail = localStorage.getItem('userEmail');
-                    const limit = userEmail ? 10 : 3;
+                    const limit = userEmail ? 6 : 3;
                     countElement.textContent = `${count} / ${limit}`;
                 }
                 
@@ -1723,7 +1723,7 @@
                 const userEmail = localStorage.getItem('userEmail');
                 if (count >= 10) {
                     // Don't show modal here - API will handle it with 403
-                    console.log('Reached 10 calculations - upgrade required');
+                    console.log('Reached 6 calculations - upgrade required');
                 } else if (count >= 3 && !userEmail) {
                     // Don't show modal here - API will handle it with 403
                     console.log('Reached 3 calculations without email - email capture required');
@@ -1818,7 +1818,7 @@
                 const emailModal = document.getElementById('emailCaptureModal');
                 if (emailModal) emailModal.classList.add('hidden');
                 
-                // Update counter display to show new limit (10)
+                // Update counter display to show new limit (6)
                 const countElement = document.getElementById('calculationCount');
                 if (countElement) {
                     const count = parseInt(localStorage.getItem('calculationCount') || '0');
@@ -1826,7 +1826,7 @@
                 }
                 
                 // Show success toast
-                showSuccessToast('✅ Email saved! You now have 7 more calculations (10 total).');
+                showSuccessToast('✅ Email saved! You now have 3 more calculations (6 total).');
                 
                 // Re-enable scrolling
                 document.body.style.overflow = 'auto';
@@ -1863,11 +1863,11 @@
                     </svg>
                 </div>
                 <h3 class="text-2xl font-serif mb-2">You've used your 3 free calculations</h3>
-                <p class="text-muted-foreground">Enter your email to get 7 more calculations (10 total)</p>
+                <p class="text-muted-foreground">Enter your email to get 3 more calculations (6 total)</p>
             </div>
             <form id="modalEmailForm" class="space-y-4">
                 <input type="email" id="modalEmail" required placeholder="Enter your work email" class="w-full h-14 px-4 rounded-lg border border-border focus:ring-2 focus:ring-accent/30 focus:outline-none text-lg"/>
-                <button type="submit" class="w-full h-14 rounded-lg bg-accent text-white font-semibold hover:bg-accent/90 transition-colors">Get 7 More Calculations →</button>
+                <button type="submit" class="w-full h-14 rounded-lg bg-accent text-white font-semibold hover:bg-accent/90 transition-colors">Get 3 More Calculations →</button>
             </form>
         </div>
     </div>
@@ -1880,7 +1880,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                 </svg>
             </div>
-            <h3 class="text-2xl font-serif mb-2">You've used all 10 free calculations</h3>
+            <h3 class="text-2xl font-serif mb-2">You've used all 6 free calculations</h3>
             <p class="text-muted-foreground mb-6">Upgrade to unlimited for $299/month</p>
             <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" target="_blank" class="block w-full h-14 rounded-lg bg-accent text-white font-semibold hover:bg-accent/90 transition-colors mb-3 text-center leading-[3.5rem]">Upgrade Now - $299/month</a>
             <p class="text-sm text-muted-foreground mt-4 mb-3">
@@ -2214,7 +2214,7 @@ function updateCounterDisplay() {
     if (counterElement) {
         if (userEmail) {
             // Has email - show X / 10
-            counterElement.textContent = `${calcCount} / 10`;
+            counterElement.textContent = `${calcCount} / 6`;
         } else {
             // No email - show X / 3
             counterElement.textContent = `${Math.min(calcCount, 3)} / 3`;
@@ -2227,9 +2227,9 @@ function checkCalculationLimits(calcCount) {
     
     console.log(`🔍 Checking limits: count=${calcCount}, email=${userEmail ? 'yes' : 'no'}`);
     
-    if (calcCount >= 10) {
+    if (calcCount >= 6) {
         // Show upgrade modal regardless of email
-        console.log('💰 Showing upgrade modal (10+ calculations)');
+        console.log('💰 Showing upgrade modal (6+ calculations)');
         showUpgradeModal();
     } else if (calcCount >= 3 && !userEmail) {
         // Show email capture modal

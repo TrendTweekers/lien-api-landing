@@ -828,15 +828,15 @@ async def calculate_deadline(
                 db.close()
                 raise HTTPException(
                     status_code=403,
-                    detail="Free trial limit reached. Please provide your email for 7 more calculations."
+                    detail="Free trial limit reached. Please provide your email for 3 more calculations."
                 )
             
-            # If email provided but exceeded 10 total
-            if email and count >= 10:
+            # If email provided but exceeded 6 total
+            if email and count >= 6:
                 db.close()
                 raise HTTPException(
                     status_code=403,
-                    detail="Free trial limit reached (10 calculations). Upgrade to unlimited for $299/month."
+                    detail="Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
                 )
             
             # Update count
@@ -1549,7 +1549,7 @@ async def capture_email(request: Request):
                     email,
                     request.client.host,
                     request.headers.get('user-agent', ''),
-                    7  # Give them 7 more calculations
+                    3  # Give them 3 more calculations
                 ))
             else:
                 cursor.execute('''
@@ -1573,15 +1573,15 @@ async def capture_email(request: Request):
                     email,
                     request.client.host,
                     request.headers.get('user-agent', ''),
-                    7  # Give them 7 more calculations
+                    3  # Give them 3 more calculations
                 ))
         
         print(f"✅ Email captured: {email}")
         
         return {
             "status": "success",
-            "message": "Email saved! You have 7 more calculations.",
-            "calculations_remaining": 7
+            "message": "Email saved! You have 3 more calculations.",
+            "calculations_remaining": 3
         }
         
     except Exception as e:
