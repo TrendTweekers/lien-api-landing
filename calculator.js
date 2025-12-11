@@ -430,56 +430,18 @@ document.getElementById('emailReport').addEventListener('click', async () => {
 */
 
 // One-click calendar setup
-const display = document.getElementById('invoiceDateDisplay');
 const picker = document.getElementById('invoiceDatePicker');
+const display = document.getElementById('invoiceDateDisplay');
 
-// Set today as default invoice date
-if (picker) {
-    picker.valueAsDate = new Date();
-    // Sync initial value to display
-    const today = new Date();
-    const [y, m, d] = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')];
-    display.value = `${m}/${d}/${y}`;
-}
-
-/* mirror native → US mask */
+/* native → US mask */
 if (picker && display) {
     picker.addEventListener('change', e => {
         const [y, m, d] = e.target.value.split('-');
         display.value = `${m}/${d}/${y}`;
     });
 
-    /* open native calendar when user clicks the mask */
-    display.addEventListener('click', () => {
-        if (picker.showPicker) {
-            picker.showPicker();
-        } else {
-            // Fallback for browsers that don't support showPicker()
-            picker.focus();
-            picker.click();
-        }
-    });
-
-    // Handle manual typing in display field (MM/DD/YYYY → ISO)
-    display.addEventListener('input', (e) => {
-        let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-        if (value.length >= 2) {
-            value = value.substring(0, 2) + '/' + value.substring(2);
-        }
-        if (value.length >= 5) {
-            value = value.substring(0, 5) + '/' + value.substring(5, 9);
-        }
-        e.target.value = value;
-
-        // Convert MM/DD/YYYY to ISO format and set picker
-        if (value.length === 10) {
-            const [month, day, year] = value.split('/');
-            if (month && day && year && month.length === 2 && day.length === 2 && year.length === 4) {
-                const isoDate = `${year}-${month}-${day}`;
-                picker.value = isoDate;
-            }
-        }
-    });
+    /* click mask → open calendar (first click) */
+    display.addEventListener('click', () => picker.showPicker());
 }
 
 // Hide upgrade prompt if user is logged in (on page load)
