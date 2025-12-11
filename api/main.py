@@ -1197,7 +1197,6 @@ class BrokerApplication(BaseModel):
     name: str
     email: EmailStr
     company: str
-    phone: str = ""
     message: str = ""
     commission_model: str  # "bounty" or "recurring"
 
@@ -1227,7 +1226,6 @@ async def submit_broker_application(application: BrokerApplication):
         "name": application.name,
         "email": email,
         "company": application.company,
-        "phone": application.phone or "(not provided)",
         "message": application.message or "(no message)",
         "commission_model": application.commission_model,
         "applied_date": datetime.now().isoformat(),
@@ -1241,7 +1239,6 @@ async def submit_broker_application(application: BrokerApplication):
     print(f"Name: {application.name}")
     print(f"Email: {email}")
     print(f"Company: {application.company}")
-    print(f"Phone: {application.phone or '(not provided)'}")
     print(f"Message: {application.message or '(no message)'}")
     print(f"Commission Model: {application.commission_model}")
     print(f"{'='*50}\n")
@@ -1459,14 +1456,13 @@ async def apply_partner(request: Request):
                 # Insert application
                 cursor.execute("""
                     INSERT INTO partner_applications 
-                    (name, email, company, phone, client_count, commission_model, message, timestamp, status)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pending')
+                    (name, email, company, client_count, commission_model, message, timestamp, status)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending')
                     RETURNING id
                 """, (
                     name,
                     email,
                     company,
-                    phone,
                     str(client_count),
                     commission_model,
                     message,
