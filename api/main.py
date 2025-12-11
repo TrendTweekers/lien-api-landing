@@ -1582,22 +1582,15 @@ async def capture_email(request: Request):
             "status": "success",
             "message": "Email saved! You have 7 more calculations.",
             "calculations_remaining": 7
-                "new_limit": 10
-            }
-        except Exception as e:
-            print(f"Error capturing email: {e}")
-            import traceback
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=str(e))
-        finally:
-            db.close()
+        }
+        
     except Exception as e:
-        print(f"Validation error: {e}")
+        print(f"❌ Error capturing email: {e}")
         import traceback
         traceback.print_exc()
         return JSONResponse(
-            status_code=400,
-            content={"status": "error", "message": "Invalid email address"}
+            status_code=500,
+            content={"status": "error", "message": "Internal server error"}
         )
 
 # UTM tracking endpoint
