@@ -1710,10 +1710,11 @@
                 `;
                 resultsDiv.classList.remove('hidden');
                 
-                // Use handleCalculation function for consistent logic
+                // INCREMENT CALCULATION COUNT using handleCalculation()
                 const count = handleCalculation();
+                console.log(`📊 Calculation count after handleCalculation(): ${count}`);
                 
-                // Update display
+                // Update display (handleCalculation already updates counter, but keep this for compatibility)
                 const countElement = document.getElementById('calculationCount');
                 if (countElement) {
                     const userEmail = localStorage.getItem('userEmail');
@@ -1721,18 +1722,8 @@
                     countElement.textContent = `${count} / ${limit}`;
                 }
                 
-                // Also check if we should show modals based on count (backup check)
-                const userEmail = localStorage.getItem('userEmail');
-                if (count >= 10) {
-                    // Don't show modal here - API will handle it with 403
-                    console.log('Reached 6 calculations - upgrade required');
-                } else if (count >= 3 && !userEmail) {
-                    // Don't show modal here - API will handle it with 403
-                    console.log('Reached 3 calculations without email - email capture required');
-                }
-                
-                // Note: Email gate and upgrade modals are now handled by API 403 responses
-                // This local check is kept as backup but API should handle it
+                // Note: handleCalculation() already checks for modals and triggers them
+                // Email gate and upgrade modals are also handled by API 403 responses as backup
                 
             } catch (error) {
                 console.error('Full error details:', error);
