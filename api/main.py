@@ -3206,10 +3206,10 @@ async def get_calculations_today():
 # ==========================================
 @app.get("/api/debug/tables")
 async def debug_tables():
-    """Debug endpoint to check database state"""
+    """Debug endpoint - FIXED for context manager"""
     try:
         with get_db() as conn:
-            cursor = get_db_cursor(conn)
+            cursor = conn.cursor()
             
             # List all tables
             if DB_TYPE == 'postgresql':
@@ -3223,30 +3223,28 @@ async def debug_tables():
             
             tables = cursor.fetchall()
             
-            result = {"tables": [], "db_type": DB_TYPE}
+            result = {"db_type": DB_TYPE, "tables": []}
             
             for table_row in tables:
-                # Extract table name
-                if isinstance(table_row, dict):
-                    table_name = table_row.get('name') or table_row.get('table_name')
-                elif isinstance(table_row, tuple):
-                    table_name = table_row[0]
-                elif hasattr(table_row, '_fields'):
-                    table_name = table_row['name'] if 'name' in table_row._fields else table_row['table_name']
-                else:
-                    table_name = str(table_row)
-                
-                if not table_name:
-                    continue
-                
                 try:
+                    # Extract table name
+                    if hasattr(table_row, '_fields'):
+                        table_name = table_row['name'] if 'name' in table_row._fields else table_row.get('table_name')
+                    elif isinstance(table_row, dict):
+                        table_name = table_row.get('name') or table_row.get('table_name')
+                    else:
+                        table_name = table_row[0] if isinstance(table_row, tuple) else str(table_row)
+                    
+                    if not table_name:
+                        continue
+                    
                     # Count rows
                     cursor.execute(f"SELECT COUNT(*) as count FROM {table_name}")
                     count_result = cursor.fetchone()
-                    if isinstance(count_result, dict):
+                    if isinstance(count_result, tuple):
+                        count = count_result[0]
+                    elif isinstance(count_result, dict):
                         count = count_result.get('count', 0)
-                    elif isinstance(count_result, tuple):
-                        count = count_result[0] if len(count_result) > 0 else 0
                     elif hasattr(count_result, '_fields'):
                         count = count_result['count'] if 'count' in count_result._fields else 0
                     else:
@@ -3256,11 +3254,10 @@ async def debug_tables():
                     cursor.execute(f"SELECT * FROM {table_name} LIMIT 3")
                     sample = cursor.fetchall()
                     
-                    # Convert to list
+                    # Convert sample
                     sample_list = []
                     for row in sample:
                         if hasattr(row, '_fields'):
-                            # sqlite3.Row object
                             sample_list.append({key: str(row[key]) for key in row._fields})
                         elif isinstance(row, dict):
                             sample_list.append({k: str(v) for k, v in row.items()})
@@ -3272,9 +3269,10 @@ async def debug_tables():
                         "row_count": count,
                         "sample": sample_list
                     })
+                    
                 except Exception as table_error:
                     result["tables"].append({
-                        "name": table_name,
+                        "name": str(table_name) if 'table_name' in locals() else 'unknown',
                         "error": str(table_error)
                     })
         
@@ -3282,7 +3280,6 @@ async def debug_tables():
         
     except Exception as e:
         import traceback
-        traceback.print_exc()
         return {"error": str(e), "traceback": traceback.format_exc()}
 
 # ==========================================
