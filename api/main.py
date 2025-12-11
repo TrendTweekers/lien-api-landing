@@ -1018,6 +1018,12 @@ async def calculate_deadline(
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
+            # Format dates for database
+            today_str = date.today().isoformat()
+            prelim_date_str = prelim_deadline.date().isoformat()
+            lien_date_str = lien_deadline.date().isoformat()
+            notice_date_str = delivery_date.date().isoformat()
+            
             # Create tables if they don't exist
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
@@ -1031,9 +1037,12 @@ async def calculate_deadline(
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS calculations (
                         id SERIAL PRIMARY KEY,
-                        date VARCHAR NOT NULL,
+                        user_id INTEGER,
                         state VARCHAR NOT NULL,
-                        invoice_date VARCHAR NOT NULL,
+                        notice_date DATE NOT NULL,
+                        calculation_date DATE NOT NULL,
+                        preliminary_notice DATE,
+                        lien_deadline DATE,
                         created_at TIMESTAMP DEFAULT NOW()
                     )
                 """)
@@ -1051,13 +1060,23 @@ async def calculate_deadline(
                 client_ip = request.client.host if request and request.client else "unknown"
                 cursor.execute(
                     "INSERT INTO page_views(date, ip) VALUES (%s, %s)",
-                    (date.today().isoformat(), client_ip)
+                    (today_str, client_ip)
                 )
-                # Insert calculation
-                cursor.execute(
-                    "INSERT INTO calculations(date, state, invoice_date) VALUES (%s, %s, %s)",
-                    (date.today().isoformat(), state_code, invoice_date)
-                )
+                
+                # Insert calculation with detailed dates (PostgreSQL)
+                cursor.execute('''
+                    INSERT INTO calculations 
+                    (state, notice_date, calculation_date, preliminary_notice, lien_deadline)
+                    VALUES (%s, %s, %s, %s, %s)
+                ''', (
+                    state_code,
+                    notice_date_str,
+                    today_str,
+                    prelim_date_str,
+                    lien_date_str
+                ))
+                
+                print(f"✅ Calculation saved to PostgreSQL: {state_code} - Notice: {notice_date_str}, Prelim: {prelim_date_str}, Lien: {lien_date_str}")
             else:
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS page_views (
@@ -1070,9 +1089,12 @@ async def calculate_deadline(
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS calculations (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        date TEXT NOT NULL,
+                        user_id INTEGER,
                         state TEXT NOT NULL,
-                        invoice_date TEXT NOT NULL,
+                        notice_date DATE NOT NULL,
+                        calculation_date DATE NOT NULL,
+                        preliminary_notice DATE,
+                        lien_deadline DATE,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
@@ -1090,20 +1112,31 @@ async def calculate_deadline(
                 client_ip = request.client.host if request and request.client else "unknown"
                 cursor.execute(
                     "INSERT INTO page_views(date, ip) VALUES (?, ?)",
-                    (date.today().isoformat(), client_ip)
+                    (today_str, client_ip)
                 )
-                # Insert calculation
-                cursor.execute(
-                    "INSERT INTO calculations(date, state, invoice_date) VALUES (?, ?, ?)",
-                    (date.today().isoformat(), state_code, invoice_date)
-                )
+                
+                # Insert calculation with detailed dates (SQLite)
+                cursor.execute('''
+                    INSERT INTO calculations 
+                    (state, notice_date, calculation_date, preliminary_notice, lien_deadline)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (
+                    state_code,
+                    notice_date_str,
+                    today_str,
+                    prelim_date_str,
+                    lien_date_str
+                ))
+                
+                print(f"✅ Calculation saved to SQLite: {state_code} - Notice: {notice_date_str}, Prelim: {prelim_date_str}, Lien: {lien_date_str}")
             
             conn.commit()
     except Exception as e:
         # Don't fail the request if tracking fails
-        print(f"Failed to track analytics: {e}")
+        print(f"⚠️ Could not save calculation: {e}")
         import traceback
         traceback.print_exc()
+        # Continue even if saving fails
     
     # Determine urgency
     def get_urgency(days):
