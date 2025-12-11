@@ -1488,85 +1488,100 @@ async def apply_partner(request: Request):
         )
 
 @app.post("/api/v1/capture-email")
-async def capture_email(request: Request, request_data: TrackEmailRequest):
-    """Store email and extend calculation limit to 10 with validation"""
+async def capture_email(request: Request):
+    """Capture email from calculator gate"""
     from fastapi.responses import JSONResponse
-    import re
     
     try:
-        email = request_data.email.strip().lower() if request_data.email else ''
+        data = await request.json()
+        email = data.get('email', '').strip().lower()
         
-        # ENHANCED VALIDATION
-        # Check basic format
-        if not email or len(email) > 254:
+        # Basic validation
+        if not email:
             return JSONResponse(
                 status_code=400,
-                content={"status": "error", "message": "Invalid email address"}
+                content={"status": "error", "message": "Email is required"}
             )
         
-        # Regex validation
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        if not re.match(email_pattern, email):
+        if '@' not in email or '.' not in email.split('@')[-1]:
             return JSONResponse(
                 status_code=400,
-                content={"status": "error", "message": "Please enter a valid email address"}
+                content={"status": "error", "message": "Invalid email format"}
             )
         
-        # Check for common disposable domains (optional but recommended)
-        disposable_domains = ['tempmail.com', 'throwaway.email', '10minutemail.com', 'guerrillamail.com']
-        email_domain = email.split('@')[-1]
-        if email_domain in disposable_domains:
+        # Check disposable domains (optional)
+        disposable_domains = ['tempmail.com', 'throwaway.email', 'mailinator.com']
+        domain = email.split('@')[1]
+        if any(disposable in domain for disposable in disposable_domains):
             return JSONResponse(
                 status_code=400,
-                content={"status": "error", "message": "Please use a permanent email address"}
+                content={"status": "error", "message": "Disposable emails not allowed"}
             )
         
-        db = get_db()
-        try:
-            # Create email_gate_tracking table if it doesn't exist
-            db.execute("""
-                CREATE TABLE IF NOT EXISTS email_gate_tracking (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ip_address TEXT NOT NULL,
-                    email TEXT,
-                    calculation_count INTEGER DEFAULT 1,
-                    first_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    last_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    email_captured_at TIMESTAMP,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            db.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_ip ON email_gate_tracking(ip_address)")
-            db.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_email ON email_gate_tracking(email)")
+        # Save to database
+        with get_db() as conn:
+            cursor = conn.cursor()
             
-            client_ip = get_client_ip(request)
-            
-            # Check if record exists for this IP
-            existing = db.execute("""
-                SELECT id, calculation_count FROM email_gate_tracking WHERE ip_address = ?
-            """, (client_ip,)).fetchone()
-            
-            if existing:
-                # Update existing record with email
-                db.execute("""
-                    UPDATE email_gate_tracking 
-                    SET email = ?,
-                        email_captured_at = CURRENT_TIMESTAMP
-                    WHERE ip_address = ?
-                """, (email, client_ip))
+            # Create email_captures table if it doesn't exist
+            if DB_TYPE == 'postgresql':
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS email_captures (
+                        id SERIAL PRIMARY KEY,
+                        email VARCHAR NOT NULL UNIQUE,
+                        ip_address VARCHAR,
+                        user_agent TEXT,
+                        calculation_count INTEGER DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_captures_email ON email_captures(email)")
+                
+                # Insert or update (PostgreSQL)
+                cursor.execute('''
+                    INSERT INTO email_captures 
+                    (email, ip_address, user_agent, calculation_count)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (email) DO UPDATE SET
+                        calculation_count = EXCLUDED.calculation_count,
+                        ip_address = EXCLUDED.ip_address,
+                        user_agent = EXCLUDED.user_agent
+                ''', (
+                    email,
+                    request.client.host,
+                    request.headers.get('user-agent', ''),
+                    7  # Give them 7 more calculations
+                ))
             else:
-                # Create new record with email
-                db.execute("""
-                    INSERT INTO email_gate_tracking (ip_address, email, email_captured_at, calculation_count)
-                    VALUES (?, ?, CURRENT_TIMESTAMP, 0)
-                """, (client_ip, email))
-            
-            db.commit()
-            print(f"📧 Email captured: {email} from IP: {client_ip}")
-            
-            return {
-                "status": "success",
-                "message": "Email captured! You now have 7 more calculations (10 total).",
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS email_captures (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        email TEXT NOT NULL UNIQUE,
+                        ip_address TEXT,
+                        user_agent TEXT,
+                        calculation_count INTEGER DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_captures_email ON email_captures(email)")
+                
+                # Insert or update (SQLite)
+                cursor.execute('''
+                    INSERT OR REPLACE INTO email_captures 
+                    (email, ip_address, user_agent, calculation_count)
+                    VALUES (?, ?, ?, ?)
+                ''', (
+                    email,
+                    request.client.host,
+                    request.headers.get('user-agent', ''),
+                    7  # Give them 7 more calculations
+                ))
+        
+        print(f"✅ Email captured: {email}")
+        
+        return {
+            "status": "success",
+            "message": "Email saved! You have 7 more calculations.",
+            "calculations_remaining": 7
                 "new_limit": 10
             }
         except Exception as e:
