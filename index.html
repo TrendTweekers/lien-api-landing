@@ -1565,6 +1565,10 @@
                 return;
             }
             
+            // INCREMENT CALCULATION COUNT BEFORE API CALL
+            const currentCount = handleCalculation();
+            console.log(`📊 Calculation count: ${currentCount}`);
+            
             try {
                 console.log('Calling API with:', {
                     invoice_date: invoiceDate,
@@ -2194,8 +2198,8 @@ function validateDates() {
     const workDateInput = document.getElementById('workDate');
     
     if (!noticeDateInput || !workDateInput) {
-        console.error('Date inputs not found');
-        return true; // Allow submission if inputs don't exist
+        console.log('Date inputs not found - skipping validation');
+        return true; // Don't block calculation
     }
     
     const noticeDate = new Date(noticeDateInput.value);
