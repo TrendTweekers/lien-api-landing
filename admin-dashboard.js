@@ -90,13 +90,15 @@ async function loadPartnerApplications() {
         if (!Array.isArray(applications) || applications.length === 0) {
             safe.html('applicationsTable', `
                 <tr>
-                    <td colspan="6" class="text-center py-8 text-gray-500">
-                        <div class="flex flex-col items-center gap-2">
-                            <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                            <p>No partner applications yet</p>
+                    <td colspan="6" class="text-center py-12">
+                        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-3xl">
+                            📋
                         </div>
+                        <h3 class="text-lg font-semibold mb-2 text-gray-900">No Applications Yet</h3>
+                        <p class="text-gray-600 mb-4">Partner applications will appear here when submitted</p>
+                        <a href="/partners.html" class="text-blue-600 hover:underline inline-block">
+                            View Partner Program →
+                        </a>
                     </td>
                 </tr>
             `);
