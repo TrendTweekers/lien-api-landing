@@ -2383,33 +2383,55 @@ function updateCounterDisplay() {
     }
 }
 
+function shouldShowEmailGate() {
+    const calculationCount = parseInt(localStorage.getItem('calculationCount') || '0');
+    const userEmail = localStorage.getItem('userEmail');
+    const emailGiven = localStorage.getItem('emailGiven');
+    
+    console.log('📧 Email gate check:', {
+        calculationCount,
+        userEmail,
+        emailGiven,
+        atEmailGate: calculationCount === CALCULATIONS_BEFORE_EMAIL,
+        shouldShow: calculationCount === CALCULATIONS_BEFORE_EMAIL && !userEmail && !emailGiven
+    });
+    
+    return calculationCount === CALCULATIONS_BEFORE_EMAIL && !userEmail && !emailGiven;
+}
+
 function handleCalculation() {
     // Get current count
     let calculationCount = parseInt(localStorage.getItem('calculationCount') || '0');
+    
+    // DEBUG: Log BEFORE increment
+    console.log(`🔍 BEFORE increment: calculationCount = ${calculationCount}`);
+    console.log(`🔍 Email gate at: ${CALCULATIONS_BEFORE_EMAIL}, Upgrade gate at: ${TOTAL_FREE_CALCULATIONS}`);
     
     // Increment
     calculationCount++;
     localStorage.setItem('calculationCount', calculationCount.toString());
     
-    console.log(`📊 Calculation #${calculationCount}`, {
-        constants: {
-            beforeEmail: CALCULATIONS_BEFORE_EMAIL,
-            afterEmail: CALCULATIONS_AFTER_EMAIL,
-            totalFree: TOTAL_FREE_CALCULATIONS
-        },
-        shouldShowEmail: calculationCount === CALCULATIONS_BEFORE_EMAIL,
-        shouldShowUpgrade: calculationCount >= TOTAL_FREE_CALCULATIONS
-    });
+    // DEBUG: Log AFTER increment
+    console.log(`🔍 AFTER increment: calculationCount = ${calculationCount}`);
     
     // Check for email gate
-    if (calculationCount === CALCULATIONS_BEFORE_EMAIL) {
-        console.log('🎯 REACHED EMAIL GATE - showing modal...');
+    if (shouldShowEmailGate()) {
+        console.log(`🎯🎯🎯 EMAIL GATE HIT! calculationCount (${calculationCount}) === CALCULATIONS_BEFORE_EMAIL (${CALCULATIONS_BEFORE_EMAIL})`);
+        console.log('🎯 Calling showEmailCaptureModal()...');
         showEmailCaptureModal();
+    } else {
+        console.log(`🔍 Not at email gate: ${calculationCount} !== ${CALCULATIONS_BEFORE_EMAIL} OR user already has email`);
+        const userEmail = localStorage.getItem('userEmail');
+        const emailGiven = localStorage.getItem('emailGiven');
+        if (userEmail || emailGiven) {
+            console.log(`📧 User already has email: ${userEmail || emailGiven}`);
+        }
     }
     
     // Check for upgrade gate
     if (calculationCount >= TOTAL_FREE_CALCULATIONS) {
-        console.log('💰 REACHED UPGRADE GATE - showing modal...');
+        console.log(`💰💰💰 UPGRADE GATE HIT! calculationCount (${calculationCount}) >= TOTAL_FREE_CALCULATIONS (${TOTAL_FREE_CALCULATIONS})`);
+        console.log('💰 Calling showUpgradeModal()...');
         showUpgradeModal();
     }
     
