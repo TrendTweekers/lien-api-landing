@@ -140,6 +140,28 @@ else:
 print(f"📊 DB_TYPE variable set to: {DB_TYPE}")
 print("=" * 60)
 
+# Email configuration check
+print("=" * 60)
+print("📧 EMAIL CONFIGURATION CHECK")
+print("=" * 60)
+
+sendgrid_configured = bool(os.getenv('SENDGRID_API_KEY'))
+smtp_configured = bool(os.getenv('SMTP_EMAIL')) and bool(os.getenv('SMTP_PASSWORD'))
+
+if sendgrid_configured:
+    print("✅ SendGrid: CONFIGURED")
+    print("   From: support@liendeadline.com")
+elif smtp_configured:
+    print("✅ SMTP: CONFIGURED")
+    smtp_email = os.getenv('SMTP_EMAIL')
+    print(f"   From: {smtp_email}")
+else:
+    print("⚠️  NO EMAIL SERVICE CONFIGURED")
+    print("   Emails will be logged to console only")
+    print("   Users won't receive welcome emails or password resets")
+
+print("=" * 60)
+
 # Helper function to execute queries with proper placeholders
 def execute_query(conn, query, params=None):
     """Execute query with proper placeholders for PostgreSQL or SQLite"""
