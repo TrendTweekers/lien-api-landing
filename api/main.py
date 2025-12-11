@@ -3467,42 +3467,56 @@ def send_password_reset_email(email: str, reset_link: str):
 # ==========================================
 @app.get("/api/admin/calculations-today")
 async def get_calculations_today():
-    """Get today's calculation count - SIMPLIFIED"""
+    """Get today's calculations - Fixed counting with UTC timezone"""
     try:
+        # Use UTC date for consistency
+        from datetime import datetime, timezone
+        today_utc = datetime.now(timezone.utc).date()
+        
+        print(f"🔍 Counting calculations for today (UTC): {today_utc}")
+        
         with get_db() as conn:
-            cursor = conn.cursor()
+            cursor = get_db_cursor(conn)
             
-            # Get today's date
-            from datetime import datetime
-            today = datetime.now().strftime('%Y-%m-%d')
+            # Count ALL calculations from today (UTC)
+            if DB_TYPE == 'postgresql':
+                # PostgreSQL: Use calculation_date column and convert to UTC date
+                # Also check created_at as fallback
+                cursor.execute('''
+                    SELECT COUNT(*) as count 
+                    FROM calculations 
+                    WHERE DATE(calculation_date AT TIME ZONE 'UTC') = %s
+                       OR DATE(created_at AT TIME ZONE 'UTC') = %s
+                ''', (today_utc, today_utc))
+            else:
+                # SQLite: Use DATE() function
+                cursor.execute('''
+                    SELECT COUNT(*) as count 
+                    FROM calculations 
+                    WHERE DATE(calculation_date) = DATE('now')
+                       OR DATE(created_at) = DATE('now')
+                ''')
             
-            # Simple count - handle missing table gracefully
-            try:
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = %s", (today,))
-                else:
-                    cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = ?", (today,))
-                
-                result = cursor.fetchone()
-                
-                if hasattr(result, '_fields'):
-                    count = result['count']
-                elif isinstance(result, dict):
-                    count = result.get('count', 0)
-                else:
-                    count = result[0] if result else 0
-            except:
-                # Table might not exist
-                count = 0
+            result = cursor.fetchone()
             
-            # For testing, add some base count
-            display_count = max(count, 5)  # Show at least 5 for testing
+            # Handle different row formats
+            if isinstance(result, dict):
+                count = result.get('count', 0)
+            elif hasattr(result, 'keys'):
+                count = result['count'] if 'count' in result.keys() else (result[0] if len(result) > 0 else 0)
+            else:
+                count = result[0] if result and len(result) > 0 else 0
             
-            return {"calculations_today": display_count, "date": today}
+            count = int(count) if count else 0
+            print(f"✅ Found {count} calculations for today (UTC: {today_utc})")
+            
+            return {"calculations_today": count, "date": str(today_utc), "timezone": "UTC"}
             
     except Exception as e:
-        print(f"Error in calculations-today: {e}")
-        return {"calculations_today": 10, "error": str(e), "note": "Using fallback"}
+        print(f"❌ Error getting calculations today: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"calculations_today": 0, "error": str(e)}
 
 # ==========================================
 # DEBUG ENDPOINTS
