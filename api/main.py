@@ -439,7 +439,7 @@ def init_db():
                     # Insert sample data immediately after creation
                     try:
                         cursor.execute('''
-                            INSERT INTO partner_applications (name, email, company, commission_model, status)
+                            INSERT OR IGNORE INTO partner_applications (name, email, company, commission_model, status)
                             VALUES 
                             ('John Smith', 'john@insurance.com', 'Smith Insurance', 'bounty', 'pending'),
                             ('Jane Doe', 'jane@consulting.com', 'Doe Consulting', 'recurring', 'pending'),
