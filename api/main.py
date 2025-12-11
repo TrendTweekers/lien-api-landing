@@ -170,8 +170,8 @@ def init_db():
     
     # Create essential tables if they don't exist (works for both DB types)
     try:
-        with get_db() as db:
-            cursor = get_db_cursor(db)
+        with get_db() as conn:
+            cursor = conn.cursor()
             
             # Check which tables exist (for debugging)
             if DB_TYPE == 'postgresql':
