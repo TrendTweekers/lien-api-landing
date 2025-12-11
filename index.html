@@ -1706,16 +1706,14 @@
                 `;
                 resultsDiv.classList.remove('hidden');
                 
-                // Update calculation count
-                let count = parseInt(localStorage.getItem('calculationCount') || '0');
-                count++;
-                localStorage.setItem('calculationCount', count);
+                // Use handleCalculation function for consistent logic
+                const count = handleCalculation();
                 
                 // Update display
                 const countElement = document.getElementById('calculationCount');
                 if (countElement) {
                     const userEmail = localStorage.getItem('userEmail');
-                    const limit = userEmail ? 6 : 3;
+                    const limit = userEmail ? TOTAL_FREE_CALCULATIONS : CALCULATIONS_BEFORE_EMAIL;
                     countElement.textContent = `${count} / ${limit}`;
                 }
                 
@@ -1754,8 +1752,24 @@
         
         // Modal functions
         function showEmailCaptureModal() {
+            console.log('📧 Attempting to show email modal...');
             const modal = document.getElementById('emailCaptureModal');
-            if (modal) modal.classList.remove('hidden');
+            if (modal) {
+                modal.style.display = 'flex';  // Use style.display for simple modals
+                document.body.style.overflow = 'hidden';
+                console.log('✅ Email modal shown');
+            } else {
+                console.error('❌ Email modal not found in DOM');
+                // Fallback: show prompt
+                const email = prompt('Enter email for 3 more calculations:');
+                if (email) {
+                    fetch('/api/v1/capture-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, timestamp: new Date().toISOString() })
+                    }).catch(err => console.error('Fallback email capture error:', err));
+                }
+            }
         }
         
         function hideEmailCaptureModal() {
@@ -2313,17 +2327,13 @@ document.addEventListener('DOMContentLoaded', function() {
             // Display results (your existing display logic)
             displayResults(result);
             
-            // Increment calculation counter
-            let calcCount = parseInt(localStorage.getItem('calcCount') || '0') + 1;
-            localStorage.setItem('calcCount', calcCount.toString());
+            // Increment calculation counter using handleCalculation
+            const calcCount = handleCalculation();
             
             console.log(`📊 Calculation count incremented to: ${calcCount}`);
             
-            // Update counter display
-            updateCounterDisplay();
-            
-            // Check if modals should appear
-            checkCalculationLimits(calcCount);
+            // Also update calcCount in localStorage for compatibility
+            localStorage.setItem('calcCount', calcCount.toString());
             
         } catch (error) {
             console.error('❌ Calculation error:', error);
