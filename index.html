@@ -1554,6 +1554,8 @@
         safeAddListener('calculatorForm', 'submit', async (e) => {
             e.preventDefault();
             
+            console.log('📝 Form submitted');
+            
             const picker = document.getElementById('invoiceDatePicker');
             const invoiceDate = picker ? picker.value : '';
             const state = document.getElementById('state').value;
@@ -1565,9 +1567,28 @@
                 return;
             }
             
-            // INCREMENT CALCULATION COUNT BEFORE API CALL
-            const currentCount = handleCalculation();
-            console.log(`📊 Calculation count: ${currentCount}`);
+            // Check if user needs to provide email BEFORE API call
+            const userEmail = localStorage.getItem('userEmail');
+            const emailGiven = localStorage.getItem('emailGiven');
+            const calculationCount = parseInt(localStorage.getItem('calculationCount') || '0');
+            
+            console.log('🔍 Pre-submit check:', {
+                calculationCount,
+                userEmail,
+                emailGiven,
+                shouldShowEmail: calculationCount >= 2 && !userEmail && !emailGiven
+            });
+            
+            // If user has no email and this is calculation 3+, show modal FIRST
+            if (!userEmail && !emailGiven && calculationCount >= 2) {
+                console.log('🛑 Blocking form submit - user needs email first');
+                showEmailCaptureModal();
+                return; // Stop form submission
+            }
+            
+            // Call handleCalculation FIRST (important!)
+            const newCount = handleCalculation();
+            console.log(`📊 Counter updated: ${newCount}`);
             
             try {
                 console.log('Calling API with:', {
@@ -2406,39 +2427,45 @@ function shouldShowEmailGate() {
     return calculationCount === CALCULATIONS_BEFORE_EMAIL && !userEmail && !emailGiven;
 }
 
+// UPDATED handleCalculation function
 function handleCalculation() {
-    // Get current count
     let calculationCount = parseInt(localStorage.getItem('calculationCount') || '0');
     
-    // DEBUG: Log BEFORE increment
-    console.log(`🔍 BEFORE increment: calculationCount = ${calculationCount}`);
-    console.log(`🔍 Email gate at: ${CALCULATIONS_BEFORE_EMAIL}, Upgrade gate at: ${TOTAL_FREE_CALCULATIONS}`);
+    // DEBUG: Log initial state
+    console.log('🔍 handleCalculation called:', {
+        beforeCount: calculationCount,
+        userEmail: localStorage.getItem('userEmail'),
+        emailGiven: localStorage.getItem('emailGiven')
+    });
     
-    // Increment
+    // Increment counter
     calculationCount++;
     localStorage.setItem('calculationCount', calculationCount.toString());
     
-    // DEBUG: Log AFTER increment
-    console.log(`🔍 AFTER increment: calculationCount = ${calculationCount}`);
+    console.log(`📊 Calculation #${calculationCount}`);
     
-    // Check for email gate
-    if (shouldShowEmailGate()) {
-        console.log(`🎯🎯🎯 EMAIL GATE HIT! calculationCount (${calculationCount}) === CALCULATIONS_BEFORE_EMAIL (${CALCULATIONS_BEFORE_EMAIL})`);
+    // CRITICAL FIX: Check if we should show email modal
+    const userEmail = localStorage.getItem('userEmail');
+    const emailGiven = localStorage.getItem('emailGiven');
+    const hasEmail = !!(userEmail || emailGiven);
+    
+    console.log('📧 Email status:', {
+        userEmail,
+        emailGiven,
+        hasEmail,
+        atEmailGate: calculationCount === CALCULATIONS_BEFORE_EMAIL
+    });
+    
+    // If no email AND at calculation 3, FORCE show modal
+    if (!hasEmail && calculationCount === CALCULATIONS_BEFORE_EMAIL) {
+        console.log('🎯🎯🎯 FORCING EMAIL MODAL AT CALCULATION 3!');
         console.log('🎯 Calling showEmailCaptureModal()...');
         showEmailCaptureModal();
-    } else {
-        console.log(`🔍 Not at email gate: ${calculationCount} !== ${CALCULATIONS_BEFORE_EMAIL} OR user already has email`);
-        const userEmail = localStorage.getItem('userEmail');
-        const emailGiven = localStorage.getItem('emailGiven');
-        if (userEmail || emailGiven) {
-            console.log(`📧 User already has email: ${userEmail || emailGiven}`);
-        }
     }
     
     // Check for upgrade gate
     if (calculationCount >= TOTAL_FREE_CALCULATIONS) {
-        console.log(`💰💰💰 UPGRADE GATE HIT! calculationCount (${calculationCount}) >= TOTAL_FREE_CALCULATIONS (${TOTAL_FREE_CALCULATIONS})`);
-        console.log('💰 Calling showUpgradeModal()...');
+        console.log(`💰 Upgrade modal at calculation ${calculationCount}`);
         showUpgradeModal();
     }
     

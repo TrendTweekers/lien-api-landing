@@ -912,19 +912,25 @@ async def calculate_deadline(
                     count = tracking[0] if tracking else 0
                     email = tracking[1] if tracking and len(tracking) > 1 else None
                 
-                # If no email and already used 3 calculations
-                if not email and count >= 3:
-                    raise HTTPException(
-                        status_code=403,
-                        detail="Free trial limit reached. Please provide your email for 3 more calculations."
-                    )
+                # TEMPORARY: Disable backend 403 blocking - let frontend handle the flow
+                # Frontend will show modals at calculation 3 and 6
+                # if not email and count >= 3:
+                #     raise HTTPException(
+                #         status_code=403,
+                #         detail="Free trial limit reached. Please provide your email for 3 more calculations."
+                #     )
                 
-                # If email provided but exceeded 6 total
+                # if email and count >= 6:
+                #     raise HTTPException(
+                #         status_code=403,
+                #         detail="Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
+                #     )
+                
+                # Log for debugging
+                if not email and count >= 3:
+                    print(f"⚠️ User at calculation {count} without email - frontend will handle modal")
                 if email and count >= 6:
-                    raise HTTPException(
-                        status_code=403,
-                        detail="Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
-                    )
+                    print(f"⚠️ User at calculation {count} with email - frontend will handle upgrade modal")
                 
                 # Update count
                 if DB_TYPE == 'postgresql':
