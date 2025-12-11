@@ -3295,46 +3295,44 @@ async def get_pending_brokers():
     try:
         print("🔍 GET /api/v1/broker/pending called")
         
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        # SIMPLE query that should work
-        cursor.execute('''
-            SELECT id, name, email, company, commission_model, 
-                   status, applied_at
-            FROM partner_applications 
-            WHERE status = 'pending'
-            ORDER BY applied_at DESC
-        ''')
-        
-        rows = cursor.fetchall()
-        
-        # Convert rows to dicts properly
-        pending = []
-        for row in rows:
-            if hasattr(row, '_fields'):  # sqlite3.Row
-                pending.append({key: row[key] for key in row._fields})
-            elif isinstance(row, dict):
-                pending.append(row)
-            elif isinstance(row, tuple):
-                # Handle tuple - map by position
-                pending.append({
-                    'id': row[0] if len(row) > 0 else None,
-                    'name': row[1] if len(row) > 1 else None,
-                    'email': row[2] if len(row) > 2 else None,
-                    'company': row[3] if len(row) > 3 else None,
-                    'commission_model': row[4] if len(row) > 4 else None,
-                    'status': row[5] if len(row) > 5 else None,
-                    'applied_at': row[6] if len(row) > 6 else None
-                })
-            else:
-                # Try dict conversion as last resort
-                try:
-                    pending.append(dict(row))
-                except:
-                    pass
-        
-        conn.close()
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # SIMPLE query that should work
+            cursor.execute('''
+                SELECT id, name, email, company, commission_model, 
+                       status, applied_at
+                FROM partner_applications 
+                WHERE status = 'pending'
+                ORDER BY applied_at DESC
+            ''')
+            
+            rows = cursor.fetchall()
+            
+            # Convert rows to dicts properly
+            pending = []
+            for row in rows:
+                if hasattr(row, '_fields'):  # sqlite3.Row
+                    pending.append({key: row[key] for key in row._fields})
+                elif isinstance(row, dict):
+                    pending.append(row)
+                elif isinstance(row, tuple):
+                    # Handle tuple - map by position
+                    pending.append({
+                        'id': row[0] if len(row) > 0 else None,
+                        'name': row[1] if len(row) > 1 else None,
+                        'email': row[2] if len(row) > 2 else None,
+                        'company': row[3] if len(row) > 3 else None,
+                        'commission_model': row[4] if len(row) > 4 else None,
+                        'status': row[5] if len(row) > 5 else None,
+                        'applied_at': row[6] if len(row) > 6 else None
+                    })
+                else:
+                    # Try dict conversion as last resort
+                    try:
+                        pending.append(dict(row))
+                    except:
+                        pass
         
         print(f"✅ Found {len(pending)} pending brokers")
         
