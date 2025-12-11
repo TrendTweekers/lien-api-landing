@@ -3437,10 +3437,10 @@ async def get_pending_brokers():
             if DB_TYPE == 'postgresql':
                 query = '''
                     SELECT id, name, email, company, commission_model, 
-                           status, COALESCE(applied_at, created_at, timestamp::timestamp) as applied_at
+                           status, COALESCE(applied_at, created_at) as applied_at
                     FROM partner_applications 
                     WHERE status = 'pending'
-                    ORDER BY COALESCE(applied_at, created_at, timestamp::timestamp) DESC
+                    ORDER BY COALESCE(applied_at, created_at) DESC
                 '''
             else:
                 # SQLite version
