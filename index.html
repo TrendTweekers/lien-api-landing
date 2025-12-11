@@ -2173,7 +2173,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Increment calculation counter
             let calcCount = parseInt(localStorage.getItem('calcCount') || '0') + 1;
-            localStorage.setItem('calcCount', calcCount);
+            localStorage.setItem('calcCount', calcCount.toString());
+            
+            console.log(`📊 Calculation count incremented to: ${calcCount}`);
             
             // Update counter display
             updateCounterDisplay();
