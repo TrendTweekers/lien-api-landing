@@ -17,7 +17,15 @@
     <!-- Tailwind CSS CDN -->
     <!-- Tailwind Config to suppress production warning -->
     <script>
-        window.tailwindConfig = { darkMode: false };
+        // Suppress Tailwind warnings
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
+            darkMode: false,
+            theme: {
+                extend: {}
+            },
+            plugins: []
+        };
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     
