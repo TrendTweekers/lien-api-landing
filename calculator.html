@@ -78,25 +78,23 @@
                     <label for="invoiceDateDisplay" class="block text-sm font-medium text-gray-700 mb-2">
                         Invoice/Delivery Date <span class="text-gray-500 font-normal">(MM/DD/YYYY)</span>
                     </label>
-                    <!-- US mask + native calendar (one click) -->
+                    <!-- One-click calendar + US mask -->
                     <div class="relative w-full h-16">
-                        <!-- Visible US mask -->
-                        <input
-                            id="invoiceDateDisplay"
-                            type="text"
-                            placeholder="MM/DD/YYYY"
-                            maxlength="10"
-                            required
-                            class="w-full h-full px-5 rounded-xl border-2 border-gray-300 bg-white text-gray-900 text-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                        >
-                        <!-- Invisible native calendar (click-through) -->
+                        <!-- Invisible native picker (opens first click) -->
                         <input
                             id="invoiceDatePicker"
                             type="date"
                             class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         >
+                        <!-- Visible mask (read-only, updates automatically) -->
+                        <input
+                            id="invoiceDateDisplay"
+                            type="text"
+                            placeholder="MM/DD/YYYY"
+                            readonly
+                            class="w-full h-full px-5 rounded-xl border-2 border-gray-300 bg-white text-gray-900 text-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        >
                     </div>
-                    <p class="mt-1 text-xs text-gray-500">Click to open calendar or type MM/DD/YYYY</p>
                 </div>
 
                 <!-- State -->
