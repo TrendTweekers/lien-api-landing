@@ -3142,15 +3142,12 @@ def send_password_reset_email(email: str, reset_link: str):
 # ==========================================
 @app.get("/api/admin/calculations-today")
 async def get_calculations_today():
-    """Get today's calculation count"""
+    """Get today's calculation count - FIXED"""
     try:
-        # Initialize database first (ensures tables exist)
-        init_db()
-        
         with get_db() as conn:
-            cursor = get_db_cursor(conn)
+            cursor = conn.cursor()
             
-            # Check if calculations table exists
+            # Check if table exists
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     SELECT EXISTS (
@@ -3166,39 +3163,30 @@ async def get_calculations_today():
                 table_exists = cursor.fetchone() is not None
             
             if not table_exists:
-                print("DEBUG: calculations table doesn't exist yet")
-                return {"calculations_today": 0, "message": "Calculations table not found"}
+                return {"calculations_today": 0, "note": "Table not found"}
             
-            # Get today's date
+            # Get count
+            from datetime import datetime
             today = datetime.now().strftime('%Y-%m-%d')
             
-            # Count calculations from today
             if DB_TYPE == 'postgresql':
-                cursor.execute("""
-                    SELECT COUNT(*) as count 
-                    FROM calculations 
-                    WHERE DATE(created_at) = %s
-                """, (today,))
+                cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = %s", (today,))
             else:
-                cursor.execute("""
-                    SELECT COUNT(*) as count 
-                    FROM calculations 
-                    WHERE DATE(created_at) = ?
-                """, (today,))
+                cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = ?", (today,))
             
-            if DB_TYPE == 'postgresql':
-                result = cursor.fetchone()
-                count = result['count'] if result else 0
+            result = cursor.fetchone()
+            
+            if hasattr(result, '_fields'):
+                count = result['count']
+            elif isinstance(result, dict):
+                count = result.get('count', 0)
             else:
-                result = cursor.fetchone()
-                count = result['count'] if result and result['count'] else 0
+                count = result[0] if isinstance(result, tuple) and len(result) > 0 else 0
             
-            return {"calculations_today": count, "date": today}
+            return {"calculations_today": count or 0, "date": today}
             
     except Exception as e:
-        print(f"ERROR in get_calculations_today: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        print(f"Error in calculations-today: {e}")
         return {"calculations_today": 0, "error": str(e)}
 
 # ==========================================
