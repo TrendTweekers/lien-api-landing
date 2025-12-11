@@ -2215,12 +2215,18 @@ function updateCounterDisplay() {
 function checkCalculationLimits(calcCount) {
     const userEmail = localStorage.getItem('userEmail');
     
+    console.log(`🔍 Checking limits: count=${calcCount}, email=${userEmail ? 'yes' : 'no'}`);
+    
     if (calcCount >= 10) {
         // Show upgrade modal regardless of email
+        console.log('💰 Showing upgrade modal (10+ calculations)');
         showUpgradeModal();
     } else if (calcCount >= 3 && !userEmail) {
         // Show email capture modal
+        console.log('📧 Showing email capture modal (3+ calculations, no email)');
         showEmailCaptureModal();
+    } else {
+        console.log('✅ No modal needed');
     }
 }
 
