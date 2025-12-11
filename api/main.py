@@ -844,79 +844,127 @@ async def calculate_deadline(
     # Get client IP for email gate tracking
     client_ip = get_client_ip(request)
     
-    # Email gate tracking - check if IP has exceeded free limit
-    db = get_db()
+    # Email gate tracking - check if IP has exceeded free limit (PostgreSQL compatible)
     try:
-        # Create email_gate_tracking table if it doesn't exist
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS email_gate_tracking (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ip_address TEXT NOT NULL,
-                email TEXT,
-                calculation_count INTEGER DEFAULT 1,
-                first_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                email_captured_at TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        db.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_ip ON email_gate_tracking(ip_address)")
-        db.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_email ON email_gate_tracking(email)")
-        
-        # Check if IP has exceeded free limit without providing email
-        tracking = db.execute("""
-            SELECT calculation_count, email, email_captured_at 
-            FROM email_gate_tracking 
-            WHERE ip_address = ? 
-            ORDER BY last_calculation_at DESC 
-            LIMIT 1
-        """, (client_ip,)).fetchone()
-        
-        if tracking:
-            count = tracking[0] if tracking else 0
-            email = tracking[1] if tracking and len(tracking) > 1 else None
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
             
-            # If no email and already used 3 calculations
-            if not email and count >= 3:
-                db.close()
-                raise HTTPException(
-                    status_code=403,
-                    detail="Free trial limit reached. Please provide your email for 3 more calculations."
-                )
+            # Create email_gate_tracking table if it doesn't exist
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS email_gate_tracking (
+                        id SERIAL PRIMARY KEY,
+                        ip_address VARCHAR NOT NULL,
+                        email VARCHAR,
+                        calculation_count INTEGER DEFAULT 1,
+                        first_calculation_at TIMESTAMP DEFAULT NOW(),
+                        last_calculation_at TIMESTAMP DEFAULT NOW(),
+                        email_captured_at TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_ip ON email_gate_tracking(ip_address)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_email ON email_gate_tracking(email)")
+                
+                # Check if IP has exceeded free limit without providing email
+                cursor.execute("""
+                    SELECT calculation_count, email, email_captured_at 
+                    FROM email_gate_tracking 
+                    WHERE ip_address = %s 
+                    ORDER BY last_calculation_at DESC 
+                    LIMIT 1
+                """, (client_ip,))
+            else:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS email_gate_tracking (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ip_address TEXT NOT NULL,
+                        email TEXT,
+                        calculation_count INTEGER DEFAULT 1,
+                        first_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        last_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        email_captured_at TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_ip ON email_gate_tracking(ip_address)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_email ON email_gate_tracking(email)")
+                
+                cursor.execute("""
+                    SELECT calculation_count, email, email_captured_at 
+                    FROM email_gate_tracking 
+                    WHERE ip_address = ? 
+                    ORDER BY last_calculation_at DESC 
+                    LIMIT 1
+                """, (client_ip,))
             
-            # If email provided but exceeded 6 total
-            if email and count >= 6:
-                db.close()
-                raise HTTPException(
-                    status_code=403,
-                    detail="Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
-                )
+            tracking = cursor.fetchone()
             
-            # Update count
-            db.execute("""
-                UPDATE email_gate_tracking 
-                SET calculation_count = calculation_count + 1,
-                    last_calculation_at = CURRENT_TIMESTAMP
-                WHERE ip_address = ?
-            """, (client_ip,))
-        else:
-            # First calculation from this IP
-            db.execute("""
-                INSERT INTO email_gate_tracking (ip_address, calculation_count)
-                VALUES (?, 1)
-            """, (client_ip,))
-        
-        db.commit()
+            if tracking:
+                # Handle different row formats
+                if isinstance(tracking, dict):
+                    count = tracking.get('calculation_count', 0)
+                    email = tracking.get('email')
+                elif hasattr(tracking, 'keys'):
+                    count = tracking['calculation_count'] if 'calculation_count' in tracking.keys() else tracking[0]
+                    email = tracking['email'] if 'email' in tracking.keys() else (tracking[1] if len(tracking) > 1 else None)
+                else:
+                    count = tracking[0] if tracking else 0
+                    email = tracking[1] if tracking and len(tracking) > 1 else None
+                
+                # If no email and already used 3 calculations
+                if not email and count >= 3:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Free trial limit reached. Please provide your email for 3 more calculations."
+                    )
+                
+                # If email provided but exceeded 6 total
+                if email and count >= 6:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
+                    )
+                
+                # Update count
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        UPDATE email_gate_tracking 
+                        SET calculation_count = calculation_count + 1,
+                            last_calculation_at = NOW()
+                        WHERE ip_address = %s
+                    """, (client_ip,))
+                else:
+                    cursor.execute("""
+                        UPDATE email_gate_tracking 
+                        SET calculation_count = calculation_count + 1,
+                            last_calculation_at = CURRENT_TIMESTAMP
+                        WHERE ip_address = ?
+                    """, (client_ip,))
+            else:
+                # First calculation from this IP
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        INSERT INTO email_gate_tracking (ip_address, calculation_count)
+                        VALUES (%s, 1)
+                    """, (client_ip,))
+                else:
+                    cursor.execute("""
+                        INSERT INTO email_gate_tracking (ip_address, calculation_count)
+                        VALUES (?, 1)
+                    """, (client_ip,))
+            
+            conn.commit()
     except HTTPException:
         raise
     except Exception as e:
         print(f"Error in email gate tracking: {e}")
+        import traceback
+        traceback.print_exc()
         # Continue with calculation even if tracking fails
     
     # Validate state
     if state_code not in STATE_RULES:
-        if db:
-            db.close()
         return {
             "error": f"State {state_code} not supported",
             "available_states": list(STATE_RULES.keys()),
@@ -965,53 +1013,97 @@ async def calculate_deadline(
     days_to_prelim = (prelim_deadline - today).days
     days_to_lien = (lien_deadline - today).days
     
-    # Track page view and calculation (non-blocking)
+    # Track page view and calculation (non-blocking, PostgreSQL compatible)
     try:
-        db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
-        con = sqlite3.connect(str(db_path))
-        # Create tables if they don't exist
-        con.execute("""
-            CREATE TABLE IF NOT EXISTS page_views (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT NOT NULL,
-                ip TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        con.execute("""
-            CREATE TABLE IF NOT EXISTS calculations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT NOT NULL,
-                state TEXT NOT NULL,
-                invoice_date TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        con.execute("""
-            CREATE TABLE IF NOT EXISTS payments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT NOT NULL,
-                amount REAL NOT NULL,
-                customer_email TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        # Insert page view (get IP from request if available)
-        client_ip = request.client.host if request and request.client else "unknown"
-        con.execute(
-            "INSERT INTO page_views(date, ip) VALUES (?, ?)",
-            (date.today().isoformat(), client_ip)
-        )
-        # Insert calculation
-        con.execute(
-            "INSERT INTO calculations(date, state, invoice_date) VALUES (?, ?, ?)",
-            (date.today().isoformat(), state_code, invoice_date)
-        )
-        con.commit()
-        con.close()
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Create tables if they don't exist
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS page_views (
+                        id SERIAL PRIMARY KEY,
+                        date VARCHAR NOT NULL,
+                        ip VARCHAR NOT NULL,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS calculations (
+                        id SERIAL PRIMARY KEY,
+                        date VARCHAR NOT NULL,
+                        state VARCHAR NOT NULL,
+                        invoice_date VARCHAR NOT NULL,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS payments (
+                        id SERIAL PRIMARY KEY,
+                        date VARCHAR NOT NULL,
+                        amount DECIMAL(10, 2) NOT NULL,
+                        customer_email VARCHAR,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                
+                # Insert page view
+                client_ip = request.client.host if request and request.client else "unknown"
+                cursor.execute(
+                    "INSERT INTO page_views(date, ip) VALUES (%s, %s)",
+                    (date.today().isoformat(), client_ip)
+                )
+                # Insert calculation
+                cursor.execute(
+                    "INSERT INTO calculations(date, state, invoice_date) VALUES (%s, %s, %s)",
+                    (date.today().isoformat(), state_code, invoice_date)
+                )
+            else:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS page_views (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        date TEXT NOT NULL,
+                        ip TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS calculations (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        date TEXT NOT NULL,
+                        state TEXT NOT NULL,
+                        invoice_date TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS payments (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        date TEXT NOT NULL,
+                        amount REAL NOT NULL,
+                        customer_email TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # Insert page view
+                client_ip = request.client.host if request and request.client else "unknown"
+                cursor.execute(
+                    "INSERT INTO page_views(date, ip) VALUES (?, ?)",
+                    (date.today().isoformat(), client_ip)
+                )
+                # Insert calculation
+                cursor.execute(
+                    "INSERT INTO calculations(date, state, invoice_date) VALUES (?, ?, ?)",
+                    (date.today().isoformat(), state_code, invoice_date)
+                )
+            
+            conn.commit()
     except Exception as e:
         # Don't fail the request if tracking fails
         print(f"Failed to track analytics: {e}")
+        import traceback
+        traceback.print_exc()
     
     # Determine urgency
     def get_urgency(days):
@@ -1654,46 +1746,83 @@ class UTMTrackingRequest(BaseModel):
 
 @app.post("/api/v1/track-utm")
 async def track_utm(request: Request, utm_data: UTMTrackingRequest):
-    """Track UTM parameters for marketing attribution"""
-    db = get_db()
+    """Track UTM parameters for marketing attribution - PostgreSQL compatible"""
     try:
-        # Create utm_tracking table if it doesn't exist
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS utm_tracking (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ip_address TEXT NOT NULL,
-                utm_source TEXT,
-                utm_medium TEXT,
-                utm_campaign TEXT,
-                utm_term TEXT,
-                utm_content TEXT,
-                timestamp TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        db.execute("CREATE INDEX IF NOT EXISTS idx_utm_ip ON utm_tracking(ip_address)")
-        db.execute("CREATE INDEX IF NOT EXISTS idx_utm_source ON utm_tracking(utm_source)")
-        db.execute("CREATE INDEX IF NOT EXISTS idx_utm_campaign ON utm_tracking(utm_campaign)")
-        
-        client_ip = get_client_ip(request)
-        
-        # Insert UTM data
-        db.execute("""
-            INSERT INTO utm_tracking 
-            (ip_address, utm_source, utm_medium, utm_campaign, utm_term, utm_content, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            client_ip,
-            utm_data.source,
-            utm_data.medium,
-            utm_data.campaign,
-            utm_data.term,
-            utm_data.content,
-            utm_data.timestamp
-        ))
-        
-        db.commit()
-        print(f"📊 UTM tracked: source={utm_data.source}, medium={utm_data.medium}, campaign={utm_data.campaign} from IP: {client_ip}")
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Create utm_tracking table if it doesn't exist
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS utm_tracking (
+                        id SERIAL PRIMARY KEY,
+                        ip_address VARCHAR NOT NULL,
+                        utm_source VARCHAR,
+                        utm_medium VARCHAR,
+                        utm_campaign VARCHAR,
+                        utm_term VARCHAR,
+                        utm_content VARCHAR,
+                        timestamp VARCHAR NOT NULL,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_utm_ip ON utm_tracking(ip_address)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_utm_source ON utm_tracking(utm_source)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_utm_campaign ON utm_tracking(utm_campaign)")
+                
+                client_ip = get_client_ip(request)
+                
+                # Insert UTM data (PostgreSQL)
+                cursor.execute("""
+                    INSERT INTO utm_tracking 
+                    (ip_address, utm_source, utm_medium, utm_campaign, utm_term, utm_content, timestamp)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    client_ip,
+                    utm_data.source,
+                    utm_data.medium,
+                    utm_data.campaign,
+                    utm_data.term,
+                    utm_data.content,
+                    utm_data.timestamp
+                ))
+            else:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS utm_tracking (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ip_address TEXT NOT NULL,
+                        utm_source TEXT,
+                        utm_medium TEXT,
+                        utm_campaign TEXT,
+                        utm_term TEXT,
+                        utm_content TEXT,
+                        timestamp TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_utm_ip ON utm_tracking(ip_address)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_utm_source ON utm_tracking(utm_source)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_utm_campaign ON utm_tracking(utm_campaign)")
+                
+                client_ip = get_client_ip(request)
+                
+                # Insert UTM data (SQLite)
+                cursor.execute("""
+                    INSERT INTO utm_tracking 
+                    (ip_address, utm_source, utm_medium, utm_campaign, utm_term, utm_content, timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    client_ip,
+                    utm_data.source,
+                    utm_data.medium,
+                    utm_data.campaign,
+                    utm_data.term,
+                    utm_data.content,
+                    utm_data.timestamp
+                ))
+            
+            conn.commit()
+            print(f"📊 UTM tracked: source={utm_data.source}, medium={utm_data.medium}, campaign={utm_data.campaign} from IP: {client_ip}")
         
         return {"status": "success", "message": "UTM parameters tracked"}
     except Exception as e:
@@ -1701,8 +1830,6 @@ async def track_utm(request: Request, utm_data: UTMTrackingRequest):
         import traceback
         traceback.print_exc()
         return {"status": "error", "message": str(e)}
-    finally:
-        db.close()
 
 @app.post("/track-email")
 async def track_email(request_data: TrackEmailRequest, request: Request):
@@ -2760,129 +2887,171 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
 
 @app.get("/api/admin/partner-applications")
 async def get_partner_applications_api(username: str = Depends(verify_admin)):
-    """Get all partner applications"""
-    db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
-    con = sqlite3.connect(str(db_path))
-    cur = con.cursor()
-    
+    """Get all partner applications - PostgreSQL compatible"""
     try:
-        # Check if table exists
-        cur.execute("""
-            SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='partner_applications'
-        """)
-        if not cur.fetchone():
-            con.close()
-            return {"applications": []}  # Return empty list wrapped in object
-        
-        cur.execute("""
-            SELECT id, name, email, company, client_count, timestamp, status, message, commission_model
-            FROM partner_applications 
-            ORDER BY timestamp DESC
-        """)
-        apps = cur.fetchall()
-        
-        applications = [
-            {
-                "id": app[0],
-                "name": app[1] if app[1] else "N/A",
-                "email": app[2] if app[2] else "N/A",
-                "company": app[3] if app[3] else "N/A",
-                "client_count": app[4] if app[4] else "N/A",
-                "timestamp": app[5] if app[5] else None,
-                "created_at": app[5] if app[5] else None,  # Alias for frontend compatibility
-                "status": app[6] if app[6] else "pending",
-                "message": app[7] if app[7] else "",
-                "commission_model": app[8] if len(app) > 8 and app[8] else ""
-            }
-            for app in apps
-        ]
-        
-        return {"applications": applications}
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Query partner applications
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id, name, email, company, client_count, 
+                           COALESCE(timestamp, created_at::text) as timestamp, 
+                           status, message, commission_model
+                    FROM partner_applications 
+                    ORDER BY COALESCE(created_at, timestamp::timestamp) DESC
+                """)
+            else:
+                # Check if table exists (SQLite)
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='partner_applications'
+                """)
+                if not cursor.fetchone():
+                    return {"applications": []}
+                
+                cursor.execute("""
+                    SELECT id, name, email, company, client_count, timestamp, status, message, commission_model
+                    FROM partner_applications 
+                    ORDER BY timestamp DESC
+                """)
+            
+            apps = cursor.fetchall()
+            
+            applications = []
+            for app in apps:
+                # Handle different row formats
+                if isinstance(app, dict):
+                    applications.append({
+                        "id": app.get('id'),
+                        "name": app.get('name') or "N/A",
+                        "email": app.get('email') or "N/A",
+                        "company": app.get('company') or "N/A",
+                        "client_count": app.get('client_count') or "N/A",
+                        "timestamp": app.get('timestamp'),
+                        "created_at": app.get('created_at') or app.get('timestamp'),
+                        "status": app.get('status') or "pending",
+                        "message": app.get('message') or "",
+                        "commission_model": app.get('commission_model') or ""
+                    })
+                elif hasattr(app, 'keys'):
+                    applications.append({
+                        "id": app['id'] if 'id' in app.keys() else app[0],
+                        "name": (app['name'] if 'name' in app.keys() else app[1]) or "N/A",
+                        "email": (app['email'] if 'email' in app.keys() else app[2]) or "N/A",
+                        "company": (app['company'] if 'company' in app.keys() else app[3]) or "N/A",
+                        "client_count": (app['client_count'] if 'client_count' in app.keys() else app[4]) or "N/A",
+                        "timestamp": app['timestamp'] if 'timestamp' in app.keys() else app[5],
+                        "created_at": app.get('created_at') or (app['timestamp'] if 'timestamp' in app.keys() else app[5]),
+                        "status": (app['status'] if 'status' in app.keys() else app[6]) or "pending",
+                        "message": (app['message'] if 'message' in app.keys() else app[7]) or "",
+                        "commission_model": (app['commission_model'] if 'commission_model' in app.keys() else (app[8] if len(app) > 8 else "")) or ""
+                    })
+                else:
+                    applications.append({
+                        "id": app[0],
+                        "name": app[1] if app[1] else "N/A",
+                        "email": app[2] if app[2] else "N/A",
+                        "company": app[3] if app[3] else "N/A",
+                        "client_count": app[4] if app[4] else "N/A",
+                        "timestamp": app[5] if len(app) > 5 and app[5] else None,
+                        "created_at": app[5] if len(app) > 5 and app[5] else None,
+                        "status": app[6] if len(app) > 6 and app[6] else "pending",
+                        "message": app[7] if len(app) > 7 and app[7] else "",
+                        "commission_model": app[8] if len(app) > 8 and app[8] else ""
+                    })
+            
+            return {"applications": applications}
     except Exception as e:
         print(f"Error loading partner applications: {e}")
         import traceback
         traceback.print_exc()
-        con.close()
-        return {"applications": []}  # Return empty list wrapped in object on error
-    finally:
-        if con:
-            con.close()
+        return {"applications": []}
 
 @app.get("/api/admin/email-captures")
 async def get_email_captures_api(username: str = Depends(verify_admin)):
-    """Get all email captures from calculator email gate"""
-    db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
-    con = None
+    """Get all email captures from calculator email gate - PostgreSQL compatible"""
     try:
-        con = sqlite3.connect(str(db_path))
-        cur = con.cursor()
-        
-        # Create table if it doesn't exist (in case it hasn't been created yet)
-        try:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS email_captures (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    email TEXT NOT NULL,
-                    ip TEXT,
-                    timestamp TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            con.commit()
-        except Exception as e:
-            print(f"Error creating email_captures table: {e}")
-        
-        cur.execute("""
-            SELECT email, ip, timestamp
-            FROM email_captures 
-            ORDER BY timestamp DESC
-        """)
-        captures = cur.fetchall()
-        
-        return [
-            {
-                "email": c[0] if len(c) > 0 else "",
-                "ip": c[1] if len(c) > 1 and c[1] else "N/A",
-                "timestamp": c[2] if len(c) > 2 else ""
-            }
-            for c in captures
-        ]
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Query email captures
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT email, ip_address as ip, created_at::text as timestamp
+                    FROM email_captures 
+                    ORDER BY created_at DESC
+                """)
+            else:
+                cursor.execute("""
+                    SELECT email, ip, timestamp
+                    FROM email_captures 
+                    ORDER BY timestamp DESC
+                """)
+            
+            captures = cursor.fetchall()
+            
+            result = []
+            for c in captures:
+                if isinstance(c, dict):
+                    result.append({
+                        "email": c.get('email', ''),
+                        "ip": c.get('ip') or "N/A",
+                        "timestamp": c.get('timestamp', '')
+                    })
+                elif hasattr(c, 'keys'):
+                    result.append({
+                        "email": c['email'] if 'email' in c.keys() else (c[0] if len(c) > 0 else ""),
+                        "ip": (c['ip'] if 'ip' in c.keys() else (c[1] if len(c) > 1 else "N/A")) or "N/A",
+                        "timestamp": c['timestamp'] if 'timestamp' in c.keys() else (c[2] if len(c) > 2 else "")
+                    })
+                else:
+                    result.append({
+                        "email": c[0] if len(c) > 0 else "",
+                        "ip": c[1] if len(c) > 1 and c[1] else "N/A",
+                        "timestamp": c[2] if len(c) > 2 else ""
+                    })
+            
+            return result
     except Exception as e:
         print(f"Error in get_email_captures_api: {e}")
         import traceback
         traceback.print_exc()
         return []
-    finally:
-        if con:
-            con.close()
 
 @app.post("/api/admin/approve-partner")
 async def approve_partner_api(data: dict, username: str = Depends(verify_admin)):
-    """Approve a partner application"""
+    """Approve a partner application - PostgreSQL compatible"""
     email = data.get('email')
     if not email:
         raise HTTPException(status_code=400, detail="Email is required")
     
-    db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
-    con = sqlite3.connect(str(db_path))
-    cur = con.cursor()
-    
     try:
-        # Update status to approved
-        cur.execute("UPDATE partner_applications SET status = ? WHERE email = ?", ('approved', email))
-        
-        if cur.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Partner application not found")
-        
-        con.commit()
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Update status to approved
+            if DB_TYPE == 'postgresql':
+                cursor.execute("UPDATE partner_applications SET status = %s WHERE email = %s", ('approved', email))
+            else:
+                cursor.execute("UPDATE partner_applications SET status = ? WHERE email = ?", ('approved', email))
+            
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="Partner application not found")
+            
+            conn.commit()
         
         # TODO: Send email to partner with referral link
         # (You'll implement this later with EmailJS or SendGrid)
         
         return {"status": "ok", "message": "Partner approved"}
-    finally:
-        con.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error approving partner: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/v1/admin/flagged-referrals")
 async def get_flagged_referrals(request: Request):
