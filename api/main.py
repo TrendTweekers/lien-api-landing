@@ -3426,64 +3426,63 @@ async def debug_tables():
 # ==========================================
 @app.get("/api/v1/broker/pending")
 async def get_pending_brokers():
-    """Get pending broker applications - FIXED for context manager"""
+    """Get pending broker applications - PostgreSQL compatible"""
     print("🎯 GET /api/v1/broker/pending called")
     
-    # Try to get real data
     try:
         with get_db() as conn:
-            cursor = conn.cursor()
+            cursor = get_db_cursor(conn)
             
-            # Simple query
-            cursor.execute('''
-                SELECT id, name, email, company, commission_model, 
-                       status, applied_at
-                FROM partner_applications 
-                WHERE status = 'pending'
-                ORDER BY applied_at DESC
-            ''')
+            # PostgreSQL compatible query with COALESCE for applied_at
+            if DB_TYPE == 'postgresql':
+                query = '''
+                    SELECT id, name, email, company, commission_model, 
+                           status, COALESCE(applied_at, created_at, timestamp::timestamp) as applied_at
+                    FROM partner_applications 
+                    WHERE status = 'pending'
+                    ORDER BY COALESCE(applied_at, created_at, timestamp::timestamp) DESC
+                '''
+            else:
+                # SQLite version
+                query = '''
+                    SELECT id, name, email, company, commission_model, 
+                           status, COALESCE(applied_at, created_at, timestamp) as applied_at
+                    FROM partner_applications 
+                    WHERE status = 'pending'
+                    ORDER BY COALESCE(applied_at, created_at, timestamp) DESC
+                '''
             
+            cursor.execute(query)
             rows = cursor.fetchall()
+            
             pending = []
             for row in rows:
-                if hasattr(row, '_fields'):
-                    pending.append({key: row[key] for key in row._fields})
+                # Handle PostgreSQL RealDictCursor (dict-like)
+                if isinstance(row, dict):
+                    pending.append(row)
+                # Handle sqlite3.Row
+                elif hasattr(row, 'keys'):
+                    pending.append({key: row[key] for key in row.keys()})
+                # Handle tuple (fallback)
                 else:
-                    pending.append(dict(row))
+                    pending.append({
+                        'id': row[0],
+                        'name': row[1],
+                        'email': row[2],
+                        'company': row[3],
+                        'commission_model': row[4],
+                        'status': row[5],
+                        'applied_at': row[6]
+                    })
             
-            if pending:
-                print(f"✅ Found {len(pending)} pending brokers")
-                return {"pending": pending, "count": len(pending)}
+            print(f"✅ Found {len(pending)} pending brokers")
+            return {"pending": pending, "count": len(pending)}
     
     except Exception as e:
-        print(f"⚠️ Error in get_pending_brokers: {e}")
-        # Don't return yet, fall through to sample data
-    
-    # Fallback: Return sample data
-    print("📦 Returning sample data (fallback)")
-    return {
-        "pending": [
-            {
-                "id": 1,
-                "name": "John Smith",
-                "email": "john@insurance.com",
-                "company": "Smith Insurance",
-                "commission_model": "bounty",
-                "status": "pending",
-                "applied_at": "2024-01-27 10:00:00"
-            },
-            {
-                "id": 2,
-                "name": "Jane Doe",
-                "email": "jane@consulting.com",
-                "company": "Doe Consulting",
-                "commission_model": "recurring",
-                "status": "pending",
-                "applied_at": "2024-01-27 09:30:00"
-            }
-        ],
-        "count": 2
-    }
+        print(f"❌ PostgreSQL error in get_pending_brokers: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"pending": [], "count": 0}
 
 @app.get("/api/v1/broker/dashboard")
 async def broker_dashboard(request: Request, email: str):
