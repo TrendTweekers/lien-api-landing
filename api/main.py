@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request, Depends, status, Response, Header
 from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
@@ -41,6 +42,12 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
 
 # Add HTTPS redirect middleware (before CORS)
 app.add_middleware(HTTPSRedirectMiddleware)
+
+# Bot protection: Trusted Host middleware
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["liendeadline.com", "www.liendeadline.com", "*.railway.app", "localhost", "127.0.0.1"]
+)
 
 # CORS
 app.add_middleware(
@@ -1530,6 +1537,7 @@ async def apply_partner(request: Request):
         )
 
 @app.post("/api/v1/capture-email")
+@limiter.limit("5/minute")
 async def capture_email(request: Request):
     """Capture email from calculator gate"""
     from fastapi.responses import JSONResponse
