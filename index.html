@@ -1832,6 +1832,10 @@
                     try {
                         // Store email locally FIRST (instant)
                         localStorage.setItem('userEmail', email);
+                        localStorage.setItem('emailGiven', 'true'); // Mark that email was given
+                        
+                        console.log(`✅ Email stored: ${email}`);
+                        console.log(`✅ Email gate flag set: emailGiven = true`);
                         
                         // Call API async (don't wait for response)
                         fetch('/api/v1/capture-email', {
@@ -1842,7 +1846,10 @@
                         
                         // Hide modal immediately
                         const emailModal = document.getElementById('emailCaptureModal');
-                        if (emailModal) emailModal.classList.add('hidden');
+                        if (emailModal) {
+                            emailModal.style.display = 'none';
+                            emailModal.classList.add('hidden');
+                        }
                         
                         // Update counter display to show new limit (6)
                         const countElement = document.getElementById('calculationCount');
