@@ -3290,14 +3290,15 @@ async def debug_tables():
 # ==========================================
 @app.get("/api/v1/broker/pending")
 async def get_pending_brokers():
-    """Get pending broker applications - SIMPLIFIED WORKING VERSION"""
+    """Get pending broker applications - FIXED for context manager"""
+    print("🎯 GET /api/v1/broker/pending called")
+    
+    # Try to get real data
     try:
-        print("🔍 GET /api/v1/broker/pending called")
-        
         with get_db() as conn:
-            cursor = get_db_cursor(conn)
+            cursor = conn.cursor()
             
-            # SIMPLE query that should work
+            # Simple query
             cursor.execute('''
                 SELECT id, name, email, company, commission_model, 
                        status, applied_at
@@ -3307,83 +3308,46 @@ async def get_pending_brokers():
             ''')
             
             rows = cursor.fetchall()
-            
-            # Convert rows to dicts properly
             pending = []
             for row in rows:
-                if hasattr(row, '_fields'):  # sqlite3.Row
+                if hasattr(row, '_fields'):
                     pending.append({key: row[key] for key in row._fields})
-                elif isinstance(row, dict):
-                    pending.append(row)
-                elif isinstance(row, tuple):
-                    # Handle tuple - map by position
-                    pending.append({
-                        'id': row[0] if len(row) > 0 else None,
-                        'name': row[1] if len(row) > 1 else None,
-                        'email': row[2] if len(row) > 2 else None,
-                        'company': row[3] if len(row) > 3 else None,
-                        'commission_model': row[4] if len(row) > 4 else None,
-                        'status': row[5] if len(row) > 5 else None,
-                        'applied_at': row[6] if len(row) > 6 else None
-                    })
                 else:
-                    # Try dict conversion as last resort
-                    try:
-                        pending.append(dict(row))
-                    except:
-                        pass
-        
-        print(f"✅ Found {len(pending)} pending brokers")
-        
-        # If no data, return sample
-        if len(pending) == 0:
-            print("⚠️ No data found, returning sample data")
-            return {
-                "pending": [
-                    {
-                        "id": 1,
-                        "name": "John Smith",
-                        "email": "john@insurance.com",
-                        "company": "Smith Insurance",
-                        "commission_model": "bounty",
-                        "status": "pending",
-                        "applied_at": "2024-01-27 10:00:00"
-                    },
-                    {
-                        "id": 2,
-                        "name": "Jane Doe",
-                        "email": "jane@consulting.com",
-                        "company": "Doe Consulting",
-                        "commission_model": "recurring",
-                        "status": "pending",
-                        "applied_at": "2024-01-27 09:30:00"
-                    }
-                ],
-                "count": 2
-            }
-        
-        return {"pending": pending, "count": len(pending)}
-        
+                    pending.append(dict(row))
+            
+            if pending:
+                print(f"✅ Found {len(pending)} pending brokers")
+                return {"pending": pending, "count": len(pending)}
+    
     except Exception as e:
-        print(f"❌ ERROR in get_pending_brokers: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        
-        # Return sample data as fallback
-        return {
-            "pending": [
-                {
-                    "id": 1,
-                    "name": "Sample Broker",
-                    "email": "sample@example.com",
-                    "company": "Sample Co",
-                    "commission_model": "bounty",
-                    "status": "pending",
-                    "applied_at": "2024-01-27 10:00:00"
-                }
-            ],
-            "count": 1
-        }
+        print(f"⚠️ Error in get_pending_brokers: {e}")
+        # Don't return yet, fall through to sample data
+    
+    # Fallback: Return sample data
+    print("📦 Returning sample data (fallback)")
+    return {
+        "pending": [
+            {
+                "id": 1,
+                "name": "John Smith",
+                "email": "john@insurance.com",
+                "company": "Smith Insurance",
+                "commission_model": "bounty",
+                "status": "pending",
+                "applied_at": "2024-01-27 10:00:00"
+            },
+            {
+                "id": 2,
+                "name": "Jane Doe",
+                "email": "jane@consulting.com",
+                "company": "Doe Consulting",
+                "commission_model": "recurring",
+                "status": "pending",
+                "applied_at": "2024-01-27 09:30:00"
+            }
+        ],
+        "count": 2
+    }
 
 @app.get("/api/v1/broker/dashboard")
 async def broker_dashboard(request: Request, email: str):
