@@ -1752,21 +1752,35 @@
         
         // Modal functions
         function showEmailCaptureModal() {
-            console.log('📧 Attempting to show email modal...');
+            console.log('📧 showEmailCaptureModal called (inner function)');
+            console.log('Looking for element #emailCaptureModal');
+            
             const modal = document.getElementById('emailCaptureModal');
+            console.log('Found modal:', modal);
+            
             if (modal) {
-                modal.style.display = 'flex';  // Use style.display for simple modals
+                console.log('Modal HTML:', modal.outerHTML.substring(0, 200) + '...');
+                modal.style.display = 'flex';
                 document.body.style.overflow = 'hidden';
-                console.log('✅ Email modal shown');
+                console.log('✅ Email modal displayed');
             } else {
-                console.error('❌ Email modal not found in DOM');
-                // Fallback: show prompt
-                const email = prompt('Enter email for 3 more calculations:');
+                console.error('❌ CRITICAL: emailCaptureModal element not found in DOM');
+                console.error('Searching entire DOM for modal elements:');
+                const allModals = document.querySelectorAll('[id*="modal"], [id*="Modal"]');
+                console.log('All modal-like elements:', Array.from(allModals).map(el => el.id));
+                
+                // Emergency fallback
+                const email = prompt('🚨 EMAIL MODAL BROKEN\nEnter email for 3 more calculations:');
                 if (email) {
                     fetch('/api/v1/capture-email', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, timestamp: new Date().toISOString() })
+                    }).then(response => {
+                        if (response.ok) {
+                            localStorage.setItem('userEmail', email);
+                            console.log('✅ Email captured via fallback');
+                        }
                     }).catch(err => console.error('Fallback email capture error:', err));
                 }
             }
@@ -2375,18 +2389,32 @@ function updateCounterDisplay() {
 }
 
 function handleCalculation() {
+    // Get current count
+    let calculationCount = parseInt(localStorage.getItem('calculationCount') || '0');
+    
+    // Increment
     calculationCount++;
     localStorage.setItem('calculationCount', calculationCount.toString());
     
-    console.log(`📊 Calculation #${calculationCount}`);
+    console.log(`📊 Calculation #${calculationCount}`, {
+        constants: {
+            beforeEmail: CALCULATIONS_BEFORE_EMAIL,
+            afterEmail: CALCULATIONS_AFTER_EMAIL,
+            totalFree: TOTAL_FREE_CALCULATIONS
+        },
+        shouldShowEmail: calculationCount === CALCULATIONS_BEFORE_EMAIL,
+        shouldShowUpgrade: calculationCount >= TOTAL_FREE_CALCULATIONS
+    });
     
+    // Check for email gate
     if (calculationCount === CALCULATIONS_BEFORE_EMAIL) {
-        console.log('🎯 Reached email gate at calculation 3');
+        console.log('🎯 REACHED EMAIL GATE - showing modal...');
         showEmailCaptureModal();
     }
     
+    // Check for upgrade gate
     if (calculationCount >= TOTAL_FREE_CALCULATIONS) {
-        console.log('💰 Reached upgrade gate at calculation 6');
+        console.log('💰 REACHED UPGRADE GATE - showing modal...');
         showUpgradeModal();
     }
     
@@ -2415,22 +2443,35 @@ function checkCalculationLimits(calcCount) {
 }
 
 function showEmailCaptureModal() {
-    console.log('📧 Attempting to show email modal...');
+    console.log('📧 showEmailCaptureModal called');
+    console.log('Looking for element #emailCaptureModal');
+    
     const modal = document.getElementById('emailCaptureModal');
+    console.log('Found modal:', modal);
+    
     if (modal) {
-        modal.style.display = 'flex';  // Use style.display for simple modals
+        console.log('Modal HTML:', modal.outerHTML.substring(0, 200) + '...');
+        modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
-        console.log('✅ Email modal shown');
+        console.log('✅ Email modal displayed');
     } else {
-        console.error('❌ Email modal not found in DOM');
-        // Fallback: show prompt
-        const email = prompt('Enter email for 3 more calculations:');
+        console.error('❌ CRITICAL: emailCaptureModal element not found in DOM');
+        console.error('Searching entire DOM for modal elements:');
+        const allModals = document.querySelectorAll('[id*="modal"], [id*="Modal"]');
+        console.log('All modal-like elements:', Array.from(allModals).map(el => el.id));
+        
+        // Emergency fallback
+        const email = prompt('🚨 EMAIL MODAL BROKEN\nEnter email for 3 more calculations:');
         if (email) {
-            // Call capture email function if it exists
             fetch('/api/v1/capture-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, timestamp: new Date().toISOString() })
+            }).then(response => {
+                if (response.ok) {
+                    localStorage.setItem('userEmail', email);
+                    console.log('✅ Email captured via fallback');
+                }
             }).catch(err => console.error('Fallback email capture error:', err));
         }
     }
