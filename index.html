@@ -2340,20 +2340,50 @@ document.addEventListener('DOMContentLoaded', function() {
 // 7. CALCULATION COUNTER & MODAL LOGIC
 // ==========================================
 
+// Calculation flow constants
+const CALCULATIONS_BEFORE_EMAIL = 3;
+const CALCULATIONS_AFTER_EMAIL = 3;   // Changed from 7 to 3
+const TOTAL_FREE_CALCULATIONS = 6;    // Changed from 10 to 6
+
+// Initialize calculation counter
+let calculationCount = parseInt(localStorage.getItem('calculationCount') || '0');
+
 function updateCounterDisplay() {
-    const calcCount = parseInt(localStorage.getItem('calcCount') || '0');
+    const calcCount = parseInt(localStorage.getItem('calcCount') || calculationCount);
     const userEmail = localStorage.getItem('userEmail');
     const counterElement = document.getElementById('calculationCounter');
     
     if (counterElement) {
         if (userEmail) {
-            // Has email - show X / 10
-            counterElement.textContent = `${calcCount} / 6`;
+            // Has email - show X / 6
+            counterElement.textContent = `${calcCount} / ${TOTAL_FREE_CALCULATIONS}`;
         } else {
             // No email - show X / 3
-            counterElement.textContent = `${Math.min(calcCount, 3)} / 3`;
+            counterElement.textContent = `${Math.min(calcCount, CALCULATIONS_BEFORE_EMAIL)} / ${CALCULATIONS_BEFORE_EMAIL}`;
         }
     }
+}
+
+function handleCalculation() {
+    calculationCount++;
+    localStorage.setItem('calculationCount', calculationCount.toString());
+    
+    console.log(`📊 Calculation #${calculationCount}`);
+    
+    if (calculationCount === CALCULATIONS_BEFORE_EMAIL) {
+        console.log('🎯 Reached email gate at calculation 3');
+        showEmailCaptureModal();
+    }
+    
+    if (calculationCount >= TOTAL_FREE_CALCULATIONS) {
+        console.log('💰 Reached upgrade gate at calculation 6');
+        showUpgradeModal();
+    }
+    
+    // Update counter display
+    updateCounterDisplay();
+    
+    return calculationCount;
 }
 
 function checkCalculationLimits(calcCount) {
@@ -2361,13 +2391,13 @@ function checkCalculationLimits(calcCount) {
     
     console.log(`🔍 Checking limits: count=${calcCount}, email=${userEmail ? 'yes' : 'no'}`);
     
-    if (calcCount >= 6) {
+    if (calcCount >= TOTAL_FREE_CALCULATIONS) {
         // Show upgrade modal regardless of email
-        console.log('💰 Showing upgrade modal (6+ calculations)');
+        console.log(`💰 Showing upgrade modal (${TOTAL_FREE_CALCULATIONS}+ calculations)`);
         showUpgradeModal();
-    } else if (calcCount >= 3 && !userEmail) {
+    } else if (calcCount >= CALCULATIONS_BEFORE_EMAIL && !userEmail) {
         // Show email capture modal
-        console.log('📧 Showing email capture modal (3+ calculations, no email)');
+        console.log(`📧 Showing email capture modal (${CALCULATIONS_BEFORE_EMAIL}+ calculations, no email)`);
         showEmailCaptureModal();
     } else {
         console.log('✅ No modal needed');
@@ -2375,11 +2405,24 @@ function checkCalculationLimits(calcCount) {
 }
 
 function showEmailCaptureModal() {
+    console.log('📧 Attempting to show email modal...');
     const modal = document.getElementById('emailCaptureModal');
     if (modal) {
-        modal.classList.remove('hidden');
+        modal.style.display = 'flex';  // Use style.display for simple modals
         document.body.style.overflow = 'hidden';
-        console.log('📧 Email capture modal shown');
+        console.log('✅ Email modal shown');
+    } else {
+        console.error('❌ Email modal not found in DOM');
+        // Fallback: show prompt
+        const email = prompt('Enter email for 3 more calculations:');
+        if (email) {
+            // Call capture email function if it exists
+            fetch('/api/v1/capture-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, timestamp: new Date().toISOString() })
+            }).catch(err => console.error('Fallback email capture error:', err));
+        }
     }
 }
 
