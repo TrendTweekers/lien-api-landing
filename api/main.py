@@ -3208,77 +3208,76 @@ async def get_calculations_today():
 async def debug_tables():
     """Debug endpoint to check database state"""
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        # List all tables
-        if DB_TYPE == 'postgresql':
-            cursor.execute("""
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public'
-            """)
-        else:
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        
-        tables = cursor.fetchall()
-        
-        result = {"tables": [], "db_type": DB_TYPE}
-        
-        for table_row in tables:
-            # Extract table name
-            if isinstance(table_row, dict):
-                table_name = table_row.get('name') or table_row.get('table_name')
-            elif isinstance(table_row, tuple):
-                table_name = table_row[0]
-            elif hasattr(table_row, '_fields'):
-                table_name = table_row['name'] if 'name' in table_row._fields else table_row['table_name']
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # List all tables
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT table_name 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'public'
+                """)
             else:
-                table_name = str(table_row)
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
             
-            if not table_name:
-                continue
+            tables = cursor.fetchall()
             
-            try:
-                # Count rows
-                cursor.execute(f"SELECT COUNT(*) as count FROM {table_name}")
-                count_result = cursor.fetchone()
-                if isinstance(count_result, dict):
-                    count = count_result.get('count', 0)
-                elif isinstance(count_result, tuple):
-                    count = count_result[0] if len(count_result) > 0 else 0
-                elif hasattr(count_result, '_fields'):
-                    count = count_result['count'] if 'count' in count_result._fields else 0
+            result = {"tables": [], "db_type": DB_TYPE}
+            
+            for table_row in tables:
+                # Extract table name
+                if isinstance(table_row, dict):
+                    table_name = table_row.get('name') or table_row.get('table_name')
+                elif isinstance(table_row, tuple):
+                    table_name = table_row[0]
+                elif hasattr(table_row, '_fields'):
+                    table_name = table_row['name'] if 'name' in table_row._fields else table_row['table_name']
                 else:
-                    count = 0
+                    table_name = str(table_row)
                 
-                # Get sample data
-                cursor.execute(f"SELECT * FROM {table_name} LIMIT 3")
-                sample = cursor.fetchall()
+                if not table_name:
+                    continue
                 
-                # Convert to list
-                sample_list = []
-                for row in sample:
-                    if hasattr(row, '_fields'):
-                        # sqlite3.Row object
-                        sample_list.append({key: str(row[key]) for key in row._fields})
-                    elif isinstance(row, dict):
-                        sample_list.append({k: str(v) for k, v in row.items()})
+                try:
+                    # Count rows
+                    cursor.execute(f"SELECT COUNT(*) as count FROM {table_name}")
+                    count_result = cursor.fetchone()
+                    if isinstance(count_result, dict):
+                        count = count_result.get('count', 0)
+                    elif isinstance(count_result, tuple):
+                        count = count_result[0] if len(count_result) > 0 else 0
+                    elif hasattr(count_result, '_fields'):
+                        count = count_result['count'] if 'count' in count_result._fields else 0
                     else:
-                        sample_list.append([str(item) for item in row])
-                
-                result["tables"].append({
-                    "name": table_name,
-                    "row_count": count,
-                    "sample": sample_list
-                })
-            except Exception as table_error:
-                result["tables"].append({
-                    "name": table_name,
-                    "error": str(table_error)
-                })
+                        count = 0
+                    
+                    # Get sample data
+                    cursor.execute(f"SELECT * FROM {table_name} LIMIT 3")
+                    sample = cursor.fetchall()
+                    
+                    # Convert to list
+                    sample_list = []
+                    for row in sample:
+                        if hasattr(row, '_fields'):
+                            # sqlite3.Row object
+                            sample_list.append({key: str(row[key]) for key in row._fields})
+                        elif isinstance(row, dict):
+                            sample_list.append({k: str(v) for k, v in row.items()})
+                        else:
+                            sample_list.append([str(item) for item in row])
+                    
+                    result["tables"].append({
+                        "name": table_name,
+                        "row_count": count,
+                        "sample": sample_list
+                    })
+                except Exception as table_error:
+                    result["tables"].append({
+                        "name": table_name,
+                        "error": str(table_error)
+                    })
         
-        conn.close()
         return result
         
     except Exception as e:
