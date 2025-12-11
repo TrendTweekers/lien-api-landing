@@ -1796,7 +1796,7 @@
         // Modal email form handler - AJAX version (no redirect)
         safeAddListener('modalEmailForm', 'submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('modalEmail').value.trim();
+            const email = document.getElementById('modalEmailInput').value.trim();
             
             if (!email || !email.includes('@')) {
                 alert('Please enter a valid email address');
@@ -1853,42 +1853,164 @@
         });
     </script>
     
-    <!-- Email Capture Modal -->
-    <div id="emailCaptureModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+    <!-- ========== EMAIL CAPTURE MODAL ========== -->
+    <div id="emailCaptureModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative animate-fade-in">
+                <!-- Close button -->
+                <button 
+                    onclick="document.getElementById('emailCaptureModal').classList.add('hidden')" 
+                    class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label="Close"
+                >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
+                </button>
+                
+                <div class="text-center">
+                    <!-- Icon -->
+                    <div class="mx-auto w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    
+                    <!-- Heading -->
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">
+                        Get 3 More Calculations
+                    </h3>
+                    
+                    <!-- Description -->
+                    <p class="text-gray-600 mb-6">
+                        Enter your email to unlock 3 additional free calculations.<br>
+                        <span class="text-sm font-medium text-blue-600">Total: 6 free calculations</span>
+                    </p>
+                    
+                    <!-- Form -->
+                    <form id="modalEmailForm" class="space-y-4">
+                        <div class="relative">
+                            <input 
+                                type="email" 
+                                id="modalEmailInput"
+                                name="email"
+                                placeholder="your@email.com"
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                required
+                            >
+                        </div>
+                        
+                        <button 
+                            type="submit"
+                            class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl"
+                        >
+                            Continue with Email →
+                        </button>
+                    </form>
+                    
+                    <!-- Footer note -->
+                    <p class="text-xs text-gray-500 mt-4 flex items-center justify-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                        </svg>
+                        We respect your privacy. Unsubscribe anytime.
+                    </p>
                 </div>
-                <h3 class="text-2xl font-serif mb-2">You've used your 3 free calculations</h3>
-                <p class="text-muted-foreground">Enter your email to get 3 more calculations (6 total)</p>
             </div>
-            <form id="modalEmailForm" class="space-y-4">
-                <input type="email" id="modalEmail" required placeholder="Enter your work email" class="w-full h-14 px-4 rounded-lg border border-border focus:ring-2 focus:ring-accent/30 focus:outline-none text-lg"/>
-                <button type="submit" class="w-full h-14 rounded-lg bg-accent text-white font-semibold hover:bg-accent/90 transition-colors">Get 3 More Calculations →</button>
-            </form>
         </div>
     </div>
-    
-    <!-- Upgrade Modal -->
-    <div id="upgradeModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
-            <div class="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                </svg>
+
+    <!-- ========== UPGRADE MODAL ========== -->
+    <div id="upgradeModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-fade-in">
+                <div class="text-center">
+                    <!-- Icon -->
+                    <div class="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    
+                    <!-- Heading -->
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">
+                        Upgrade to Unlimited
+                    </h3>
+                    
+                    <!-- Description -->
+                    <p class="text-gray-600 mb-1">
+                        You've used all <span class="font-semibold">6 free calculations</span>.
+                    </p>
+                    <p class="text-gray-600 mb-6">
+                        Unlock unlimited access for <span class="font-bold text-blue-600">$299/month</span>.
+                    </p>
+                    
+                    <!-- Benefits list -->
+                    <div class="bg-blue-50 rounded-xl p-4 mb-6 text-left">
+                        <ul class="space-y-2 text-sm text-gray-700">
+                            <li class="flex items-center gap-2">
+                                <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span><strong>Unlimited calculations</strong> across all 28 states</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>PDF reports with statute citations</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Calculation history & saved projects</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>Cancel anytime, no long-term commitment</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- CTA Buttons -->
+                    <div class="space-y-3">
+                        <a 
+                            href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00"
+                            class="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3.5 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl"
+                        >
+                            Upgrade Now - $299/month
+                        </a>
+                        
+                        <button 
+                            onclick="document.getElementById('upgradeModal').classList.add('hidden')"
+                            class="w-full border-2 border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-all"
+                        >
+                            Maybe Later
+                        </button>
+                    </div>
+                    
+                    <!-- Value proposition -->
+                    <p class="text-xs text-gray-500 mt-4 italic">
+                        💡 One missed deadline costs $75,000+ in lost receivables
+                    </p>
+                </div>
             </div>
-            <h3 class="text-2xl font-serif mb-2">You've used all 6 free calculations</h3>
-            <p class="text-muted-foreground mb-6">Upgrade to unlimited for $299/month</p>
-            <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" target="_blank" class="block w-full h-14 rounded-lg bg-accent text-white font-semibold hover:bg-accent/90 transition-colors mb-3 text-center leading-[3.5rem]">Upgrade Now - $299/month</a>
-            <p class="text-sm text-muted-foreground mt-4 mb-3">
-                After payment, you'll receive an email with your login credentials and full access.
-            </p>
-            <button onclick="hideUpgradeModal()" class="w-full h-12 rounded-lg border border-border hover:bg-secondary transition-colors">Maybe Later</button>
         </div>
     </div>
+
+    <!-- Add simple fade-in animation -->
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.2s ease-out;
+        }
+    </style>
 
 // ==========================================
 // LIENDEADLINE.COM - COMPLETE JAVASCRIPT FIXES
