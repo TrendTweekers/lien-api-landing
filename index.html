@@ -1793,62 +1793,74 @@
             }, 4000);
         }
         
-        // Modal email form handler - AJAX version (no redirect)
-        safeAddListener('modalEmailForm', 'submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('modalEmailInput').value.trim();
-            
-            if (!email || !email.includes('@')) {
-                alert('Please enter a valid email address');
-                return;
+        // Modal email form handler - Wait for DOM to be ready
+        window.addEventListener('DOMContentLoaded', function() {
+            const modalForm = document.getElementById('modalEmailForm');
+            if (modalForm) {
+                modalForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('modalEmailInput').value.trim();
+                    
+                    if (!email || !email.includes('@')) {
+                        alert('Please enter a valid email address');
+                        return;
+                    }
+                    
+                    try {
+                        // Store email locally FIRST (instant)
+                        localStorage.setItem('userEmail', email);
+                        
+                        // Call API async (don't wait for response)
+                        fetch('/api/v1/capture-email', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email, timestamp: new Date().toISOString() })
+                        }).catch(err => console.error('Email tracking error:', err));
+                        
+                        // Hide modal immediately
+                        const emailModal = document.getElementById('emailCaptureModal');
+                        if (emailModal) emailModal.classList.add('hidden');
+                        
+                        // Update counter display to show new limit (6)
+                        const countElement = document.getElementById('calculationCount');
+                        if (countElement) {
+                            const count = parseInt(localStorage.getItem('calculationCount') || '0');
+                            countElement.textContent = count;
+                        }
+                        
+                        // Show success toast
+                        showSuccessToast('✅ Email saved! You now have 3 more calculations (6 total).');
+                        
+                        // Re-enable scrolling
+                        document.body.style.overflow = 'auto';
+                        
+                    } catch (error) {
+                        console.error('Email capture error:', error);
+                        alert('Something went wrong. Please try again.');
+                    }
+                });
+                console.log('✅ Added submit listener to #modalEmailForm');
+            } else {
+                console.warn('⚠️ Could not add submit listener - #modalEmailForm not found');
             }
             
-            try {
-                // Store email locally FIRST (instant)
-                localStorage.setItem('userEmail', email);
-                
-                // Call API async (don't wait for response)
-                fetch('/api/v1/capture-email', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, timestamp: new Date().toISOString() })
-                }).catch(err => console.error('Email tracking error:', err));
-                
-                // Hide modal immediately
-                const emailModal = document.getElementById('emailCaptureModal');
-                if (emailModal) emailModal.classList.add('hidden');
-                
-                // Update counter display to show new limit (6)
-                const countElement = document.getElementById('calculationCount');
-                if (countElement) {
-                    const count = parseInt(localStorage.getItem('calculationCount') || '0');
-                    countElement.textContent = count;
-                }
-                
-                // Show success toast
-                showSuccessToast('✅ Email saved! You now have 3 more calculations (6 total).');
-                
-                // Re-enable scrolling
-                document.body.style.overflow = 'auto';
-                
-            } catch (error) {
-                console.error('Email capture error:', error);
-                alert('Something went wrong. Please try again.');
+            // Close modals when clicking outside
+            const emailModal = document.getElementById('emailCaptureModal');
+            if (emailModal) {
+                emailModal.addEventListener('click', (e) => {
+                    if (e.target.id === 'emailCaptureModal') {
+                        hideEmailCaptureModal();
+                    }
+                });
             }
-        });
-        
-        // Close modals when clicking outside
-        safeAddListener('emailCaptureModal', 'click', (e) => {
-            const modal = document.getElementById('emailCaptureModal');
-            if (modal && e.target.id === 'emailCaptureModal') {
-                hideEmailCaptureModal();
-            }
-        });
-        
-        safeAddListener('upgradeModal', 'click', (e) => {
-            const modal = document.getElementById('upgradeModal');
-            if (modal && e.target.id === 'upgradeModal') {
-                hideUpgradeModal();
+            
+            const upgradeModal = document.getElementById('upgradeModal');
+            if (upgradeModal) {
+                upgradeModal.addEventListener('click', (e) => {
+                    if (e.target.id === 'upgradeModal') {
+                        hideUpgradeModal();
+                    }
+                });
             }
         });
     </script>
