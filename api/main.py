@@ -116,6 +116,30 @@ else:
     
     DB_TYPE = 'sqlite'
 
+import sys
+
+# Log database configuration at startup
+print("=" * 60)
+print("🔍 DATABASE CONFIGURATION CHECK")
+print("=" * 60)
+print(f"DATABASE_URL present: {bool(DATABASE_URL)}")
+
+if DATABASE_URL:
+    if DATABASE_URL.startswith('postgres://') or DATABASE_URL.startswith('postgresql://'):
+        print("✅ Database Type: PostgreSQL (Production)")
+        print(f"   Connection: {DATABASE_URL[:30]}...")
+    elif DATABASE_URL.startswith('sqlite://'):
+        print("⚠️  Database Type: SQLite (from DATABASE_URL)")
+    else:
+        print(f"❓ Database Type: Unknown ({DATABASE_URL[:20]}...)")
+else:
+    db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+    print("💾 Database Type: SQLite (local development)")
+    print(f"   Path: {db_path}")
+
+print(f"📊 DB_TYPE variable set to: {DB_TYPE}")
+print("=" * 60)
+
 # Helper function to execute queries with proper placeholders
 def execute_query(conn, query, params=None):
     """Execute query with proper placeholders for PostgreSQL or SQLite"""
