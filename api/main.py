@@ -579,29 +579,43 @@ def init_db():
                 else:
                     cursor.execute("SELECT COUNT(*) as count FROM partner_applications")
                     result = cursor.fetchone()
-                    count = result['count'] if isinstance(result, dict) else (result[0] if isinstance(result, tuple) else 0)
+                    if isinstance(result, dict):
+                        count = result.get('count', 0)
+                    elif isinstance(result, tuple):
+                        count = result[0] if len(result) > 0 else 0
+                    elif hasattr(result, '_fields'):
+                        count = result['count'] if 'count' in result._fields else 0
+                    else:
+                        count = 0
                 
                 if count == 0:
                     print("Inserting sample partner applications...")
-                    if DB_TYPE == 'postgresql':
-                        cursor.execute('''
-                            INSERT INTO partner_applications (name, email, company, commission_model, status)
-                            VALUES 
-                            ('John Smith', 'john@insurance.com', 'Smith Insurance', 'bounty', 'pending'),
-                            ('Jane Doe', 'jane@consulting.com', 'Doe Consulting', 'recurring', 'pending'),
-                            ('Bob Wilson', 'bob@brokerage.com', 'Wilson Brokerage', 'bounty', 'pending')
-                        ''')
-                    else:
-                        cursor.execute('''
-                            INSERT INTO partner_applications (name, email, company, commission_model, status)
-                            VALUES 
-                            ('John Smith', 'john@insurance.com', 'Smith Insurance', 'bounty', 'pending'),
-                            ('Jane Doe', 'jane@consulting.com', 'Doe Consulting', 'recurring', 'pending'),
-                            ('Bob Wilson', 'bob@brokerage.com', 'Wilson Brokerage', 'bounty', 'pending')
-                        ''')
-                    print(f"✅ Inserted {3} sample partner applications")
+                    try:
+                        if DB_TYPE == 'postgresql':
+                            cursor.execute('''
+                                INSERT INTO partner_applications (name, email, company, commission_model, status)
+                                VALUES 
+                                ('John Smith', 'john@insurance.com', 'Smith Insurance', 'bounty', 'pending'),
+                                ('Jane Doe', 'jane@consulting.com', 'Doe Consulting', 'recurring', 'pending'),
+                                ('Bob Wilson', 'bob@brokerage.com', 'Wilson Brokerage', 'bounty', 'pending')
+                                ON CONFLICT (email) DO NOTHING
+                            ''')
+                        else:
+                            cursor.execute('''
+                                INSERT OR IGNORE INTO partner_applications (name, email, company, commission_model, status)
+                                VALUES 
+                                ('John Smith', 'john@insurance.com', 'Smith Insurance', 'bounty', 'pending'),
+                                ('Jane Doe', 'jane@consulting.com', 'Doe Consulting', 'recurring', 'pending'),
+                                ('Bob Wilson', 'bob@brokerage.com', 'Wilson Brokerage', 'bounty', 'pending')
+                            ''')
+                        print(f"✅ Inserted sample data")
+                    except Exception as insert_error:
+                        print(f"⚠️ Could not insert sample data: {insert_error}")
+                        # Table might already have data
+                else:
+                    print(f"⚠️ Table already has {count} rows, skipping sample data")
             except Exception as e:
-                print(f"Note: Could not insert sample data: {e}")
+                print(f"Note: Could not check/insert sample data: {e}")
             
             db.commit()
             print("✅ Database initialized")
