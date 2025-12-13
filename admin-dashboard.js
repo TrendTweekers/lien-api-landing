@@ -196,79 +196,28 @@ async function loadPartnerApplications() {
 document.addEventListener('click', async (e) => {
     // Handle Approve action
     const approveBtn = e.target.closest('.approve-btn');
-    if (approveBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const appId = approveBtn.dataset.appId;
-        if (!appId) {
-            console.error('No application ID found');
-            alert('Internal error: missing application id');
-            return;
-        }
+    if (!approveBtn) return;
 
-        const email = approveBtn.dataset.email || '';
-        const name = approveBtn.dataset.name || 'Unknown';
-        const commissionModel = approveBtn.dataset.commissionModel || 'bounty';
+    e.preventDefault();
+    e.stopPropagation();
 
-        const confirmed = confirm(
-            `Approve ${name} (${email}) with ${commissionModel === 'bounty' ? '$500 bounty' : '$50/month recurring'} commission?`
-        );
-        if (!confirmed) return;
+    const appId = approveBtn.dataset.appId;
+    console.log('Approving application', appId);
 
-        try {
-            console.log('Approving application', appId);
+    const res = await fetch(`/api/admin/approve-partner/${appId}`, {
+        method: 'POST',
+        credentials: "include"
+    });
 
-            const res = await fetch(`${window.location.origin}/api/admin/approve-partner/${appId}`, {
-                method: 'POST',
-                credentials: "include",
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-                },
-                body: JSON.stringify({
-                    commission_model: commissionModel
-                })
-            });
+    const text = await res.text();
+    console.log('Approve result:', res.status, text);
 
-            const text = await res.text();
-            console.log('Approve response:', res.status, text);
-
-            if (!res.ok) {
-                let errorDetail = 'Failed to approve application';
-                try {
-                    const errorJson = JSON.parse(text);
-                    errorDetail = errorJson.detail || errorJson.error || errorDetail;
-                } catch {
-                    errorDetail = text || `HTTP ${res.status}`;
-                }
-                alert(`Approve failed (${res.status}): ${errorDetail}`);
-                return;
-            }
-
-            const data = JSON.parse(text);
-
-            alert(
-                data.email_sent
-                    ? `✅ Application approved!\n📧 Welcome email sent via ${data.email_channel || 'email'}`
-                    : `✅ Application approved!\n⚠️ Email failed: ${data.email_error || 'unknown error'}`
-            );
-
-            // Optimistic UI update
-            const row = approveBtn.closest('tr');
-            if (row) row.remove();
-
-            // Refresh dependent sections
-            loadPartnerApplications();
-            loadActiveBrokers();
-            updateAllStats();
-
-        } catch (err) {
-            console.error('Approve error:', err);
-            alert('Approve request crashed – see console');
-        }
+    if (!res.ok) {
+        alert(text);
         return;
     }
+
+    approveBtn.closest('tr')?.remove();
 
     // Handle Reject action
     const rejectBtn = e.target.closest('.reject-btn');
