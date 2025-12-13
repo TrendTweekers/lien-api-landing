@@ -22,6 +22,21 @@ from api.database import get_db, get_db_cursor, DB_TYPE
 
 logger = logging.getLogger(__name__)
 
+def send_welcome_email_background(to_email: str, referral_link: str):
+    """Background email function for partner approval"""
+    subject = "You're approved ✅"
+    body = f"""Hi!
+
+Your partner application has been approved.
+
+Your referral link:
+{referral_link}
+
+Thanks,
+LienDeadline
+"""
+    send_email_sync(to_email, subject, body)
+
 # Initialize Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
 
