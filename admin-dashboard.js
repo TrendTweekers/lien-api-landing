@@ -741,8 +741,8 @@ async function loadActiveBrokers() {
                                 <div class="text-xs text-gray-500 mt-1">Ref: ${broker.referral_code || 'N/A'}</div>
                             </div>
                             <button type="button"
-                                data-action="delete-broker" data-broker-id="${broker.id}"
-                                class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                                class="delete-broker-btn px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                                data-broker-id="${broker.id}"
                                 title="Delete broker">
                                 Delete
                             </button>
