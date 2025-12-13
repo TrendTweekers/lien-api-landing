@@ -653,6 +653,77 @@ async def approve_partner(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+def send_welcome_email_background(email: str, name: str, referral_link: str, referral_code: str):
+    """Background task to send welcome email (non-blocking) - prevents Cloudflare 524 timeout"""
+    print("=" * 60)
+    print("📧 BACKGROUND: ATTEMPTING TO SEND WELCOME EMAIL")
+    print(f"   To: {email}")
+    print(f"   Name: {name}")
+    print(f"   Referral Code: {referral_code}")
+    print(f"   Referral Link: {referral_link}")
+    print("=" * 60)
+    
+    email_sent = False
+    email_error = None
+    email_channel = None
+    
+    # --- SendGrid ---
+    try:
+        from api.main import send_broker_welcome_email
+        send_broker_welcome_email(
+            email=email,
+            name=name,
+            referral_link=referral_link,
+            referral_code=referral_code
+        )
+        email_sent = True
+        email_channel = "sendgrid"
+        print("✅ EMAIL SENT VIA SENDGRID")
+    except Exception as e:
+        email_error = f"sendgrid: {e}"
+        print(f"❌ SENDGRID FAILED: {e}")
+    
+    # --- SMTP fallback ---
+    if not email_sent:
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            
+            # Support both SMTP_USER and SMTP_EMAIL (Railway compatibility)
+            smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_EMAIL") or "trendtweakers00@gmail.com"
+            # Remove spaces from Gmail app password (Railway may store as "xxxx xxxx xxxx xxxx")
+            smtp_pass = (os.getenv("SMTP_PASSWORD") or "").replace(" ", "")
+            
+            if not smtp_pass:
+                email_error = (email_error or "") + f" | smtp: SMTP_PASSWORD missing"
+                raise Exception("SMTP_PASSWORD missing")
+            
+            msg = MIMEText(
+                f"Your referral link:\n\n{referral_link}\n\nReferral code: {referral_code}"
+            )
+            msg["Subject"] = "LienDeadline Partner Approved"
+            msg["From"] = smtp_user
+            msg["To"] = email
+            
+            with smtplib.SMTP("smtp.gmail.com", 587) as s:
+                s.starttls()
+                s.login(smtp_user, smtp_pass)
+                s.send_message(msg)
+            
+            email_sent = True
+            email_channel = "smtp"
+            print("✅ EMAIL SENT VIA SMTP")
+            
+        except Exception as e:
+            email_error = (email_error or "") + f" | smtp: {e}"
+            print(f"❌ SMTP FAILED: {e}")
+    
+    print("=" * 60)
+    print(f"EMAIL RESULT sent={email_sent} channel={email_channel} error={email_error}")
+    print("=" * 60)
+    
+    logger.info(f"Background email sent: {email} - Referral code: {referral_code} - Email sent: {email_sent} via {email_channel}")
+
 @router.post("/reject-partner/{application_id}")
 async def reject_partner_application(
     application_id: int,
