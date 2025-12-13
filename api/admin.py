@@ -12,6 +12,9 @@ import secrets
 import string
 import logging
 
+# Import database functions from main.py
+from api.main import get_db, get_db_cursor, DB_TYPE
+
 logger = logging.getLogger(__name__)
 
 # Initialize Stripe
@@ -265,9 +268,6 @@ async def approve_partner(
     user: str = Depends(verify_admin)
 ):
     """Approve a partner application and send referral link"""
-    con = sqlite3.connect(get_db_path())
-    cur = con.cursor()
-    
     try:
         # Get commission model from request body if provided
         commission_model_override = None
@@ -277,90 +277,169 @@ async def approve_partner(
         except:
             pass
         
-        # Fetch application
-        cur.execute("SELECT * FROM partner_applications WHERE id = ?", (application_id,))
-        app = cur.fetchone()
-        
-        if not app:
-            raise HTTPException(status_code=404, detail="Application not found")
-        
-        # Convert tuple to dict-like access (handle different column counts)
-        app_dict = {
-            'id': app[0] if len(app) > 0 else None,
-            'name': app[2] if len(app) > 2 else '',
-            'email': app[1] if len(app) > 1 else '',
-            'company': app[3] if len(app) > 3 else '',
-            'commission_model': commission_model_override or (app[6] if len(app) > 6 else 'bounty')
-        }
-        
-        # Generate unique referral code
-        referral_code = f"broker_{secrets.token_urlsafe(8).upper()}"
-        referral_link = f"https://liendeadline.com?ref={referral_code}"
-        
-        # Create brokers table if it doesn't exist
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS brokers (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                email TEXT NOT NULL,
-                company TEXT,
-                referral_code TEXT UNIQUE NOT NULL,
-                referral_link TEXT NOT NULL,
-                commission_model TEXT NOT NULL,
-                pending_commissions INTEGER DEFAULT 0,
-                paid_commissions REAL DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Create broker record
-        cur.execute("""
-            INSERT INTO brokers (id, name, email, company, referral_code, referral_link, 
-                               commission_model, pending_commissions, paid_commissions)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)
-        """, (
-            referral_code,
-            app_dict['name'],
-            app_dict['email'],
-            app_dict['company'],
-            referral_code,
-            referral_link,
-            app_dict['commission_model']
-        ))
-        
-        # Try to add approval columns if they don't exist
-        try:
-            cur.execute("ALTER TABLE partner_applications ADD COLUMN approved_at TIMESTAMP")
-        except sqlite3.OperationalError:
-            pass
-        try:
-            cur.execute("ALTER TABLE partner_applications ADD COLUMN referral_link TEXT")
-        except sqlite3.OperationalError:
-            pass
-        
-        # Mark application as approved
-        cur.execute("""
-            UPDATE partner_applications 
-            SET status = 'approved',
-                approved_at = CURRENT_TIMESTAMP,
-                referral_link = ?
-            WHERE id = ?
-        """, (referral_link, application_id))
-        
-        con.commit()
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Fetch application
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT * FROM partner_applications WHERE id = %s", (application_id,))
+            else:
+                cursor.execute("SELECT * FROM partner_applications WHERE id = ?", (application_id,))
+            
+            app = cursor.fetchone()
+            
+            if not app:
+                raise HTTPException(status_code=404, detail="Application not found")
+            
+            # Convert to dict
+            if isinstance(app, dict):
+                app_dict = app
+            else:
+                app_dict = dict(app)
+            
+            # Use override or existing commission model
+            app_dict['commission_model'] = commission_model_override or app_dict.get('commission_model', 'bounty')
+            
+            # Generate unique referral code
+            referral_code = f"broker_{secrets.token_urlsafe(8).upper()}"
+            referral_link = f"https://liendeadline.com?ref={referral_code}"
+            
+            # Create brokers table if it doesn't exist (PostgreSQL)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS brokers (
+                        id VARCHAR PRIMARY KEY,
+                        name VARCHAR NOT NULL,
+                        email VARCHAR NOT NULL,
+                        company VARCHAR,
+                        referral_code VARCHAR UNIQUE NOT NULL,
+                        referral_link VARCHAR NOT NULL,
+                        commission_model VARCHAR NOT NULL,
+                        pending_commissions INTEGER DEFAULT 0,
+                        paid_commissions REAL DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+            else:
+                # SQLite
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS brokers (
+                        id TEXT PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        email TEXT NOT NULL,
+                        company TEXT,
+                        referral_code TEXT UNIQUE NOT NULL,
+                        referral_link TEXT NOT NULL,
+                        commission_model TEXT NOT NULL,
+                        pending_commissions INTEGER DEFAULT 0,
+                        paid_commissions REAL DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+            
+            # Create broker record
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    INSERT INTO brokers (id, name, email, company, referral_code, referral_link, 
+                                       commission_model, pending_commissions, paid_commissions)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 0, 0)
+                """, (
+                    referral_code,
+                    app_dict.get('name', ''),
+                    app_dict.get('email', ''),
+                    app_dict.get('company', ''),
+                    referral_code,
+                    referral_link,
+                    app_dict['commission_model']
+                ))
+            else:
+                cursor.execute("""
+                    INSERT INTO brokers (id, name, email, company, referral_code, referral_link, 
+                                       commission_model, pending_commissions, paid_commissions)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)
+                """, (
+                    referral_code,
+                    app_dict.get('name', ''),
+                    app_dict.get('email', ''),
+                    app_dict.get('company', ''),
+                    referral_code,
+                    referral_link,
+                    app_dict['commission_model']
+                ))
+            
+            # Try to add approval columns if they don't exist (PostgreSQL)
+            if DB_TYPE == 'postgresql':
+                try:
+                    cursor.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'partner_applications' AND column_name = 'approved_at'
+                            ) THEN
+                                ALTER TABLE partner_applications ADD COLUMN approved_at TIMESTAMP;
+                            END IF;
+                        END $$;
+                    """)
+                except Exception:
+                    pass
+                try:
+                    cursor.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'partner_applications' AND column_name = 'referral_link'
+                            ) THEN
+                                ALTER TABLE partner_applications ADD COLUMN referral_link VARCHAR;
+                            END IF;
+                        END $$;
+                    """)
+                except Exception:
+                    pass
+            else:
+                # SQLite
+                try:
+                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN approved_at TIMESTAMP")
+                except sqlite3.OperationalError:
+                    pass
+                try:
+                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN referral_link TEXT")
+                except sqlite3.OperationalError:
+                    pass
+            
+            # Mark application as approved
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE partner_applications 
+                    SET status = 'approved',
+                        approved_at = NOW(),
+                        referral_link = %s
+                    WHERE id = %s
+                """, (referral_link, application_id))
+            else:
+                cursor.execute("""
+                    UPDATE partner_applications 
+                    SET status = 'approved',
+                        approved_at = CURRENT_TIMESTAMP,
+                        referral_link = ?
+                    WHERE id = ?
+                """, (referral_link, application_id))
+            
+            conn.commit()
         
         # Import send_broker_welcome_email from main.py
         from api.main import send_broker_welcome_email
         
         # Send welcome email
         send_broker_welcome_email(
-            app_dict['email'],
-            app_dict['name'],
+            app_dict.get('email', ''),
+            app_dict.get('name', ''),
             referral_link,
             referral_code
         )
         
-        logger.info(f"Partner approved: {app_dict['email']} - Referral code: {referral_code}")
+        logger.info(f"Partner approved: {app_dict.get('email', '')} - Referral code: {referral_code}")
         
         return {
             "status": "approved",
@@ -374,70 +453,52 @@ async def approve_partner(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        con.close()
 
 @router.get("/partner-applications")
 def get_partner_applications(
-    status: str = "pending",
+    status: str = "all",
     user: str = Depends(verify_admin)
 ):
-    """Get partner applications filtered by status"""
-    con = sqlite3.connect(get_db_path())
+    """Get partner applications - PostgreSQL/SQLite compatible"""
+    
+    print("=" * 60)
+    print("📊 ADMIN: Fetching partner applications")
+    print(f"   Status filter: {status}")
+    print("=" * 60)
+    
     try:
-        cur = con.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS partner_applications (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT NOT NULL,
-                company TEXT NOT NULL,
-                client_count TEXT,
-                message TEXT,
-                commission_model TEXT,
-                timestamp TEXT NOT NULL,
-                status TEXT DEFAULT 'pending',
-                referral_link TEXT
-            )
-        """)
-        
-        if status == "pending":
-            query = "SELECT * FROM partner_applications WHERE status = 'pending' OR status IS NULL ORDER BY timestamp DESC"
-        elif status == "approved":
-            query = "SELECT * FROM partner_applications WHERE status = 'approved' ORDER BY timestamp DESC"
-        elif status == "flagged":
-            query = "SELECT * FROM partner_applications WHERE status = 'flagged' ORDER BY timestamp DESC"
-        elif status == "all":
-            query = "SELECT * FROM partner_applications ORDER BY timestamp DESC"
-        else:
-            query = "SELECT * FROM partner_applications ORDER BY timestamp DESC"
-        
-        applications = cur.execute(query).fetchall()
-        
-        return {
-            "applications": [
-                {
-                    "id": app[0],
-                    "email": app[1] if len(app) > 1 else '',
-                    "name": app[2] if len(app) > 2 else '',
-                    "company": app[3] if len(app) > 3 else '',
-                    "client_count": app[4] if len(app) > 4 else '',
-                    "message": app[5] if len(app) > 5 else '',
-                    "commission_model": app[6] if len(app) > 6 else '',
-                    "timestamp": app[7] if len(app) > 7 else '',
-                    "created_at": app[7] if len(app) > 7 else '',
-                    "status": app[8] if len(app) > 8 else 'pending',
-                    "referral_link": app[9] if len(app) > 9 else None
-                }
-                for app in applications
-            ],
-            "total": len(applications)
-        }
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Simple query - same as debug endpoint
+            cursor.execute("SELECT * FROM partner_applications ORDER BY created_at DESC")
+            rows = cursor.fetchall()
+            
+            print(f"   Raw rows fetched: {len(rows)}")
+            
+            # Convert to dicts
+            applications = []
+            for row in rows:
+                if isinstance(row, dict):
+                    applications.append(row)
+                else:
+                    applications.append(dict(row))
+            
+            # Filter by status if needed
+            if status and status != "all":
+                applications = [app for app in applications if app.get('status') == status]
+            
+            print(f"   After filter: {len(applications)} applications")
+            print("=" * 60)
+            
+            return {"applications": applications, "total": len(applications)}
+            
     except Exception as e:
-        logger.error(f"Error getting partner applications: {e}")
-        return {"applications": [], "total": 0}
-    finally:
-        con.close()
+        print(f"❌ ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        print("=" * 60)
+        return {"applications": [], "total": 0, "error": str(e)}
 
 @router.get("/brokers")
 def list_brokers(user: str = Depends(verify_admin)):
