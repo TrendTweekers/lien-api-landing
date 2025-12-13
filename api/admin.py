@@ -11,6 +11,7 @@ import json
 import secrets
 import string
 import logging
+import asyncio
 
 # Import database functions from database.py (avoids circular import)
 from api.database import get_db, get_db_cursor, DB_TYPE
@@ -653,16 +654,8 @@ async def approve_partner(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-def send_welcome_email_background(email: str, name: str, referral_link: str, referral_code: str):
-    """Background task to send welcome email (non-blocking) - prevents Cloudflare 524 timeout"""
-    print("=" * 60)
-    print("📧 BACKGROUND: ATTEMPTING TO SEND WELCOME EMAIL")
-    print(f"   To: {email}")
-    print(f"   Name: {name}")
-    print(f"   Referral Code: {referral_code}")
-    print(f"   Referral Link: {referral_link}")
-    print("=" * 60)
-    
+def _send_broker_email_sync(email: str, name: str, referral_link: str, referral_code: str):
+    """Synchronous email sending function (called from async wrapper)"""
     email_sent = False
     email_error = None
     email_channel = None
@@ -718,11 +711,51 @@ def send_welcome_email_background(email: str, name: str, referral_link: str, ref
             email_error = (email_error or "") + f" | smtp: {e}"
             print(f"❌ SMTP FAILED: {e}")
     
+    return email_sent, email_channel, email_error
+
+async def send_email_with_timeout(email: str, name: str, referral_link: str, referral_code: str):
+    """Async wrapper with timeout - HARD STOP so Cloudflare never 524s again"""
     print("=" * 60)
-    print(f"EMAIL RESULT sent={email_sent} channel={email_channel} error={email_error}")
+    print("📧 BACKGROUND: ATTEMPTING TO SEND WELCOME EMAIL")
+    print(f"   To: {email}")
+    print(f"   Name: {name}")
+    print(f"   Referral Code: {referral_code}")
+    print(f"   Referral Link: {referral_link}")
     print("=" * 60)
     
-    logger.info(f"Background email sent: {email} - Referral code: {referral_code} - Email sent: {email_sent} via {email_channel}")
+    try:
+        # Run sync email function in thread pool with 12s timeout
+        email_sent, email_channel, email_error = await asyncio.wait_for(
+            asyncio.to_thread(_send_broker_email_sync, email, name, referral_link, referral_code),
+            timeout=12.0
+        )
+        
+        print("=" * 60)
+        print(f"EMAIL RESULT sent={email_sent} channel={email_channel} error={email_error}")
+        print("=" * 60)
+        
+        logger.info(f"Background email sent: {email} - Referral code: {referral_code} - Email sent: {email_sent} via {email_channel}")
+        
+    except asyncio.TimeoutError:
+        logger.exception("EMAIL_SEND_FAILED: Timeout after 12s")
+        print("=" * 60)
+        print("❌ EMAIL SEND TIMEOUT (12s exceeded)")
+        print("=" * 60)
+    except Exception as e:
+        logger.exception("EMAIL_SEND_FAILED: %s", e)
+        print("=" * 60)
+        print(f"❌ EMAIL SEND FAILED: {e}")
+        print("=" * 60)
+
+def send_welcome_email_background(email: str, name: str, referral_link: str, referral_code: str):
+    """Background task wrapper (for BackgroundTasks.add_task)"""
+    # Create new event loop for background task
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(send_email_with_timeout(email, name, referral_link, referral_code))
+    finally:
+        loop.close()
 
 @router.post("/reject-partner/{application_id}")
 async def reject_partner_application(
