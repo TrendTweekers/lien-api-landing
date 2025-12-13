@@ -439,41 +439,80 @@ async def approve_partner(
                     except Exception:
                         pass
             
-            # Create broker record - let database auto-generate ID
+            # Create broker record - use only essential columns that must exist
+            name = app_dict.get('name', '')
+            email = app_dict.get('email', '')
+            
+            print(f"Creating broker: {name} ({email}) with referral_code: {referral_code}")
+            
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
-                    INSERT INTO brokers (name, email, company, referral_code, referral_link, 
-                                       commission_model, pending_commissions, paid_commissions, status, created_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, 0, 0, 'active', NOW())
+                    INSERT INTO brokers (name, email, referral_code)
+                    VALUES (%s, %s, %s)
                     RETURNING id
-                """, (
-                    app_dict.get('name', ''),
-                    app_dict.get('email', ''),
-                    app_dict.get('company', ''),
-                    referral_code,
-                    referral_link,
-                    app_dict['commission_model']
-                ))
+                """, (name, email, referral_code))
                 
                 result = cursor.fetchone()
                 broker_id = result['id'] if isinstance(result, dict) else result[0]
                 print(f"✅ Created broker with auto-generated ID: {broker_id}")
             else:
                 cursor.execute("""
-                    INSERT INTO brokers (name, email, company, referral_code, referral_link, 
-                                       commission_model, pending_commissions, paid_commissions, status, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, 0, 0, 'active', datetime('now'))
-                """, (
-                    app_dict.get('name', ''),
-                    app_dict.get('email', ''),
-                    app_dict.get('company', ''),
-                    referral_code,
-                    referral_link,
-                    app_dict['commission_model']
-                ))
+                    INSERT INTO brokers (name, email, referral_code)
+                    VALUES (?, ?, ?)
+                """, (name, email, referral_code))
                 
                 broker_id = cursor.lastrowid
                 print(f"✅ Created broker with auto-generated ID: {broker_id}")
+            
+            # Try to update additional columns if they exist (optional, don't fail if they don't)
+            try:
+                if DB_TYPE == 'postgresql':
+                    # Try to update company if column exists
+                    try:
+                        cursor.execute("""
+                            UPDATE brokers 
+                            SET company = %s 
+                            WHERE id = %s
+                        """, (app_dict.get('company', ''), broker_id))
+                    except Exception:
+                        pass  # Column doesn't exist, skip
+                    
+                    # Try to update referral_link if column exists
+                    try:
+                        cursor.execute("""
+                            UPDATE brokers 
+                            SET referral_link = %s 
+                            WHERE id = %s
+                        """, (referral_link, broker_id))
+                    except Exception:
+                        pass  # Column doesn't exist, skip
+                    
+                    # Try to update commission_model if column exists
+                    try:
+                        cursor.execute("""
+                            UPDATE brokers 
+                            SET commission_model = %s 
+                            WHERE id = %s
+                        """, (app_dict['commission_model'], broker_id))
+                    except Exception:
+                        pass  # Column doesn't exist, skip
+                else:
+                    # SQLite - try to update optional columns
+                    try:
+                        cursor.execute("UPDATE brokers SET company = ? WHERE id = ?", (app_dict.get('company', ''), broker_id))
+                    except Exception:
+                        pass
+                    try:
+                        cursor.execute("UPDATE brokers SET referral_link = ? WHERE id = ?", (referral_link, broker_id))
+                    except Exception:
+                        pass
+                    try:
+                        cursor.execute("UPDATE brokers SET commission_model = ? WHERE id = ?", (app_dict['commission_model'], broker_id))
+                    except Exception:
+                        pass
+            except Exception as e:
+                print(f"Warning: Could not update optional columns: {e}")
+                # Continue anyway - broker created successfully
             
             # Try to add approval columns if they don't exist (PostgreSQL)
             if DB_TYPE == 'postgresql':
