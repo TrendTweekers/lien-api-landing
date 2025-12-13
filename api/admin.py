@@ -658,7 +658,8 @@ async def approve_partner(
                 
                 # Support both SMTP_USER and SMTP_EMAIL (Railway compatibility)
                 smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_EMAIL") or "trendtweakers00@gmail.com"
-                smtp_pass = os.getenv("SMTP_PASSWORD")
+                # Remove spaces from Gmail app password (Railway may store as "xxxx xxxx xxxx xxxx")
+                smtp_pass = (os.getenv("SMTP_PASSWORD") or "").replace(" ", "")
                 
                 if not smtp_pass:
                     email_error = (email_error or "") + f" | smtp: SMTP_PASSWORD missing"

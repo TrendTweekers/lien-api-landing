@@ -2378,7 +2378,8 @@ def send_welcome_email(email: str, temp_password: str):
         else:
             # Fallback: Try SMTP if SendGrid not configured
             smtp_email = os.getenv('SMTP_EMAIL')
-            smtp_password = os.getenv('SMTP_PASSWORD')
+            # Remove spaces from Gmail app password (Railway may store as "xxxx xxxx xxxx xxxx")
+            smtp_password = (os.getenv('SMTP_PASSWORD') or "").replace(" ", "")
             
             if smtp_email and smtp_password:
                 import smtplib
