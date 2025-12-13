@@ -192,84 +192,82 @@ async function loadPartnerApplications() {
     }
 }
 
-// Unified event delegation handler (capture phase) - prevents cancellation
-document.addEventListener("click", async (e) => {
+// ONE handler only. Remove any other click listeners for approve/reject/delete.
+window.addEventListener(
+  "click",
+  async (e) => {
     const btn =
-        e.target.closest(".approve-btn") ||
-        e.target.closest(".reject-btn") ||
-        e.target.closest(".delete-btn") ||
-        e.target.closest(".delete-broker-btn");
+      e.target.closest(".approve-btn") ||
+      e.target.closest(".reject-btn") ||
+      e.target.closest(".delete-btn") ||
+      e.target.closest(".delete-broker-btn");
 
     if (!btn) return;
 
+    // HARD STOP: prevent *anything* else from canceling the request
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
 
-    const id = btn.dataset.appId || btn.dataset.brokerId;
-    if (!id) {
-        alert("Missing id on button");
-        return;
-    }
+    const appId = btn.dataset.appId;
+    const brokerId = btn.dataset.brokerId;
 
-    // IMPORTANT: always include auth + credentials so it never "half works"
-    const authHeader = window.ADMIN_BASIC_AUTH
-        ? { Authorization: window.ADMIN_BASIC_AUTH }
-        : { Authorization: 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`) };
+    const auth = window.ADMIN_BASIC_AUTH
+      ? { Authorization: window.ADMIN_BASIC_AUTH }
+      : { Authorization: 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`) };
+
+    // Disable button to prevent double clicks
+    btn.disabled = true;
 
     try {
-        if (btn.classList.contains("approve-btn")) {
-            const r = await fetch(`/api/admin/approve-partner/${id}`, {
-                method: "POST",
-                credentials: "include",
-                headers: { ...authHeader }
-            });
-            const text = await r.text();
-            if (!r.ok) throw new Error(text || `HTTP ${r.status}`);
-            alert("Approved ✅");
-        }
+      let url = "";
+      let method = "POST";
 
-        if (btn.classList.contains("reject-btn")) {
-            const r = await fetch(`/api/admin/reject-partner/${id}`, {
-                method: "POST",
-                credentials: "include",
-                headers: { ...authHeader }
-            });
-            const text = await r.text();
-            if (!r.ok) throw new Error(text || `HTTP ${r.status}`);
-            alert("Rejected ✅");
-        }
+      if (btn.classList.contains("approve-btn")) {
+        url = `/api/admin/approve-partner/${appId}`;
+        method = "POST";
+      } else if (btn.classList.contains("reject-btn")) {
+        url = `/api/admin/reject-partner/${appId}`;
+        method = "POST";
+      } else if (btn.classList.contains("delete-btn")) {
+        url = `/api/admin/delete-partner/${appId}`;
+        method = "DELETE";
+      } else if (btn.classList.contains("delete-broker-btn")) {
+        url = `/api/admin/delete-broker/${brokerId}`;
+        method = "DELETE";
+      }
 
-        if (btn.classList.contains("delete-btn")) {
-            const r = await fetch(`/api/admin/delete-partner/${id}`, {
-                method: "DELETE",
-                credentials: "include",
-                headers: { ...authHeader }
-            });
-            const text = await r.text();
-            if (!r.ok) throw new Error(text || `HTTP ${r.status}`);
-            alert("Deleted ✅");
-        }
+      if (!url.includes("/")) throw new Error("Missing id on button");
 
-        if (btn.classList.contains("delete-broker-btn")) {
-            const r = await fetch(`/api/admin/delete-broker/${id}`, {
-                method: "DELETE",
-                credentials: "include",
-                headers: { ...authHeader }
-            });
-            const text = await r.text();
-            if (!r.ok) throw new Error(text || `HTTP ${r.status}`);
-            alert("Broker deleted ✅");
-        }
+      console.log("[ADMIN] sending:", method, url);
 
-        // refresh UI after any action
-        if (typeof loadPartnerApplications === "function") loadPartnerApplications();
-        if (typeof loadActiveBrokers === "function") loadActiveBrokers();
+      const r = await fetch(url, {
+        method,
+        headers: { ...auth },
+        credentials: "include",
+        keepalive: true, // <-- IMPORTANT: request continues even if page navigates/reloads
+        cache: "no-store",
+      });
+
+      const text = await r.text();
+      console.log("[ADMIN] response:", r.status, text);
+
+      if (!r.ok) throw new Error(text || `HTTP ${r.status}`);
+
+      alert("✅ Success");
+
+      // Refresh UI
+      if (typeof loadPartnerApplications === "function") loadPartnerApplications();
+      if (typeof loadActiveBrokers === "function") loadActiveBrokers();
     } catch (err) {
-        alert(`Action failed: ${err.message}`);
-        console.error(err);
+      console.error(err);
+      alert("❌ " + (err?.message || err));
+    } finally {
+      btn.disabled = false;
     }
-}, true); // <-- capture phase matters
+  },
+  true // <-- capture phase: runs before anything else
+);
 
 // 5. Approve application (kept for backward compatibility, but now handled by event delegation)
 async function approveApplication(id, email, name, commissionModel) {
