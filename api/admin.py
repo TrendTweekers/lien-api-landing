@@ -785,6 +785,251 @@ async def delete_partner_application(
         logger.error(f"Error deleting partner application: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.delete("/delete-broker/{broker_id}")
+async def delete_broker(
+    broker_id: int,
+    user: str = Depends(verify_admin)
+):
+    """Delete a broker and all associated data - PostgreSQL/SQLite compatible"""
+    print("=" * 60)
+    print(f"🗑️ ADMIN: Deleting broker {broker_id}")
+    print("=" * 60)
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # First check if broker exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT * FROM brokers WHERE id = %s", (broker_id,))
+            else:
+                cursor.execute("SELECT * FROM brokers WHERE id = ?", (broker_id,))
+            
+            broker = cursor.fetchone()
+            
+            if not broker:
+                print(f"❌ Broker {broker_id} not found")
+                raise HTTPException(status_code=404, detail="Broker not found")
+            
+            # Convert to dict
+            if isinstance(broker, dict):
+                broker_dict = broker
+            else:
+                broker_dict = dict(broker)
+            
+            print(f"   Broker found: {broker_dict.get('email', 'Unknown')}")
+            
+            # Delete broker
+            if DB_TYPE == 'postgresql':
+                cursor.execute("DELETE FROM brokers WHERE id = %s", (broker_id,))
+            else:
+                cursor.execute("DELETE FROM brokers WHERE id = ?", (broker_id,))
+            
+            conn.commit()
+            
+            print(f"✅ Broker {broker_id} deleted successfully")
+            print("=" * 60)
+            
+            logger.info(f"Broker deleted: {broker_dict.get('email', '')} - ID: {broker_id}")
+            
+            return {
+                "success": True,
+                "message": "Broker deleted"
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ ERROR deleting broker: {e}")
+        import traceback
+        traceback.print_exc()
+        print("=" * 60)
+        logger.error(f"Error deleting broker: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/analytics/comprehensive")
+async def get_comprehensive_analytics(user: str = Depends(verify_admin)):
+    """Get comprehensive analytics with Day/Week/Month/All Time stats - PostgreSQL/SQLite compatible"""
+    print("=" * 60)
+    print("📊 ADMIN: Fetching comprehensive analytics")
+    print("=" * 60)
+    
+    try:
+        from datetime import datetime, timedelta
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Date ranges
+            today = datetime.now().date()
+            week_ago = today - timedelta(days=7)
+            month_ago = today - timedelta(days=30)
+            
+            # Format dates for SQL
+            today_str = today.strftime('%Y-%m-%d')
+            week_ago_str = week_ago.strftime('%Y-%m-%d')
+            month_ago_str = month_ago.strftime('%Y-%m-%d')
+            
+            stats = {}
+            
+            # CALCULATIONS
+            try:
+                # Today
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = %s", (today_str,))
+                else:
+                    cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = ?", (today_str,))
+                result = cursor.fetchone()
+                stats['calculations_today'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
+                
+                # This week
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) >= %s", (week_ago_str,))
+                else:
+                    cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) >= ?", (week_ago_str,))
+                result = cursor.fetchone()
+                stats['calculations_week'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
+                
+                # This month
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) >= %s", (month_ago_str,))
+                else:
+                    cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) >= ?", (month_ago_str,))
+                result = cursor.fetchone()
+                stats['calculations_month'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
+                
+                # All time
+                cursor.execute("SELECT COUNT(*) as count FROM calculations")
+                result = cursor.fetchone()
+                stats['calculations_all'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
+            except Exception as e:
+                print(f"Error getting calculations: {e}")
+                stats['calculations_today'] = 0
+                stats['calculations_week'] = 0
+                stats['calculations_month'] = 0
+                stats['calculations_all'] = 0
+            
+            # REVENUE (from payments table)
+            try:
+                # Today
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) = %s AND status = 'completed'", (today_str,))
+                else:
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) = ? AND status = 'completed'", (today_str,))
+                result = cursor.fetchone()
+                stats['revenue_today'] = float(result['total'] if isinstance(result, dict) else (result[0] if result else 0))
+                
+                # This week
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= %s AND status = 'completed'", (week_ago_str,))
+                else:
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= ? AND status = 'completed'", (week_ago_str,))
+                result = cursor.fetchone()
+                stats['revenue_week'] = float(result['total'] if isinstance(result, dict) else (result[0] if result else 0))
+                
+                # This month
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= %s AND status = 'completed'", (month_ago_str,))
+                else:
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= ? AND status = 'completed'", (month_ago_str,))
+                result = cursor.fetchone()
+                stats['revenue_month'] = float(result['total'] if isinstance(result, dict) else (result[0] if result else 0))
+                
+                # All time
+                cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE status = 'completed'")
+                result = cursor.fetchone()
+                stats['revenue_all'] = float(result['total'] if isinstance(result, dict) else (result[0] if result else 0))
+            except Exception as e:
+                print(f"Error getting revenue: {e}")
+                stats['revenue_today'] = 0.0
+                stats['revenue_week'] = 0.0
+                stats['revenue_month'] = 0.0
+                stats['revenue_all'] = 0.0
+            
+            # EMAIL CAPTURES
+            try:
+                # Today
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(captured_at) = %s", (today_str,))
+                else:
+                    cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(captured_at) = ?", (today_str,))
+                result = cursor.fetchone()
+                stats['emails_today'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
+                
+                # This week
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(captured_at) >= %s", (week_ago_str,))
+                else:
+                    cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(captured_at) >= ?", (week_ago_str,))
+                result = cursor.fetchone()
+                stats['emails_week'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
+                
+                # This month
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(captured_at) >= %s", (month_ago_str,))
+                else:
+                    cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(captured_at) >= ?", (month_ago_str,))
+                result = cursor.fetchone()
+                stats['emails_month'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
+                
+                # All time
+                cursor.execute("SELECT COUNT(*) as count FROM email_captures")
+                result = cursor.fetchone()
+                stats['emails_all'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
+            except Exception as e:
+                print(f"Error getting email captures: {e}")
+                stats['emails_today'] = 0
+                stats['emails_week'] = 0
+                stats['emails_month'] = 0
+                stats['emails_all'] = 0
+            
+            # ACTIVE PARTNERS
+            try:
+                cursor.execute("SELECT COUNT(*) as count FROM brokers")
+                result = cursor.fetchone()
+                stats['partners_total'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
+            except Exception as e:
+                print(f"Error getting partners: {e}")
+                stats['partners_total'] = 0
+            
+            # PENDING APPLICATIONS
+            try:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) as count FROM partner_applications WHERE status = 'pending'")
+                else:
+                    cursor.execute("SELECT COUNT(*) as count FROM partner_applications WHERE status = 'pending'")
+                result = cursor.fetchone()
+                stats['applications_pending'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
+            except Exception as e:
+                print(f"Error getting pending applications: {e}")
+                stats['applications_pending'] = 0
+        
+        print(f"✅ Analytics fetched successfully")
+        print("=" * 60)
+        return stats
+        
+    except Exception as e:
+        print(f"❌ ERROR getting comprehensive analytics: {e}")
+        import traceback
+        traceback.print_exc()
+        print("=" * 60)
+        return {
+            'calculations_today': 0,
+            'calculations_week': 0,
+            'calculations_month': 0,
+            'calculations_all': 0,
+            'revenue_today': 0.0,
+            'revenue_week': 0.0,
+            'revenue_month': 0.0,
+            'revenue_all': 0.0,
+            'emails_today': 0,
+            'emails_week': 0,
+            'emails_month': 0,
+            'emails_all': 0,
+            'partners_total': 0,
+            'applications_pending': 0
+        }
+
 @router.get("/partner-applications")
 def get_partner_applications(
     status: str = "all",

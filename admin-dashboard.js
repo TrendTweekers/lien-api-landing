@@ -406,6 +406,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateAllStats();
     updateLiveAnalytics();
     updateEmailConversion();
+    loadComprehensiveAnalytics();
     
     // Auto-refresh
     setInterval(() => {
@@ -414,7 +415,8 @@ document.addEventListener('DOMContentLoaded', function() {
         updateAllStats();
         updateLiveAnalytics();
         updateEmailConversion();
-    }, 30000);
+        loadComprehensiveAnalytics();
+    }, 60000); // Refresh every 60 seconds
     
     console.log('✅ Dashboard ready');
 });
@@ -474,9 +476,17 @@ async function loadActiveBrokers() {
                                 <div class="text-sm text-gray-600">${broker.email || ''}</div>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <div class="text-sm text-gray-600">${commissionBadge}</div>
-                            <div class="text-xs text-gray-500 mt-1">Ref: ${broker.referral_code || 'N/A'}</div>
+                        <div class="flex items-center gap-3">
+                            <div class="text-right">
+                                <div class="text-sm text-gray-600">${commissionBadge}</div>
+                                <div class="text-xs text-gray-500 mt-1">Ref: ${broker.referral_code || 'N/A'}</div>
+                            </div>
+                            <button 
+                                onclick="deleteActiveBroker(${broker.id})" 
+                                class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                                title="Delete broker">
+                                Delete
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -495,7 +505,45 @@ async function loadActiveBrokers() {
     }
 }
 
-// 8c. Delete application
+// 8c. Delete active broker
+async function deleteActiveBroker(brokerId) {
+    if (!confirm('Delete this broker? This will also delete all their referrals and commission data. This cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        console.log(`[Admin] Deleting broker ${brokerId}...`);
+        
+        const response = await fetch(`/api/admin/delete-broker/${brokerId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: `HTTP ${response.status}` }));
+            console.error(`[Admin] Delete broker error: ${response.status}`, errorData);
+            alert('❌ Error: ' + (errorData.detail || 'Failed to delete broker'));
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('[Admin] Delete broker response:', data);
+        
+        if (data.success) {
+            alert('✅ Broker deleted successfully');
+            loadActiveBrokers(); // Refresh list
+        } else {
+            alert('❌ Error: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('[Admin] Error deleting broker:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// 8d. Delete application
 async function deleteApplication(id) {
     if (!confirm('Permanently delete this application? This cannot be undone.')) {
         return;
@@ -533,9 +581,157 @@ async function deleteApplication(id) {
     }
 }
 
+// 8e. Load Comprehensive Analytics
+async function loadComprehensiveAnalytics() {
+    try {
+        console.log('[Admin] Loading comprehensive analytics...');
+        
+        const response = await fetch('/api/admin/analytics/comprehensive', {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            console.error(`[Admin] Analytics API error: ${response.status}`);
+            return;
+        }
+        
+        const stats = await response.json();
+        console.log('[Admin] Comprehensive analytics:', stats);
+        
+        // Update UI with stats
+        updateAnalyticsDisplay(stats);
+        
+    } catch (error) {
+        console.error('[Admin] Error loading comprehensive analytics:', error);
+    }
+}
+
+function updateAnalyticsDisplay(stats) {
+    // Find or create analytics container
+    let analyticsContainer = document.getElementById('comprehensiveAnalytics');
+    
+    if (!analyticsContainer) {
+        // Create container if it doesn't exist
+        analyticsContainer = document.createElement('div');
+        analyticsContainer.id = 'comprehensiveAnalytics';
+        analyticsContainer.className = 'mb-8';
+        
+        // Insert after QUICK STATS ROW
+        const quickStats = document.querySelector('.grid.grid-cols-1.sm\\:grid-cols-2.lg\\:grid-cols-4');
+        if (quickStats && quickStats.parentElement) {
+            quickStats.parentElement.insertBefore(analyticsContainer, quickStats.nextSibling);
+        } else {
+            // Fallback: insert at top of main content
+            const mainContent = document.querySelector('.p-6');
+            if (mainContent) {
+                mainContent.insertBefore(analyticsContainer, mainContent.firstChild);
+            }
+        }
+    }
+    
+    // Create comprehensive analytics HTML
+    const analyticsHTML = `
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <h2 class="text-xl font-bold mb-6 text-gray-900">📊 Comprehensive Analytics</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Calculations Card -->
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">📊 Calculations</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Today:</span>
+                            <span class="font-semibold">${stats.calculations_today || 0}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">This Week:</span>
+                            <span class="font-semibold">${stats.calculations_week || 0}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">This Month:</span>
+                            <span class="font-semibold">${stats.calculations_month || 0}</span>
+                        </div>
+                        <div class="flex justify-between border-t border-blue-300 pt-2 mt-2">
+                            <span class="text-gray-800 font-medium">All Time:</span>
+                            <span class="font-bold text-blue-600">${stats.calculations_all || 0}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Revenue Card -->
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">💰 Revenue</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Today:</span>
+                            <span class="font-semibold">$${(stats.revenue_today || 0).toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">This Week:</span>
+                            <span class="font-semibold">$${(stats.revenue_week || 0).toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">This Month:</span>
+                            <span class="font-semibold">$${(stats.revenue_month || 0).toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between border-t border-green-300 pt-2 mt-2">
+                            <span class="text-gray-800 font-medium">All Time:</span>
+                            <span class="font-bold text-green-600">$${(stats.revenue_all || 0).toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Email Captures Card -->
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">📧 Email Captures</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Today:</span>
+                            <span class="font-semibold">${stats.emails_today || 0}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">This Week:</span>
+                            <span class="font-semibold">${stats.emails_week || 0}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">This Month:</span>
+                            <span class="font-semibold">${stats.emails_month || 0}</span>
+                        </div>
+                        <div class="flex justify-between border-t border-purple-300 pt-2 mt-2">
+                            <span class="text-gray-800 font-medium">All Time:</span>
+                            <span class="font-bold text-purple-600">${stats.emails_all || 0}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Additional Stats Row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">Active Partners:</span>
+                        <span class="text-2xl font-bold text-blue-600">${stats.partners_total || 0}</span>
+                    </div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">Pending Applications:</span>
+                        <span class="text-2xl font-bold text-yellow-600">${stats.applications_pending || 0}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    analyticsContainer.innerHTML = analyticsHTML;
+}
+
 // 9. Global functions
 window.approveApplication = approveApplication;
 window.rejectApplication = rejectApplication;
 window.deleteApplication = deleteApplication;
+window.deleteActiveBroker = deleteActiveBroker;
 window.loadPartnerApplications = loadPartnerApplications;
 window.loadActiveBrokers = loadActiveBrokers;
+window.loadComprehensiveAnalytics = loadComprehensiveAnalytics;
