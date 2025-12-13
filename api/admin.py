@@ -454,6 +454,102 @@ async def approve_partner(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/reject-partner/{application_id}")
+async def reject_partner_application(
+    application_id: int,
+    user: str = Depends(verify_admin)
+):
+    """Reject a partner application - PostgreSQL/SQLite compatible"""
+    print("=" * 60)
+    print(f"❌ ADMIN: Rejecting partner application {application_id}")
+    print("=" * 60)
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # First check if application exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT * FROM partner_applications WHERE id = %s", (application_id,))
+            else:
+                cursor.execute("SELECT * FROM partner_applications WHERE id = ?", (application_id,))
+            
+            app = cursor.fetchone()
+            
+            if not app:
+                print(f"❌ Application {application_id} not found")
+                raise HTTPException(status_code=404, detail="Application not found")
+            
+            # Convert to dict
+            if isinstance(app, dict):
+                app_dict = app
+            else:
+                app_dict = dict(app)
+            
+            print(f"   Application found: {app_dict.get('email', 'Unknown')}")
+            
+            # Try to add rejected_at column if it doesn't exist (PostgreSQL)
+            if DB_TYPE == 'postgresql':
+                try:
+                    cursor.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'partner_applications' AND column_name = 'rejected_at'
+                            ) THEN
+                                ALTER TABLE partner_applications ADD COLUMN rejected_at TIMESTAMP;
+                            END IF;
+                        END $$;
+                    """)
+                except Exception:
+                    pass
+            else:
+                # SQLite
+                try:
+                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN rejected_at TIMESTAMP")
+                except Exception:
+                    pass
+            
+            # Update status to rejected
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE partner_applications 
+                    SET status = 'rejected',
+                        rejected_at = NOW()
+                    WHERE id = %s
+                """, (application_id,))
+            else:
+                cursor.execute("""
+                    UPDATE partner_applications 
+                    SET status = 'rejected',
+                        rejected_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                """, (application_id,))
+            
+            conn.commit()
+            
+            print(f"✅ Application {application_id} rejected successfully")
+            print("=" * 60)
+            
+            logger.info(f"Partner application rejected: {app_dict.get('email', '')} - ID: {application_id}")
+            
+            return {
+                "success": True,
+                "message": "Application rejected",
+                "status": "rejected"
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ ERROR rejecting application: {e}")
+        import traceback
+        traceback.print_exc()
+        print("=" * 60)
+        logger.error(f"Error rejecting partner application: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/partner-applications")
 def get_partner_applications(
     status: str = "all",

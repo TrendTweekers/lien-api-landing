@@ -227,6 +227,8 @@ async function rejectApplication(id) {
     }
     
     try {
+        console.log(`[Admin] Rejecting application ${id}...`);
+        
         const response = await fetch(`/api/admin/reject-partner/${id}`, {
             method: 'POST',
             headers: {
@@ -234,14 +236,24 @@ async function rejectApplication(id) {
             }
         });
         
-        if (response.ok) {
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: `HTTP ${response.status}` }));
+            console.error(`[Admin] Reject error: ${response.status}`, errorData);
+            alert('❌ Error: ' + (errorData.detail || 'Failed to reject application'));
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('[Admin] Reject response:', data);
+        
+        if (data.success) {
             alert('❌ Application rejected');
-            loadPartnerApplications(); // Refresh
+            loadPartnerApplications(); // Refresh list
         } else {
-            alert('❌ Error rejecting application');
+            alert('❌ Error: ' + (data.error || 'Unknown error'));
         }
     } catch (error) {
-        console.error('Error rejecting application:', error);
+        console.error('[Admin] Error rejecting application:', error);
         alert('❌ Error: ' + error.message);
     }
 }
