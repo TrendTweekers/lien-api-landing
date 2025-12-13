@@ -3301,6 +3301,30 @@ async def get_pending_payouts_api(username: str = Depends(verify_admin)):
 # ==========================================
 # TEST EMAIL ENDPOINT (REMOVE AFTER TESTING)
 # ==========================================
+def send_email_sync(to_email: str, subject: str, body: str):
+    """Synchronous email sending function with timeout=10 on SMTP connection"""
+    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_EMAIL") or "trendtweakers00@gmail.com"
+    smtp_password = (os.getenv("SMTP_PASSWORD") or "").replace(" ", "")  # Remove spaces from Gmail app password
+
+    if not smtp_password:
+        raise RuntimeError("SMTP_PASSWORD missing")
+
+    msg = MIMEMultipart()
+    msg["From"] = smtp_user
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    # ✅ timeout=10 is the key: prevents indefinite hang → Cloudflare 524
+    with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
+        server.ehlo()
+        server.starttls(context=ssl.create_default_context())
+        server.ehlo()
+        server.login(smtp_user, smtp_password)
+        server.send_message(msg)
+
 class TestEmailIn(BaseModel):
     to: str
 
