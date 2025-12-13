@@ -268,6 +268,19 @@ async def approve_partner(
     user: str = Depends(verify_admin)
 ):
     """Approve a partner application and send referral link"""
+    print("=" * 60)
+    print(f"APPROVE START application_id={application_id}")
+    print("=" * 60)
+    
+    # Initialize email tracking variables (must be outside try block for return)
+    email_sent = False
+    email_error = None
+    email_channel = None
+    referral_code = None
+    referral_link = None
+    name = None
+    email = None
+    
     try:
         # Get commission model from request body if provided
         commission_model_override = None
@@ -280,7 +293,8 @@ async def approve_partner(
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Fetch application
+            # 1) Fetch application
+            print(f"Fetching application {application_id}...")
             if DB_TYPE == 'postgresql':
                 cursor.execute("SELECT * FROM partner_applications WHERE id = %s", (application_id,))
             else:
@@ -289,6 +303,7 @@ async def approve_partner(
             app = cursor.fetchone()
             
             if not app:
+                print(f"❌ Application {application_id} not found")
                 raise HTTPException(status_code=404, detail="Application not found")
             
             # Convert to dict
@@ -297,13 +312,16 @@ async def approve_partner(
             else:
                 app_dict = dict(app)
             
+            print(f"✅ Application found: {app_dict.get('email', 'Unknown')}")
+            
             # Use override or existing commission model
             app_dict['commission_model'] = commission_model_override or app_dict.get('commission_model', 'bounty')
             
-            # Generate unique referral code (not used as ID)
+            # 2) Generate unique referral code and link
             name_first = app_dict.get('name', 'BROKER').split()[0].upper() if app_dict.get('name') else 'BROKER'
             referral_code = f"{name_first}-{uuid.uuid4().hex[:6].upper()}"
             referral_link = f"https://liendeadline.com?ref={referral_code}"
+            print(f"Generated referral_code: {referral_code}")
             
             # Create brokers table if it doesn't exist and add missing columns
             if DB_TYPE == 'postgresql':
@@ -439,30 +457,47 @@ async def approve_partner(
                     except Exception:
                         pass
             
-            # Create broker record - use only essential columns that must exist
+            # 3) UPSERT broker record (handle duplicates gracefully)
             name = app_dict.get('name', '')
             email = app_dict.get('email', '')
             
-            print(f"Creating broker: {name} ({email}) with referral_code: {referral_code}")
+            print(f"UPSERT broker: {name} ({email}) with referral_code: {referral_code}")
             
             if DB_TYPE == 'postgresql':
+                # PostgreSQL UPSERT - handle duplicate email gracefully
                 cursor.execute("""
                     INSERT INTO brokers (name, email, referral_code)
                     VALUES (%s, %s, %s)
+                    ON CONFLICT (email)
+                    DO UPDATE SET
+                        referral_code = EXCLUDED.referral_code,
+                        name = EXCLUDED.name
                     RETURNING id
                 """, (name, email, referral_code))
                 
                 result = cursor.fetchone()
                 broker_id = result['id'] if isinstance(result, dict) else result[0]
-                print(f"✅ Created broker with auto-generated ID: {broker_id}")
+                print(f"✅ BROKER UPSERT OK id={broker_id}")
             else:
-                cursor.execute("""
-                    INSERT INTO brokers (name, email, referral_code)
-                    VALUES (?, ?, ?)
-                """, (name, email, referral_code))
+                # SQLite - try update first, then insert
+                cursor.execute("SELECT id FROM brokers WHERE email = ?", (email,))
+                existing = cursor.fetchone()
                 
-                broker_id = cursor.lastrowid
-                print(f"✅ Created broker with auto-generated ID: {broker_id}")
+                if existing:
+                    broker_id = existing['id'] if isinstance(existing, dict) else existing[0]
+                    cursor.execute("""
+                        UPDATE brokers 
+                        SET referral_code = ?, name = ?
+                        WHERE id = ?
+                    """, (referral_code, name, broker_id))
+                    print(f"✅ BROKER UPSERT OK id={broker_id} (updated existing)")
+                else:
+                    cursor.execute("""
+                        INSERT INTO brokers (name, email, referral_code)
+                        VALUES (?, ?, ?)
+                    """, (name, email, referral_code))
+                    broker_id = cursor.lastrowid
+                    print(f"✅ BROKER UPSERT OK id={broker_id} (new record)")
             
             # Try to update additional columns if they exist (optional, don't fail if they don't)
             try:
@@ -555,7 +590,8 @@ async def approve_partner(
                 except sqlite3.OperationalError:
                     pass
             
-            # Mark application as approved
+            # 4) Update partner_applications - MUST always run
+            print(f"Updating partner_applications {application_id} to approved...")
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     UPDATE partner_applications 
@@ -573,7 +609,15 @@ async def approve_partner(
                     WHERE id = ?
                 """, (referral_link, application_id))
             
+            updated_rows = cursor.rowcount
+            if updated_rows == 0:
+                print(f"⚠️ WARNING: No rows updated for application {application_id}")
+            else:
+                print(f"✅ APPLICATION UPDATED OK (rows={updated_rows})")
+            
+            # 5) Commit all database changes
             conn.commit()
+            print("✅ Database commit successful")
         
         # ================= EMAIL SEND (GUARANTEED) =================
         
@@ -585,8 +629,10 @@ async def approve_partner(
         print(f"   Referral Link: {referral_link}")
         print("=" * 60)
         
+        # Reset email tracking (variables already initialized at top)
         email_sent = False
         email_error = None
+        email_channel = None
         
         # --- SendGrid ---
         try:
@@ -598,6 +644,7 @@ async def approve_partner(
                 referral_code=referral_code
             )
             email_sent = True
+            email_channel = "sendgrid"
             print("✅ EMAIL SENT VIA SENDGRID")
         except Exception as e:
             email_error = f"sendgrid: {e}"
@@ -609,10 +656,12 @@ async def approve_partner(
                 import smtplib
                 from email.mime.text import MIMEText
                 
-                smtp_user = os.getenv("SMTP_USER")
+                # Support both SMTP_USER and SMTP_EMAIL (Railway compatibility)
+                smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_EMAIL") or "trendtweakers00@gmail.com"
                 smtp_pass = os.getenv("SMTP_PASSWORD")
                 
                 if not smtp_pass:
+                    email_error = (email_error or "") + f" | smtp: SMTP_PASSWORD missing"
                     raise Exception("SMTP_PASSWORD missing")
                 
                 msg = MIMEText(
@@ -628,6 +677,7 @@ async def approve_partner(
                     s.send_message(msg)
                 
                 email_sent = True
+                email_channel = "smtp"
                 print("✅ EMAIL SENT VIA SMTP")
                 
             except Exception as e:
@@ -635,16 +685,18 @@ async def approve_partner(
                 print(f"❌ SMTP FAILED: {e}")
         
         print("=" * 60)
-        print(f"📨 EMAIL RESULT -> sent={email_sent} error={email_error}")
+        print(f"EMAIL RESULT sent={email_sent} channel={email_channel} error={email_error}")
         print("=" * 60)
         
-        logger.info(f"Partner approved: {email} - Referral code: {referral_code} - Email sent: {email_sent}")
+        logger.info(f"Partner approved: {email} - Referral code: {referral_code} - Email sent: {email_sent} via {email_channel}")
         
+        # Single return statement at the end
         return {
             "status": "approved",
             "referral_code": referral_code,
             "referral_link": referral_link,
             "email_sent": email_sent,
+            "email_channel": email_channel,
             "email_error": email_error
         }
     except HTTPException:
@@ -1004,43 +1056,98 @@ async def get_comprehensive_analytics(user: str = Depends(verify_admin)):
                 stats['calculations_all'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
             except Exception as e:
                 print(f"Error getting calculations: {e}")
+                import traceback
+                traceback.print_exc()
+                # Rollback to prevent transaction poisoning
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
                 stats['calculations_today'] = 0
                 stats['calculations_week'] = 0
                 stats['calculations_month'] = 0
                 stats['calculations_all'] = 0
             
-            # REVENUE (from payments table)
+            # REVENUE (from payments table) - handle missing status column gracefully
             try:
+                # Check if payments table exists and has status column
+                has_status_column = False
+                try:
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute("""
+                            SELECT column_name 
+                            FROM information_schema.columns 
+                            WHERE table_name = 'payments' AND column_name = 'status'
+                        """)
+                        has_status_column = cursor.fetchone() is not None
+                    else:
+                        cursor.execute("PRAGMA table_info(payments)")
+                        columns = cursor.fetchall()
+                        has_status_column = any(
+                            (col[1] == 'status' if isinstance(col, tuple) else col.get('name') == 'status') 
+                            for col in columns
+                        )
+                except Exception:
+                    has_status_column = False
+                
                 # Today
                 if DB_TYPE == 'postgresql':
-                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) = %s", (today_str,))
+                    if has_status_column:
+                        cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) = %s AND status = 'completed'", (today_str,))
+                    else:
+                        cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) = %s", (today_str,))
                 else:
-                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) = ?", (today_str,))
+                    if has_status_column:
+                        cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) = ? AND status = 'completed'", (today_str,))
+                    else:
+                        cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) = ?", (today_str,))
                 result = cursor.fetchone()
                 stats['revenue_today'] = float(result['total'] if isinstance(result, dict) else (result[0] if result else 0))
                 
                 # This week
                 if DB_TYPE == 'postgresql':
-                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= %s", (week_ago_str,))
+                    if has_status_column:
+                        cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= %s AND status = 'completed'", (week_ago_str,))
+                    else:
+                        cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= %s", (week_ago_str,))
                 else:
-                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= ?", (week_ago_str,))
+                    if has_status_column:
+                        cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= ? AND status = 'completed'", (week_ago_str,))
+                    else:
+                        cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= ?", (week_ago_str,))
                 result = cursor.fetchone()
                 stats['revenue_week'] = float(result['total'] if isinstance(result, dict) else (result[0] if result else 0))
                 
                 # This month
                 if DB_TYPE == 'postgresql':
-                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= %s", (month_ago_str,))
+                    if has_status_column:
+                        cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= %s AND status = 'completed'", (month_ago_str,))
+                    else:
+                        cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= %s", (month_ago_str,))
                 else:
-                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= ?", (month_ago_str,))
+                    if has_status_column:
+                        cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= ? AND status = 'completed'", (month_ago_str,))
+                    else:
+                        cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= ?", (month_ago_str,))
                 result = cursor.fetchone()
                 stats['revenue_month'] = float(result['total'] if isinstance(result, dict) else (result[0] if result else 0))
                 
                 # All time
-                cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments")
+                if has_status_column:
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE status = 'completed'")
+                else:
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments")
                 result = cursor.fetchone()
                 stats['revenue_all'] = float(result['total'] if isinstance(result, dict) else (result[0] if result else 0))
             except Exception as e:
                 print(f"Error getting revenue: {e}")
+                import traceback
+                traceback.print_exc()
+                # Rollback to prevent transaction poisoning
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
                 stats['revenue_today'] = 0.0
                 stats['revenue_week'] = 0.0
                 stats['revenue_month'] = 0.0
@@ -1078,6 +1185,13 @@ async def get_comprehensive_analytics(user: str = Depends(verify_admin)):
                 stats['emails_all'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
             except Exception as e:
                 print(f"Error getting email captures: {e}")
+                import traceback
+                traceback.print_exc()
+                # Rollback to prevent transaction poisoning
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
                 stats['emails_today'] = 0
                 stats['emails_week'] = 0
                 stats['emails_month'] = 0
@@ -1090,6 +1204,13 @@ async def get_comprehensive_analytics(user: str = Depends(verify_admin)):
                 stats['partners_total'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
             except Exception as e:
                 print(f"Error getting partners: {e}")
+                import traceback
+                traceback.print_exc()
+                # Rollback to prevent transaction poisoning
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
                 stats['partners_total'] = 0
             
             # PENDING APPLICATIONS
@@ -1102,6 +1223,13 @@ async def get_comprehensive_analytics(user: str = Depends(verify_admin)):
                 stats['applications_pending'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
             except Exception as e:
                 print(f"Error getting pending applications: {e}")
+                import traceback
+                traceback.print_exc()
+                # Rollback to prevent transaction poisoning
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
                 stats['applications_pending'] = 0
         
         print(f"✅ Analytics fetched successfully")
@@ -1129,6 +1257,19 @@ async def get_comprehensive_analytics(user: str = Depends(verify_admin)):
             'partners_total': 0,
             'applications_pending': 0
         }
+
+@router.get("/debug/email-env")
+async def debug_email_env(user: str = Depends(verify_admin)):
+    """Debug endpoint to check email environment variables (without exposing secrets)"""
+    return {
+        "has_smtp_email": bool(os.getenv("SMTP_EMAIL")),
+        "has_smtp_user": bool(os.getenv("SMTP_USER")),
+        "has_smtp_password": bool(os.getenv("SMTP_PASSWORD")),
+        "smtp_email_value": os.getenv("SMTP_EMAIL", ""),
+        "smtp_user_value": os.getenv("SMTP_USER", ""),
+        "smtp_password_set": bool(os.getenv("SMTP_PASSWORD")),
+        "effective_smtp_user": os.getenv("SMTP_USER") or os.getenv("SMTP_EMAIL") or "trendtweakers00@gmail.com"
+    }
 
 @router.get("/partner-applications")
 def get_partner_applications(

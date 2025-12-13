@@ -153,7 +153,7 @@ async function loadPartnerApplications() {
             `;
             
             return `
-                <tr class="border-b hover:bg-gray-50">
+                <tr class="border-b hover:bg-gray-50" data-app-id="${app.id}">
                     <td class="py-3 px-4">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -201,8 +201,11 @@ async function approveApplication(id, email, name, commissionModel) {
         return;
     }
     
+    const url = `/api/admin/approve-partner/${id}`;
+    console.log(`[Admin] Approving application ${id} via ${url}`);
+    
     try {
-        const response = await fetch(`/api/admin/approve-partner/${id}`, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -213,17 +216,46 @@ async function approveApplication(id, email, name, commissionModel) {
             })
         });
         
-        if (response.ok) {
-            alert('✅ Application approved! Referral code sent to broker.');
-            loadPartnerApplications(); // Refresh
-            updateAllStats(); // Update stats
-        } else {
-            const error = await response.json();
-            alert('❌ Error: ' + (error.detail || 'Failed to approve application'));
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorDetail = 'Failed to approve application';
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorDetail = errorJson.detail || errorJson.error || errorDetail;
+            } catch {
+                errorDetail = errorText || `HTTP ${response.status}`;
+            }
+            console.error(`[Admin] Approve error: ${response.status}`, errorDetail);
+            alert(`❌ Error (${response.status}): ${errorDetail}`);
+            return;
         }
+        
+        const data = await response.json();
+        console.log('[Admin] Approve response:', data);
+        
+        // Show success message with email status
+        let message = `✅ Application approved!`;
+        if (data.email_sent) {
+            message += `\n📧 Welcome email sent via ${data.email_channel || 'email'}`;
+        } else if (data.email_error) {
+            message += `\n⚠️ Email failed: ${data.email_error}`;
+        }
+        alert(message);
+        
+        // Optimistic UI update - remove row immediately
+        const row = document.querySelector(`tr[data-app-id="${id}"]`);
+        if (row) {
+            row.remove();
+        }
+        
+        // Refresh lists and stats
+        loadPartnerApplications(); // Refresh pending applications
+        loadActiveBrokers(); // Refresh brokers list
+        updateAllStats(); // Update stats
+        
     } catch (error) {
-        console.error('Error approving application:', error);
-        alert('❌ Error approving application: ' + error.message);
+        console.error('[Admin] Error approving application:', error);
+        alert(`❌ Error: ${error.message || 'Network error occurred'}`);
     }
 }
 
