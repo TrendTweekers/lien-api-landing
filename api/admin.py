@@ -575,16 +575,42 @@ async def approve_partner(
             
             conn.commit()
         
-        # Import send_broker_welcome_email from main.py
-        from api.main import send_broker_welcome_email
+        # Send welcome email with extensive logging
+        print("=" * 60)
+        print(f"📧 SENDING WELCOME EMAIL")
+        print(f"   To: {app_dict.get('email', '')}")
+        print(f"   Name: {app_dict.get('name', '')}")
+        print(f"   Referral Code: {referral_code}")
+        print(f"   Referral Link: {referral_link}")
+        print(f"   Commission Model: {app_dict.get('commission_model', 'bounty')}")
+        print("=" * 60)
         
-        # Send welcome email
-        send_broker_welcome_email(
-            app_dict.get('email', ''),
-            app_dict.get('name', ''),
-            referral_link,
-            referral_code
-        )
+        # Import send_broker_welcome_email from main.py
+        try:
+            from api.main import send_broker_welcome_email
+            
+            # Send welcome email
+            send_broker_welcome_email(
+                app_dict.get('email', ''),
+                app_dict.get('name', ''),
+                referral_link,
+                referral_code
+            )
+            print("✅ Welcome email sent successfully!")
+            logger.info(f"Welcome email sent to {app_dict.get('email', '')} - Referral code: {referral_code}")
+        except ImportError as e:
+            print(f"❌ ERROR: Could not import send_broker_welcome_email: {e}")
+            import traceback
+            traceback.print_exc()
+            logger.error(f"Failed to import send_broker_welcome_email: {e}")
+        except Exception as e:
+            print(f"❌ ERROR sending welcome email: {e}")
+            import traceback
+            traceback.print_exc()
+            logger.error(f"Error sending welcome email to {app_dict.get('email', '')}: {e}")
+            # Don't fail the approval if email fails - broker is already created
+        
+        print("=" * 60)
         
         logger.info(f"Partner approved: {app_dict.get('email', '')} - Referral code: {referral_code}")
         
@@ -697,6 +723,68 @@ async def reject_partner_application(
         logger.error(f"Error rejecting partner application: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.delete("/delete-partner/{application_id}")
+async def delete_partner_application(
+    application_id: int,
+    user: str = Depends(verify_admin)
+):
+    """Delete a partner application - PostgreSQL/SQLite compatible"""
+    print("=" * 60)
+    print(f"🗑️ ADMIN: Deleting partner application {application_id}")
+    print("=" * 60)
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # First check if application exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT * FROM partner_applications WHERE id = %s", (application_id,))
+            else:
+                cursor.execute("SELECT * FROM partner_applications WHERE id = ?", (application_id,))
+            
+            app = cursor.fetchone()
+            
+            if not app:
+                print(f"❌ Application {application_id} not found")
+                raise HTTPException(status_code=404, detail="Application not found")
+            
+            # Convert to dict
+            if isinstance(app, dict):
+                app_dict = app
+            else:
+                app_dict = dict(app)
+            
+            print(f"   Application found: {app_dict.get('email', 'Unknown')}")
+            
+            # Delete application
+            if DB_TYPE == 'postgresql':
+                cursor.execute("DELETE FROM partner_applications WHERE id = %s", (application_id,))
+            else:
+                cursor.execute("DELETE FROM partner_applications WHERE id = ?", (application_id,))
+            
+            conn.commit()
+            
+            print(f"✅ Application {application_id} deleted successfully")
+            print("=" * 60)
+            
+            logger.info(f"Partner application deleted: {app_dict.get('email', '')} - ID: {application_id}")
+            
+            return {
+                "success": True,
+                "message": "Application deleted"
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ ERROR deleting application: {e}")
+        import traceback
+        traceback.print_exc()
+        print("=" * 60)
+        logger.error(f"Error deleting partner application: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/partner-applications")
 def get_partner_applications(
     status: str = "all",
@@ -745,40 +833,42 @@ def get_partner_applications(
 
 @router.get("/brokers")
 def list_brokers(user: str = Depends(verify_admin)):
-    """List all brokers"""
-    con = None
+    """Get active brokers - PostgreSQL/SQLite compatible"""
+    print("=" * 60)
+    print("📊 ADMIN: Fetching active brokers")
+    print("=" * 60)
+    
     try:
-        db_path = get_db_path()
-        con = sqlite3.connect(db_path)
-        
-        # Check if table exists
-        cur = con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='brokers'")
-        if not cur.fetchone():
-            print("Brokers table does not exist")
-            return []
-        
-        cur = con.execute("SELECT id, email, name, model, referrals, earned FROM brokers")
-        rows = cur.fetchall()
-        
-        return [
-            {
-                "referral_code": row[0] if len(row) > 0 else "",
-                "email": row[1] if len(row) > 1 else "",
-                "name": row[2] if len(row) > 2 else "",
-                "model": row[3] if len(row) > 3 else "",
-                "referrals": row[4] if len(row) > 4 else 0,
-                "earned": row[5] if len(row) > 5 else 0
-            }
-            for row in rows
-        ]
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get all brokers (filter by status if needed)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT * FROM brokers ORDER BY id DESC")
+            else:
+                cursor.execute("SELECT * FROM brokers ORDER BY id DESC")
+            
+            rows = cursor.fetchall()
+            
+            brokers = []
+            for row in rows:
+                if isinstance(row, dict):
+                    broker = row
+                else:
+                    broker = dict(row)
+                brokers.append(broker)
+            
+            print(f"✅ Found {len(brokers)} brokers")
+            print("=" * 60)
+            
+            return {"brokers": brokers, "total": len(brokers)}
+            
     except Exception as e:
-        print(f"Error in list_brokers: {e}")
+        print(f"❌ ERROR getting brokers: {e}")
         import traceback
         traceback.print_exc()
-        return []
-    finally:
-        if con:
-            con.close()
+        print("=" * 60)
+        return {"brokers": [], "total": 0}
 
 @router.get("/customers")
 def list_customers(user: str = Depends(verify_admin)):

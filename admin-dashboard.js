@@ -56,8 +56,8 @@ async function loadPartnerApplications() {
     try {
         console.log('[Admin] Loading partner applications from /api/admin/partner-applications...');
         
-        // Fetch with authentication
-        const response = await fetch('/api/admin/partner-applications?status=all', {
+        // Fetch with authentication - only get pending applications
+        const response = await fetch('/api/admin/partner-applications?status=pending', {
             headers: {
                 'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
@@ -84,8 +84,10 @@ async function loadPartnerApplications() {
             return;
         }
         
-        // Handle different response formats
-        const applications = data.applications || data || [];
+        // Handle different response formats and filter to only pending
+        let applications = data.applications || data || [];
+        // Double-check: only show pending applications
+        applications = applications.filter(app => app.status === 'pending' || !app.status);
         
         if (!Array.isArray(applications) || applications.length === 0) {
             safe.html('applicationsTable', `
@@ -138,8 +140,13 @@ async function loadPartnerApplications() {
                     Approve
                 </button>
                 <button onclick="rejectApplication(${app.id})" 
-                        class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm">
+                        class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm mr-2">
                     Reject
+                </button>
+                <button onclick="deleteApplication(${app.id})" 
+                        class="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm"
+                        title="Delete application">
+                    Delete
                 </button>
             ` : `
                 <span class="text-gray-500 text-sm">${app.status === 'approved' ? '✅ Approved' : '❌ Rejected'}</span>
@@ -395,6 +402,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load data
     loadPartnerApplications();
+    loadActiveBrokers();
     updateAllStats();
     updateLiveAnalytics();
     updateEmailConversion();
@@ -402,6 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-refresh
     setInterval(() => {
         loadPartnerApplications();
+        loadActiveBrokers();
         updateAllStats();
         updateLiveAnalytics();
         updateEmailConversion();
@@ -410,7 +419,123 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ Dashboard ready');
 });
 
+// 8b. Load Active Brokers
+async function loadActiveBrokers() {
+    try {
+        console.log('[Admin] Loading active brokers from /api/admin/brokers...');
+        
+        const response = await fetch('/api/admin/brokers', {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            console.error(`[Admin] Brokers API error: ${response.status}`);
+            safe.hide('brokersList');
+            safe.show('noBrokers');
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('[Admin] Brokers data:', data);
+        
+        // Handle different response formats
+        const brokers = data.brokers || data || [];
+        
+        const brokersList = safe.get('brokersList');
+        const noBrokers = safe.get('noBrokers');
+        
+        if (!brokers || brokers.length === 0) {
+            safe.hide('brokersList');
+            safe.show('noBrokers');
+            safe.text('brokerCount', '0');
+            return;
+        }
+        
+        safe.hide('noBrokers');
+        safe.show('brokersList');
+        
+        // Render brokers
+        const html = brokers.map(broker => {
+            const commissionBadge = broker.commission_model === 'bounty' || broker.model === 'bounty'
+                ? '<span class="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">$500 Bounty</span>'
+                : '<span class="px-2 py-1 rounded text-xs bg-green-100 text-green-800">$50/month</span>';
+            
+            return `
+                <div class="p-4 hover:bg-gray-50">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span class="text-blue-600 font-semibold">${(broker.name || 'B').charAt(0).toUpperCase()}</span>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900">${broker.name || 'Unknown'}</div>
+                                <div class="text-sm text-gray-600">${broker.email || ''}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-600">${commissionBadge}</div>
+                            <div class="text-xs text-gray-500 mt-1">Ref: ${broker.referral_code || 'N/A'}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        safe.html('brokersList', html);
+        safe.text('brokerCount', brokers.length.toString());
+        
+        console.log(`✅ Loaded ${brokers.length} brokers`);
+        
+    } catch (error) {
+        console.error('[Admin] Error loading brokers:', error);
+        safe.hide('brokersList');
+        safe.show('noBrokers');
+    }
+}
+
+// 8c. Delete application
+async function deleteApplication(id) {
+    if (!confirm('Permanently delete this application? This cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        console.log(`[Admin] Deleting application ${id}...`);
+        
+        const response = await fetch(`/api/admin/delete-partner/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: `HTTP ${response.status}` }));
+            console.error(`[Admin] Delete error: ${response.status}`, errorData);
+            alert('❌ Error: ' + (errorData.detail || 'Failed to delete application'));
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('[Admin] Delete response:', data);
+        
+        if (data.success) {
+            alert('✅ Application deleted successfully');
+            loadPartnerApplications(); // Refresh list
+        } else {
+            alert('❌ Error: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('[Admin] Error deleting application:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
 // 9. Global functions
 window.approveApplication = approveApplication;
 window.rejectApplication = rejectApplication;
+window.deleteApplication = deleteApplication;
 window.loadPartnerApplications = loadPartnerApplications;
+window.loadActiveBrokers = loadActiveBrokers;
