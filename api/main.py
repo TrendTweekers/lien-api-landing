@@ -3297,21 +3297,41 @@ async def get_pending_payouts_api(username: str = Depends(verify_admin)):
 # ==========================================
 # TEST EMAIL ENDPOINT (REMOVE AFTER TESTING)
 # ==========================================
+def _send_test_email_sync(email: str, password: str):
+    """Synchronous email sending function (called from async wrapper)"""
+    return send_welcome_email(email, password)
+
+async def send_test_email_with_timeout(email: str, password: str):
+    """Async wrapper with timeout - HARD STOP so Cloudflare never 524s again"""
+    logger = logging.getLogger(__name__)
+    try:
+        success = await asyncio.wait_for(
+            asyncio.to_thread(_send_test_email_sync, email, password),
+            timeout=12.0
+        )
+        if success:
+            print(f"✅ Test email sent to {email}")
+        else:
+            print(f"⚠️ Test email failed for {email}")
+    except asyncio.TimeoutError:
+        logger.exception("EMAIL_SEND_FAILED: Timeout after 12s")
+    except Exception as e:
+        logger.exception("EMAIL_SEND_FAILED: %s", e)
+
 @app.post("/api/v1/test-email")
-async def test_email(request: Request, data: dict):
+async def test_email(request: Request, data: dict, background_tasks: BackgroundTasks):
     """Test email configuration - REMOVE AFTER TESTING"""
     test_email = data.get('email', 'test@example.com')
     test_password = 'TEST_PASSWORD_123'
     
-    success = send_welcome_email(test_email, test_password)
+    # Queue email in background (returns immediately)
+    background_tasks.add_task(
+        send_test_email_with_timeout,
+        email=test_email,
+        password=test_password
+    )
     
-    if success:
-        return {"status": "success", "message": f"Test email sent to {test_email}"}
-    else:
-        return JSONResponse(
-            status_code=500,
-            content={"status": "error", "message": "Email send failed - check logs"}
-        )
+    return {"queued": True, "message": f"Test email queued for {test_email}"}
 
 # ==========================================
 # PASSWORD RESET ENDPOINTS
