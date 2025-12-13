@@ -206,7 +206,10 @@ document.addEventListener('click', async (e) => {
 
     const res = await fetch(`/api/admin/approve-partner/${appId}`, {
         method: 'POST',
-        credentials: "include"
+        credentials: "include",
+        headers: {
+            'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+        }
     });
 
     const text = await res.text();
