@@ -136,17 +136,13 @@ async function loadPartnerApplications() {
             }
             
             const actionButtons = app.status === 'pending' ? `
-                <button type="button" data-action="approve" data-app-id="${app.id}" data-email="${app.email || ''}" data-name="${(app.name || 'Unknown').replace(/"/g, '&quot;')}" data-commission-model="${app.commission_model || 'bounty'}"
-                        class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm mr-2">
+                <button type="button" class="approve-btn px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm mr-2" data-app-id="${app.id}" data-email="${app.email || ''}" data-name="${(app.name || 'Unknown').replace(/"/g, '&quot;')}" data-commission-model="${app.commission_model || 'bounty'}">
                     Approve
                 </button>
-                <button type="button" data-action="reject" data-app-id="${app.id}"
-                        class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm mr-2">
+                <button type="button" class="reject-btn px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm mr-2" data-app-id="${app.id}">
                     Reject
                 </button>
-                <button type="button" data-action="delete" data-app-id="${app.id}"
-                        class="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm"
-                        title="Delete application">
+                <button type="button" class="delete-btn px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm" data-app-id="${app.id}" title="Delete application">
                     Delete
                 </button>
             ` : `
@@ -199,7 +195,7 @@ async function loadPartnerApplications() {
 // Event delegation for approve / reject / delete (works with dynamically rendered rows)
 document.addEventListener('click', async (e) => {
     // Handle Approve action
-    const approveBtn = e.target.closest('[data-action="approve"]');
+    const approveBtn = e.target.closest('.approve-btn');
     if (approveBtn) {
         e.preventDefault();
         e.stopPropagation();
@@ -275,7 +271,7 @@ document.addEventListener('click', async (e) => {
     }
 
     // Handle Reject action
-    const rejectBtn = e.target.closest('[data-action="reject"]');
+    const rejectBtn = e.target.closest('.reject-btn');
     if (rejectBtn) {
         e.preventDefault();
         e.stopPropagation();
@@ -287,12 +283,9 @@ document.addEventListener('click', async (e) => {
             return;
         }
 
-        const confirmed = confirm('Reject this application?');
-        if (!confirmed) return;
+        console.log('Rejecting application', appId);
 
         try {
-            console.log('Rejecting application', appId);
-
             const res = await fetch(`/api/admin/reject-partner/${appId}`, {
                 method: 'POST',
                 credentials: "include",
@@ -305,14 +298,7 @@ document.addEventListener('click', async (e) => {
             console.log('Reject response:', res.status, text);
 
             if (!res.ok) {
-                let errorDetail = 'Failed to reject application';
-                try {
-                    const errorJson = JSON.parse(text);
-                    errorDetail = errorJson.detail || errorJson.error || errorDetail;
-                } catch {
-                    errorDetail = text || `HTTP ${res.status}`;
-                }
-                alert(`Reject failed (${res.status}): ${errorDetail}`);
+                alert('Reject failed: ' + text);
                 return;
             }
 
@@ -320,9 +306,7 @@ document.addEventListener('click', async (e) => {
 
             if (data.success) {
                 alert('❌ Application rejected');
-                // Optimistic UI update
-                const row = rejectBtn.closest('tr');
-                if (row) row.remove();
+                rejectBtn.closest('tr')?.remove();
                 loadPartnerApplications();
             } else {
                 alert('❌ Error: ' + (data.error || 'Unknown error'));
@@ -330,13 +314,13 @@ document.addEventListener('click', async (e) => {
 
         } catch (err) {
             console.error('Reject error:', err);
-            alert('Reject request crashed – see console');
+            alert('Reject error');
         }
         return;
     }
 
     // Handle Delete application action
-    const deleteBtn = e.target.closest('[data-action="delete"]');
+    const deleteBtn = e.target.closest('.delete-btn');
     if (deleteBtn) {
         e.preventDefault();
         e.stopPropagation();
@@ -348,12 +332,9 @@ document.addEventListener('click', async (e) => {
             return;
         }
 
-        const confirmed = confirm('Permanently delete this application? This cannot be undone.');
-        if (!confirmed) return;
+        console.log('Deleting application', appId);
 
         try {
-            console.log('Deleting application', appId);
-
             const res = await fetch(`/api/admin/delete-partner/${appId}`, {
                 method: 'DELETE',
                 credentials: "include",
@@ -366,14 +347,7 @@ document.addEventListener('click', async (e) => {
             console.log('Delete response:', res.status, text);
 
             if (!res.ok) {
-                let errorDetail = 'Failed to delete application';
-                try {
-                    const errorJson = JSON.parse(text);
-                    errorDetail = errorJson.detail || errorJson.error || errorDetail;
-                } catch {
-                    errorDetail = text || `HTTP ${res.status}`;
-                }
-                alert(`Delete failed (${res.status}): ${errorDetail}`);
+                alert('Delete failed: ' + text);
                 return;
             }
 
@@ -381,9 +355,7 @@ document.addEventListener('click', async (e) => {
 
             if (data.success) {
                 alert('✅ Application deleted successfully');
-                // Optimistic UI update
-                const row = deleteBtn.closest('tr');
-                if (row) row.remove();
+                deleteBtn.closest('tr')?.remove();
                 loadPartnerApplications();
             } else {
                 alert('❌ Error: ' + (data.error || 'Unknown error'));
@@ -391,13 +363,13 @@ document.addEventListener('click', async (e) => {
 
         } catch (err) {
             console.error('Delete error:', err);
-            alert('Delete request crashed – see console');
+            alert('Delete error');
         }
         return;
     }
 
     // Handle Delete broker action
-    const deleteBrokerBtn = e.target.closest('[data-action="delete-broker"]');
+    const deleteBrokerBtn = e.target.closest('.delete-broker-btn');
     if (deleteBrokerBtn) {
         e.preventDefault();
         e.stopPropagation();
@@ -409,12 +381,9 @@ document.addEventListener('click', async (e) => {
             return;
         }
 
-        const confirmed = confirm('Delete this broker? This will also delete all their referrals and commission data. This cannot be undone.');
-        if (!confirmed) return;
+        console.log('Deleting broker', brokerId);
 
         try {
-            console.log('Deleting broker', brokerId);
-
             const res = await fetch(`/api/admin/delete-broker/${brokerId}`, {
                 method: 'DELETE',
                 credentials: "include",
@@ -427,14 +396,7 @@ document.addEventListener('click', async (e) => {
             console.log('Delete broker response:', res.status, text);
 
             if (!res.ok) {
-                let errorDetail = 'Failed to delete broker';
-                try {
-                    const errorJson = JSON.parse(text);
-                    errorDetail = errorJson.detail || errorJson.error || errorDetail;
-                } catch {
-                    errorDetail = text || `HTTP ${res.status}`;
-                }
-                alert(`Delete failed (${res.status}): ${errorDetail}`);
+                alert('Delete failed: ' + text);
                 return;
             }
 
@@ -442,9 +404,7 @@ document.addEventListener('click', async (e) => {
 
             if (data.success) {
                 alert('✅ Broker deleted successfully');
-                // Optimistic UI update
-                const brokerCard = deleteBrokerBtn.closest('.p-4');
-                if (brokerCard) brokerCard.remove();
+                deleteBrokerBtn.closest('.p-4')?.remove();
                 loadActiveBrokers();
             } else {
                 alert('❌ Error: ' + (data.error || 'Unknown error'));
@@ -452,7 +412,7 @@ document.addEventListener('click', async (e) => {
 
         } catch (err) {
             console.error('Delete broker error:', err);
-            alert('Delete broker request crashed – see console');
+            alert('Delete broker error');
         }
         return;
     }
