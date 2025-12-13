@@ -250,7 +250,11 @@ async function rejectApplication(id) {
 async function updateAllStats() {
     try {
         // Calculations
-        const calcResponse = await fetch('/api/admin/calculations-today');
+        const calcResponse = await fetch('/api/admin/calculations-today', {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
         const calcData = await calcResponse.json();
         safe.text('calculationsToday', calcData.calculations_today || '0');
         
@@ -263,6 +267,42 @@ async function updateAllStats() {
         
     } catch (error) {
         console.log('[Admin] Stats error:', error);
+    }
+}
+
+// 7b. Update Live Analytics
+async function updateLiveAnalytics() {
+    try {
+        console.log('[Admin] Fetching Live Analytics from /api/analytics/today...');
+        
+        const response = await fetch('/api/analytics/today');
+        
+        if (!response.ok) {
+            console.error(`[Admin] Analytics API error: ${response.status}`);
+            safe.text('pvToday', '—');
+            safe.text('uvToday', '—');
+            safe.text('calcToday', '—');
+            safe.text('paidToday', '—');
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('[Admin] Live Analytics data:', data);
+        
+        // Update Live Analytics section
+        safe.text('pvToday', data.pv || '0');
+        safe.text('uvToday', data.uv || '0');
+        safe.text('calcToday', data.calc || '0');
+        safe.text('paidToday', data.paid ? `$${parseFloat(data.paid).toFixed(2)}` : '$0');
+        
+        console.log('[Admin] Live Analytics updated');
+        
+    } catch (error) {
+        console.error('[Admin] Error updating Live Analytics:', error);
+        safe.text('pvToday', '—');
+        safe.text('uvToday', '—');
+        safe.text('calcToday', '—');
+        safe.text('paidToday', '—');
     }
 }
 
@@ -279,11 +319,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load data
     loadPartnerApplications();
     updateAllStats();
+    updateLiveAnalytics();
     
     // Auto-refresh
     setInterval(() => {
         loadPartnerApplications();
         updateAllStats();
+        updateLiveAnalytics();
     }, 30000);
     
     console.log('✅ Dashboard ready');

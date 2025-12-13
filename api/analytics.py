@@ -1,105 +1,140 @@
 from fastapi import APIRouter
 from datetime import date, datetime
-import sqlite3
 import os
 from pathlib import Path
+
+# Import database functions from main.py
+from api.main import get_db, get_db_cursor, DB_TYPE
 
 # Router without prefix - prefix will be added in main.py include_router call
 router = APIRouter(tags=["analytics"])
 
-def get_db_path():
-    """Get database path (works in Railway and local)"""
-    BASE_DIR = Path(__file__).parent.parent
-    db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
-    return str(db_path)
-
 @router.get("/today")
 def today_stats():
-    """Get today's statistics from database"""
-    print("=== /api/analytics/today ENDPOINT CALLED ===")
-    con = None
+    """Get today's statistics from database - PostgreSQL/SQLite compatible"""
+    print("=" * 60)
+    print("📊 ANALYTICS: Fetching today's stats")
+    print("=" * 60)
+    
     try:
-        db_path = get_db_path()
-        print(f"Database path: {db_path}")
-        con = sqlite3.connect(db_path)
-        print("Database connection opened")
         today = date.today().isoformat()
         print(f"Today's date: {today}")
         
-        # Check if tables exist
-        print("Checking table existence...")
-        cur = con.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = [row[0] for row in cur.fetchall()]
-        print(f"Found tables: {tables}")
-        
-        # Page views (you increment on each /v1/calculate call)
-        pv = 0
-        if 'page_views' in tables:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Page views (you increment on each /v1/calculate call)
+            pv = 0
             try:
                 print("Querying page_views table...")
-                pv_result = con.execute("SELECT COUNT(*) FROM page_views WHERE date = ?", (today,)).fetchone()
-                pv = pv_result[0] if pv_result else 0
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) as count FROM page_views WHERE date = %s", (today,))
+                else:
+                    # Check if table exists (SQLite)
+                    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='page_views'")
+                    if not cursor.fetchone():
+                        print("page_views table does not exist")
+                    else:
+                        cursor.execute("SELECT COUNT(*) as count FROM page_views WHERE date = ?", (today,))
+                
+                result = cursor.fetchone()
+                if isinstance(result, dict):
+                    pv = result.get('count', 0) or 0
+                elif isinstance(result, tuple):
+                    pv = result[0] if result else 0
+                else:
+                    pv = result if result else 0
                 print(f"Page views: {pv}")
             except Exception as e:
                 print(f"Error counting page views: {e}")
                 import traceback
                 traceback.print_exc()
-        else:
-            print("page_views table does not exist")
-        
-        # Unique visitors (distinct IP)
-        uv = 0
-        if 'page_views' in tables:
+            
+            # Unique visitors (distinct IP)
+            uv = 0
             try:
                 print("Querying unique visitors...")
-                uv_result = con.execute("SELECT COUNT(DISTINCT ip) FROM page_views WHERE date = ?", (today,)).fetchone()
-                uv = uv_result[0] if uv_result else 0
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(DISTINCT ip) as count FROM page_views WHERE date = %s", (today,))
+                else:
+                    cursor.execute("SELECT COUNT(DISTINCT ip) as count FROM page_views WHERE date = ?", (today,))
+                
+                result = cursor.fetchone()
+                if isinstance(result, dict):
+                    uv = result.get('count', 0) or 0
+                elif isinstance(result, tuple):
+                    uv = result[0] if result else 0
+                else:
+                    uv = result if result else 0
                 print(f"Unique visitors: {uv}")
             except Exception as e:
                 print(f"Error counting unique visitors: {e}")
                 import traceback
                 traceback.print_exc()
-        
-        # Calculations today
-        calc = 0
-        if 'calculations' in tables:
+            
+            # Calculations today
+            calc = 0
             try:
                 print("Querying calculations table...")
-                calc_result = con.execute("SELECT COUNT(*) FROM calculations WHERE date(date) = ?", (today,)).fetchone()
-                calc = calc_result[0] if calc_result else 0
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = %s", (today,))
+                else:
+                    # Check if table exists (SQLite)
+                    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='calculations'")
+                    if not cursor.fetchone():
+                        print("calculations table does not exist")
+                    else:
+                        cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = ?", (today,))
+                
+                result = cursor.fetchone()
+                if isinstance(result, dict):
+                    calc = result.get('count', 0) or 0
+                elif isinstance(result, tuple):
+                    calc = result[0] if result else 0
+                else:
+                    calc = result if result else 0
                 print(f"Calculations: {calc}")
             except Exception as e:
                 print(f"Error counting calculations: {e}")
                 import traceback
                 traceback.print_exc()
-        else:
-            print("calculations table does not exist")
-        
-        # Paid today (Stripe webhook inserts row)
-        paid = 0
-        if 'payments' in tables:
+            
+            # Paid today (Stripe webhook inserts row)
+            paid = 0
             try:
                 print("Querying payments table...")
-                paid_result = con.execute("SELECT SUM(amount) FROM payments WHERE date(date) = ?", (today,)).fetchone()
-                paid = paid_result[0] if paid_result and paid_result[0] else 0
-                print(f"Payments: {paid}")
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) = %s", (today,))
+                else:
+                    # Check if table exists (SQLite)
+                    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='payments'")
+                    if not cursor.fetchone():
+                        print("payments table does not exist")
+                    else:
+                        cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) = ?", (today,))
+                
+                result = cursor.fetchone()
+                if isinstance(result, dict):
+                    paid = float(result.get('total', 0) or 0)
+                elif isinstance(result, tuple):
+                    paid = float(result[0] if result and result[0] else 0)
+                else:
+                    paid = float(result if result else 0)
+                print(f"Payments: ${paid}")
             except Exception as e:
                 print(f"Error calculating payments: {e}")
                 import traceback
                 traceback.print_exc()
-        else:
-            print("payments table does not exist")
         
         result = {"pv": pv, "uv": uv, "calc": calc, "paid": paid}
-        print(f"Returning result: {result}")
+        print(f"✅ Returning result: {result}")
+        print("=" * 60)
         return result
+        
     except Exception as e:
-        print(f"=== ERROR in today_stats: {e} ===")
+        print(f"❌ ERROR in today_stats: {e}")
         import traceback
         traceback.print_exc()
+        print("=" * 60)
         return {"pv": 0, "uv": 0, "calc": 0, "paid": 0, "error": str(e)}
-    finally:
-        if con:
-            print("Closing database connection")
-            con.close()
 

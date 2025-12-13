@@ -800,7 +800,7 @@
                                         Invoice / Delivery Date
                                     </label>
                                     <!-- US date + hidden native calendar -->
-                                    <div class="relative w-full h-16">
+                                    <div class="relative w-full h-16 cursor-pointer" onclick="const picker = document.getElementById('invoiceDatePicker'); if (picker) { picker.showPicker ? picker.showPicker() : picker.click(); }">
                                         <!-- Visible US mask -->
                                         <input
                                             id="invoiceDateDisplay"
@@ -808,13 +808,16 @@
                                             placeholder="MM/DD/YYYY"
                                             maxlength="10"
                                             required
-                                            class="w-full h-full px-5 rounded-xl border-2 border-border bg-white text-foreground text-lg focus:outline-none focus:ring-4 focus:ring-accent/20 focus:border-accent transition-all"
+                                            class="w-full h-full px-5 rounded-xl border-2 border-border bg-white text-foreground text-lg focus:outline-none focus:ring-4 focus:ring-accent/20 focus:border-accent transition-all cursor-pointer"
+                                            onclick="event.stopPropagation(); const picker = document.getElementById('invoiceDatePicker'); if (picker) { picker.showPicker ? picker.showPicker() : picker.click(); }"
+                                            onfocus="const picker = document.getElementById('invoiceDatePicker'); if (picker && !picker.value) { setTimeout(() => { picker.showPicker ? picker.showPicker() : picker.click(); }, 100); }"
                                         >
-                                        <!-- Invisible native calendar (click-through) -->
+                                        <!-- Invisible native calendar (covers entire area) -->
                                         <input
                                             id="invoiceDatePicker"
                                             type="date"
                                             class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            style="z-index: 1;"
                                         >
                                     </div>
                                 </div>
