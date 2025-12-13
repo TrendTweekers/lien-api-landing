@@ -300,15 +300,16 @@ async def approve_partner(
             # Use override or existing commission model
             app_dict['commission_model'] = commission_model_override or app_dict.get('commission_model', 'bounty')
             
-            # Generate unique referral code
-            referral_code = f"broker_{secrets.token_urlsafe(8).upper()}"
+            # Generate unique referral code (not used as ID)
+            name_first = app_dict.get('name', 'BROKER').split()[0].upper() if app_dict.get('name') else 'BROKER'
+            referral_code = f"{name_first}-{uuid.uuid4().hex[:6].upper()}"
             referral_link = f"https://liendeadline.com?ref={referral_code}"
             
             # Create brokers table if it doesn't exist and add missing columns
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS brokers (
-                        id VARCHAR PRIMARY KEY,
+                        id SERIAL PRIMARY KEY,
                         name VARCHAR NOT NULL,
                         email VARCHAR UNIQUE NOT NULL,
                         commission REAL DEFAULT 500.00,
@@ -413,7 +414,7 @@ async def approve_partner(
                 # SQLite
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS brokers (
-                        id TEXT PRIMARY KEY,
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT NOT NULL,
                         email TEXT UNIQUE NOT NULL,
                         commission REAL DEFAULT 500.00,
@@ -438,22 +439,14 @@ async def approve_partner(
                     except Exception:
                         pass
             
-            # Create broker record - use columns that exist, handle missing ones gracefully
+            # Create broker record - let database auto-generate ID
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
-                    INSERT INTO brokers (id, name, email, company, referral_code, referral_link, 
-                                       commission_model, pending_commissions, paid_commissions, status)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, 0, 0, 'active')
-                    ON CONFLICT (id) DO UPDATE SET
-                        name = EXCLUDED.name,
-                        email = EXCLUDED.email,
-                        company = EXCLUDED.company,
-                        referral_code = EXCLUDED.referral_code,
-                        referral_link = EXCLUDED.referral_link,
-                        commission_model = EXCLUDED.commission_model,
-                        status = 'active'
+                    INSERT INTO brokers (name, email, company, referral_code, referral_link, 
+                                       commission_model, pending_commissions, paid_commissions, status, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, 0, 0, 'active', NOW())
+                    RETURNING id
                 """, (
-                    referral_code,
                     app_dict.get('name', ''),
                     app_dict.get('email', ''),
                     app_dict.get('company', ''),
@@ -461,13 +454,16 @@ async def approve_partner(
                     referral_link,
                     app_dict['commission_model']
                 ))
+                
+                result = cursor.fetchone()
+                broker_id = result['id'] if isinstance(result, dict) else result[0]
+                print(f"✅ Created broker with auto-generated ID: {broker_id}")
             else:
                 cursor.execute("""
-                    INSERT OR REPLACE INTO brokers (id, name, email, company, referral_code, referral_link, 
-                                       commission_model, pending_commissions, paid_commissions, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 'active')
+                    INSERT INTO brokers (name, email, company, referral_code, referral_link, 
+                                       commission_model, pending_commissions, paid_commissions, status, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, 0, 0, 'active', datetime('now'))
                 """, (
-                    referral_code,
                     app_dict.get('name', ''),
                     app_dict.get('email', ''),
                     app_dict.get('company', ''),
@@ -475,6 +471,9 @@ async def approve_partner(
                     referral_link,
                     app_dict['commission_model']
                 ))
+                
+                broker_id = cursor.lastrowid
+                print(f"✅ Created broker with auto-generated ID: {broker_id}")
             
             # Try to add approval columns if they don't exist (PostgreSQL)
             if DB_TYPE == 'postgresql':
