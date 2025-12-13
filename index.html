@@ -1576,13 +1576,10 @@
             console.log('📧 User email:', userEmail);
             console.log('📧 Email given flag:', emailGiven);
             
-            // Increment BEFORE checking gates
-            calcCount++;
-            localStorage.setItem('calculationCount', calcCount.toString());
-            
-            console.log('🔢 New calculation count:', calcCount);
-            
-            // Check gates AFTER incrementing
+            // Check gates BEFORE incrementing (to allow exactly 3 calculations)
+            // After calc 1: count = 1, check >= 3? No, proceed
+            // After calc 2: count = 2, check >= 3? No, proceed
+            // After calc 3: count = 3, check >= 3? Yes, block (this is the 4th attempt)
             if (calcCount >= 6) {
                 console.log('🚫 At 6 calculations - showing upgrade modal');
                 const upgradeModal = document.getElementById('upgradeModal');
@@ -1594,14 +1591,11 @@
                     console.error('❌ upgradeModal element not found!');
                     alert('Calculation limit reached. Please upgrade to continue.');
                 }
-                // Decrement since we're blocking
-                calcCount--;
-                localStorage.setItem('calculationCount', calcCount.toString());
                 return; // Stop here
             }
             
             if (calcCount >= 3 && !userEmail && !emailGiven) {
-                console.log('🚫 At 3 calculations, no email - showing email modal');
+                console.log('🚫 At 3 calculations (4th attempt), no email - showing email modal');
                 const emailModal = document.getElementById('emailCaptureModal');
                 if (emailModal) {
                     emailModal.classList.remove('hidden');
@@ -1612,12 +1606,14 @@
                     console.error('❌ emailCaptureModal element not found!');
                     alert('Please enter your email to continue with calculations.');
                 }
-                // Decrement since we're blocking
-                calcCount--;
-                localStorage.setItem('calculationCount', calcCount.toString());
                 return; // Stop here
             }
             
+            // Increment AFTER passing gates (only if proceeding with calculation)
+            calcCount++;
+            localStorage.setItem('calculationCount', calcCount.toString());
+            
+            console.log('🔢 New calculation count:', calcCount);
             console.log('✅ Proceeding with calculation...');
             
             // Update counter display
@@ -2471,36 +2467,41 @@ function handleCalculation() {
         emailGiven: localStorage.getItem('emailGiven')
     });
     
-    // Increment counter
+    // Check gates BEFORE incrementing (to allow exactly 3 calculations)
+    const userEmail = localStorage.getItem('userEmail');
+    const emailGiven = localStorage.getItem('emailGiven');
+    const hasEmail = !!(userEmail || emailGiven);
+    
+    // Check for upgrade gate BEFORE incrementing
+    if (calculationCount >= TOTAL_FREE_CALCULATIONS) {
+        console.log(`💰 Upgrade modal at calculation ${calculationCount} (blocking before increment)`);
+        showUpgradeModal();
+        return calculationCount; // Return without incrementing
+    }
+    
+    // Check for email gate BEFORE incrementing
+    // After calc 1: count = 1, check >= 3? No, proceed
+    // After calc 2: count = 2, check >= 3? No, proceed
+    // After calc 3: count = 3, check >= 3? Yes, block (this is the 4th attempt)
+    if (!hasEmail && calculationCount >= CALCULATIONS_BEFORE_EMAIL) {
+        console.log('🎯🎯🎯 FORCING EMAIL MODAL AFTER 3 CALCULATIONS (4th attempt)!');
+        console.log('🎯 Calling showEmailCaptureModal()...');
+        showEmailCaptureModal();
+        return calculationCount; // Return without incrementing
+    }
+    
+    // Increment counter only if gates passed
     calculationCount++;
     localStorage.setItem('calculationCount', calculationCount.toString());
     
     console.log(`📊 Calculation #${calculationCount}`);
     
-    // CRITICAL FIX: Check if we should show email modal
-    const userEmail = localStorage.getItem('userEmail');
-    const emailGiven = localStorage.getItem('emailGiven');
-    const hasEmail = !!(userEmail || emailGiven);
-    
     console.log('📧 Email status:', {
         userEmail,
         emailGiven,
         hasEmail,
-        atEmailGate: calculationCount === CALCULATIONS_BEFORE_EMAIL
+        atEmailGate: calculationCount >= CALCULATIONS_BEFORE_EMAIL
     });
-    
-    // If no email AND at calculation 3, FORCE show modal
-    if (!hasEmail && calculationCount === CALCULATIONS_BEFORE_EMAIL) {
-        console.log('🎯🎯🎯 FORCING EMAIL MODAL AT CALCULATION 3!');
-        console.log('🎯 Calling showEmailCaptureModal()...');
-        showEmailCaptureModal();
-    }
-    
-    // Check for upgrade gate
-    if (calculationCount >= TOTAL_FREE_CALCULATIONS) {
-        console.log(`💰 Upgrade modal at calculation ${calculationCount}`);
-        showUpgradeModal();
-    }
     
     // Update counter display
     updateCounterDisplay();
