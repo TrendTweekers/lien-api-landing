@@ -3029,6 +3029,69 @@ async def get_partner_applications_api(request: Request, status: str = "all", us
         
         return {"applications": []}
 
+@app.get("/api/debug/partner-applications")
+async def debug_partner_applications():
+    """Debug endpoint to check partner_applications table"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Count total rows
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT COUNT(*) as count FROM partner_applications")
+            else:
+                # Check if table exists (SQLite)
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='partner_applications'
+                """)
+                if not cursor.fetchone():
+                    return {
+                        "total_count": 0,
+                        "rows_returned": 0,
+                        "applications": [],
+                        "message": "Table 'partner_applications' does not exist"
+                    }
+                cursor.execute("SELECT COUNT(*) as count FROM partner_applications")
+            
+            count_result = cursor.fetchone()
+            if isinstance(count_result, dict):
+                total = count_result.get('count', 0)
+            elif isinstance(count_result, tuple):
+                total = count_result[0] if len(count_result) > 0 else 0
+            else:
+                total = count_result if count_result else 0
+            
+            # Get all rows
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT * FROM partner_applications ORDER BY created_at DESC")
+            else:
+                cursor.execute("SELECT * FROM partner_applications ORDER BY created_at DESC")
+            
+            rows = cursor.fetchall()
+            
+            # Convert to list of dicts
+            applications = []
+            for row in rows:
+                if isinstance(row, dict):
+                    applications.append(row)
+                else:
+                    # Convert sqlite3.Row to dict
+                    applications.append(dict(row))
+            
+            return {
+                "total_count": total,
+                "rows_returned": len(applications),
+                "applications": applications
+            }
+            
+    except Exception as e:
+        import traceback
+        return {
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 @app.get("/api/admin/email-captures")
 async def get_email_captures_api(username: str = Depends(verify_admin)):
     """Get all email captures from calculator email gate - PostgreSQL compatible"""
