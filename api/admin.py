@@ -1137,41 +1137,121 @@ async def get_comprehensive_analytics(user: str = Depends(verify_admin)):
                 stats['revenue_month'] = 0.0
                 stats['revenue_all'] = 0.0
             
-            # EMAIL CAPTURES
+            # ---------------------------
+            # Email captures (robust column detection)
+            # ---------------------------
             try:
-                # Today
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(captured_at) = %s", (today_str,))
+                print("Querying email_captures table...")
+
+                if DB_TYPE == "postgresql":
+                    cursor.execute("""
+                        SELECT column_name
+                        FROM information_schema.columns
+                        WHERE table_name = 'email_captures'
+                          AND column_name IN ('captured_at', 'created_at', 'timestamp', 'submitted_at')
+                        ORDER BY CASE column_name
+                            WHEN 'captured_at' THEN 1
+                            WHEN 'created_at' THEN 2
+                            WHEN 'timestamp' THEN 3
+                            WHEN 'submitted_at' THEN 4
+                            ELSE 99
+                        END
+                        LIMIT 1
+                    """)
+                    row = cursor.fetchone()
+                    date_col = (row["column_name"] if isinstance(row, dict) else row[0]) if row else None
+
+                    if not date_col:
+                        # No date column found; don't break analytics
+                        print("No date column found in email_captures table")
+                        stats['emails_today'] = 0
+                        stats['emails_week'] = 0
+                        stats['emails_month'] = 0
+                        stats['emails_all'] = 0
+                    else:
+                        print(f"Using date column: {date_col}")
+                        # Today
+                        cursor.execute(
+                            f"SELECT COUNT(*) as count FROM email_captures WHERE DATE({date_col}) = %s",
+                            (today_str,)
+                        )
+                        r = cursor.fetchone()
+                        stats['emails_today'] = r["count"] if isinstance(r, dict) else r[0]
+                        
+                        # This week
+                        cursor.execute(
+                            f"SELECT COUNT(*) as count FROM email_captures WHERE DATE({date_col}) >= %s",
+                            (week_ago_str,)
+                        )
+                        r = cursor.fetchone()
+                        stats['emails_week'] = r["count"] if isinstance(r, dict) else r[0]
+                        
+                        # This month
+                        cursor.execute(
+                            f"SELECT COUNT(*) as count FROM email_captures WHERE DATE({date_col}) >= %s",
+                            (month_ago_str,)
+                        )
+                        r = cursor.fetchone()
+                        stats['emails_month'] = r["count"] if isinstance(r, dict) else r[0]
+                        
+                        # All time
+                        cursor.execute("SELECT COUNT(*) as count FROM email_captures")
+                        r = cursor.fetchone()
+                        stats['emails_all'] = r["count"] if isinstance(r, dict) else r[0]
                 else:
-                    cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(captured_at) = ?", (today_str,))
-                result = cursor.fetchone()
-                stats['emails_today'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
-                
-                # This week
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(captured_at) >= %s", (week_ago_str,))
-                else:
-                    cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(captured_at) >= ?", (week_ago_str,))
-                result = cursor.fetchone()
-                stats['emails_week'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
-                
-                # This month
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(captured_at) >= %s", (month_ago_str,))
-                else:
-                    cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(captured_at) >= ?", (month_ago_str,))
-                result = cursor.fetchone()
-                stats['emails_month'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
-                
-                # All time
-                cursor.execute("SELECT COUNT(*) as count FROM email_captures")
-                result = cursor.fetchone()
-                stats['emails_all'] = result['count'] if isinstance(result, dict) else (result[0] if result else 0)
+                    # SQLite: try common columns in order
+                    date_col = None
+                    for c in ("captured_at", "created_at", "timestamp", "submitted_at"):
+                        try:
+                            cursor.execute(f"SELECT {c} FROM email_captures LIMIT 1")
+                            date_col = c
+                            break
+                        except Exception:
+                            pass
+
+                    if not date_col:
+                        print("No date column found in email_captures table")
+                        stats['emails_today'] = 0
+                        stats['emails_week'] = 0
+                        stats['emails_month'] = 0
+                        stats['emails_all'] = 0
+                    else:
+                        print(f"Using date column: {date_col}")
+                        # Today
+                        cursor.execute(
+                            f"SELECT COUNT(*) as count FROM email_captures WHERE DATE({date_col}) = DATE(?)",
+                            (today_str,)
+                        )
+                        r = cursor.fetchone()
+                        stats['emails_today'] = r["count"] if isinstance(r, dict) else r[0]
+                        
+                        # This week
+                        cursor.execute(
+                            f"SELECT COUNT(*) as count FROM email_captures WHERE DATE({date_col}) >= DATE(?)",
+                            (week_ago_str,)
+                        )
+                        r = cursor.fetchone()
+                        stats['emails_week'] = r["count"] if isinstance(r, dict) else r[0]
+                        
+                        # This month
+                        cursor.execute(
+                            f"SELECT COUNT(*) as count FROM email_captures WHERE DATE({date_col}) >= DATE(?)",
+                            (month_ago_str,)
+                        )
+                        r = cursor.fetchone()
+                        stats['emails_month'] = r["count"] if isinstance(r, dict) else r[0]
+                        
+                        # All time
+                        cursor.execute("SELECT COUNT(*) as count FROM email_captures")
+                        r = cursor.fetchone()
+                        stats['emails_all'] = r["count"] if isinstance(r, dict) else r[0]
+
+                print(f"Email captures - today: {stats['emails_today']}, week: {stats['emails_week']}, month: {stats['emails_month']}, all: {stats['emails_all']}")
+
             except Exception as e:
                 print(f"Error getting email captures: {e}")
                 import traceback
                 traceback.print_exc()
-                # Rollback to prevent transaction poisoning
                 try:
                     conn.rollback()
                 except Exception:
