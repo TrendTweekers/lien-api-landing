@@ -304,45 +304,154 @@ async def approve_partner(
             referral_code = f"broker_{secrets.token_urlsafe(8).upper()}"
             referral_link = f"https://liendeadline.com?ref={referral_code}"
             
-            # Create brokers table if it doesn't exist (PostgreSQL)
+            # Create brokers table if it doesn't exist and add missing columns
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS brokers (
                         id VARCHAR PRIMARY KEY,
                         name VARCHAR NOT NULL,
-                        email VARCHAR NOT NULL,
-                        company VARCHAR,
-                        referral_code VARCHAR UNIQUE NOT NULL,
-                        referral_link VARCHAR NOT NULL,
-                        commission_model VARCHAR NOT NULL,
-                        pending_commissions INTEGER DEFAULT 0,
-                        paid_commissions REAL DEFAULT 0,
+                        email VARCHAR UNIQUE NOT NULL,
+                        commission REAL DEFAULT 500.00,
+                        referrals INTEGER DEFAULT 0,
+                        earned REAL DEFAULT 0.00,
+                        status TEXT DEFAULT 'pending',
                         created_at TIMESTAMP DEFAULT NOW()
                     )
                 """)
+                
+                # Add missing columns if they don't exist
+                try:
+                    cursor.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'brokers' AND column_name = 'company'
+                            ) THEN
+                                ALTER TABLE brokers ADD COLUMN company VARCHAR;
+                            END IF;
+                        END $$;
+                    """)
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'brokers' AND column_name = 'referral_code'
+                            ) THEN
+                                ALTER TABLE brokers ADD COLUMN referral_code VARCHAR UNIQUE;
+                            END IF;
+                        END $$;
+                    """)
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'brokers' AND column_name = 'referral_link'
+                            ) THEN
+                                ALTER TABLE brokers ADD COLUMN referral_link VARCHAR;
+                            END IF;
+                        END $$;
+                    """)
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'brokers' AND column_name = 'commission_model'
+                            ) THEN
+                                ALTER TABLE brokers ADD COLUMN commission_model VARCHAR;
+                            END IF;
+                        END $$;
+                    """)
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'brokers' AND column_name = 'pending_commissions'
+                            ) THEN
+                                ALTER TABLE brokers ADD COLUMN pending_commissions INTEGER DEFAULT 0;
+                            END IF;
+                        END $$;
+                    """)
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'brokers' AND column_name = 'paid_commissions'
+                            ) THEN
+                                ALTER TABLE brokers ADD COLUMN paid_commissions REAL DEFAULT 0;
+                            END IF;
+                        END $$;
+                    """)
+                except Exception:
+                    pass
             else:
                 # SQLite
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS brokers (
                         id TEXT PRIMARY KEY,
                         name TEXT NOT NULL,
-                        email TEXT NOT NULL,
-                        company TEXT,
-                        referral_code TEXT UNIQUE NOT NULL,
-                        referral_link TEXT NOT NULL,
-                        commission_model TEXT NOT NULL,
-                        pending_commissions INTEGER DEFAULT 0,
-                        paid_commissions REAL DEFAULT 0,
+                        email TEXT UNIQUE NOT NULL,
+                        commission REAL DEFAULT 500.00,
+                        referrals INTEGER DEFAULT 0,
+                        earned REAL DEFAULT 0.00,
+                        status TEXT DEFAULT 'pending',
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
+                
+                # Add missing columns if they don't exist (SQLite)
+                for column_def in [
+                    ("company", "TEXT"),
+                    ("referral_code", "TEXT UNIQUE"),
+                    ("referral_link", "TEXT"),
+                    ("commission_model", "TEXT"),
+                    ("pending_commissions", "INTEGER DEFAULT 0"),
+                    ("paid_commissions", "REAL DEFAULT 0")
+                ]:
+                    try:
+                        cursor.execute(f"ALTER TABLE brokers ADD COLUMN {column_def[0]} {column_def[1]}")
+                    except Exception:
+                        pass
             
-            # Create broker record
+            # Create broker record - use columns that exist, handle missing ones gracefully
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     INSERT INTO brokers (id, name, email, company, referral_code, referral_link, 
-                                       commission_model, pending_commissions, paid_commissions)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, 0, 0)
+                                       commission_model, pending_commissions, paid_commissions, status)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 0, 0, 'active')
+                    ON CONFLICT (id) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        email = EXCLUDED.email,
+                        company = EXCLUDED.company,
+                        referral_code = EXCLUDED.referral_code,
+                        referral_link = EXCLUDED.referral_link,
+                        commission_model = EXCLUDED.commission_model,
+                        status = 'active'
                 """, (
                     referral_code,
                     app_dict.get('name', ''),
@@ -354,9 +463,9 @@ async def approve_partner(
                 ))
             else:
                 cursor.execute("""
-                    INSERT INTO brokers (id, name, email, company, referral_code, referral_link, 
-                                       commission_model, pending_commissions, paid_commissions)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)
+                    INSERT OR REPLACE INTO brokers (id, name, email, company, referral_code, referral_link, 
+                                       commission_model, pending_commissions, paid_commissions, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 'active')
                 """, (
                     referral_code,
                     app_dict.get('name', ''),
