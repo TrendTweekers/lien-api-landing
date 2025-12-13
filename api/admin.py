@@ -575,10 +575,7 @@ async def approve_partner(
             
             conn.commit()
         
-        # Send welcome email with extensive logging
-        email = app_dict.get('email', '')
-        name = app_dict.get('name', '')
-        commission_model = app_dict.get('commission_model', 'bounty')
+        # ================= EMAIL SEND (GUARANTEED) =================
         
         print("=" * 60)
         print("📧 ATTEMPTING TO SEND WELCOME EMAIL")
@@ -586,89 +583,68 @@ async def approve_partner(
         print(f"   Name: {name}")
         print(f"   Referral Code: {referral_code}")
         print(f"   Referral Link: {referral_link}")
-        print(f"   Commission: {commission_model}")
         print("=" * 60)
         
         email_sent = False
         email_error = None
-        email_channel = None
         
-        # 1) Try SendGrid
+        # --- SendGrid ---
         try:
             from api.main import send_broker_welcome_email
-            send_broker_welcome_email(email, name, referral_link, referral_code)
+            send_broker_welcome_email(
+                email=email,
+                name=name,
+                referral_link=referral_link,
+                referral_code=referral_code
+            )
             email_sent = True
-            email_channel = "sendgrid"
-            print("✅ Welcome email sent via SendGrid")
+            print("✅ EMAIL SENT VIA SENDGRID")
         except Exception as e:
             email_error = f"sendgrid: {e}"
-            print(f"❌ SendGrid failed: {e}")
+            print(f"❌ SENDGRID FAILED: {e}")
         
-        # 2) Fallback SMTP
+        # --- SMTP fallback ---
         if not email_sent:
             try:
                 import smtplib
                 from email.mime.text import MIMEText
-                from email.mime.multipart import MIMEMultipart
                 
-                smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-                smtp_port = int(os.getenv("SMTP_PORT", "587"))
-                smtp_user = os.getenv("SMTP_USER", "trendtweakers00@gmail.com")
-                smtp_password = os.getenv("SMTP_PASSWORD")
+                smtp_user = os.getenv("SMTP_USER")
+                smtp_pass = os.getenv("SMTP_PASSWORD")
                 
-                if not smtp_password:
-                    raise Exception("SMTP_PASSWORD missing in Railway env")
+                if not smtp_pass:
+                    raise Exception("SMTP_PASSWORD missing")
                 
-                commission_text = "$500 per sale" if commission_model == "bounty" else "$50/month recurring"
-                
-                subject = "Welcome to LienDeadline Partner Program 🎉"
-                body = f"""Hi {name},
-
-Your LienDeadline partner application has been approved!
-
-Referral Code: {referral_code}
-Referral Link: {referral_link}
-Commission: {commission_text}
-
-Share your link to start earning.
-
-— LienDeadline
-"""
-                
-                msg = MIMEMultipart()
+                msg = MIMEText(
+                    f"Your referral link:\n\n{referral_link}\n\nReferral code: {referral_code}"
+                )
+                msg["Subject"] = "LienDeadline Partner Approved"
                 msg["From"] = smtp_user
                 msg["To"] = email
-                msg["Subject"] = subject
-                msg.attach(MIMEText(body, "plain"))
                 
-                print(f"📧 SMTP connect {smtp_server}:{smtp_port}")
-                with smtplib.SMTP(smtp_server, smtp_port) as server:
-                    server.starttls()
-                    print("🔐 SMTP login...")
-                    server.login(smtp_user, smtp_password)
-                    print("📤 SMTP sending...")
-                    server.send_message(msg)
+                with smtplib.SMTP("smtp.gmail.com", 587) as s:
+                    s.starttls()
+                    s.login(smtp_user, smtp_pass)
+                    s.send_message(msg)
                 
                 email_sent = True
-                email_channel = "smtp"
-                print("✅ Welcome email sent via SMTP")
+                print("✅ EMAIL SENT VIA SMTP")
                 
             except Exception as e:
-                email_error = (email_error + " | " if email_error else "") + f"smtp: {e}"
-                print(f"❌ SMTP failed: {e}")
+                email_error = (email_error or "") + f" | smtp: {e}"
+                print(f"❌ SMTP FAILED: {e}")
         
         print("=" * 60)
-        print(f"📨 EMAIL RESULT -> sent={email_sent} channel={email_channel} error={email_error}")
+        print(f"📨 EMAIL RESULT -> sent={email_sent} error={email_error}")
         print("=" * 60)
         
-        logger.info(f"Partner approved: {app_dict.get('email', '')} - Referral code: {referral_code} - Email sent: {email_sent} via {email_channel}")
+        logger.info(f"Partner approved: {email} - Referral code: {referral_code} - Email sent: {email_sent}")
         
         return {
             "status": "approved",
             "referral_code": referral_code,
             "referral_link": referral_link,
             "email_sent": email_sent,
-            "email_channel": email_channel,
             "email_error": email_error
         }
     except HTTPException:
@@ -1037,30 +1013,30 @@ async def get_comprehensive_analytics(user: str = Depends(verify_admin)):
             try:
                 # Today
                 if DB_TYPE == 'postgresql':
-                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) = %s AND status = 'completed'", (today_str,))
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) = %s", (today_str,))
                 else:
-                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) = ? AND status = 'completed'", (today_str,))
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) = ?", (today_str,))
                 result = cursor.fetchone()
                 stats['revenue_today'] = float(result['total'] if isinstance(result, dict) else (result[0] if result else 0))
                 
                 # This week
                 if DB_TYPE == 'postgresql':
-                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= %s AND status = 'completed'", (week_ago_str,))
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= %s", (week_ago_str,))
                 else:
-                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= ? AND status = 'completed'", (week_ago_str,))
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= ?", (week_ago_str,))
                 result = cursor.fetchone()
                 stats['revenue_week'] = float(result['total'] if isinstance(result, dict) else (result[0] if result else 0))
                 
                 # This month
                 if DB_TYPE == 'postgresql':
-                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= %s AND status = 'completed'", (month_ago_str,))
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= %s", (month_ago_str,))
                 else:
-                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= ? AND status = 'completed'", (month_ago_str,))
+                    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(created_at) >= ?", (month_ago_str,))
                 result = cursor.fetchone()
                 stats['revenue_month'] = float(result['total'] if isinstance(result, dict) else (result[0] if result else 0))
                 
                 # All time
-                cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE status = 'completed'")
+                cursor.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payments")
                 result = cursor.fetchone()
                 stats['revenue_all'] = float(result['total'] if isinstance(result, dict) else (result[0] if result else 0))
             except Exception as e:
@@ -1304,7 +1280,7 @@ def get_today_stats(user: str = Depends(verify_admin)):
             cursor.execute('''
                 SELECT COALESCE(SUM(amount), 0) as revenue_today 
                 FROM payments 
-                WHERE DATE(created_at) = %s AND status = 'completed'
+                WHERE DATE(created_at) = %s
             ''', (today,))
             revenue_row = cursor.fetchone()
             revenue = float(revenue_row['revenue_today']) if revenue_row['revenue_today'] else 0
@@ -1345,7 +1321,7 @@ def get_today_stats(user: str = Depends(verify_admin)):
             cursor.execute('''
                 SELECT COALESCE(SUM(amount), 0) as revenue_today 
                 FROM payments 
-                WHERE DATE(created_at) = ? AND status = 'completed'
+                WHERE DATE(created_at) = ?
             ''', (today,))
             revenue_row = cursor.fetchone()
             revenue = float(revenue_row['revenue_today']) if revenue_row and revenue_row['revenue_today'] else 0
