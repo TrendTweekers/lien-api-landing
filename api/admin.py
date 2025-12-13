@@ -12,8 +12,8 @@ import secrets
 import string
 import logging
 
-# Import database functions from main.py
-from api.main import get_db, get_db_cursor, DB_TYPE
+# Import database functions from database.py (avoids circular import)
+from api.database import get_db, get_db_cursor, DB_TYPE
 
 logger = logging.getLogger(__name__)
 

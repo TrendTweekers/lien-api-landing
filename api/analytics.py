@@ -3,8 +3,8 @@ from datetime import date, datetime
 import os
 from pathlib import Path
 
-# Import database functions from main.py
-from api.main import get_db, get_db_cursor, DB_TYPE
+# Import database functions from database.py (avoids circular import)
+from api.database import get_db, get_db_cursor, DB_TYPE
 
 # Router without prefix - prefix will be added in main.py include_router call
 router = APIRouter(tags=["analytics"])
