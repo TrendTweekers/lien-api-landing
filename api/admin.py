@@ -12,6 +12,10 @@ import secrets
 import string
 import logging
 import asyncio
+import anyio
+import smtplib
+import ssl
+from email.message import EmailMessage
 
 # Import database functions from database.py (avoids circular import)
 from api.database import get_db, get_db_cursor, DB_TYPE
@@ -654,8 +658,8 @@ async def approve_partner(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-def _send_broker_email_sync(email: str, name: str, referral_link: str, referral_code: str):
-    """Synchronous email sending function (called from async wrapper)"""
+def send_broker_email_sync(to_email: str, name: str, referral_link: str, referral_code: str):
+    """Synchronous email sending function with timeout on SMTP connection"""
     email_sent = False
     email_error = None
     email_channel = None
@@ -664,10 +668,10 @@ def _send_broker_email_sync(email: str, name: str, referral_link: str, referral_
     try:
         from api.main import send_broker_welcome_email
         send_broker_welcome_email(
-            email=email,
+            email=to_email,
             name=name,
-            referral_link=referral_link,
-            referral_code=referral_code
+            link=referral_link,
+            code=referral_code
         )
         email_sent = True
         email_channel = "sendgrid"
@@ -676,13 +680,11 @@ def _send_broker_email_sync(email: str, name: str, referral_link: str, referral_
         email_error = f"sendgrid: {e}"
         print(f"❌ SENDGRID FAILED: {e}")
     
-    # --- SMTP fallback ---
+    # --- SMTP fallback with timeout=10 ---
     if not email_sent:
         try:
-            import smtplib
-            from email.mime.text import MIMEText
-            
-            # Support both SMTP_USER and SMTP_EMAIL (Railway compatibility)
+            smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+            smtp_port = int(os.getenv("SMTP_PORT", "587"))
             smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_EMAIL") or "trendtweakers00@gmail.com"
             # Remove spaces from Gmail app password (Railway may store as "xxxx xxxx xxxx xxxx")
             smtp_pass = (os.getenv("SMTP_PASSWORD") or "").replace(" ", "")
@@ -691,15 +693,32 @@ def _send_broker_email_sync(email: str, name: str, referral_link: str, referral_
                 email_error = (email_error or "") + f" | smtp: SMTP_PASSWORD missing"
                 raise Exception("SMTP_PASSWORD missing")
             
-            msg = MIMEText(
-                f"Your referral link:\n\n{referral_link}\n\nReferral code: {referral_code}"
-            )
-            msg["Subject"] = "LienDeadline Partner Approved"
-            msg["From"] = smtp_user
-            msg["To"] = email
+            # Create HTML email content
+            html = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2>LienDeadline Partner Approved</h2>
+                <p>Hi {name},</p>
+                <p>Your partner application has been approved!</p>
+                <p><strong>Referral Code:</strong> {referral_code}</p>
+                <p><strong>Referral Link:</strong> <a href="{referral_link}">{referral_link}</a></p>
+                <p>Share your link to start earning commissions.</p>
+            </body>
+            </html>
+            """
             
-            with smtplib.SMTP("smtp.gmail.com", 587) as s:
-                s.starttls()
+            msg = EmailMessage()
+            msg["From"] = smtp_user
+            msg["To"] = to_email
+            msg["Subject"] = "LienDeadline Partner Approved"
+            msg.set_content("HTML email required.")
+            msg.add_alternative(html, subtype="html")
+            
+            # timeout=10 is the BIG DEAL - prevents hanging connections
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as s:
+                s.ehlo()
+                s.starttls(context=ssl.create_default_context())
+                s.ehlo()
                 s.login(smtp_user, smtp_pass)
                 s.send_message(msg)
             
@@ -724,10 +743,11 @@ async def send_email_with_timeout(email: str, name: str, referral_link: str, ref
     print("=" * 60)
     
     try:
-        # Run sync email function in thread pool with 12s timeout
-        email_sent, email_channel, email_error = await asyncio.wait_for(
-            asyncio.to_thread(_send_broker_email_sync, email, name, referral_link, referral_code),
-            timeout=12.0
+        # Run sync SMTP in a worker thread + hard timeout (12s)
+        email_sent, email_channel, email_error = await anyio.fail_after(
+            12,
+            anyio.to_thread.run_sync,
+            lambda: send_broker_email_sync(email, name, referral_link, referral_code)
         )
         
         print("=" * 60)
@@ -736,7 +756,7 @@ async def send_email_with_timeout(email: str, name: str, referral_link: str, ref
         
         logger.info(f"Background email sent: {email} - Referral code: {referral_code} - Email sent: {email_sent} via {email_channel}")
         
-    except asyncio.TimeoutError:
+    except anyio.get_cancelled_exc_class():
         logger.exception("EMAIL_SEND_FAILED: Timeout after 12s")
         print("=" * 60)
         print("❌ EMAIL SEND TIMEOUT (12s exceeded)")
@@ -749,7 +769,8 @@ async def send_email_with_timeout(email: str, name: str, referral_link: str, ref
 
 def send_welcome_email_background(email: str, name: str, referral_link: str, referral_code: str):
     """Background task wrapper (for BackgroundTasks.add_task)"""
-    # Create new event loop for background task
+    # Run async function in background
+    import asyncio
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
