@@ -192,183 +192,84 @@ async function loadPartnerApplications() {
     }
 }
 
-// Event delegation for approve / reject / delete (works with dynamically rendered rows)
-document.addEventListener('click', async (e) => {
-    // Handle Approve action
-    const approveBtn = e.target.closest('.approve-btn');
-    if (!approveBtn) return;
+// Unified event delegation handler (capture phase) - prevents cancellation
+document.addEventListener("click", async (e) => {
+    const btn =
+        e.target.closest(".approve-btn") ||
+        e.target.closest(".reject-btn") ||
+        e.target.closest(".delete-btn") ||
+        e.target.closest(".delete-broker-btn");
+
+    if (!btn) return;
 
     e.preventDefault();
     e.stopPropagation();
+    e.stopImmediatePropagation();
 
-    const appId = approveBtn.dataset.appId;
-    console.log('Approving application', appId);
-
-    const res = await fetch(`/api/admin/approve-partner/${appId}`, {
-        method: 'POST',
-        credentials: "include",
-        headers: {
-            'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-        }
-    });
-
-    const text = await res.text();
-    console.log('Approve result:', res.status, text);
-
-    if (!res.ok) {
-        alert(text);
+    const id = btn.dataset.appId || btn.dataset.brokerId;
+    if (!id) {
+        alert("Missing id on button");
         return;
     }
 
-    approveBtn.closest('tr')?.remove();
+    // IMPORTANT: always include auth + credentials so it never "half works"
+    const authHeader = window.ADMIN_BASIC_AUTH
+        ? { Authorization: window.ADMIN_BASIC_AUTH }
+        : { Authorization: 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`) };
 
-    // Handle Reject action
-    const rejectBtn = e.target.closest('.reject-btn');
-    if (rejectBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const appId = rejectBtn.dataset.appId;
-        if (!appId) {
-            console.error('No application ID found');
-            alert('Internal error: missing application id');
-            return;
-        }
-
-        console.log('Rejecting application', appId);
-
-        try {
-            const res = await fetch(`/api/admin/reject-partner/${appId}`, {
-                method: 'POST',
+    try {
+        if (btn.classList.contains("approve-btn")) {
+            const r = await fetch(`/api/admin/approve-partner/${id}`, {
+                method: "POST",
                 credentials: "include",
-                headers: {
-                    'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-                }
+                headers: { ...authHeader }
             });
-
-            const text = await res.text();
-            console.log('Reject response:', res.status, text);
-
-            if (!res.ok) {
-                alert('Reject failed: ' + text);
-                return;
-            }
-
-            const data = JSON.parse(text);
-
-            if (data.success) {
-                alert('❌ Application rejected');
-                rejectBtn.closest('tr')?.remove();
-                loadPartnerApplications();
-            } else {
-                alert('❌ Error: ' + (data.error || 'Unknown error'));
-            }
-
-        } catch (err) {
-            console.error('Reject error:', err);
-            alert('Reject error');
-        }
-        return;
-    }
-
-    // Handle Delete application action
-    const deleteBtn = e.target.closest('.delete-btn');
-    if (deleteBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const appId = deleteBtn.dataset.appId;
-        if (!appId) {
-            console.error('No application ID found');
-            alert('Internal error: missing application id');
-            return;
+            const text = await r.text();
+            if (!r.ok) throw new Error(text || `HTTP ${r.status}`);
+            alert("Approved ✅");
         }
 
-        console.log('Deleting application', appId);
-
-        try {
-            const res = await fetch(`/api/admin/delete-partner/${appId}`, {
-                method: 'DELETE',
+        if (btn.classList.contains("reject-btn")) {
+            const r = await fetch(`/api/admin/reject-partner/${id}`, {
+                method: "POST",
                 credentials: "include",
-                headers: {
-                    'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-                }
+                headers: { ...authHeader }
             });
-
-            const text = await res.text();
-            console.log('Delete response:', res.status, text);
-
-            if (!res.ok) {
-                alert('Delete failed: ' + text);
-                return;
-            }
-
-            const data = JSON.parse(text);
-
-            if (data.success) {
-                alert('✅ Application deleted successfully');
-                deleteBtn.closest('tr')?.remove();
-                loadPartnerApplications();
-            } else {
-                alert('❌ Error: ' + (data.error || 'Unknown error'));
-            }
-
-        } catch (err) {
-            console.error('Delete error:', err);
-            alert('Delete error');
-        }
-        return;
-    }
-
-    // Handle Delete broker action
-    const deleteBrokerBtn = e.target.closest('.delete-broker-btn');
-    if (deleteBrokerBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const brokerId = deleteBrokerBtn.dataset.brokerId;
-        if (!brokerId) {
-            console.error('No broker ID found');
-            alert('Internal error: missing broker id');
-            return;
+            const text = await r.text();
+            if (!r.ok) throw new Error(text || `HTTP ${r.status}`);
+            alert("Rejected ✅");
         }
 
-        console.log('Deleting broker', brokerId);
-
-        try {
-            const res = await fetch(`/api/admin/delete-broker/${brokerId}`, {
-                method: 'DELETE',
+        if (btn.classList.contains("delete-btn")) {
+            const r = await fetch(`/api/admin/delete-partner/${id}`, {
+                method: "DELETE",
                 credentials: "include",
-                headers: {
-                    'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-                }
+                headers: { ...authHeader }
             });
-
-            const text = await res.text();
-            console.log('Delete broker response:', res.status, text);
-
-            if (!res.ok) {
-                alert('Delete failed: ' + text);
-                return;
-            }
-
-            const data = JSON.parse(text);
-
-            if (data.success) {
-                alert('✅ Broker deleted successfully');
-                deleteBrokerBtn.closest('.p-4')?.remove();
-                loadActiveBrokers();
-            } else {
-                alert('❌ Error: ' + (data.error || 'Unknown error'));
-            }
-
-        } catch (err) {
-            console.error('Delete broker error:', err);
-            alert('Delete broker error');
+            const text = await r.text();
+            if (!r.ok) throw new Error(text || `HTTP ${r.status}`);
+            alert("Deleted ✅");
         }
-        return;
+
+        if (btn.classList.contains("delete-broker-btn")) {
+            const r = await fetch(`/api/admin/delete-broker/${id}`, {
+                method: "DELETE",
+                credentials: "include",
+                headers: { ...authHeader }
+            });
+            const text = await r.text();
+            if (!r.ok) throw new Error(text || `HTTP ${r.status}`);
+            alert("Broker deleted ✅");
+        }
+
+        // refresh UI after any action
+        if (typeof loadPartnerApplications === "function") loadPartnerApplications();
+        if (typeof loadActiveBrokers === "function") loadActiveBrokers();
+    } catch (err) {
+        alert(`Action failed: ${err.message}`);
+        console.error(err);
     }
-});
+}, true); // <-- capture phase matters
 
 // 5. Approve application (kept for backward compatibility, but now handled by event delegation)
 async function approveApplication(id, email, name, commissionModel) {
