@@ -135,15 +135,15 @@ async function loadPartnerApplications() {
             }
             
             const actionButtons = app.status === 'pending' ? `
-                <button onclick="approveApplication(${app.id}, '${app.email}', '${app.name || 'Unknown'}', '${app.commission_model || 'bounty'}')" 
+                <button data-action="approve" data-app-id="${app.id}" data-email="${app.email || ''}" data-name="${(app.name || 'Unknown').replace(/"/g, '&quot;')}" data-commission-model="${app.commission_model || 'bounty'}"
                         class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm mr-2">
                     Approve
                 </button>
-                <button onclick="rejectApplication(${app.id})" 
+                <button data-action="reject" data-app-id="${app.id}"
                         class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm mr-2">
                     Reject
                 </button>
-                <button onclick="deleteApplication(${app.id})" 
+                <button data-action="delete" data-app-id="${app.id}"
                         class="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm"
                         title="Delete application">
                     Delete
@@ -195,7 +195,253 @@ async function loadPartnerApplications() {
     }
 }
 
-// 5. Approve application
+// Event delegation for approve / reject / delete (works with dynamically rendered rows)
+document.addEventListener('click', async (e) => {
+    // Handle Approve action
+    const approveBtn = e.target.closest('[data-action="approve"]');
+    if (approveBtn) {
+        const appId = approveBtn.dataset.appId;
+        if (!appId) {
+            console.error('No application ID found');
+            alert('Internal error: missing application id');
+            return;
+        }
+
+        const email = approveBtn.dataset.email || '';
+        const name = approveBtn.dataset.name || 'Unknown';
+        const commissionModel = approveBtn.dataset.commissionModel || 'bounty';
+
+        const confirmed = confirm(
+            `Approve ${name} (${email}) with ${commissionModel === 'bounty' ? '$500 bounty' : '$50/month recurring'} commission?`
+        );
+        if (!confirmed) return;
+
+        try {
+            console.log('Approving application', appId);
+
+            const res = await fetch(`/api/admin/approve-partner/${appId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+                },
+                body: JSON.stringify({
+                    commission_model: commissionModel
+                })
+            });
+
+            const text = await res.text();
+            console.log('Approve response:', res.status, text);
+
+            if (!res.ok) {
+                let errorDetail = 'Failed to approve application';
+                try {
+                    const errorJson = JSON.parse(text);
+                    errorDetail = errorJson.detail || errorJson.error || errorDetail;
+                } catch {
+                    errorDetail = text || `HTTP ${res.status}`;
+                }
+                alert(`Approve failed (${res.status}): ${errorDetail}`);
+                return;
+            }
+
+            const data = JSON.parse(text);
+
+            alert(
+                data.email_sent
+                    ? `✅ Application approved!\n📧 Welcome email sent via ${data.email_channel || 'email'}`
+                    : `✅ Application approved!\n⚠️ Email failed: ${data.email_error || 'unknown error'}`
+            );
+
+            // Optimistic UI update
+            const row = approveBtn.closest('tr');
+            if (row) row.remove();
+
+            // Refresh dependent sections
+            loadPartnerApplications();
+            loadActiveBrokers();
+            updateAllStats();
+
+        } catch (err) {
+            console.error('Approve error:', err);
+            alert('Approve request crashed – see console');
+        }
+        return;
+    }
+
+    // Handle Reject action
+    const rejectBtn = e.target.closest('[data-action="reject"]');
+    if (rejectBtn) {
+        const appId = rejectBtn.dataset.appId;
+        if (!appId) {
+            console.error('No application ID found');
+            alert('Internal error: missing application id');
+            return;
+        }
+
+        const confirmed = confirm('Reject this application?');
+        if (!confirmed) return;
+
+        try {
+            console.log('Rejecting application', appId);
+
+            const res = await fetch(`/api/admin/reject-partner/${appId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+                }
+            });
+
+            const text = await res.text();
+            console.log('Reject response:', res.status, text);
+
+            if (!res.ok) {
+                let errorDetail = 'Failed to reject application';
+                try {
+                    const errorJson = JSON.parse(text);
+                    errorDetail = errorJson.detail || errorJson.error || errorDetail;
+                } catch {
+                    errorDetail = text || `HTTP ${res.status}`;
+                }
+                alert(`Reject failed (${res.status}): ${errorDetail}`);
+                return;
+            }
+
+            const data = JSON.parse(text);
+
+            if (data.success) {
+                alert('❌ Application rejected');
+                // Optimistic UI update
+                const row = rejectBtn.closest('tr');
+                if (row) row.remove();
+                loadPartnerApplications();
+            } else {
+                alert('❌ Error: ' + (data.error || 'Unknown error'));
+            }
+
+        } catch (err) {
+            console.error('Reject error:', err);
+            alert('Reject request crashed – see console');
+        }
+        return;
+    }
+
+    // Handle Delete application action
+    const deleteBtn = e.target.closest('[data-action="delete"]');
+    if (deleteBtn) {
+        const appId = deleteBtn.dataset.appId;
+        if (!appId) {
+            console.error('No application ID found');
+            alert('Internal error: missing application id');
+            return;
+        }
+
+        const confirmed = confirm('Permanently delete this application? This cannot be undone.');
+        if (!confirmed) return;
+
+        try {
+            console.log('Deleting application', appId);
+
+            const res = await fetch(`/api/admin/delete-partner/${appId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+                }
+            });
+
+            const text = await res.text();
+            console.log('Delete response:', res.status, text);
+
+            if (!res.ok) {
+                let errorDetail = 'Failed to delete application';
+                try {
+                    const errorJson = JSON.parse(text);
+                    errorDetail = errorJson.detail || errorJson.error || errorDetail;
+                } catch {
+                    errorDetail = text || `HTTP ${res.status}`;
+                }
+                alert(`Delete failed (${res.status}): ${errorDetail}`);
+                return;
+            }
+
+            const data = JSON.parse(text);
+
+            if (data.success) {
+                alert('✅ Application deleted successfully');
+                // Optimistic UI update
+                const row = deleteBtn.closest('tr');
+                if (row) row.remove();
+                loadPartnerApplications();
+            } else {
+                alert('❌ Error: ' + (data.error || 'Unknown error'));
+            }
+
+        } catch (err) {
+            console.error('Delete error:', err);
+            alert('Delete request crashed – see console');
+        }
+        return;
+    }
+
+    // Handle Delete broker action
+    const deleteBrokerBtn = e.target.closest('[data-action="delete-broker"]');
+    if (deleteBrokerBtn) {
+        const brokerId = deleteBrokerBtn.dataset.brokerId;
+        if (!brokerId) {
+            console.error('No broker ID found');
+            alert('Internal error: missing broker id');
+            return;
+        }
+
+        const confirmed = confirm('Delete this broker? This will also delete all their referrals and commission data. This cannot be undone.');
+        if (!confirmed) return;
+
+        try {
+            console.log('Deleting broker', brokerId);
+
+            const res = await fetch(`/api/admin/delete-broker/${brokerId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+                }
+            });
+
+            const text = await res.text();
+            console.log('Delete broker response:', res.status, text);
+
+            if (!res.ok) {
+                let errorDetail = 'Failed to delete broker';
+                try {
+                    const errorJson = JSON.parse(text);
+                    errorDetail = errorJson.detail || errorJson.error || errorDetail;
+                } catch {
+                    errorDetail = text || `HTTP ${res.status}`;
+                }
+                alert(`Delete failed (${res.status}): ${errorDetail}`);
+                return;
+            }
+
+            const data = JSON.parse(text);
+
+            if (data.success) {
+                alert('✅ Broker deleted successfully');
+                // Optimistic UI update
+                const brokerCard = deleteBrokerBtn.closest('.p-4');
+                if (brokerCard) brokerCard.remove();
+                loadActiveBrokers();
+            } else {
+                alert('❌ Error: ' + (data.error || 'Unknown error'));
+            }
+
+        } catch (err) {
+            console.error('Delete broker error:', err);
+            alert('Delete broker request crashed – see console');
+        }
+        return;
+    }
+});
+
+// 5. Approve application (kept for backward compatibility, but now handled by event delegation)
 async function approveApplication(id, email, name, commissionModel) {
     if (!confirm(`Approve ${name} (${email}) with ${commissionModel === 'bounty' ? '$500 bounty' : '$50/month recurring'} commission?`)) {
         return;
@@ -514,7 +760,7 @@ async function loadActiveBrokers() {
                                 <div class="text-xs text-gray-500 mt-1">Ref: ${broker.referral_code || 'N/A'}</div>
                             </div>
                             <button 
-                                onclick="deleteActiveBroker(${broker.id})" 
+                                data-action="delete-broker" data-broker-id="${broker.id}"
                                 class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
                                 title="Delete broker">
                                 Delete
