@@ -136,15 +136,15 @@ async function loadPartnerApplications() {
             }
             
             const actionButtons = app.status === 'pending' ? `
-                <button data-action="approve" data-app-id="${app.id}" data-email="${app.email || ''}" data-name="${(app.name || 'Unknown').replace(/"/g, '&quot;')}" data-commission-model="${app.commission_model || 'bounty'}"
+                <button type="button" data-action="approve" data-app-id="${app.id}" data-email="${app.email || ''}" data-name="${(app.name || 'Unknown').replace(/"/g, '&quot;')}" data-commission-model="${app.commission_model || 'bounty'}"
                         class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm mr-2">
                     Approve
                 </button>
-                <button data-action="reject" data-app-id="${app.id}"
+                <button type="button" data-action="reject" data-app-id="${app.id}"
                         class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm mr-2">
                     Reject
                 </button>
-                <button data-action="delete" data-app-id="${app.id}"
+                <button type="button" data-action="delete" data-app-id="${app.id}"
                         class="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm"
                         title="Delete application">
                     Delete
@@ -201,6 +201,9 @@ document.addEventListener('click', async (e) => {
     // Handle Approve action
     const approveBtn = e.target.closest('[data-action="approve"]');
     if (approveBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        
         const appId = approveBtn.dataset.appId;
         if (!appId) {
             console.error('No application ID found');
@@ -274,6 +277,9 @@ document.addEventListener('click', async (e) => {
     // Handle Reject action
     const rejectBtn = e.target.closest('[data-action="reject"]');
     if (rejectBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        
         const appId = rejectBtn.dataset.appId;
         if (!appId) {
             console.error('No application ID found');
@@ -332,6 +338,9 @@ document.addEventListener('click', async (e) => {
     // Handle Delete application action
     const deleteBtn = e.target.closest('[data-action="delete"]');
     if (deleteBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        
         const appId = deleteBtn.dataset.appId;
         if (!appId) {
             console.error('No application ID found');
@@ -390,6 +399,9 @@ document.addEventListener('click', async (e) => {
     // Handle Delete broker action
     const deleteBrokerBtn = e.target.closest('[data-action="delete-broker"]');
     if (deleteBrokerBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        
         const brokerId = deleteBrokerBtn.dataset.brokerId;
         if (!brokerId) {
             console.error('No broker ID found');
@@ -768,7 +780,7 @@ async function loadActiveBrokers() {
                                 <div class="text-sm text-gray-600">${commissionBadge}</div>
                                 <div class="text-xs text-gray-500 mt-1">Ref: ${broker.referral_code || 'N/A'}</div>
                             </div>
-                            <button 
+                            <button type="button"
                                 data-action="delete-broker" data-broker-id="${broker.id}"
                                 class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
                                 title="Delete broker">
