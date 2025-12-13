@@ -647,32 +647,7 @@ async def approve_partner(
         print("=" * 60)
         
         # Schedule email sending in background (non-blocking)
-        def _email_job():
-            try:
-                subject = "You're approved ✅"
-                body = f"""Hi {name},
-
-Your partner application has been approved.
-
-Your referral link: {referral_link}
-Your referral code: {referral_code}
-
-Share your link to start earning commissions.
-
-Thanks,
-LienDeadline
-"""
-                send_email_sync(
-                    to_email=email,
-                    subject=subject,
-                    body=body
-                )
-                logger.info("APPROVE_EMAIL_SENT to=%s", email)
-            except Exception as e:
-                logger.error("APPROVE_EMAIL_FAILED to=%s err=%s", email, e)
-                traceback.print_exc()
-        
-        background_tasks.add_task(_email_job)
+        background_tasks.add_task(send_welcome_email_background, email, referral_link)
         
         logger.info(f"Partner approved: {email} - Referral code: {referral_code} - Email queued for background sending")
         
