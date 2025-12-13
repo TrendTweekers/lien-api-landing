@@ -683,76 +683,93 @@ def get_today_stats(user: str = Depends(verify_admin)):
 
 @router.get("/live-stats")
 def get_live_stats(user: str = Depends(verify_admin)):
-    """Get live statistics for dashboard"""
+    """Get live statistics for dashboard - PostgreSQL/SQLite compatible"""
+    print("=" * 60)
+    print("📊 ADMIN: Fetching live stats")
+    print("=" * 60)
+    
     try:
-        import sys
-        from pathlib import Path
         from datetime import datetime
-        BASE_DIR = Path(__file__).parent.parent
-        DATABASE_URL = os.getenv('DATABASE_URL')
-        
         today = datetime.now().strftime('%Y-%m-%d')
+        print(f"Today's date: {today}")
         
-        if DATABASE_URL and (DATABASE_URL.startswith('postgres://') or DATABASE_URL.startswith('postgresql://')):
-            import psycopg2
-            from psycopg2.extras import RealDictCursor
-            conn = psycopg2.connect(DATABASE_URL)
-            cursor = conn.cursor(cursor_factory=RealDictCursor)
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
             
             # Total calculations today
-            cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = %s", (today,))
-            total_calculations = cursor.fetchone()['count'] or 0
+            try:
+                print("Querying calculations table...")
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = %s", (today,))
+                else:
+                    # Check if table exists (SQLite)
+                    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='calculations'")
+                    if not cursor.fetchone():
+                        print("calculations table does not exist")
+                        total_calculations = 0
+                    else:
+                        cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = ?", (today,))
+                
+                result = cursor.fetchone()
+                if isinstance(result, dict):
+                    total_calculations = result.get('count', 0) or 0
+                elif isinstance(result, tuple):
+                    total_calculations = result[0] if result else 0
+                else:
+                    total_calculations = result if result else 0
+                print(f"Total calculations: {total_calculations}")
+            except Exception as e:
+                print(f"Error counting calculations: {e}")
+                import traceback
+                traceback.print_exc()
+                total_calculations = 0
             
             # Email captures today
-            cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(created_at) = %s", (today,))
-            email_captures = cursor.fetchone()['count'] or 0
+            try:
+                print("Querying email_captures table...")
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(created_at) = %s", (today,))
+                else:
+                    # Check if table exists (SQLite)
+                    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='email_captures'")
+                    if not cursor.fetchone():
+                        print("email_captures table does not exist")
+                        email_captures = 0
+                    else:
+                        cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(created_at) = ?", (today,))
+                
+                result = cursor.fetchone()
+                if isinstance(result, dict):
+                    email_captures = result.get('count', 0) or 0
+                elif isinstance(result, tuple):
+                    email_captures = result[0] if result else 0
+                else:
+                    email_captures = result if result else 0
+                print(f"Email captures: {email_captures}")
+            except Exception as e:
+                print(f"Error counting email captures: {e}")
+                import traceback
+                traceback.print_exc()
+                email_captures = 0
             
             # Upgrade clicks (placeholder - would need tracking table)
             upgrade_clicks = 0
             
-            conn.close()
-            
-            return {
-                "total_calculations": total_calculations,
-                "calculations_today": total_calculations,
-                "email_captures": email_captures,
-                "upgrade_clicks": upgrade_clicks
-            }
-        else:
-            # SQLite
-            import sqlite3
-            if DATABASE_URL and DATABASE_URL.startswith('sqlite://'):
-                db_path = DATABASE_URL.replace('sqlite:///', '')
-            else:
-                db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
-            conn = sqlite3.connect(str(db_path))
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            
-            # Total calculations today
-            cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE DATE(created_at) = ?", (today,))
-            total_calculations = cursor.fetchone()['count'] or 0
-            
-            # Email captures today
-            cursor.execute("SELECT COUNT(*) as count FROM email_captures WHERE DATE(created_at) = ?", (today,))
-            email_captures = cursor.fetchone()['count'] or 0
-            
-            # Upgrade clicks (placeholder - would need tracking table)
-            upgrade_clicks = 0
-            
-            conn.close()
-            
-            return {
-                "total_calculations": total_calculations,
-                "calculations_today": total_calculations,
-                "email_captures": email_captures,
-                "upgrade_clicks": upgrade_clicks
-            }
+        result = {
+            "total_calculations": total_calculations,
+            "calculations_today": total_calculations,
+            "email_captures": email_captures,
+            "upgrade_clicks": upgrade_clicks
+        }
+        print(f"✅ Returning result: {result}")
+        print("=" * 60)
+        return result
             
     except Exception as e:
-        logger.error(f"Error fetching live stats: {e}")
+        print(f"❌ ERROR fetching live stats: {e}")
         import traceback
         traceback.print_exc()
+        print("=" * 60)
         return {
             "total_calculations": 0,
             "calculations_today": 0,

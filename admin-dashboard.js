@@ -306,6 +306,71 @@ async function updateLiveAnalytics() {
     }
 }
 
+// 7c. Update Email Conversion section
+async function updateEmailConversion() {
+    try {
+        console.log('[Admin] Fetching Email Conversion data from /api/admin/live-stats...');
+        
+        const response = await fetch('/api/admin/live-stats', {
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            console.error(`[Admin] Live Stats API error: ${response.status}`);
+            safe.text('totalCalcs', '0');
+            safe.text('emailCaptures', '0');
+            safe.text('upgradeClicks', '0');
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('[Admin] Email Conversion data:', data);
+        
+        // Update Email Conversion section
+        const totalCalcs = data.total_calculations || data.calculations_today || 0;
+        const emailCaptures = data.email_captures || 0;
+        const upgradeClicks = data.upgrade_clicks || 0;
+        
+        safe.text('totalCalcs', totalCalcs.toString());
+        safe.text('emailCaptures', emailCaptures.toString());
+        safe.text('upgradeClicks', upgradeClicks.toString());
+        
+        // Update progress bars
+        const calcBar = safe.get('calcBar');
+        const emailBar = safe.get('emailBar');
+        const upgradeBar = safe.get('upgradeBar');
+        
+        if (calcBar && totalCalcs > 0) {
+            // Set bar width based on some max value (e.g., 100)
+            const maxCalcs = 100;
+            const calcPercent = Math.min((totalCalcs / maxCalcs) * 100, 100);
+            calcBar.style.width = `${calcPercent}%`;
+        }
+        
+        if (emailBar && totalCalcs > 0) {
+            // Email conversion rate
+            const emailPercent = (emailCaptures / totalCalcs) * 100;
+            emailBar.style.width = `${Math.min(emailPercent, 100)}%`;
+        }
+        
+        if (upgradeBar && totalCalcs > 0) {
+            // Upgrade click rate
+            const upgradePercent = (upgradeClicks / totalCalcs) * 100;
+            upgradeBar.style.width = `${Math.min(upgradePercent, 100)}%`;
+        }
+        
+        console.log('[Admin] Email Conversion updated');
+        
+    } catch (error) {
+        console.error('[Admin] Error updating Email Conversion:', error);
+        safe.text('totalCalcs', '0');
+        safe.text('emailCaptures', '0');
+        safe.text('upgradeClicks', '0');
+    }
+}
+
 // 8. Initialize
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Initializing dashboard...');
@@ -320,12 +385,14 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPartnerApplications();
     updateAllStats();
     updateLiveAnalytics();
+    updateEmailConversion();
     
     // Auto-refresh
     setInterval(() => {
         loadPartnerApplications();
         updateAllStats();
         updateLiveAnalytics();
+        updateEmailConversion();
     }, 30000);
     
     console.log('✅ Dashboard ready');
