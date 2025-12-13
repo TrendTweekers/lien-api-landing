@@ -11,11 +11,11 @@ import json
 import secrets
 import string
 import logging
-import asyncio
-import anyio
+import traceback
 import smtplib
 import ssl
-from email.message import EmailMessage
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Import database functions from database.py (avoids circular import)
 from api.database import get_db, get_db_cursor, DB_TYPE
@@ -658,125 +658,29 @@ async def approve_partner(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-def send_broker_email_sync(to_email: str, name: str, referral_link: str, referral_code: str):
-    """Synchronous email sending function with timeout on SMTP connection"""
-    email_sent = False
-    email_error = None
-    email_channel = None
-    
-    # --- SendGrid ---
-    try:
-        from api.main import send_broker_welcome_email
-        send_broker_welcome_email(
-            email=to_email,
-            name=name,
-            link=referral_link,
-            code=referral_code
-        )
-        email_sent = True
-        email_channel = "sendgrid"
-        print("✅ EMAIL SENT VIA SENDGRID")
-    except Exception as e:
-        email_error = f"sendgrid: {e}"
-        print(f"❌ SENDGRID FAILED: {e}")
-    
-    # --- SMTP fallback with timeout=10 ---
-    if not email_sent:
-        try:
-            smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
-            smtp_port = int(os.getenv("SMTP_PORT", "587"))
-            smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_EMAIL") or "trendtweakers00@gmail.com"
-            # Remove spaces from Gmail app password (Railway may store as "xxxx xxxx xxxx xxxx")
-            smtp_pass = (os.getenv("SMTP_PASSWORD") or "").replace(" ", "")
-            
-            if not smtp_pass:
-                email_error = (email_error or "") + f" | smtp: SMTP_PASSWORD missing"
-                raise Exception("SMTP_PASSWORD missing")
-            
-            # Create HTML email content
-            html = f"""
-            <html>
-            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h2>LienDeadline Partner Approved</h2>
-                <p>Hi {name},</p>
-                <p>Your partner application has been approved!</p>
-                <p><strong>Referral Code:</strong> {referral_code}</p>
-                <p><strong>Referral Link:</strong> <a href="{referral_link}">{referral_link}</a></p>
-                <p>Share your link to start earning commissions.</p>
-            </body>
-            </html>
-            """
-            
-            msg = EmailMessage()
-            msg["From"] = smtp_user
-            msg["To"] = to_email
-            msg["Subject"] = "LienDeadline Partner Approved"
-            msg.set_content("HTML email required.")
-            msg.add_alternative(html, subtype="html")
-            
-            # timeout=10 is the BIG DEAL - prevents hanging connections
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as s:
-                s.ehlo()
-                s.starttls(context=ssl.create_default_context())
-                s.ehlo()
-                s.login(smtp_user, smtp_pass)
-                s.send_message(msg)
-            
-            email_sent = True
-            email_channel = "smtp"
-            print("✅ EMAIL SENT VIA SMTP")
-            
-        except Exception as e:
-            email_error = (email_error or "") + f" | smtp: {e}"
-            print(f"❌ SMTP FAILED: {e}")
-    
-    return email_sent, email_channel, email_error
+def send_email_sync(to_email: str, subject: str, body: str):
+    """Synchronous email sending function with timeout=10 on SMTP connection"""
+    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_EMAIL") or "trendtweakers00@gmail.com"
+    smtp_password = (os.getenv("SMTP_PASSWORD") or "").replace(" ", "")  # Remove spaces from Gmail app password
 
-async def send_email_with_timeout(email: str, name: str, referral_link: str, referral_code: str):
-    """Async wrapper with timeout - HARD STOP so Cloudflare never 524s again"""
-    print("=" * 60)
-    print("📧 BACKGROUND: ATTEMPTING TO SEND WELCOME EMAIL")
-    print(f"   To: {email}")
-    print(f"   Name: {name}")
-    print(f"   Referral Code: {referral_code}")
-    print(f"   Referral Link: {referral_link}")
-    print("=" * 60)
-    
-    try:
-        # Run sync SMTP in a worker thread + hard timeout (12s)
-        email_sent, email_channel, email_error = await anyio.fail_after(
-            12,
-            anyio.to_thread.run_sync,
-            lambda: send_broker_email_sync(email, name, referral_link, referral_code)
-        )
-        
-        print("=" * 60)
-        print(f"EMAIL RESULT sent={email_sent} channel={email_channel} error={email_error}")
-        print("=" * 60)
-        
-        logger.info(f"Background email sent: {email} - Referral code: {referral_code} - Email sent: {email_sent} via {email_channel}")
-        
-    except anyio.get_cancelled_exc_class():
-        logger.exception("EMAIL_SEND_FAILED: Timeout after 12s")
-        print("=" * 60)
-        print("❌ EMAIL SEND TIMEOUT (12s exceeded)")
-        print("=" * 60)
-    except Exception as e:
-        logger.exception("EMAIL_SEND_FAILED: %s", e)
-        print("=" * 60)
-        print(f"❌ EMAIL SEND FAILED: {e}")
-        print("=" * 60)
+    if not smtp_password:
+        raise RuntimeError("SMTP_PASSWORD missing")
 
-def send_welcome_email_background(email: str, name: str, referral_link: str, referral_code: str):
-    """Background task wrapper (for BackgroundTasks.add_task)"""
-    # Run async function in background
-    import asyncio
-    try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(send_email_with_timeout(email, name, referral_link, referral_code))
-    finally:
-        loop.close()
+    msg = MIMEMultipart()
+    msg["From"] = smtp_user
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    # ✅ timeout=10 is the key: prevents indefinite hang → Cloudflare 524
+    with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
+        server.ehlo()
+        server.starttls(context=ssl.create_default_context())
+        server.ehlo()
+        server.login(smtp_user, smtp_password)
+        server.send_message(msg)
 
 @router.post("/reject-partner/{application_id}")
 async def reject_partner_application(
