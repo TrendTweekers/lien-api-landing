@@ -2952,60 +2952,36 @@ async def get_partner_applications_api(request: Request, status: str = "all", us
     """Get partner applications for admin dashboard"""
     print("=" * 60)
     print("📊 ADMIN: Fetching partner applications")
+    print(f"   Status filter: {status}")
     print("=" * 60)
     
     try:
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            if status == "all":
-                if DB_TYPE == 'postgresql':
-                    sql = """
-                        SELECT id, name, email, company, phone, client_count, 
-                               COALESCE(timestamp, created_at::text) as timestamp, 
-                               status, message, commission_model, created_at
-                        FROM partner_applications 
-                        ORDER BY COALESCE(created_at, timestamp::timestamp) DESC
-                    """
-                else:
-                    # Check if table exists (SQLite)
-                    cursor.execute("""
-                        SELECT name FROM sqlite_master 
-                        WHERE type='table' AND name='partner_applications'
-                    """)
-                    if not cursor.fetchone():
-                        print("⚠️ Table 'partner_applications' does not exist")
-                        print("=" * 60)
-                        return {"applications": []}
-                    
-                    sql = """
-                        SELECT id, name, email, company, phone, client_count, timestamp, status, message, commission_model, created_at
-                        FROM partner_applications 
-                        ORDER BY timestamp DESC
-                    """
-                cursor.execute(sql)
+            # Use EXACT same query as debug endpoint (which works)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT * FROM partner_applications ORDER BY created_at DESC")
             else:
-                if DB_TYPE == 'postgresql':
-                    sql = """
-                        SELECT id, name, email, company, phone, client_count, 
-                               COALESCE(timestamp, created_at::text) as timestamp, 
-                               status, message, commission_model, created_at
-                        FROM partner_applications 
-                        WHERE status = %s 
-                        ORDER BY COALESCE(created_at, timestamp::timestamp) DESC
-                    """
-                else:
-                    sql = """
-                        SELECT id, name, email, company, phone, client_count, timestamp, status, message, commission_model, created_at
-                        FROM partner_applications 
-                        WHERE status = ? 
-                        ORDER BY timestamp DESC
-                    """
-                cursor.execute(sql, (status,))
+                # Check if table exists (SQLite)
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='partner_applications'
+                """)
+                if not cursor.fetchone():
+                    print("⚠️ Table 'partner_applications' does not exist")
+                    print("=" * 60)
+                    return {
+                        "applications": [],
+                        "total": 0
+                    }
+                cursor.execute("SELECT * FROM partner_applications ORDER BY created_at DESC")
             
             rows = cursor.fetchall()
             
-            # Convert rows to list of dicts
+            print(f"   Raw rows fetched: {len(rows)}")
+            
+            # Convert to list of dicts (same as debug endpoint)
             applications = []
             for row in rows:
                 if isinstance(row, dict):
@@ -3014,12 +2990,21 @@ async def get_partner_applications_api(request: Request, status: str = "all", us
                     # Convert sqlite3.Row to dict
                     applications.append(dict(row))
             
-            print(f"✅ Found {len(applications)} applications")
-            for app in applications:
-                print(f"   - {app.get('name')} ({app.get('email')}) - Status: {app.get('status')}")
+            # Apply status filter AFTER fetching (if needed)
+            if status != "all":
+                applications = [app for app in applications if app.get('status') == status]
+            
+            print(f"   After status filter: {len(applications)} applications")
+            if applications:
+                print(f"   First application: {applications[0].get('name')} ({applications[0].get('email')}) - Status: {applications[0].get('status')}")
+            else:
+                print(f"   First application: None")
             print("=" * 60)
             
-            return {"applications": applications}
+            return {
+                "applications": applications,
+                "total": len(applications)
+            }
             
     except Exception as e:
         print(f"❌ ERROR fetching applications: {e}")
@@ -3027,7 +3012,11 @@ async def get_partner_applications_api(request: Request, status: str = "all", us
         traceback.print_exc()
         print("=" * 60)
         
-        return {"applications": []}
+        return {
+            "applications": [],
+            "total": 0,
+            "error": str(e)
+        }
 
 @app.get("/api/debug/partner-applications")
 async def debug_partner_applications():
