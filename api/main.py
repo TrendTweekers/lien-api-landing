@@ -1536,29 +1536,44 @@ class TrackEmailRequest(BaseModel):
 @app.post("/partner-application")
 @app.post("/api/v1/apply-partner")
 async def apply_partner(request: Request):
-    """Handle partner application form submission"""
+    """Handle partner application submissions"""
+    print("=" * 60)
+    print("🎯 PARTNER APPLICATION RECEIVED")
+    print("=" * 60)
+    
     try:
         data = await request.json()
+        print(f"📝 Form data received: {data}")
         
         name = data.get('name')
         email = data.get('email')
         company = data.get('company')
+        phone = data.get('phone')
         client_count = data.get('client_count')
         commission_model = data.get('commission_model')
         message = data.get('message', '')
         
+        print(f"👤 Name: {name}")
+        print(f"📧 Email: {email}")
+        print(f"🏢 Company: {company}")
+        print(f"📞 Phone: {phone}")
+        print(f"💰 Commission: {commission_model}")
+        
         # Validate required fields
         if not name or not email or not company or not client_count or not commission_model:
+            print("❌ VALIDATION FAILED: Missing required fields")
             return JSONResponse(
                 status_code=400,
                 content={"status": "error", "message": "Missing required fields"}
             )
         
-        # Use get_db() for consistent database access
+        # Insert into database
+        print("💾 Attempting database insert...")
+        
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Create table if it doesn't exist
+            # Create table if it doesn't exist (with phone field)
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS partner_applications (
@@ -1566,6 +1581,7 @@ async def apply_partner(request: Request):
                         name VARCHAR NOT NULL,
                         email VARCHAR NOT NULL,
                         company VARCHAR NOT NULL,
+                        phone VARCHAR,
                         client_count VARCHAR,
                         commission_model VARCHAR DEFAULT 'bounty',
                         message TEXT,
@@ -1573,6 +1589,20 @@ async def apply_partner(request: Request):
                         created_at TIMESTAMP DEFAULT NOW(),
                         status VARCHAR DEFAULT 'pending'
                     )
+                """)
+                # Add phone column if it doesn't exist (PostgreSQL)
+                cursor.execute("""
+                    DO $$ 
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 
+                            FROM information_schema.columns 
+                            WHERE table_name = 'partner_applications' 
+                            AND column_name = 'phone'
+                        ) THEN
+                            ALTER TABLE partner_applications ADD COLUMN phone VARCHAR;
+                        END IF;
+                    END $$;
                 """)
                 # Add commission_model column if it doesn't exist (PostgreSQL)
                 cursor.execute("""
@@ -1591,23 +1621,16 @@ async def apply_partner(request: Request):
                 # Update existing records
                 cursor.execute("UPDATE partner_applications SET commission_model = 'bounty' WHERE commission_model IS NULL")
                 
-                # Insert application
-                cursor.execute("""
+                # Check if using PostgreSQL or SQLite
+                sql = """
                     INSERT INTO partner_applications 
-                    (name, email, company, client_count, commission_model, message, timestamp, status)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending')
+                    (name, email, company, phone, client_count, commission_model, message, status, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending', NOW())
                     RETURNING id
-                """, (
-                    name,
-                    email,
-                    company,
-                    str(client_count),
-                    commission_model,
-                    message,
-                    datetime.now().isoformat()
-                ))
+                """
+                cursor.execute(sql, (name, email, company, phone, client_count, commission_model, message))
                 result = cursor.fetchone()
-                application_id = result['id'] if isinstance(result, dict) else result[0]
+                application_id = result['id'] if result else None
             else:
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS partner_applications (
@@ -1615,6 +1638,7 @@ async def apply_partner(request: Request):
                         name TEXT NOT NULL,
                         email TEXT NOT NULL,
                         company TEXT NOT NULL,
+                        phone TEXT,
                         client_count TEXT,
                         commission_model TEXT DEFAULT 'bounty',
                         message TEXT,
@@ -1623,6 +1647,11 @@ async def apply_partner(request: Request):
                         status TEXT DEFAULT 'pending'
                     )
                 """)
+                # Add phone column if it doesn't exist (SQLite)
+                try:
+                    cursor.execute("ALTER TABLE partner_applications ADD COLUMN phone TEXT")
+                except sqlite3.OperationalError:
+                    pass  # Column already exists
                 # Add commission_model column if it doesn't exist (SQLite)
                 try:
                     cursor.execute("ALTER TABLE partner_applications ADD COLUMN commission_model TEXT DEFAULT 'bounty'")
@@ -1631,25 +1660,18 @@ async def apply_partner(request: Request):
                 # Update existing records
                 cursor.execute("UPDATE partner_applications SET commission_model = 'bounty' WHERE commission_model IS NULL")
                 
-                # Insert application
-                cursor.execute("""
+                sql = """
                     INSERT INTO partner_applications 
-                    (name, email, company, client_count, commission_model, message, timestamp, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
-                """, (
-                    name,
-                    email,
-                    company,
-                    str(client_count),
-                    commission_model,
-                    message,
-                    datetime.now().isoformat()
-                ))
+                    (name, email, company, phone, client_count, commission_model, message, status, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)
+                """
+                cursor.execute(sql, (name, email, company, phone, client_count, commission_model, message))
                 application_id = cursor.lastrowid
             
             conn.commit()
-        
-        print(f"✅ Partner application saved: {email} (ID: {application_id})")
+            
+        print(f"✅ Partner application saved with ID: {application_id}")
+        print("=" * 60)
         
         return {
             "status": "success",
@@ -1658,9 +1680,10 @@ async def apply_partner(request: Request):
         }
         
     except Exception as e:
-        print(f"❌ Error saving partner application: {e}")
+        print(f"❌ ERROR saving partner application: {e}")
         import traceback
         traceback.print_exc()
+        print("=" * 60)
         
         return JSONResponse(
             status_code=500,
@@ -2925,86 +2948,85 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
             db.close()
 
 @app.get("/api/admin/partner-applications")
-async def get_partner_applications_api(username: str = Depends(verify_admin)):
-    """Get all partner applications - PostgreSQL compatible"""
+async def get_partner_applications_api(request: Request, status: str = "all", username: str = Depends(verify_admin)):
+    """Get partner applications for admin dashboard"""
+    print("=" * 60)
+    print("📊 ADMIN: Fetching partner applications")
+    print("=" * 60)
+    
     try:
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Query partner applications
-            if DB_TYPE == 'postgresql':
-                cursor.execute("""
-                    SELECT id, name, email, company, client_count, 
-                           COALESCE(timestamp, created_at::text) as timestamp, 
-                           status, message, commission_model
-                    FROM partner_applications 
-                    ORDER BY COALESCE(created_at, timestamp::timestamp) DESC
-                """)
-            else:
-                # Check if table exists (SQLite)
-                cursor.execute("""
-                    SELECT name FROM sqlite_master 
-                    WHERE type='table' AND name='partner_applications'
-                """)
-                if not cursor.fetchone():
-                    return {"applications": []}
-                
-                cursor.execute("""
-                    SELECT id, name, email, company, client_count, timestamp, status, message, commission_model
-                    FROM partner_applications 
-                    ORDER BY timestamp DESC
-                """)
-            
-            apps = cursor.fetchall()
-            
-            applications = []
-            for app in apps:
-                # Handle different row formats
-                if isinstance(app, dict):
-                    applications.append({
-                        "id": app.get('id'),
-                        "name": app.get('name') or "N/A",
-                        "email": app.get('email') or "N/A",
-                        "company": app.get('company') or "N/A",
-                        "client_count": app.get('client_count') or "N/A",
-                        "timestamp": app.get('timestamp'),
-                        "created_at": app.get('created_at') or app.get('timestamp'),
-                        "status": app.get('status') or "pending",
-                        "message": app.get('message') or "",
-                        "commission_model": app.get('commission_model') or ""
-                    })
-                elif hasattr(app, 'keys'):
-                    applications.append({
-                        "id": app['id'] if 'id' in app.keys() else app[0],
-                        "name": (app['name'] if 'name' in app.keys() else app[1]) or "N/A",
-                        "email": (app['email'] if 'email' in app.keys() else app[2]) or "N/A",
-                        "company": (app['company'] if 'company' in app.keys() else app[3]) or "N/A",
-                        "client_count": (app['client_count'] if 'client_count' in app.keys() else app[4]) or "N/A",
-                        "timestamp": app['timestamp'] if 'timestamp' in app.keys() else app[5],
-                        "created_at": app.get('created_at') or (app['timestamp'] if 'timestamp' in app.keys() else app[5]),
-                        "status": (app['status'] if 'status' in app.keys() else app[6]) or "pending",
-                        "message": (app['message'] if 'message' in app.keys() else app[7]) or "",
-                        "commission_model": (app['commission_model'] if 'commission_model' in app.keys() else (app[8] if len(app) > 8 else "")) or ""
-                    })
+            if status == "all":
+                if DB_TYPE == 'postgresql':
+                    sql = """
+                        SELECT id, name, email, company, phone, client_count, 
+                               COALESCE(timestamp, created_at::text) as timestamp, 
+                               status, message, commission_model, created_at
+                        FROM partner_applications 
+                        ORDER BY COALESCE(created_at, timestamp::timestamp) DESC
+                    """
                 else:
-                    applications.append({
-                        "id": app[0],
-                        "name": app[1] if app[1] else "N/A",
-                        "email": app[2] if app[2] else "N/A",
-                        "company": app[3] if app[3] else "N/A",
-                        "client_count": app[4] if app[4] else "N/A",
-                        "timestamp": app[5] if len(app) > 5 and app[5] else None,
-                        "created_at": app[5] if len(app) > 5 and app[5] else None,
-                        "status": app[6] if len(app) > 6 and app[6] else "pending",
-                        "message": app[7] if len(app) > 7 and app[7] else "",
-                        "commission_model": app[8] if len(app) > 8 and app[8] else ""
-                    })
+                    # Check if table exists (SQLite)
+                    cursor.execute("""
+                        SELECT name FROM sqlite_master 
+                        WHERE type='table' AND name='partner_applications'
+                    """)
+                    if not cursor.fetchone():
+                        print("⚠️ Table 'partner_applications' does not exist")
+                        print("=" * 60)
+                        return {"applications": []}
+                    
+                    sql = """
+                        SELECT id, name, email, company, phone, client_count, timestamp, status, message, commission_model, created_at
+                        FROM partner_applications 
+                        ORDER BY timestamp DESC
+                    """
+                cursor.execute(sql)
+            else:
+                if DB_TYPE == 'postgresql':
+                    sql = """
+                        SELECT id, name, email, company, phone, client_count, 
+                               COALESCE(timestamp, created_at::text) as timestamp, 
+                               status, message, commission_model, created_at
+                        FROM partner_applications 
+                        WHERE status = %s 
+                        ORDER BY COALESCE(created_at, timestamp::timestamp) DESC
+                    """
+                else:
+                    sql = """
+                        SELECT id, name, email, company, phone, client_count, timestamp, status, message, commission_model, created_at
+                        FROM partner_applications 
+                        WHERE status = ? 
+                        ORDER BY timestamp DESC
+                    """
+                cursor.execute(sql, (status,))
+            
+            rows = cursor.fetchall()
+            
+            # Convert rows to list of dicts
+            applications = []
+            for row in rows:
+                if isinstance(row, dict):
+                    applications.append(row)
+                else:
+                    # Convert sqlite3.Row to dict
+                    applications.append(dict(row))
+            
+            print(f"✅ Found {len(applications)} applications")
+            for app in applications:
+                print(f"   - {app.get('name')} ({app.get('email')}) - Status: {app.get('status')}")
+            print("=" * 60)
             
             return {"applications": applications}
+            
     except Exception as e:
-        print(f"Error loading partner applications: {e}")
+        print(f"❌ ERROR fetching applications: {e}")
         import traceback
         traceback.print_exc()
+        print("=" * 60)
+        
         return {"applications": []}
 
 @app.get("/api/admin/email-captures")

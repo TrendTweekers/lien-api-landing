@@ -1044,9 +1044,9 @@
                                 <span>Monthly law updates</span>
                             </li>
                         </ul>
-                        <button onclick="alert('Stripe checkout coming soon! Email sales@liendeadline.com to get started.')" class="block w-full h-14 px-6 rounded-lg bg-accent text-white font-semibold text-lg hover:bg-accent/90 transition-colors">
+                        <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" class="block w-full h-14 px-6 rounded-lg bg-accent text-white font-semibold text-lg hover:bg-accent/90 transition-colors text-center leading-[3.5rem]">
                             Start Free Trial →
-                        </button>
+                        </a>
                     </div>
                     
                     <!-- Enterprise Plan -->
@@ -1567,28 +1567,61 @@
                 return;
             }
             
-            // Check if user needs to provide email BEFORE API call
+            // Get current count BEFORE incrementing
+            let calcCount = parseInt(localStorage.getItem('calculationCount') || '0');
             const userEmail = localStorage.getItem('userEmail');
             const emailGiven = localStorage.getItem('emailGiven');
-            const calculationCount = parseInt(localStorage.getItem('calculationCount') || '0');
             
-            console.log('🔍 Pre-submit check:', {
-                calculationCount,
-                userEmail,
-                emailGiven,
-                shouldShowEmail: calculationCount >= 2 && !userEmail && !emailGiven
-            });
+            console.log('🔢 Current calculation count:', calcCount);
+            console.log('📧 User email:', userEmail);
+            console.log('📧 Email given flag:', emailGiven);
             
-            // If user has no email and this is calculation 3+, show modal FIRST
-            if (!userEmail && !emailGiven && calculationCount >= 2) {
-                console.log('🛑 Blocking form submit - user needs email first');
-                showEmailCaptureModal();
-                return; // Stop form submission
+            // Increment BEFORE checking gates
+            calcCount++;
+            localStorage.setItem('calculationCount', calcCount.toString());
+            
+            console.log('🔢 New calculation count:', calcCount);
+            
+            // Check gates AFTER incrementing
+            if (calcCount >= 6) {
+                console.log('🚫 At 6 calculations - showing upgrade modal');
+                const upgradeModal = document.getElementById('upgradeModal');
+                if (upgradeModal) {
+                    upgradeModal.classList.remove('hidden');
+                    upgradeModal.style.display = 'flex';
+                    console.log('✅ Upgrade modal shown');
+                } else {
+                    console.error('❌ upgradeModal element not found!');
+                    alert('Calculation limit reached. Please upgrade to continue.');
+                }
+                // Decrement since we're blocking
+                calcCount--;
+                localStorage.setItem('calculationCount', calcCount.toString());
+                return; // Stop here
             }
             
-            // Call handleCalculation FIRST (important!)
-            const newCount = handleCalculation();
-            console.log(`📊 Counter updated: ${newCount}`);
+            if (calcCount >= 3 && !userEmail && !emailGiven) {
+                console.log('🚫 At 3 calculations, no email - showing email modal');
+                const emailModal = document.getElementById('emailCaptureModal');
+                if (emailModal) {
+                    emailModal.classList.remove('hidden');
+                    emailModal.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                    console.log('✅ Email modal shown');
+                } else {
+                    console.error('❌ emailCaptureModal element not found!');
+                    alert('Please enter your email to continue with calculations.');
+                }
+                // Decrement since we're blocking
+                calcCount--;
+                localStorage.setItem('calculationCount', calcCount.toString());
+                return; // Stop here
+            }
+            
+            console.log('✅ Proceeding with calculation...');
+            
+            // Update counter display
+            updateCounterDisplay();
             
             try {
                 console.log('Calling API with:', {
