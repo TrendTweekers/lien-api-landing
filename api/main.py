@@ -3317,7 +3317,7 @@ async def send_test_email_with_timeout(email: str, password: str):
             print(f"✅ Test email sent to {email}")
         else:
             print(f"⚠️ Test email failed for {email}")
-    except asyncio.TimeoutError:
+    except anyio.get_cancelled_exc_class():
         logger.exception("EMAIL_SEND_FAILED: Timeout after 12s")
     except Exception as e:
         logger.exception("EMAIL_SEND_FAILED: %s", e)
