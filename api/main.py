@@ -1518,16 +1518,46 @@ async def apply_partner(request: Request):
                 # Update existing records
                 cursor.execute("UPDATE partner_applications SET commission_model = 'bounty' WHERE commission_model IS NULL")
                 
-                # Check if using PostgreSQL or SQLite
+                # Ensure email has unique constraint for UPSERT
+                try:
+                    cursor.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM pg_constraint 
+                                WHERE conname = 'partner_applications_email_key'
+                            ) THEN
+                                ALTER TABLE partner_applications ADD CONSTRAINT partner_applications_email_key UNIQUE (email);
+                            END IF;
+                        END $$;
+                    """)
+                except Exception:
+                    pass  # Constraint might already exist
+                
+                # UPSERT: Insert or update on email conflict (PostgreSQL)
+                timestamp = datetime.now().isoformat()
                 sql = """
-                    INSERT INTO partner_applications 
-                    (name, email, company, phone, client_count, commission_model, message, status, created_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending', NOW())
+                    INSERT INTO partner_applications
+                      (name, email, company, phone, client_count, commission_model, message, timestamp, status)
+                    VALUES
+                      (%s, %s, %s, %s, %s, %s, %s, %s, 'pending')
+                    ON CONFLICT (email)
+                    DO UPDATE SET
+                      name = EXCLUDED.name,
+                      company = EXCLUDED.company,
+                      phone = EXCLUDED.phone,
+                      client_count = EXCLUDED.client_count,
+                      commission_model = EXCLUDED.commission_model,
+                      message = EXCLUDED.message,
+                      timestamp = EXCLUDED.timestamp,
+                      status = 'pending',
+                      approved_at = NULL,
+                      referral_link = NULL
                     RETURNING id
                 """
-                cursor.execute(sql, (name, email, company, phone, client_count, commission_model, message))
+                cursor.execute(sql, (name, email, company, phone, client_count, commission_model, message, timestamp))
                 result = cursor.fetchone()
-                application_id = result['id'] if result else None
+                application_id = result['id'] if isinstance(result, dict) else (result[0] if result else None)
             else:
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS partner_applications (
@@ -1557,13 +1587,37 @@ async def apply_partner(request: Request):
                 # Update existing records
                 cursor.execute("UPDATE partner_applications SET commission_model = 'bounty' WHERE commission_model IS NULL")
                 
-                sql = """
-                    INSERT INTO partner_applications 
-                    (name, email, company, phone, client_count, commission_model, message, status, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)
-                """
-                cursor.execute(sql, (name, email, company, phone, client_count, commission_model, message))
-                application_id = cursor.lastrowid
+                # Ensure email has unique constraint for UPSERT (SQLite)
+                try:
+                    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_applications_email ON partner_applications(email)")
+                except Exception:
+                    pass  # Index might already exist
+                
+                # UPSERT: Insert or replace on email conflict (SQLite)
+                timestamp = datetime.now().isoformat()
+                # First try to update existing record
+                cursor.execute("""
+                    UPDATE partner_applications 
+                    SET name = ?, company = ?, phone = ?, client_count = ?, 
+                        commission_model = ?, message = ?, timestamp = ?, 
+                        status = 'pending', approved_at = NULL, referral_link = NULL
+                    WHERE email = ?
+                """, (name, company, phone, client_count, commission_model, message, timestamp, email))
+                
+                if cursor.rowcount == 0:
+                    # No existing record, insert new one
+                    sql = """
+                        INSERT INTO partner_applications 
+                        (name, email, company, phone, client_count, commission_model, message, timestamp, status, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)
+                    """
+                    cursor.execute(sql, (name, email, company, phone, client_count, commission_model, message, timestamp))
+                    application_id = cursor.lastrowid
+                else:
+                    # Get the ID of the updated record
+                    cursor.execute("SELECT id FROM partner_applications WHERE email = ?", (email,))
+                    result = cursor.fetchone()
+                    application_id = result[0] if result else None
             
             conn.commit()
             

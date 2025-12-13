@@ -581,106 +581,95 @@ async def approve_partner(
         commission_model = app_dict.get('commission_model', 'bounty')
         
         print("=" * 60)
-        print(f"📧 ATTEMPTING TO SEND WELCOME EMAIL")
+        print("📧 ATTEMPTING TO SEND WELCOME EMAIL")
         print(f"   To: {email}")
         print(f"   Name: {name}")
         print(f"   Referral Code: {referral_code}")
+        print(f"   Referral Link: {referral_link}")
         print(f"   Commission: {commission_model}")
         print("=" * 60)
         
+        email_sent = False
+        email_error = None
+        email_channel = None
+        
+        # 1) Try SendGrid
         try:
-            # Try SendGrid first (from main.py)
-            try:
-                from api.main import send_broker_welcome_email
-                send_broker_welcome_email(email, name, referral_link, referral_code)
-                print("✅ Welcome email sent via SendGrid!")
-                logger.info(f"Welcome email sent to {email} - Referral code: {referral_code}")
-            except ImportError:
-                print("⚠️ SendGrid function not available, trying SMTP...")
-                raise
-            except Exception as e:
-                print(f"⚠️ SendGrid failed: {e}, trying SMTP...")
-                raise
-            
-        except Exception:
-            # Fallback to SMTP
+            from api.main import send_broker_welcome_email
+            send_broker_welcome_email(email, name, referral_link, referral_code)
+            email_sent = True
+            email_channel = "sendgrid"
+            print("✅ Welcome email sent via SendGrid")
+        except Exception as e:
+            email_error = f"sendgrid: {e}"
+            print(f"❌ SendGrid failed: {e}")
+        
+        # 2) Fallback SMTP
+        if not email_sent:
             try:
                 import smtplib
                 from email.mime.text import MIMEText
                 from email.mime.multipart import MIMEMultipart
                 
-                # SMTP configuration
                 smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
                 smtp_port = int(os.getenv("SMTP_PORT", "587"))
                 smtp_user = os.getenv("SMTP_USER", "trendtweakers00@gmail.com")
                 smtp_password = os.getenv("SMTP_PASSWORD")
                 
                 if not smtp_password:
-                    print("❌ SMTP password not configured - skipping email")
-                    logger.warning(f"SMTP password not configured - email not sent to {email}")
-                else:
-                    # Create email
-                    subject = "Welcome to LienDeadline Partner Program! 🎉"
-                    
-                    commission_text = "$500 per sale" if commission_model == "bounty" else "$50/month recurring"
-                    
-                    body = f"""Hi {name},
+                    raise Exception("SMTP_PASSWORD missing in Railway env")
+                
+                commission_text = "$500 per sale" if commission_model == "bounty" else "$50/month recurring"
+                
+                subject = "Welcome to LienDeadline Partner Program 🎉"
+                body = f"""Hi {name},
 
-Congratulations! Your application to join the LienDeadline Partner Program has been approved!
+Your LienDeadline partner application has been approved!
 
-Here's your unique referral information:
+Referral Code: {referral_code}
+Referral Link: {referral_link}
+Commission: {commission_text}
 
-📋 Referral Code: {referral_code}
-🔗 Referral Link: {referral_link}
-💰 Commission: {commission_text}
+Share your link to start earning.
 
-How it works:
-1. Share your referral link with construction companies and contractors
-2. When they sign up and make a purchase using your link, you earn commission
-3. Track your referrals and earnings in the partner dashboard
-
-Start earning today by sharing your link!
-
-Best regards,
-The LienDeadline Team
-
----
-Questions? Reply to this email or contact support.
+— LienDeadline
 """
-                    
-                    # Create message
-                    msg = MIMEMultipart()
-                    msg['From'] = smtp_user
-                    msg['To'] = email
-                    msg['Subject'] = subject
-                    msg.attach(MIMEText(body, 'plain'))
-                    
-                    # Send email
-                    print(f"📧 Connecting to SMTP server {smtp_server}:{smtp_port}...")
-                    with smtplib.SMTP(smtp_server, smtp_port) as server:
-                        server.starttls()
-                        print(f"🔐 Logging in...")
-                        server.login(smtp_user, smtp_password)
-                        print(f"📤 Sending email...")
-                        server.send_message(msg)
-                        print(f"✅ EMAIL SENT SUCCESSFULLY to {email}!")
-                        logger.info(f"Welcome email sent via SMTP to {email} - Referral code: {referral_code}")
-                        
+                
+                msg = MIMEMultipart()
+                msg["From"] = smtp_user
+                msg["To"] = email
+                msg["Subject"] = subject
+                msg.attach(MIMEText(body, "plain"))
+                
+                print(f"📧 SMTP connect {smtp_server}:{smtp_port}")
+                with smtplib.SMTP(smtp_server, smtp_port) as server:
+                    server.starttls()
+                    print("🔐 SMTP login...")
+                    server.login(smtp_user, smtp_password)
+                    print("📤 SMTP sending...")
+                    server.send_message(msg)
+                
+                email_sent = True
+                email_channel = "smtp"
+                print("✅ Welcome email sent via SMTP")
+                
             except Exception as e:
-                print(f"❌ ERROR SENDING EMAIL: {e}")
-                import traceback
-                traceback.print_exc()
-                logger.error(f"Error sending welcome email to {email}: {e}")
-                # Don't fail approval if email fails - broker is already created
+                email_error = (email_error + " | " if email_error else "") + f"smtp: {e}"
+                print(f"❌ SMTP failed: {e}")
         
         print("=" * 60)
+        print(f"📨 EMAIL RESULT -> sent={email_sent} channel={email_channel} error={email_error}")
+        print("=" * 60)
         
-        logger.info(f"Partner approved: {app_dict.get('email', '')} - Referral code: {referral_code}")
+        logger.info(f"Partner approved: {app_dict.get('email', '')} - Referral code: {referral_code} - Email sent: {email_sent} via {email_channel}")
         
         return {
             "status": "approved",
             "referral_code": referral_code,
-            "referral_link": referral_link
+            "referral_link": referral_link,
+            "email_sent": email_sent,
+            "email_channel": email_channel,
+            "email_error": email_error
         }
     except HTTPException:
         raise
@@ -929,6 +918,10 @@ async def cleanup_partner(
     user: str = Depends(verify_admin)
 ):
     """Completely remove a partner by email (for testing) - PostgreSQL/SQLite compatible"""
+    from urllib.parse import unquote
+    
+    email = unquote(email).strip().lower()
+    
     print("=" * 60)
     print(f"🧹 ADMIN: Cleanup partner by email: {email}")
     print("=" * 60)
@@ -937,19 +930,19 @@ async def cleanup_partner(
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Delete from brokers
+            # Delete from brokers (case-insensitive)
             if DB_TYPE == 'postgresql':
-                cursor.execute("DELETE FROM brokers WHERE email = %s", (email,))
+                cursor.execute("DELETE FROM brokers WHERE LOWER(email) = LOWER(%s)", (email,))
             else:
-                cursor.execute("DELETE FROM brokers WHERE email = ?", (email,))
+                cursor.execute("DELETE FROM brokers WHERE LOWER(email) = LOWER(?)", (email,))
             broker_count = cursor.rowcount
             print(f"   Deleted {broker_count} broker(s)")
             
-            # Delete from partner_applications
+            # Delete from partner_applications (case-insensitive)
             if DB_TYPE == 'postgresql':
-                cursor.execute("DELETE FROM partner_applications WHERE email = %s", (email,))
+                cursor.execute("DELETE FROM partner_applications WHERE LOWER(email) = LOWER(%s)", (email,))
             else:
-                cursor.execute("DELETE FROM partner_applications WHERE email = ?", (email,))
+                cursor.execute("DELETE FROM partner_applications WHERE LOWER(email) = LOWER(?)", (email,))
             app_count = cursor.rowcount
             print(f"   Deleted {app_count} application(s)")
             
@@ -961,10 +954,13 @@ async def cleanup_partner(
             logger.info(f"Partner cleanup: {email} - {broker_count} broker(s), {app_count} application(s)")
             
             return {
-                "success": True, 
-                "message": f"Deleted {broker_count} broker(s) and {app_count} application(s)",
-                "broker_count": broker_count,
-                "app_count": app_count
+                "success": True,
+                "email": email,
+                "deleted": {
+                    "brokers": broker_count,
+                    "partner_applications": app_count
+                },
+                "message": f"Deleted {broker_count} broker(s) and {app_count} application(s)"
             }
             
     except Exception as e:
