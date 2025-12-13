@@ -3393,20 +3393,28 @@ async def send_test_email_with_timeout(email: str, password: str):
     except Exception as e:
         logger.exception("EMAIL_SEND_FAILED: %s", e)
 
+class TestEmailIn(BaseModel):
+    to: str
+
 @app.post("/api/v1/test-email")
-async def test_email(request: Request, data: dict, background_tasks: BackgroundTasks):
+async def test_email(payload: TestEmailIn, background_tasks: BackgroundTasks):
     """Test email configuration - REMOVE AFTER TESTING"""
-    test_email = data.get('email', 'test@example.com')
-    test_password = 'TEST_PASSWORD_123'
+    logger = logging.getLogger(__name__)
     
-    # Queue email in background (returns immediately)
-    background_tasks.add_task(
-        send_test_email_with_timeout,
-        email=test_email,
-        password=test_password
-    )
-    
-    return {"queued": True, "message": f"Test email queued for {test_email}"}
+    def _job():
+        try:
+            send_email_sync(
+                to_email=payload.to,
+                subject="LienDeadline test email",
+                body="If you received this, SMTP works.",
+            )
+            logger.info("TEST_EMAIL_SENT to=%s", payload.to)
+        except Exception as e:
+            logger.error("TEST_EMAIL_FAILED to=%s err=%s", payload.to, e)
+            traceback.print_exc()
+
+    background_tasks.add_task(_job)
+    return {"queued": True}
 
 # ==========================================
 # PASSWORD RESET ENDPOINTS
