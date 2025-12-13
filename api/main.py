@@ -3301,17 +3301,88 @@ async def get_pending_payouts_api(username: str = Depends(verify_admin)):
 # ==========================================
 # TEST EMAIL ENDPOINT (REMOVE AFTER TESTING)
 # ==========================================
-def _send_test_email_sync(email: str, password: str):
-    """Synchronous email sending function (called from async wrapper)"""
-    return send_welcome_email(email, password)
+def send_test_email_sync(to_email: str, password: str):
+    """Synchronous email sending function with timeout on SMTP connection"""
+    # Try SendGrid first
+    sendgrid_key = os.getenv('SENDGRID_API_KEY')
+    if sendgrid_key:
+        try:
+            from sendgrid import SendGridAPIClient
+            from sendgrid.helpers.mail import Mail, Email, To
+            
+            html = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2>LienDeadline Test Email</h2>
+                <p>This is a test email.</p>
+                <p><strong>Password:</strong> {password}</p>
+            </body>
+            </html>
+            """
+            
+            sg = SendGridAPIClient(api_key=sendgrid_key)
+            message = Mail(
+                from_email=Email("support@liendeadline.com"),
+                to_emails=To(to_email),
+                subject="LienDeadline Test Email",
+                html_content=html
+            )
+            sg.send(message)
+            print(f"✅ Test email sent via SendGrid to {to_email}")
+            return True
+        except Exception as e:
+            print(f"❌ SendGrid failed: {e}")
+    
+    # SMTP fallback with timeout=10
+    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_EMAIL") or "trendtweakers00@gmail.com"
+    smtp_pass = (os.getenv("SMTP_PASSWORD") or "").replace(" ", "")
+    
+    if not smtp_pass:
+        print("⚠️ SMTP_PASSWORD missing")
+        return False
+    
+    html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2>LienDeadline Test Email</h2>
+        <p>This is a test email.</p>
+        <p><strong>Password:</strong> {password}</p>
+    </body>
+    </html>
+    """
+    
+    msg = EmailMessage()
+    msg["From"] = smtp_user
+    msg["To"] = to_email
+    msg["Subject"] = "LienDeadline Test Email"
+    msg.set_content("HTML email required.")
+    msg.add_alternative(html, subtype="html")
+    
+    try:
+        # timeout=10 is the BIG DEAL - prevents hanging connections
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as s:
+            s.ehlo()
+            s.starttls(context=ssl.create_default_context())
+            s.ehlo()
+            s.login(smtp_user, smtp_pass)
+            s.send_message(msg)
+        print(f"✅ Test email sent via SMTP to {to_email}")
+        return True
+    except Exception as e:
+        print(f"❌ SMTP failed: {e}")
+        return False
 
 async def send_test_email_with_timeout(email: str, password: str):
     """Async wrapper with timeout - HARD STOP so Cloudflare never 524s again"""
     logger = logging.getLogger(__name__)
     try:
-        success = await asyncio.wait_for(
-            asyncio.to_thread(_send_test_email_sync, email, password),
-            timeout=12.0
+        # Run sync SMTP in a worker thread + hard timeout (12s)
+        success = await anyio.fail_after(
+            12,
+            anyio.to_thread.run_sync,
+            lambda: send_test_email_sync(email, password)
         )
         if success:
             print(f"✅ Test email sent to {email}")
