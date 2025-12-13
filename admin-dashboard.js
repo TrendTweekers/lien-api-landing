@@ -58,6 +58,7 @@ async function loadPartnerApplications() {
         
         // Fetch with authentication - only get pending applications
         const response = await fetch('/api/admin/partner-applications?status=pending', {
+            credentials: "include",
             headers: {
                 'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
@@ -219,8 +220,9 @@ document.addEventListener('click', async (e) => {
         try {
             console.log('Approving application', appId);
 
-            const res = await fetch(`/api/admin/approve-partner/${appId}`, {
+            const res = await fetch(`${window.location.origin}/api/admin/approve-partner/${appId}`, {
                 method: 'POST',
+                credentials: "include",
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
@@ -287,6 +289,7 @@ document.addEventListener('click', async (e) => {
 
             const res = await fetch(`/api/admin/reject-partner/${appId}`, {
                 method: 'POST',
+                credentials: "include",
                 headers: {
                     'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
                 }
@@ -344,6 +347,7 @@ document.addEventListener('click', async (e) => {
 
             const res = await fetch(`/api/admin/delete-partner/${appId}`, {
                 method: 'DELETE',
+                credentials: "include",
                 headers: {
                     'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
                 }
@@ -401,6 +405,7 @@ document.addEventListener('click', async (e) => {
 
             const res = await fetch(`/api/admin/delete-broker/${brokerId}`, {
                 method: 'DELETE',
+                credentials: "include",
                 headers: {
                     'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
                 }
@@ -516,6 +521,7 @@ async function rejectApplication(id) {
         
         const response = await fetch(`/api/admin/reject-partner/${id}`, {
             method: 'POST',
+            credentials: "include",
             headers: {
                 'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
@@ -548,6 +554,7 @@ async function updateAllStats() {
     try {
         // Calculations
         const calcResponse = await fetch('/api/admin/calculations-today', {
+            credentials: "include",
             headers: {
                 'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
@@ -609,6 +616,7 @@ async function updateEmailConversion() {
         console.log('[Admin] Fetching Email Conversion data from /api/admin/live-stats...');
         
         const response = await fetch('/api/admin/live-stats', {
+            credentials: "include",
             headers: {
                 'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
@@ -705,6 +713,7 @@ async function loadActiveBrokers() {
         console.log('[Admin] Loading active brokers from /api/admin/brokers...');
         
         const response = await fetch('/api/admin/brokers', {
+            credentials: "include",
             headers: {
                 'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
@@ -794,6 +803,7 @@ async function deleteActiveBroker(brokerId) {
         
         const response = await fetch(`/api/admin/delete-broker/${brokerId}`, {
             method: 'DELETE',
+            credentials: "include",
             headers: {
                 'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
@@ -832,6 +842,7 @@ async function deleteApplication(id) {
         
         const response = await fetch(`/api/admin/delete-partner/${id}`, {
             method: 'DELETE',
+            credentials: "include",
             headers: {
                 'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }
@@ -865,6 +876,7 @@ async function loadComprehensiveAnalytics() {
         console.log('[Admin] Loading comprehensive analytics...');
         
         const response = await fetch('/api/admin/analytics/comprehensive', {
+            credentials: "include",
             headers: {
                 'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
             }

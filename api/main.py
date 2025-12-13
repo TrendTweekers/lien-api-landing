@@ -53,10 +53,15 @@ app.add_middleware(
     allowed_hosts=["liendeadline.com", "www.liendeadline.com", "*.railway.app", "localhost", "127.0.0.1"]
 )
 
-# CORS
+# CORS - must specify origins when allow_credentials=True (cannot use "*")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://liendeadline.com",
+        "https://www.liendeadline.com",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
