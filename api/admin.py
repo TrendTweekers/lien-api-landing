@@ -1,5 +1,5 @@
 # admin.py - Admin routes for FastAPI backend
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from fastapi import Request as FastAPIRequest
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from datetime import datetime, timedelta
@@ -265,6 +265,7 @@ def approve_broker(
 async def approve_partner(
     application_id: int,
     request: FastAPIRequest,
+    background_tasks: BackgroundTasks,
     user: str = Depends(verify_admin)
 ):
     """Approve a partner application and send referral link"""
@@ -619,86 +620,30 @@ async def approve_partner(
             conn.commit()
             print("✅ Database commit successful")
         
-        # ================= EMAIL SEND (GUARANTEED) =================
-        
+        # Return immediately - email will be sent in background (<1s response time)
         print("=" * 60)
-        print("📧 ATTEMPTING TO SEND WELCOME EMAIL")
-        print(f"   To: {email}")
-        print(f"   Name: {name}")
-        print(f"   Referral Code: {referral_code}")
-        print(f"   Referral Link: {referral_link}")
+        print(f"✅ APPROVAL COMPLETE - Returning response immediately")
+        print(f"   Email will be sent in background")
         print("=" * 60)
         
-        # Reset email tracking (variables already initialized at top)
-        email_sent = False
-        email_error = None
-        email_channel = None
+        # Schedule email sending in background (non-blocking)
+        background_tasks.add_task(
+            send_welcome_email_background,
+            email=email,
+            name=name,
+            referral_link=referral_link,
+            referral_code=referral_code
+        )
         
-        # --- SendGrid ---
-        try:
-            from api.main import send_broker_welcome_email
-            send_broker_welcome_email(
-                email=email,
-                name=name,
-                referral_link=referral_link,
-                referral_code=referral_code
-            )
-            email_sent = True
-            email_channel = "sendgrid"
-            print("✅ EMAIL SENT VIA SENDGRID")
-        except Exception as e:
-            email_error = f"sendgrid: {e}"
-            print(f"❌ SENDGRID FAILED: {e}")
+        logger.info(f"Partner approved: {email} - Referral code: {referral_code} - Email queued for background sending")
         
-        # --- SMTP fallback ---
-        if not email_sent:
-            try:
-                import smtplib
-                from email.mime.text import MIMEText
-                
-                # Support both SMTP_USER and SMTP_EMAIL (Railway compatibility)
-                smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_EMAIL") or "trendtweakers00@gmail.com"
-                # Remove spaces from Gmail app password (Railway may store as "xxxx xxxx xxxx xxxx")
-                smtp_pass = (os.getenv("SMTP_PASSWORD") or "").replace(" ", "")
-                
-                if not smtp_pass:
-                    email_error = (email_error or "") + f" | smtp: SMTP_PASSWORD missing"
-                    raise Exception("SMTP_PASSWORD missing")
-                
-                msg = MIMEText(
-                    f"Your referral link:\n\n{referral_link}\n\nReferral code: {referral_code}"
-                )
-                msg["Subject"] = "LienDeadline Partner Approved"
-                msg["From"] = smtp_user
-                msg["To"] = email
-                
-                with smtplib.SMTP("smtp.gmail.com", 587) as s:
-                    s.starttls()
-                    s.login(smtp_user, smtp_pass)
-                    s.send_message(msg)
-                
-                email_sent = True
-                email_channel = "smtp"
-                print("✅ EMAIL SENT VIA SMTP")
-                
-            except Exception as e:
-                email_error = (email_error or "") + f" | smtp: {e}"
-                print(f"❌ SMTP FAILED: {e}")
-        
-        print("=" * 60)
-        print(f"EMAIL RESULT sent={email_sent} channel={email_channel} error={email_error}")
-        print("=" * 60)
-        
-        logger.info(f"Partner approved: {email} - Referral code: {referral_code} - Email sent: {email_sent} via {email_channel}")
-        
-        # Single return statement at the end
+        # Return immediately (<1s response time - prevents Cloudflare 524 timeout)
         return {
             "status": "approved",
             "referral_code": referral_code,
             "referral_link": referral_link,
-            "email_sent": email_sent,
-            "email_channel": email_channel,
-            "email_error": email_error
+            "email_queued": True,
+            "message": "Approval successful. Email will be sent shortly."
         }
     except HTTPException:
         raise
