@@ -16,26 +16,127 @@ import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 # Import database functions from database.py (avoids circular import)
 from api.database import get_db, get_db_cursor, DB_TYPE
 
 logger = logging.getLogger(__name__)
 
-def send_welcome_email_background(to_email: str, referral_link: str):
-    """Background email function for partner approval"""
-    subject = "You're approved ✅"
-    body = f"""Hi!
+def send_welcome_email_background(email: str, referral_link: str, name: str = "", referral_code: str = "", commission_model: str = "bounty"):
+    """Background email function for partner approval with detailed SMTP debug logging"""
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        import os
+        
+        print("=" * 80)
+        print("🔐 SMTP DEBUG - STARTING EMAIL SEND")
+        print("=" * 80)
+        
+        # SMTP configuration
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        smtp_user = os.getenv("SMTP_USER", "trendtweakers00@gmail.com")
+        smtp_password = os.getenv("SMTP_PASSWORD")
+        
+        print(f"📧 SMTP Server: {smtp_server}:{smtp_port}")
+        print(f"👤 SMTP User: {smtp_user}")
+        print(f"🔑 SMTP Password: {'*' * len(smtp_password) if smtp_password else 'NOT SET'}")
+        print(f"📬 Recipient: {email}")
+        
+        if not smtp_password:
+            print("❌ ERROR: SMTP password not configured!")
+            raise Exception("SMTP_PASSWORD not set")
+        
+        # Create email
+        subject = "Welcome to LienDeadline Partner Program! 🎉"
+        referral_link = referral_link if referral_link else f"https://liendeadline.com/?ref={referral_code}"
+        commission_text = "$500 per sale" if commission_model == "bounty" else "$50/month recurring"
+        
+        body = f"""Hi {name},
 
-Your partner application has been approved.
+Congratulations! Your application to join the LienDeadline Partner Program has been approved!
 
-Your referral link:
-{referral_link}
+Here's your unique referral information:
 
-Thanks,
-LienDeadline
+📋 Referral Code: {referral_code}
+🔗 Referral Link: {referral_link}
+💰 Commission: {commission_text}
+
+How it works:
+1. Share your referral link with construction companies and contractors
+2. When they sign up and make a purchase using your link, you earn commission
+3. Track your referrals and earnings in the partner dashboard
+
+Start earning today by sharing your link!
+
+Best regards,
+The LienDeadline Team
 """
-    send_email_sync(to_email, subject, body)
+        
+        print(f"📝 Email subject: {subject}")
+        print(f"📄 Email body length: {len(body)} characters")
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = smtp_user
+        msg['To'] = email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+        
+        print("✅ Email message created")
+        
+        # Send email
+        print(f"🔌 Connecting to {smtp_server}:{smtp_port}...")
+        
+        with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
+            # Enable debug output
+            server.set_debuglevel(1)
+            
+            print("🔐 Starting TLS...")
+            server.starttls()
+            
+            print(f"👤 Logging in as {smtp_user}...")
+            server.login(smtp_user, smtp_password)
+            
+            print("📤 Sending email...")
+            result = server.send_message(msg)
+            
+            print("=" * 80)
+            print("✅ EMAIL SENT SUCCESSFULLY!")
+            print(f"📧 From: {smtp_user}")
+            print(f"📬 To: {email}")
+            print(f"📋 Subject: {subject}")
+            print(f"🔍 SMTP Result: {result}")
+            print("=" * 80)
+
+    except smtplib.SMTPAuthenticationError as e:
+        print("=" * 80)
+        print("❌ SMTP AUTHENTICATION FAILED!")
+        print(f"Error: {e}")
+        print("Possible causes:")
+        print("1. App password is incorrect")
+        print("2. 2-step verification not enabled on Gmail")
+        print("3. App password expired")
+        print("=" * 80)
+        raise
+
+    except smtplib.SMTPException as e:
+        print("=" * 80)
+        print(f"❌ SMTP ERROR: {e}")
+        print("=" * 80)
+        raise
+
+    except Exception as e:
+        print("=" * 80)
+        print(f"❌ GENERAL ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        print("=" * 80)
+        raise
 
 # Initialize Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
@@ -647,7 +748,7 @@ async def approve_partner(
         print("=" * 60)
         
         # Schedule email sending in background (non-blocking)
-        background_tasks.add_task(send_welcome_email_background, email, referral_link)
+        background_tasks.add_task(send_welcome_email_background, email, referral_link, name, referral_code, app_dict['commission_model'])
         
         logger.info(f"Partner approved: {email} - Referral code: {referral_code} - Email queued for background sending")
         
@@ -668,28 +769,41 @@ async def approve_partner(
         raise HTTPException(status_code=500, detail=str(e))
 
 def send_email_sync(to_email: str, subject: str, body: str):
-    """Synchronous email sending function with timeout=10 on SMTP connection"""
-    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
-    smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_EMAIL") or "trendtweakers00@gmail.com"
-    smtp_password = (os.getenv("SMTP_PASSWORD") or "").replace(" ", "")  # Remove spaces from Gmail app password
-
-    if not smtp_password:
-        raise RuntimeError("SMTP_PASSWORD missing")
-
-    msg = MIMEMultipart()
-    msg["From"] = smtp_user
-    msg["To"] = to_email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain"))
-
-    # ✅ timeout=10 is the key: prevents indefinite hang → Cloudflare 524
-    with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
-        server.ehlo()
-        server.starttls(context=ssl.create_default_context())
-        server.ehlo()
-        server.login(smtp_user, smtp_password)
-        server.send_message(msg)
+    """Synchronous email sending function using SendGrid API"""
+    sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+    
+    if not sendgrid_api_key:
+        error_msg = "SENDGRID_API_KEY missing"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
+    
+    from_email = os.getenv("SMTP_EMAIL", "trendtweakers00@gmail.com")
+    
+    try:
+        message = Mail(
+            from_email=from_email,
+            to_emails=to_email,
+            subject=subject,
+            html_content=body
+        )
+        
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        
+        logger.info(f"Email sent successfully via SendGrid. Status code: {response.status_code}")
+        print(f"✅ SendGrid email sent successfully. Status code: {response.status_code}")
+        print(f"📧 From: {from_email}")
+        print(f"📬 To: {to_email}")
+        print(f"📋 Subject: {subject}")
+        
+        return response
+        
+    except Exception as e:
+        error_msg = f"SendGrid email sending failed: {str(e)}"
+        logger.error(error_msg)
+        logger.error(traceback.format_exc())
+        print(f"❌ SendGrid error: {error_msg}")
+        raise
 
 @router.post("/reject-partner/{application_id}")
 async def reject_partner_application(
