@@ -3023,6 +3023,88 @@ async def get_customers_api(username: str = Depends(verify_admin)):
         if db:
             db.close()
 
+@app.get("/api/admin/setup-referrals-table")
+async def setup_referrals_table(username: str = Depends(verify_admin)):
+    """One-time setup to create referrals table - works with PostgreSQL and SQLite"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Create referrals table (PostgreSQL compatible)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS referrals (
+                        id SERIAL PRIMARY KEY,
+                        broker_id VARCHAR(255) NOT NULL,
+                        broker_email VARCHAR(255) NOT NULL,
+                        customer_email VARCHAR(255) NOT NULL,
+                        customer_stripe_id VARCHAR(255),
+                        amount DECIMAL(10,2) NOT NULL DEFAULT 299.00,
+                        payout DECIMAL(10,2) NOT NULL,
+                        payout_type VARCHAR(50) NOT NULL,
+                        status VARCHAR(50) DEFAULT 'on_hold',
+                        fraud_flags TEXT,
+                        hold_until DATE,
+                        clawback_until DATE,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        paid_at TIMESTAMP,
+                        FOREIGN KEY (broker_id) REFERENCES brokers(referral_code)
+                    )
+                """)
+                
+                # Create indexes
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_referrals_broker_id ON referrals(broker_id)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_referrals_status ON referrals(status)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_referrals_customer_email ON referrals(customer_email)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_referrals_created_at ON referrals(created_at)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_referrals_hold_until ON referrals(hold_until)")
+            else:
+                # SQLite version
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS referrals (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        broker_id TEXT NOT NULL,
+                        broker_email TEXT NOT NULL,
+                        customer_email TEXT NOT NULL,
+                        customer_stripe_id TEXT,
+                        amount REAL NOT NULL DEFAULT 299.00,
+                        payout REAL NOT NULL,
+                        payout_type TEXT NOT NULL,
+                        status TEXT DEFAULT 'on_hold',
+                        fraud_flags TEXT,
+                        hold_until DATE,
+                        clawback_until DATE,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        paid_at TIMESTAMP,
+                        FOREIGN KEY (broker_id) REFERENCES brokers(referral_code)
+                    )
+                """)
+                
+                # Create indexes
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_referrals_broker_id ON referrals(broker_id)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_referrals_status ON referrals(status)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_referrals_customer_email ON referrals(customer_email)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_referrals_created_at ON referrals(created_at)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_referrals_hold_until ON referrals(hold_until)")
+            
+            conn.commit()
+            
+            return {
+                "success": True,
+                "message": "Referrals table created successfully",
+                "db_type": DB_TYPE
+            }
+            
+    except Exception as e:
+        print(f"❌ Error creating referrals table: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 @app.get("/api/admin/brokers")
 async def get_brokers_api(username: str = Depends(verify_admin)):
     """Return list of brokers"""
