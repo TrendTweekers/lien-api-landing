@@ -25,38 +25,31 @@ from api.database import get_db, get_db_cursor, DB_TYPE
 logger = logging.getLogger(__name__)
 
 def send_welcome_email_background(email: str, referral_link: str, name: str = "", referral_code: str = "", commission_model: str = "bounty"):
-    """Background email function for partner approval with detailed SMTP debug logging"""
+    """Background email function for partner approval with detailed SendGrid debug logging"""
     try:
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
-        import os
-        
         print("=" * 80)
-        print("🔐 SMTP DEBUG - STARTING EMAIL SEND")
+        print("📧 SENDGRID DEBUG - STARTING EMAIL SEND")
         print("=" * 80)
         
-        # SMTP configuration
-        smtp_server = "smtp.gmail.com"
-        smtp_port = 587
-        smtp_user = os.getenv("SMTP_USER", "trendtweakers00@gmail.com")
-        smtp_password = os.getenv("SMTP_PASSWORD")
+        # SendGrid configuration
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        from_email = os.getenv("SMTP_EMAIL", "trendtweakers00@gmail.com")
         
-        print(f"📧 SMTP Server: {smtp_server}:{smtp_port}")
-        print(f"👤 SMTP User: {smtp_user}")
-        print(f"🔑 SMTP Password: {'*' * len(smtp_password) if smtp_password else 'NOT SET'}")
+        print(f"🔑 SendGrid API Key: {'*' * 20 if sendgrid_api_key else 'NOT SET'}")
+        print(f"📧 From Email: {from_email}")
         print(f"📬 Recipient: {email}")
         
-        if not smtp_password:
-            print("❌ ERROR: SMTP password not configured!")
-            raise Exception("SMTP_PASSWORD not set")
+        if not sendgrid_api_key:
+            print("❌ ERROR: SendGrid API key not configured!")
+            raise Exception("SENDGRID_API_KEY not set")
         
         # Create email
         subject = "Welcome to LienDeadline Partner Program! 🎉"
         referral_link = referral_link if referral_link else f"https://liendeadline.com/?ref={referral_code}"
         commission_text = "$500 per sale" if commission_model == "bounty" else "$50/month recurring"
         
-        body = f"""Hi {name},
+        # Convert plain text body to HTML format for SendGrid
+        body_plain = f"""Hi {name},
 
 Congratulations! Your application to join the LienDeadline Partner Program has been approved!
 
@@ -77,62 +70,59 @@ Best regards,
 The LienDeadline Team
 """
         
+        # Convert to HTML format
+        body_html = f"""<html>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<p>Hi {name},</p>
+
+<p>Congratulations! Your application to join the LienDeadline Partner Program has been approved!</p>
+
+<p>Here's your unique referral information:</p>
+
+<ul>
+<li><strong>Referral Code:</strong> {referral_code}</li>
+<li><strong>Referral Link:</strong> <a href="{referral_link}">{referral_link}</a></li>
+<li><strong>Commission:</strong> {commission_text}</li>
+</ul>
+
+<p><strong>How it works:</strong></p>
+<ol>
+<li>Share your referral link with construction companies and contractors</li>
+<li>When they sign up and make a purchase using your link, you earn commission</li>
+<li>Track your referrals and earnings in the partner dashboard</li>
+</ol>
+
+<p>Start earning today by sharing your link!</p>
+
+<p>Best regards,<br>
+The LienDeadline Team</p>
+</body>
+</html>"""
+        
         print(f"📝 Email subject: {subject}")
-        print(f"📄 Email body length: {len(body)} characters")
+        print(f"📄 Email body length: {len(body_html)} characters (HTML)")
+        print("✅ Email message content prepared")
         
-        # Create message
-        msg = MIMEMultipart()
-        msg['From'] = smtp_user
-        msg['To'] = email
-        msg['Subject'] = subject
-        msg.attach(MIMEText(body, 'plain'))
+        # Send email via send_email_sync
+        print("📤 Sending email via SendGrid API...")
+        response = send_email_sync(email, subject, body_html)
         
-        print("✅ Email message created")
-        
-        # Send email
-        print(f"🔌 Connecting to {smtp_server}:{smtp_port}...")
-        
-        with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
-            # Enable debug output
-            server.set_debuglevel(1)
-            
-            print("🔐 Starting TLS...")
-            server.starttls()
-            
-            print(f"👤 Logging in as {smtp_user}...")
-            server.login(smtp_user, smtp_password)
-            
-            print("📤 Sending email...")
-            result = server.send_message(msg)
-            
-            print("=" * 80)
-            print("✅ EMAIL SENT SUCCESSFULLY!")
-            print(f"📧 From: {smtp_user}")
-            print(f"📬 To: {email}")
-            print(f"📋 Subject: {subject}")
-            print(f"🔍 SMTP Result: {result}")
-            print("=" * 80)
-
-    except smtplib.SMTPAuthenticationError as e:
         print("=" * 80)
-        print("❌ SMTP AUTHENTICATION FAILED!")
-        print(f"Error: {e}")
-        print("Possible causes:")
-        print("1. App password is incorrect")
-        print("2. 2-step verification not enabled on Gmail")
-        print("3. App password expired")
+        print("✅ EMAIL SENT SUCCESSFULLY VIA SENDGRID!")
+        print(f"📧 From: {from_email}")
+        print(f"📬 To: {email}")
+        print(f"📋 Subject: {subject}")
+        print(f"🔍 SendGrid Response Status: {response.status_code}")
         print("=" * 80)
-        raise
-
-    except smtplib.SMTPException as e:
-        print("=" * 80)
-        print(f"❌ SMTP ERROR: {e}")
-        print("=" * 80)
-        raise
 
     except Exception as e:
         print("=" * 80)
-        print(f"❌ GENERAL ERROR: {e}")
+        print(f"❌ SENDGRID ERROR: {e}")
+        print("Possible causes:")
+        print("1. SendGrid API key is invalid or expired")
+        print("2. Sender email not verified in SendGrid")
+        print("3. SendGrid account under review or suspended")
+        print("4. Invalid recipient email address")
         import traceback
         traceback.print_exc()
         print("=" * 80)
