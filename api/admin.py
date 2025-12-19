@@ -59,7 +59,6 @@ Congratulations! Your application to join the LienDeadline Partner Program has b
 
 Here's your unique referral information:
 
-📋 Referral Code: {referral_code}
 🔗 Referral Link: {referral_link}
 💰 Commission: {commission_text}
 
@@ -74,64 +73,128 @@ Best regards,
 The LienDeadline Team
 """
         
-        # Convert to HTML format
+        # Convert to HTML format - Professional, mobile-responsive design
         dashboard_url = "https://liendeadline.com/broker-dashboard"
-        body_html = f"""<html>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-<div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 30px;">
-<h1 style="margin: 0;">Welcome to LienDeadline Partner Program! 🎉</h1>
-</div>
-
-<p>Hi {name},</p>
-
-<p>Congratulations! Your application to join the LienDeadline Partner Program has been approved!</p>
-
-<p>Here's your unique referral information:</p>
-
-<div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-<ul style="list-style: none; padding: 0;">
-<li style="margin: 10px 0;"><strong>Referral Code:</strong> {referral_code}</li>
-<li style="margin: 10px 0;"><strong>Referral Link:</strong> <a href="{referral_link}" style="color: #2563eb; word-break: break-all;">{referral_link}</a></li>
-<li style="margin: 10px 0;"><strong>Commission:</strong> {commission_text}</li>
-</ul>
-</div>
-
-<div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0;">
-<h3 style="margin-top: 0; color: #92400e;">📊 Access Your Dashboard</h3>
-<p style="margin: 10px 0; color: #92400e;">
-<strong>Dashboard URL:</strong> <a href="{dashboard_url}" style="color: #2563eb;">{dashboard_url}</a><br>
-<strong>Login with your email:</strong> {email}
-</p>
-<p style="margin: 10px 0; color: #92400e; font-size: 14px;">
-Simply enter your email address ({email}) to access your dashboard and track your referrals.
-</p>
-</div>
-
-<p><strong>How it works:</strong></p>
-<ol>
-<li>Share your referral link with construction companies and contractors</li>
-<li>When they sign up and make a purchase using your link, you earn commission</li>
-<li>Track your referrals and earnings in your partner dashboard</li>
-</ol>
-
-<div style="text-align: center; margin: 30px 0;">
-<a href="{dashboard_url}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-Access Partner Dashboard →
-</a>
-</div>
-
-<p>Start earning today by sharing your link!</p>
-
-<p>Best regards,<br>
-<strong>The LienDeadline Team</strong></p>
-
-<hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-
-<p style="font-size: 12px; color: #6b7280;">
-<strong>Quick Links:</strong><br>
-Dashboard: <a href="{dashboard_url}" style="color: #2563eb;">{dashboard_url}</a><br>
-Your Referral Link: <a href="{referral_link}" style="color: #2563eb;">{referral_link}</a>
-</p>
+        body_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Welcome to LienDeadline Partner Program</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937;">
+    <!-- Email wrapper -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f9fafb;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <!-- Main content container -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1f2937; letter-spacing: -0.5px;">
+                                📋 LienDeadline
+                            </h1>
+                            <p style="margin: 12px 0 0; font-size: 16px; color: #6b7280; font-weight: 500;">
+                                Partner Program
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Welcome message -->
+                    <tr>
+                        <td style="padding: 40px 40px 20px;">
+                            <h2 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #1f2937; line-height: 1.3;">
+                                Welcome, {name}!
+                            </h2>
+                            <p style="margin: 0 0 24px; font-size: 16px; color: #4b5563; line-height: 1.6;">
+                                Congratulations! Your application to join the LienDeadline Partner Program has been approved. You're now ready to start earning commissions.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Referral link box -->
+                    <tr>
+                        <td style="padding: 0 40px 30px;">
+                            <div style="background-color: #f3f4f6; border: 2px solid #e5e7eb; border-radius: 8px; padding: 24px; text-align: center;">
+                                <p style="margin: 0 0 12px; font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    Your Referral Link
+                                </p>
+                                <p style="margin: 0; font-size: 18px; font-weight: 600; color: #2563eb; word-break: break-all; font-family: 'Courier New', monospace;">
+                                    <a href="{referral_link}" style="color: #2563eb; text-decoration: none;">{referral_link}</a>
+                                </p>
+                                <p style="margin: 16px 0 0; font-size: 13px; color: #6b7280;">
+                                    Share this link to start earning commissions
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Commission info -->
+                    <tr>
+                        <td style="padding: 0 40px 30px;">
+                            <div style="background-color: #eff6ff; border-left: 4px solid #2563eb; border-radius: 4px; padding: 20px;">
+                                <p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    Commission Structure
+                                </p>
+                                <p style="margin: 0; font-size: 20px; font-weight: 700; color: #1f2937;">
+                                    {commission_text}
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- How it works -->
+                    <tr>
+                        <td style="padding: 0 40px 30px;">
+                            <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1f2937;">
+                                How it works
+                            </h3>
+                            <ol style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 15px;">
+                                <li style="margin-bottom: 12px; line-height: 1.6;">
+                                    Share your referral link with construction companies and contractors
+                                </li>
+                                <li style="margin-bottom: 12px; line-height: 1.6;">
+                                    When they sign up and make their first payment, you earn commission
+                                </li>
+                                <li style="margin-bottom: 0; line-height: 1.6;">
+                                    Track all referrals and earnings in your partner dashboard
+                                </li>
+                            </ol>
+                        </td>
+                    </tr>
+                    
+                    <!-- CTA Button -->
+                    <tr>
+                        <td style="padding: 0 40px 40px; text-align: center;">
+                            <a href="{dashboard_url}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; padding: 14px 32px; border-radius: 6px; box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);">
+                                Access Partner Dashboard
+                            </a>
+                            <p style="margin: 16px 0 0; font-size: 14px; color: #6b7280;">
+                                Login with: <strong style="color: #1f2937;">{email}</strong>
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 32px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0 0 12px; font-size: 14px; color: #4b5563; line-height: 1.6;">
+                                Questions? Reply to this email or contact us at <a href="mailto:partners@liendeadline.com" style="color: #2563eb; text-decoration: none;">partners@liendeadline.com</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+                                © 2025 LienDeadline. All rights reserved.<br>
+                                <a href="https://liendeadline.com" style="color: #6b7280; text-decoration: none;">liendeadline.com</a>
+                            </p>
+                        </td>
+                    </tr>
+                    
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>"""
         
