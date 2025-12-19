@@ -11,13 +11,24 @@ function requestState() {
 // API Configuration
 const API_BASE = ''; // Use relative URL since API is on same domain
 
-// Referral tracking - saves referral code from URL parameter
+// Referral tracking - saves referral code from URL parameter OR cookies
 function trackReferral() {
+    // Check URL parameter first (old format: ?ref=MATS-A63763)
     const urlParams = new URLSearchParams(window.location.search);
-    const refCode = urlParams.get('ref');
+    let refCode = urlParams.get('ref');
+    
+    // If no URL param, check cookies (new format: /r/mA63 sets cookies)
+    if (!refCode) {
+        refCode = getCookie('ref_code');
+    }
+    
+    // If still no code, check localStorage (backward compatibility)
+    if (!refCode) {
+        refCode = localStorage.getItem('referral_code');
+    }
     
     if (refCode) {
-        // Save referral code to localStorage
+        // Save referral code to localStorage for persistence
         localStorage.setItem('referral_code', refCode);
         console.log('Referral code saved:', refCode);
         
@@ -35,6 +46,14 @@ function trackReferral() {
             setTimeout(() => notification.remove(), 300);
         }, 3000);
     }
+}
+
+// Helper function to get cookie value
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
 }
 
 // API Tester functionality

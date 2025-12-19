@@ -30,6 +30,9 @@ from api.database import get_db, get_db_cursor, DB_TYPE, execute_query, BASE_DIR
 from api.analytics import router as analytics_router
 from api.admin import router as admin_router
 
+# Import short link generator
+from api.short_link_system import ShortLinkGenerator
+
 app = FastAPI(title="Lien Deadline API")
 
 # Rate limiting setup
@@ -715,6 +718,159 @@ async def test_api():
 @app.get("/health")
 def health():
     return {"status": "ok", "message": "API is running"}
+
+@app.get("/r/{short_code}")
+async def referral_redirect(short_code: str, request: Request):
+    """
+    Handle short referral links like /r/mA63
+    1. Look up broker by short code
+    2. Track the click
+    3. Set referral cookies
+    4. Redirect to homepage
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Validate code format
+    if not ShortLinkGenerator.is_valid_code(short_code):
+        logger.warning(f"Invalid short code format: {short_code}")
+        raise HTTPException(status_code=404, detail="Invalid referral link")
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Look up broker by short_code
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id, name, email, referral_code 
+                    FROM brokers 
+                    WHERE short_code = %s AND status = 'approved'
+                """, (short_code,))
+            else:
+                cursor.execute("""
+                    SELECT id, name, email, referral_code 
+                    FROM brokers 
+                    WHERE short_code = ? AND status = 'approved'
+                """, (short_code,))
+            
+            broker = cursor.fetchone()
+            
+            if not broker:
+                logger.warning(f"Short code not found or broker not approved: {short_code}")
+                raise HTTPException(status_code=404, detail="Referral link not found")
+            
+            # Handle different row formats
+            if isinstance(broker, dict):
+                broker_id = broker.get('id')
+                broker_name = broker.get('name', '')
+                broker_email = broker.get('email', '')
+                referral_code = broker.get('referral_code', '')
+            else:
+                broker_id = broker[0]
+                broker_name = broker[1] if len(broker) > 1 else ''
+                broker_email = broker[2] if len(broker) > 2 else ''
+                referral_code = broker[3] if len(broker) > 3 else ''
+            
+            # Track the click for analytics
+            try:
+                client_ip = request.client.host if request.client else "unknown"
+                user_agent = request.headers.get("user-agent", "unknown")
+                referrer = request.headers.get("referer", "")
+                
+                # Create referral_clicks table if it doesn't exist
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS referral_clicks (
+                            id SERIAL PRIMARY KEY,
+                            short_code VARCHAR(10) NOT NULL,
+                            broker_id INTEGER,
+                            ip_address VARCHAR(45),
+                            user_agent TEXT,
+                            referrer_url TEXT,
+                            clicked_at TIMESTAMP DEFAULT NOW(),
+                            converted BOOLEAN DEFAULT FALSE,
+                            conversion_date TIMESTAMP
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_short_code ON referral_clicks(short_code)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_broker ON referral_clicks(broker_id)")
+                    
+                    cursor.execute("""
+                        INSERT INTO referral_clicks 
+                        (short_code, broker_id, ip_address, user_agent, referrer_url)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (short_code, broker_id, client_ip, user_agent, referrer))
+                else:
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS referral_clicks (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            short_code TEXT NOT NULL,
+                            broker_id INTEGER,
+                            ip_address TEXT,
+                            user_agent TEXT,
+                            referrer_url TEXT,
+                            clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            converted INTEGER DEFAULT 0,
+                            conversion_date TIMESTAMP
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_short_code ON referral_clicks(short_code)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_broker ON referral_clicks(broker_id)")
+                    
+                    cursor.execute("""
+                        INSERT INTO referral_clicks 
+                        (short_code, broker_id, ip_address, user_agent, referrer_url)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (short_code, broker_id, client_ip, user_agent, referrer))
+                
+                conn.commit()
+                logger.info(f"📊 Click tracked: {short_code} -> {broker_email}")
+            except Exception as e:
+                logger.error(f"Failed to track click: {e}")
+                # Don't fail the redirect if tracking fails
+            
+            # Create redirect response
+            redirect_response = RedirectResponse(url="/", status_code=302)
+            
+            # Set referral tracking cookies (30-day expiry)
+            cookie_age = 30 * 24 * 60 * 60  # 30 days
+            
+            redirect_response.set_cookie(
+                key="ref_code",
+                value=referral_code,
+                max_age=cookie_age,
+                httponly=True,
+                samesite="lax"
+            )
+            
+            redirect_response.set_cookie(
+                key="ref_short",
+                value=short_code,
+                max_age=cookie_age,
+                httponly=True,
+                samesite="lax"
+            )
+            
+            redirect_response.set_cookie(
+                key="ref_broker",
+                value=str(broker_id),
+                max_age=cookie_age,
+                httponly=True,
+                samesite="lax"
+            )
+            
+            logger.info(f"🔗 Referral redirect: {short_code} -> {broker_email}")
+            
+            return redirect_response
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in referral redirect: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/v1/states")
 def get_states():

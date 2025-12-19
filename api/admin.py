@@ -21,6 +21,9 @@ import resend
 # Import database functions from database.py (avoids circular import)
 from api.database import get_db, get_db_cursor, DB_TYPE
 
+# Import short link generator
+from api.short_link_system import ShortLinkGenerator
+
 logger = logging.getLogger(__name__)
 
 def send_welcome_email_background(email: str, referral_link: str, name: str = "", referral_code: str = "", commission_model: str = "bounty"):
@@ -44,7 +47,9 @@ def send_welcome_email_background(email: str, referral_link: str, name: str = ""
         
         # Create email
         subject = "Welcome to LienDeadline Partner Program! 🎉"
-        referral_link = referral_link if referral_link else f"https://liendeadline.com/?ref={referral_code}"
+        # Use short link format if referral_link is provided, otherwise fallback to old format
+        if not referral_link:
+            referral_link = f"https://liendeadline.com/?ref={referral_code}"
         commission_text = "$500 per sale" if commission_model == "bounty" else "$50/month recurring"
         
         # Convert plain text body to HTML format for Resend
@@ -428,11 +433,30 @@ async def approve_partner(
             # Use override or existing commission model
             app_dict['commission_model'] = commission_model_override or app_dict.get('commission_model', 'bounty')
             
-            # 2) Generate unique referral code and link
+            # 2) Generate unique referral code and short code
             name_first = app_dict.get('name', 'BROKER').split()[0].upper() if app_dict.get('name') else 'BROKER'
             referral_code = f"{name_first}-{uuid.uuid4().hex[:6].upper()}"
-            referral_link = f"https://liendeadline.com?ref={referral_code}"
+            
+            # Generate short code for clean referral link
+            email = app_dict.get('email', '')
+            short_code = ShortLinkGenerator.generate_short_code(email, length=4)
+            
+            # Check for collision and regenerate if needed
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT short_code FROM brokers WHERE short_code = %s", (short_code,))
+            else:
+                cursor.execute("SELECT short_code FROM brokers WHERE short_code = ?", (short_code,))
+            
+            if cursor.fetchone():
+                # Collision - generate longer random code
+                short_code = ShortLinkGenerator.generate_random_code(length=6)
+                print(f"⚠️ Short code collision, using random code: {short_code}")
+            
+            # Use new short link format: /r/{short_code}
+            referral_link = f"https://liendeadline.com/r/{short_code}"
             print(f"Generated referral_code: {referral_code}")
+            print(f"Generated short_code: {short_code}")
+            print(f"Generated referral_link: {referral_link}")
             
             # Create brokers table if it doesn't exist and add missing columns
             if DB_TYPE == 'postgresql':
@@ -539,6 +563,26 @@ async def approve_partner(
                     """)
                 except Exception:
                     pass
+                
+                try:
+                    cursor.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'brokers' AND column_name = 'short_code'
+                            ) THEN
+                                ALTER TABLE brokers ADD COLUMN short_code VARCHAR(10) UNIQUE;
+                            END IF;
+                        END $$;
+                    """)
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_short_code ON brokers(short_code)")
+                except Exception:
+                    pass
             else:
                 # SQLite
                 cursor.execute("""
@@ -561,12 +605,18 @@ async def approve_partner(
                     ("referral_link", "TEXT"),
                     ("commission_model", "TEXT"),
                     ("pending_commissions", "INTEGER DEFAULT 0"),
-                    ("paid_commissions", "REAL DEFAULT 0")
+                    ("paid_commissions", "REAL DEFAULT 0"),
+                    ("short_code", "TEXT UNIQUE")
                 ]:
                     try:
                         cursor.execute(f"ALTER TABLE brokers ADD COLUMN {column_def[0]} {column_def[1]}")
                     except Exception:
                         pass
+                
+                try:
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_short_code ON brokers(short_code)")
+                except Exception:
+                    pass
             
             # 3) UPSERT broker record (handle duplicates gracefully)
             name = app_dict.get('name', '')
@@ -577,14 +627,15 @@ async def approve_partner(
             if DB_TYPE == 'postgresql':
                 # PostgreSQL UPSERT - handle duplicate email gracefully
                 cursor.execute("""
-                    INSERT INTO brokers (name, email, referral_code)
-                    VALUES (%s, %s, %s)
+                    INSERT INTO brokers (name, email, referral_code, short_code)
+                    VALUES (%s, %s, %s, %s)
                     ON CONFLICT (email)
                     DO UPDATE SET
                         referral_code = EXCLUDED.referral_code,
+                        short_code = EXCLUDED.short_code,
                         name = EXCLUDED.name
                     RETURNING id
-                """, (name, email, referral_code))
+                """, (name, email, referral_code, short_code))
                 
                 result = cursor.fetchone()
                 broker_id = result['id'] if isinstance(result, dict) else result[0]
@@ -598,15 +649,15 @@ async def approve_partner(
                     broker_id = existing['id'] if isinstance(existing, dict) else existing[0]
                     cursor.execute("""
                         UPDATE brokers 
-                        SET referral_code = ?, name = ?
+                        SET referral_code = ?, short_code = ?, name = ?
                         WHERE id = ?
-                    """, (referral_code, name, broker_id))
+                    """, (referral_code, short_code, name, broker_id))
                     print(f"✅ BROKER UPSERT OK id={broker_id} (updated existing)")
                 else:
                     cursor.execute("""
-                        INSERT INTO brokers (name, email, referral_code)
-                        VALUES (?, ?, ?)
-                    """, (name, email, referral_code))
+                        INSERT INTO brokers (name, email, referral_code, short_code)
+                        VALUES (?, ?, ?, ?)
+                    """, (name, email, referral_code, short_code))
                     broker_id = cursor.lastrowid
                     print(f"✅ BROKER UPSERT OK id={broker_id} (new record)")
             
@@ -623,13 +674,13 @@ async def approve_partner(
                     except Exception:
                         pass  # Column doesn't exist, skip
                     
-                    # Try to update referral_link if column exists
+                    # Try to update referral_link and short_code if column exists
                     try:
                         cursor.execute("""
                             UPDATE brokers 
-                            SET referral_link = %s 
+                            SET referral_link = %s, short_code = %s
                             WHERE id = %s
-                        """, (referral_link, broker_id))
+                        """, (referral_link, short_code, broker_id))
                     except Exception:
                         pass  # Column doesn't exist, skip
                     
@@ -649,7 +700,7 @@ async def approve_partner(
                     except Exception:
                         pass
                     try:
-                        cursor.execute("UPDATE brokers SET referral_link = ? WHERE id = ?", (referral_link, broker_id))
+                        cursor.execute("UPDATE brokers SET referral_link = ?, short_code = ? WHERE id = ?", (referral_link, short_code, broker_id))
                     except Exception:
                         pass
                     try:
