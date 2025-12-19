@@ -16,8 +16,7 @@ import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+import resend
 
 # Import database functions from database.py (avoids circular import)
 from api.database import get_db, get_db_cursor, DB_TYPE
@@ -25,30 +24,30 @@ from api.database import get_db, get_db_cursor, DB_TYPE
 logger = logging.getLogger(__name__)
 
 def send_welcome_email_background(email: str, referral_link: str, name: str = "", referral_code: str = "", commission_model: str = "bounty"):
-    """Background email function for partner approval with detailed SendGrid debug logging"""
+    """Background email function for partner approval with detailed Resend debug logging"""
     try:
         print("=" * 80)
-        print("📧 SENDGRID DEBUG - STARTING EMAIL SEND")
+        print("📧 RESEND DEBUG - STARTING EMAIL SEND")
         print("=" * 80)
         
-        # SendGrid configuration
-        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
-        from_email = os.getenv("SMTP_EMAIL", "trendtweakers00@gmail.com")
+        # Resend configuration
+        resend_api_key = os.environ.get('RESEND_API_KEY')
+        from_email = os.getenv("SMTP_FROM_EMAIL", "onboarding@resend.dev")
         
-        print(f"🔑 SendGrid API Key: {'*' * 20 if sendgrid_api_key else 'NOT SET'}")
+        print(f"🔑 Resend API Key: {'*' * 20 if resend_api_key else 'NOT SET'}")
         print(f"📧 From Email: {from_email}")
         print(f"📬 Recipient: {email}")
         
-        if not sendgrid_api_key:
-            print("❌ ERROR: SendGrid API key not configured!")
-            raise Exception("SENDGRID_API_KEY not set")
+        if not resend_api_key:
+            print("❌ ERROR: Resend API key not configured!")
+            raise Exception("RESEND_API_KEY not set")
         
         # Create email
         subject = "Welcome to LienDeadline Partner Program! 🎉"
         referral_link = referral_link if referral_link else f"https://liendeadline.com/?ref={referral_code}"
         commission_text = "$500 per sale" if commission_model == "bounty" else "$50/month recurring"
         
-        # Convert plain text body to HTML format for SendGrid
+        # Convert plain text body to HTML format for Resend
         body_plain = f"""Hi {name},
 
 Congratulations! Your application to join the LienDeadline Partner Program has been approved!
@@ -104,24 +103,24 @@ The LienDeadline Team</p>
         print("✅ Email message content prepared")
         
         # Send email via send_email_sync
-        print("📤 Sending email via SendGrid API...")
+        print("📤 Sending email via Resend API...")
         response = send_email_sync(email, subject, body_html)
         
         print("=" * 80)
-        print("✅ EMAIL SENT SUCCESSFULLY VIA SENDGRID!")
+        print("✅ EMAIL SENT SUCCESSFULLY VIA RESEND!")
         print(f"📧 From: {from_email}")
         print(f"📬 To: {email}")
         print(f"📋 Subject: {subject}")
-        print(f"🔍 SendGrid Response Status: {response.status_code}")
+        print(f"🆔 Resend ID: {response.get('id', 'N/A')}")
         print("=" * 80)
 
     except Exception as e:
         print("=" * 80)
-        print(f"❌ SENDGRID ERROR: {e}")
+        print(f"❌ RESEND ERROR: {e}")
         print("Possible causes:")
-        print("1. SendGrid API key is invalid or expired")
-        print("2. Sender email not verified in SendGrid")
-        print("3. SendGrid account under review or suspended")
+        print("1. Resend API key is invalid or expired")
+        print("2. Sender email not verified in Resend")
+        print("3. Resend account under review or suspended")
         print("4. Invalid recipient email address")
         import traceback
         traceback.print_exc()
@@ -758,41 +757,58 @@ async def approve_partner(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-def send_email_sync(to_email: str, subject: str, body: str):
-    """Synchronous email sending function using SendGrid API"""
-    sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
-    
-    if not sendgrid_api_key:
-        error_msg = "SENDGRID_API_KEY missing"
-        logger.error(error_msg)
-        raise RuntimeError(error_msg)
-    
-    from_email = os.getenv("SMTP_EMAIL", "trendtweakers00@gmail.com")
-    
+def send_email_sync(to_email: str, subject: str, body_html: str):
+    """Send email using Resend API (synchronous)"""
     try:
-        message = Mail(
-            from_email=from_email,
-            to_emails=to_email,
-            subject=subject,
-            html_content=body
-        )
+        # Get API key
+        api_key = os.environ.get("RESEND_API_KEY")
+        if not api_key:
+            print("❌ ERROR: RESEND_API_KEY not configured")
+            raise Exception("RESEND_API_KEY not set")
         
-        sg = SendGridAPIClient(sendgrid_api_key)
-        response = sg.send(message)
+        # Set API key
+        resend.api_key = api_key
         
-        logger.info(f"Email sent successfully via SendGrid. Status code: {response.status_code}")
-        print(f"✅ SendGrid email sent successfully. Status code: {response.status_code}")
+        # Get from email
+        from_email = os.environ.get("SMTP_FROM_EMAIL", "onboarding@resend.dev")
+        
+        print("=" * 80)
+        print("📧 RESEND DEBUG - STARTING EMAIL SEND")
+        print("=" * 80)
+        print(f"🔑 Resend API Key: {'*' * len(api_key)}")
+        print(f"📧 From Email: {from_email}")
+        print(f"📬 Recipient: {to_email}")
+        print(f"📝 Email subject: {subject}")
+        print(f"📄 Email body length: {len(body_html)} characters (HTML)")
+        print("✅ Email message prepared")
+        print("📤 Sending email via Resend API...")
+        
+        # Send email
+        params = {
+            "from": from_email,
+            "to": [to_email],
+            "subject": subject,
+            "html": body_html,
+        }
+        
+        response = resend.Emails.send(params)
+        
+        print("=" * 80)
+        print("✅ EMAIL SENT SUCCESSFULLY!")
         print(f"📧 From: {from_email}")
         print(f"📬 To: {to_email}")
         print(f"📋 Subject: {subject}")
+        print(f"🆔 Resend ID: {response.get('id', 'N/A')}")
+        print("=" * 80)
         
         return response
         
     except Exception as e:
-        error_msg = f"SendGrid email sending failed: {str(e)}"
-        logger.error(error_msg)
-        logger.error(traceback.format_exc())
-        print(f"❌ SendGrid error: {error_msg}")
+        print("=" * 80)
+        print(f"❌ RESEND ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        print("=" * 80)
         raise
 
 @router.post("/reject-partner/{application_id}")
