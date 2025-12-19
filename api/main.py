@@ -3941,78 +3941,150 @@ async def get_pending_brokers():
 
 @app.get("/api/v1/broker/dashboard")
 async def broker_dashboard(request: Request, email: str):
-    """Get broker dashboard data"""
+    """Get broker dashboard data - requires approved status"""
     try:
-        db = get_db()
-        try:
-            cursor = db.cursor()
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
             
-            # Verify broker exists
-            cursor.execute("""
-                SELECT id, name, referral_code, commission_model
-                FROM brokers
-                WHERE email = ?
-            """, (email,))
+            # Normalize email (lowercase)
+            email = email.lower().strip()
+            
+            # Verify broker exists AND is approved
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id, name, referral_code, commission_model, referral_link, short_code, status
+                    FROM brokers
+                    WHERE LOWER(email) = LOWER(%s)
+                """, (email,))
+            else:
+                cursor.execute("""
+                    SELECT id, name, referral_code, commission_model, referral_link, short_code, status
+                    FROM brokers
+                    WHERE LOWER(email) = LOWER(?)
+                """, (email,))
             
             broker = cursor.fetchone()
             
             if not broker:
+                print(f"❌ Broker not found: {email}")
                 return JSONResponse(
                     status_code=404,
-                    content={"status": "error", "message": "Broker not found"}
+                    content={"status": "error", "message": "Broker not found. Please check your email address."}
                 )
             
-            broker_id = broker[0]
-            broker_name = broker[1]
-            referral_code = broker[2]
-            commission_model = broker[3]
+            # Handle different row formats
+            if isinstance(broker, dict):
+                broker_id = broker.get('id')
+                broker_name = broker.get('name', '')
+                referral_code = broker.get('referral_code', '')
+                commission_model = broker.get('commission_model', 'bounty')
+                referral_link = broker.get('referral_link', '')
+                short_code = broker.get('short_code', '')
+                status = broker.get('status', 'pending')
+            else:
+                broker_id = broker[0]
+                broker_name = broker[1] if len(broker) > 1 else ''
+                referral_code = broker[2] if len(broker) > 2 else ''
+                commission_model = broker[3] if len(broker) > 3 else 'bounty'
+                referral_link = broker[4] if len(broker) > 4 else ''
+                short_code = broker[5] if len(broker) > 5 else ''
+                status = broker[6] if len(broker) > 6 else 'pending'
+            
+            # Check if broker is approved
+            if status != 'approved':
+                print(f"⚠️ Broker not approved: {email} (status: {status})")
+                return JSONResponse(
+                    status_code=403,
+                    content={
+                        "status": "error", 
+                        "message": f"Your application is still {status}. Please wait for approval or contact support."
+                    }
+                )
+            
+            # Use short link if available, otherwise fallback to old format
+            if referral_link:
+                final_referral_link = referral_link
+            elif short_code:
+                final_referral_link = f"https://liendeadline.com/r/{short_code}"
+            else:
+                final_referral_link = f"https://liendeadline.com?ref={referral_code}"
             
             # Get referrals
-            cursor.execute("""
-                SELECT 
-                    customer_email,
-                    amount,
-                    payout,
-                    payout_type,
-                    status,
-                    created_at
-                FROM referrals
-                WHERE broker_id = ?
-                ORDER BY created_at DESC
-            """, (referral_code,))
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT 
+                        customer_email,
+                        amount,
+                        payout,
+                        payout_type,
+                        status,
+                        created_at
+                    FROM referrals
+                    WHERE broker_id = %s
+                    ORDER BY created_at DESC
+                """, (referral_code,))
+            else:
+                cursor.execute("""
+                    SELECT 
+                        customer_email,
+                        amount,
+                        payout,
+                        payout_type,
+                        status,
+                        created_at
+                    FROM referrals
+                    WHERE broker_id = ?
+                    ORDER BY created_at DESC
+                """, (referral_code,))
             
             referrals = []
             total_pending = 0
             total_paid = 0
             
             for row in cursor.fetchall():
+                # Handle different row formats
+                if isinstance(row, dict):
+                    customer_email = row.get('customer_email', '')
+                    amount = row.get('amount', 0) or 0
+                    payout = row.get('payout', 0) or 0
+                    payout_type = row.get('payout_type', '')
+                    ref_status = row.get('status', 'pending')
+                    created_at = row.get('created_at', '')
+                else:
+                    customer_email = row[0] if len(row) > 0 else ''
+                    amount = row[1] if len(row) > 1 else 0
+                    payout = row[2] if len(row) > 2 else 0
+                    payout_type = row[3] if len(row) > 3 else ''
+                    ref_status = row[4] if len(row) > 4 else 'pending'
+                    created_at = row[5] if len(row) > 5 else ''
+                
                 referral = {
-                    "customer_email": row[0],
-                    "amount": row[1],
-                    "payout": row[2],
-                    "payout_type": row[3],
-                    "status": row[4],
-                    "created_at": row[5]
+                    "customer_email": customer_email,
+                    "amount": float(amount) if amount else 0,
+                    "payout": float(payout) if payout else 0,
+                    "payout_type": payout_type,
+                    "status": ref_status,
+                    "created_at": str(created_at) if created_at else ''
                 }
                 referrals.append(referral)
                 
-                if row[4] == 'pending':
-                    total_pending += row[2]
-                elif row[4] == 'paid':
-                    total_paid += row[2]
+                if ref_status == 'pending' or ref_status == 'on_hold':
+                    total_pending += float(payout) if payout else 0
+                elif ref_status == 'paid':
+                    total_paid += float(payout) if payout else 0
+            
+            print(f"✅ Broker dashboard loaded: {email} ({broker_name})")
             
             return {
                 "broker_name": broker_name,
                 "referral_code": referral_code,
-                "referral_link": f"https://liendeadline.com?ref={referral_code}",
-                "commission_model": commission_model,
+                "referral_link": final_referral_link,
+                "commission_model": commission_model or 'bounty',
                 "total_referrals": len(referrals),
-                "total_pending": total_pending,
-                "total_paid": total_paid,
+                "total_pending": float(total_pending),
+                "total_paid": float(total_paid),
                 "referrals": referrals
             }
-        finally:
-            db.close()
             
     except Exception as e:
         print(f"❌ Broker dashboard error: {e}")

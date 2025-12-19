@@ -75,31 +75,63 @@ The LienDeadline Team
 """
         
         # Convert to HTML format
+        dashboard_url = "https://liendeadline.com/broker-dashboard"
         body_html = f"""<html>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+<div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 30px;">
+<h1 style="margin: 0;">Welcome to LienDeadline Partner Program! 🎉</h1>
+</div>
+
 <p>Hi {name},</p>
 
 <p>Congratulations! Your application to join the LienDeadline Partner Program has been approved!</p>
 
 <p>Here's your unique referral information:</p>
 
-<ul>
-<li><strong>Referral Code:</strong> {referral_code}</li>
-<li><strong>Referral Link:</strong> <a href="{referral_link}">{referral_link}</a></li>
-<li><strong>Commission:</strong> {commission_text}</li>
+<div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+<ul style="list-style: none; padding: 0;">
+<li style="margin: 10px 0;"><strong>Referral Code:</strong> {referral_code}</li>
+<li style="margin: 10px 0;"><strong>Referral Link:</strong> <a href="{referral_link}" style="color: #2563eb; word-break: break-all;">{referral_link}</a></li>
+<li style="margin: 10px 0;"><strong>Commission:</strong> {commission_text}</li>
 </ul>
+</div>
+
+<div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0;">
+<h3 style="margin-top: 0; color: #92400e;">📊 Access Your Dashboard</h3>
+<p style="margin: 10px 0; color: #92400e;">
+<strong>Dashboard URL:</strong> <a href="{dashboard_url}" style="color: #2563eb;">{dashboard_url}</a><br>
+<strong>Login with your email:</strong> {email}
+</p>
+<p style="margin: 10px 0; color: #92400e; font-size: 14px;">
+Simply enter your email address ({email}) to access your dashboard and track your referrals.
+</p>
+</div>
 
 <p><strong>How it works:</strong></p>
 <ol>
 <li>Share your referral link with construction companies and contractors</li>
 <li>When they sign up and make a purchase using your link, you earn commission</li>
-<li>Track your referrals and earnings in the partner dashboard</li>
+<li>Track your referrals and earnings in your partner dashboard</li>
 </ol>
+
+<div style="text-align: center; margin: 30px 0;">
+<a href="{dashboard_url}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+Access Partner Dashboard →
+</a>
+</div>
 
 <p>Start earning today by sharing your link!</p>
 
 <p>Best regards,<br>
-The LienDeadline Team</p>
+<strong>The LienDeadline Team</strong></p>
+
+<hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+
+<p style="font-size: 12px; color: #6b7280;">
+<strong>Quick Links:</strong><br>
+Dashboard: <a href="{dashboard_url}" style="color: #2563eb;">{dashboard_url}</a><br>
+Your Referral Link: <a href="{referral_link}" style="color: #2563eb;">{referral_link}</a>
+</p>
 </body>
 </html>"""
         
