@@ -18,6 +18,7 @@ import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import resend
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from api.rate_limiter import limiter
@@ -73,24 +74,24 @@ app.add_middleware(
 )
 
 # Email configuration check
-print("=" * 60)
+print("============================================================")
 print("📧 EMAIL CONFIGURATION CHECK")
-print("=" * 60)
+print("============================================================")
 
-sendgrid_configured = bool(os.getenv('SENDGRID_API_KEY'))
-smtp_configured = bool(os.getenv('SMTP_EMAIL')) and bool(os.getenv('SMTP_PASSWORD'))
+resend_key = os.environ.get("RESEND_API_KEY")
+smtp_from = os.environ.get("SMTP_FROM_EMAIL", "onboarding@resend.dev")
 
-if sendgrid_configured:
-    print("✅ SendGrid: CONFIGURED")
-    print("   From: support@liendeadline.com")
-elif smtp_configured:
-    print("✅ SMTP: CONFIGURED")
-    smtp_email = os.getenv('SMTP_EMAIL')
-    print(f"   From: {smtp_email}")
+if resend_key:
+    print("✅ Resend: CONFIGURED")
+    print(f"   From: {smtp_from}")
+    print(f"   API Key: {'*' * min(len(resend_key), 20)}")
 else:
-    print("⚠️  NO EMAIL SERVICE CONFIGURED")
+    print("⚠️ Resend: NOT CONFIGURED")
+    print("   Set RESEND_API_KEY environment variable")
     print("   Emails will be logged to console only")
     print("   Users won't receive welcome emails or password resets")
+
+print("============================================================")
 
 print("=" * 60)
 
@@ -2319,13 +2320,11 @@ async def stripe_webhook(request: Request):
 def send_welcome_email(email: str, temp_password: str):
     """Send welcome email with login credentials"""
     try:
-        # Try SendGrid first (if configured)
-        sendgrid_key = os.getenv('SENDGRID_API_KEY')
-        if sendgrid_key:
-            from sendgrid import SendGridAPIClient
-            from sendgrid.helpers.mail import Mail, Email, To
-            
-            sg = SendGridAPIClient(api_key=sendgrid_key)
+        # Try Resend first (if configured)
+        resend_key = os.environ.get("RESEND_API_KEY")
+        if resend_key:
+            resend.api_key = resend_key
+            from_email = os.environ.get("SMTP_FROM_EMAIL", "onboarding@resend.dev")
             
             html = f"""
             <html>
@@ -2370,18 +2369,18 @@ def send_welcome_email(email: str, temp_password: str):
             </html>
             """
             
-            message = Mail(
-                from_email=Email("support@liendeadline.com"),
-                to_emails=To(email),
-                subject="🎉 Welcome to LienDeadline - Your Account is Ready",
-                html_content=html
-            )
+            params = {
+                "from": from_email,
+                "to": [email],
+                "subject": "🎉 Welcome to LienDeadline - Your Account is Ready",
+                "html": html
+            }
             
-            sg.send(message)
-            print(f"✅ Welcome email sent to {email}")
+            response = resend.Emails.send(params)
+            print(f"✅ Welcome email sent via Resend to {email}: {response.get('id', 'N/A')}")
             return True
         else:
-            # Fallback: Try SMTP if SendGrid not configured
+            # Fallback: Try SMTP if Resend not configured
             smtp_email = os.getenv('SMTP_EMAIL')
             # Remove spaces from Gmail app password (Railway may store as "xxxx xxxx xxxx xxxx")
             smtp_password = (os.getenv('SMTP_PASSWORD') or "").replace(" ", "")
@@ -2466,12 +2465,10 @@ def send_welcome_email(email: str, temp_password: str):
 def send_broker_welcome_email(email: str, name: str, link: str, code: str):
     """Send broker welcome email with referral link"""
     try:
-        sendgrid_key = os.getenv('SENDGRID_API_KEY')
-        if sendgrid_key:
-            from sendgrid import SendGridAPIClient
-            from sendgrid.helpers.mail import Mail, Email, To
-            
-            sg = SendGridAPIClient(api_key=sendgrid_key)
+        resend_key = os.environ.get("RESEND_API_KEY")
+        if resend_key:
+            resend.api_key = resend_key
+            from_email = os.environ.get("SMTP_FROM_EMAIL", "onboarding@resend.dev")
             
             html = f"""
             <html>
@@ -2526,15 +2523,15 @@ def send_broker_welcome_email(email: str, name: str, link: str, code: str):
             </html>
             """
             
-            message = Mail(
-                from_email=Email("partners@liendeadline.com"),
-                to_emails=To(email),
-                subject="🎉 Welcome to LienDeadline Partner Program!",
-                html_content=html
-            )
+            params = {
+                "from": from_email,
+                "to": [email],
+                "subject": "🎉 Welcome to LienDeadline Partner Program!",
+                "html": html
+            }
             
-            sg.send(message)
-            print(f"✅ Broker welcome email sent to {email}")
+            response = resend.Emails.send(params)
+            print(f"✅ Broker welcome email sent via Resend to {email}: {response.get('id', 'N/A')}")
             return True
         else:
             # Fallback: log it
@@ -2565,12 +2562,10 @@ def send_broker_welcome_email(email: str, name: str, link: str, code: str):
 def send_broker_notification(broker_email: str, customer_email: str):
     """Notify broker of new referral"""
     try:
-        sendgrid_key = os.getenv('SENDGRID_API_KEY')
-        if sendgrid_key:
-            from sendgrid import SendGridAPIClient
-            from sendgrid.helpers.mail import Mail, Email, To
-            
-            sg = SendGridAPIClient(api_key=sendgrid_key)
+        resend_key = os.environ.get("RESEND_API_KEY")
+        if resend_key:
+            resend.api_key = resend_key
+            from_email = os.environ.get("SMTP_FROM_EMAIL", "onboarding@resend.dev")
             
             html = f"""
             <html>
@@ -2611,18 +2606,18 @@ def send_broker_notification(broker_email: str, customer_email: str):
             </html>
             """
             
-            message = Mail(
-                from_email=Email("partners@liendeadline.com"),
-                to_emails=To(broker_email),
-                subject="💰 New Referral - $500 Commission Earned!",
-                html_content=html
-            )
+            params = {
+                "from": from_email,
+                "to": [broker_email],
+                "subject": "💰 New Referral - $500 Commission Earned!",
+                "html": html
+            }
             
-            sg.send(message)
-            print(f"✅ Broker notification sent to {broker_email}")
+            response = resend.Emails.send(params)
+            print(f"✅ Broker notification sent via Resend to {broker_email}: {response.get('id', 'N/A')}")
             return True
         else:
-            print(f"⚠️ SENDGRID_API_KEY not set - skipping broker notification to {broker_email}")
+            print(f"⚠️ RESEND_API_KEY not set - skipping broker notification to {broker_email}")
             print(f"   New referral: {customer_email}")
             return False
             
@@ -2711,15 +2706,12 @@ def test_calculate():
 
 @app.post("/v1/send-email")
 async def send_email(data: dict):
-    """Send calculation results via email using SendGrid"""
+    """Send calculation results via email using Resend"""
     try:
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail
-        
-        # Get SendGrid API key from environment variable
-        sendgrid_api_key = os.getenv('SENDGRID_API_KEY')
-        if not sendgrid_api_key:
-            raise HTTPException(status_code=500, detail="SendGrid API key not configured. Please set SENDGRID_API_KEY environment variable.")
+        # Get Resend API key from environment variable
+        resend_api_key = os.environ.get("RESEND_API_KEY")
+        if not resend_api_key:
+            raise HTTPException(status_code=500, detail="Resend API key not configured. Please set RESEND_API_KEY environment variable.")
         
         to_email = data.get('to_email')
         results = data.get('results', {})
@@ -2742,22 +2734,22 @@ async def send_email(data: dict):
         <p>Visit <a href="https://liendeadline.com">LienDeadline.com</a> for more calculations!</p>
         '''
         
-        message = Mail(
-            from_email='support@liendeadline.com',
-            to_emails=to_email,
-            subject='Your Lien Deadline Calculation - LienDeadline.com',
-            html_content=html_content
-        )
+        resend.api_key = resend_api_key
+        from_email = os.environ.get("SMTP_FROM_EMAIL", "onboarding@resend.dev")
         
-        sg = SendGridAPIClient(sendgrid_api_key)
-        response = sg.send(message)
+        params = {
+            "from": from_email,
+            "to": [to_email],
+            "subject": "Your Lien Deadline Calculation - LienDeadline.com",
+            "html": html_content
+        }
         
-        return {"status": "success", "message": "Email sent successfully!"}
+        response = resend.Emails.send(params)
         
-    except ImportError:
-        raise HTTPException(status_code=500, detail="SendGrid library not installed. Run: pip install sendgrid")
+        return {"status": "success", "message": "Email sent successfully!", "resend_id": response.get('id', 'N/A')}
+        
     except Exception as e:
-        print(f"SendGrid error: {str(e)}")
+        print(f"Resend error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
 
 # Admin API endpoints (for admin dashboard)
@@ -3135,7 +3127,7 @@ async def approve_partner_api(data: dict, username: str = Depends(verify_admin))
             conn.commit()
         
         # TODO: Send email to partner with referral link
-        # (You'll implement this later with EmailJS or SendGrid)
+        # (You'll implement this later with EmailJS or Resend)
         
         return {"status": "ok", "message": "Partner approved"}
     except HTTPException:
@@ -3490,10 +3482,10 @@ async def reset_password(request: Request, data: dict):
 def send_password_reset_email(email: str, reset_link: str):
     """Send password reset email"""
     try:
-        sendgrid_key = os.getenv('SENDGRID_API_KEY')
-        if sendgrid_key:
-            from sendgrid import SendGridAPIClient
-            from sendgrid.helpers.mail import Mail, Email, To
+        resend_key = os.environ.get("RESEND_API_KEY")
+        if resend_key:
+            resend.api_key = resend_key
+            from_email = os.environ.get("SMTP_FROM_EMAIL", "onboarding@resend.dev")
             
             html_content = f"""
             <html>
@@ -3526,19 +3518,18 @@ def send_password_reset_email(email: str, reset_link: str):
             </html>
             """
             
-            sg = SendGridAPIClient(api_key=sendgrid_key)
-            message = Mail(
-                from_email=Email("support@liendeadline.com"),
-                to_emails=To(email),
-                subject="Reset Your LienDeadline Password",
-                html_content=html_content
-            )
+            params = {
+                "from": from_email,
+                "to": [email],
+                "subject": "Reset Your LienDeadline Password",
+                "html": html_content
+            }
             
-            sg.send(message)
-            print(f"✅ Password reset email sent to {email}")
+            response = resend.Emails.send(params)
+            print(f"✅ Password reset email sent via Resend to {email}: {response.get('id', 'N/A')}")
             return True
         else:
-            print(f"⚠️ SendGrid not configured - Reset link: {reset_link}")
+            print(f"⚠️ Resend not configured - Reset link: {reset_link}")
             return False
             
     except Exception as e:
