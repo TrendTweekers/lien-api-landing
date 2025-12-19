@@ -659,13 +659,14 @@ async def approve_partner(
             if DB_TYPE == 'postgresql':
                 # PostgreSQL UPSERT - handle duplicate email gracefully
                 cursor.execute("""
-                    INSERT INTO brokers (name, email, referral_code, short_code)
-                    VALUES (%s, %s, %s, %s)
+                    INSERT INTO brokers (name, email, referral_code, short_code, status)
+                    VALUES (%s, %s, %s, %s, 'approved')
                     ON CONFLICT (email)
                     DO UPDATE SET
                         referral_code = EXCLUDED.referral_code,
                         short_code = EXCLUDED.short_code,
-                        name = EXCLUDED.name
+                        name = EXCLUDED.name,
+                        status = 'approved'
                     RETURNING id
                 """, (name, email, referral_code, short_code))
                 
@@ -681,17 +682,35 @@ async def approve_partner(
                     broker_id = existing['id'] if isinstance(existing, dict) else existing[0]
                     cursor.execute("""
                         UPDATE brokers 
-                        SET referral_code = ?, short_code = ?, name = ?
+                        SET referral_code = ?, short_code = ?, name = ?, status = 'approved'
                         WHERE id = ?
                     """, (referral_code, short_code, name, broker_id))
                     print(f"✅ BROKER UPSERT OK id={broker_id} (updated existing)")
                 else:
                     cursor.execute("""
-                        INSERT INTO brokers (name, email, referral_code, short_code)
-                        VALUES (?, ?, ?, ?)
+                        INSERT INTO brokers (name, email, referral_code, short_code, status)
+                        VALUES (?, ?, ?, ?, 'approved')
                     """, (name, email, referral_code, short_code))
                     broker_id = cursor.lastrowid
                     print(f"✅ BROKER UPSERT OK id={broker_id} (new record)")
+            
+            # Explicitly set status to 'approved' (ensure it's always set correctly)
+            try:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        UPDATE brokers 
+                        SET status = 'approved'
+                        WHERE id = %s
+                    """, (broker_id,))
+                else:
+                    cursor.execute("""
+                        UPDATE brokers 
+                        SET status = 'approved'
+                        WHERE id = ?
+                    """, (broker_id,))
+                print(f"✅ Broker status set to 'approved' for id={broker_id}")
+            except Exception as e:
+                print(f"⚠️ Warning: Could not update broker status: {e}")
             
             # Try to update additional columns if they exist (optional, don't fail if they don't)
             try:
