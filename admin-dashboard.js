@@ -1002,8 +1002,8 @@ async function viewBrokerPaymentInfo(brokerId, brokerName, brokerEmail) {
         `;
         
         safe.html('payment-info-content', contentHTML);
-        safe.show('payment-info-modal');
-        document.getElementById('payment-info-modal').classList.remove('hidden');
+        safe.show('paymentInfoModal');
+        document.getElementById('paymentInfoModal').classList.remove('hidden');
         
     } catch (error) {
         console.error('[Admin] Error loading payment info:', error);
@@ -1174,7 +1174,7 @@ async function handleMarkPaid(e) {
         alert('✅ Payment marked as paid successfully');
         
         // Close modal and refresh
-        closeModal('mark-paid-modal');
+        closeModal('markPaidModal');
         loadPaymentHistory();
         
         // Reset form
@@ -1189,7 +1189,7 @@ async function handleMarkPaid(e) {
 // 14. Show Mark as Paid Modal
 function showMarkPaidModal(brokerId) {
     document.getElementById('paid-broker-id').value = brokerId;
-    document.getElementById('mark-paid-modal').classList.remove('hidden');
+    document.getElementById('markPaidModal').classList.remove('hidden');
 }
 
 // 9. Global functions
