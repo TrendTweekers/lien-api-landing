@@ -5148,7 +5148,7 @@ async def get_broker_payment_info_admin(broker_id: int, username: str = Depends(
         )
 
 @app.get("/api/admin/payment-history")
-async def get_payment_history(filter: str = "all", username: str = Depends(verify_admin)):
+async def get_payment_history(time_filter: str = "all", username: str = Depends(verify_admin)):
     """Get payment history for admin dashboard"""
     try:
         with get_db() as conn:
@@ -5167,9 +5167,9 @@ async def get_payment_history(filter: str = "all", username: str = Depends(verif
                         transaction_id VARCHAR(255),
                         notes TEXT,
                         status VARCHAR(50) DEFAULT 'completed',
+                        payment_date TIMESTAMP DEFAULT NOW(),
                         paid_at TIMESTAMP DEFAULT NOW(),
-                        created_at TIMESTAMP DEFAULT NOW(),
-                        FOREIGN KEY (broker_id) REFERENCES brokers(id)
+                        created_at TIMESTAMP DEFAULT NOW()
                     )
                 """)
             else:
@@ -5184,15 +5184,15 @@ async def get_payment_history(filter: str = "all", username: str = Depends(verif
                         transaction_id TEXT,
                         notes TEXT,
                         status TEXT DEFAULT 'completed',
+                        payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         paid_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (broker_id) REFERENCES brokers(id)
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
             conn.commit()
             
-            # Build query based on filter
-            if filter == "month":
+            # Build query based on time_filter
+            if time_filter == "month":
                 if DB_TYPE == 'postgresql':
                     cursor.execute("""
                         SELECT bp.*, b.name as broker_name, b.email as broker_email
@@ -5319,14 +5319,14 @@ async def mark_payment_paid(request: Request, username: str = Depends(verify_adm
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     INSERT INTO broker_payments 
-                    (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes, status)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'completed')
+                    (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes, status, payment_date, paid_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'completed', NOW(), NOW())
                 """, (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes))
             else:
                 cursor.execute("""
                     INSERT INTO broker_payments 
-                    (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'completed')
+                    (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes, status, payment_date, paid_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """, (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes))
             
             conn.commit()
@@ -5347,7 +5347,7 @@ async def mark_payment_paid(request: Request, username: str = Depends(verify_adm
         )
 
 @app.get("/api/admin/payment-history/export")
-async def export_payment_history_csv(filter: str = "all", username: str = Depends(verify_admin)):
+async def export_payment_history_csv(time_filter: str = "all", username: str = Depends(verify_admin)):
     """Export payment history as CSV"""
     try:
         from fastapi.responses import Response
@@ -5357,7 +5357,7 @@ async def export_payment_history_csv(filter: str = "all", username: str = Depend
             cursor = get_db_cursor(conn)
             
             # Build query (same as payment history)
-            if filter == "month":
+            if time_filter == "month":
                 if DB_TYPE == 'postgresql':
                     cursor.execute("""
                         SELECT bp.*, b.name as broker_name, b.email as broker_email
@@ -5443,7 +5443,7 @@ async def export_payment_history_csv(filter: str = "all", username: str = Depend
                 content=csv_content,
                 media_type="text/csv",
                 headers={
-                    "Content-Disposition": f"attachment; filename=payment-history-{filter}-{datetime.now().strftime('%Y-%m-%d')}.csv"
+                    "Content-Disposition": f"attachment; filename=payment-history-{time_filter}-{datetime.now().strftime('%Y-%m-%d')}.csv"
                 }
             )
             
