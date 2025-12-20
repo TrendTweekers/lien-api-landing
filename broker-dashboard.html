@@ -134,7 +134,7 @@
             <div class="bg-white rounded-lg shadow p-6 mb-8">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-bold">Payment Settings</h3>
-                    <button onclick="showPaymentSettings()" class="text-blue-600 hover:underline text-sm">
+                    <button onclick="showPaymentSettings(event); return false;" class="text-blue-600 hover:underline text-sm cursor-pointer">
                         Update Payment Info
                     </button>
                 </div>
@@ -175,44 +175,116 @@
                     <label class="block text-sm font-medium mb-2">Payment Method *</label>
                     <select id="paymentMethod" required onchange="togglePaymentFields()" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                         <option value="">Select payment method</option>
-                        <option value="bank_transfer">Bank Transfer</option>
                         <option value="paypal">PayPal</option>
-                        <option value="venmo">Venmo</option>
-                        <option value="zelle">Zelle</option>
-                        <option value="check">Check (Mail)</option>
+                        <option value="wise">Wise (TransferWise)</option>
+                        <option value="revolut">Revolut</option>
+                        <option value="sepa">SEPA Transfer (Europe)</option>
+                        <option value="swift">SWIFT/Wire Transfer</option>
+                        <option value="crypto">Cryptocurrency (Bitcoin/USDT)</option>
                     </select>
                 </div>
                 
-                <div id="paypalFields" class="mb-4 hidden">
-                    <label class="block text-sm font-medium mb-2">PayPal Email *</label>
+                <!-- PayPal/Wise/Revolut Fields -->
+                <div id="emailFields" class="mb-4 hidden">
+                    <label class="block text-sm font-medium mb-2">Email Address *</label>
                     <input type="email" id="paymentEmail" 
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                           placeholder="your@paypal.com">
+                           placeholder="your@email.com">
+                    <p class="text-xs text-gray-500 mt-1">Your PayPal/Wise/Revolut email address</p>
                 </div>
                 
-                <div id="bankFields" class="hidden">
+                <!-- SEPA Transfer Fields -->
+                <div id="sepaFields" class="hidden">
                     <div class="mb-4">
-                        <label class="block text-sm font-medium mb-2">Bank Account Number *</label>
+                        <label class="block text-sm font-medium mb-2">IBAN (International Bank Account Number) *</label>
+                        <input type="text" id="iban" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                               placeholder="GB82 WEST 1234 5698 7654 32">
+                        <p class="text-xs text-gray-500 mt-1">Encrypted and stored securely</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">BIC/SWIFT Code *</label>
+                        <input type="text" id="swiftCode" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                               placeholder="NWBKGB2L">
+                        <p class="text-xs text-gray-500 mt-1">Encrypted and stored securely</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Bank Name *</label>
+                        <input type="text" id="bankName" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                               placeholder="Bank name">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Account Holder Name *</label>
+                        <input type="text" id="accountHolderName" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                               placeholder="Full name as on bank account">
+                    </div>
+                </div>
+                
+                <!-- SWIFT/Wire Transfer Fields -->
+                <div id="swiftFields" class="hidden">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Account Number *</label>
                         <input type="text" id="bankAccountNumber" 
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg"
                                placeholder="Account number">
                         <p class="text-xs text-gray-500 mt-1">Encrypted and stored securely</p>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-medium mb-2">Bank Routing Number *</label>
-                        <input type="text" id="bankRoutingNumber" 
+                        <label class="block text-sm font-medium mb-2">SWIFT/BIC Code *</label>
+                        <input type="text" id="swiftCode" 
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                               placeholder="9-digit routing number">
+                               placeholder="SWIFT/BIC code">
                         <p class="text-xs text-gray-500 mt-1">Encrypted and stored securely</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Bank Name *</label>
+                        <input type="text" id="bankName" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                               placeholder="Bank name">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Bank Address *</label>
+                        <textarea id="bankAddress" rows="3"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                               placeholder="Bank full address"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Account Holder Name *</label>
+                        <input type="text" id="accountHolderName" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                               placeholder="Full name as on bank account">
+                    </div>
+                </div>
+                
+                <!-- Cryptocurrency Fields -->
+                <div id="cryptoFields" class="hidden">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Wallet Address *</label>
+                        <input type="text" id="cryptoWallet" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono"
+                               placeholder="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa">
+                        <p class="text-xs text-gray-500 mt-1">Encrypted and stored securely</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Currency Type *</label>
+                        <select id="cryptoCurrency" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <option value="">Select currency</option>
+                            <option value="BTC">Bitcoin (BTC)</option>
+                            <option value="USDT">Tether (USDT)</option>
+                            <option value="ETH">Ethereum (ETH)</option>
+                        </select>
                     </div>
                 </div>
                 
                 <div class="mb-4">
-                    <label class="block text-sm font-medium mb-2">Tax ID (W9) - Optional</label>
+                    <label class="block text-sm font-medium mb-2">Tax ID - Optional</label>
                     <input type="text" id="taxId" 
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                           placeholder="SSN or EIN (for tax reporting)">
-                    <p class="text-xs text-gray-500 mt-1">Required for payments over $600/year</p>
+                           placeholder="Tax ID / VAT / SSN / EIN">
+                    <p class="text-xs text-gray-500 mt-1">Required for payments over $600/year (US) or equivalent</p>
                 </div>
                 
                 <div class="flex gap-2">
@@ -367,6 +439,236 @@
             }
         }
         
+        // Payment settings functions
+        function showPaymentSettings(e) {
+            if (e) e.preventDefault();
+            const dashboard = document.getElementById('dashboard');
+            const form = document.getElementById('paymentSettingsForm');
+            
+            if (!dashboard || !form) {
+                console.error('Payment settings elements not found');
+                alert('Unable to open payment settings. Please refresh the page.');
+                return;
+            }
+            
+            dashboard.classList.add('hidden');
+            form.classList.remove('hidden');
+            // Scroll to form
+            setTimeout(() => {
+                form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+            // Load existing payment info into form
+            loadPaymentInfo();
+        }
+        
+        function hidePaymentSettings() {
+            document.getElementById('paymentSettingsForm').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+        }
+        
+        function togglePaymentFields() {
+            const method = document.getElementById('paymentMethod').value;
+            
+            // Hide all field groups
+            document.getElementById('emailFields')?.classList.add('hidden');
+            document.getElementById('sepaFields')?.classList.add('hidden');
+            document.getElementById('swiftFields')?.classList.add('hidden');
+            document.getElementById('cryptoFields')?.classList.add('hidden');
+            
+            // Show relevant fields based on payment method
+            if (method === 'paypal' || method === 'wise' || method === 'revolut') {
+                document.getElementById('emailFields')?.classList.remove('hidden');
+            } else if (method === 'sepa') {
+                document.getElementById('sepaFields')?.classList.remove('hidden');
+            } else if (method === 'swift') {
+                document.getElementById('swiftFields')?.classList.remove('hidden');
+            } else if (method === 'crypto') {
+                document.getElementById('cryptoFields')?.classList.remove('hidden');
+            }
+        }
+        
+        async function loadPaymentInfo() {
+            try {
+                const response = await fetch(`/api/v1/broker/payment-info?email=${encodeURIComponent(currentBrokerEmail)}`);
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.payment_info) {
+                    const info = data.payment_info;
+                    document.getElementById('paymentMethod').value = info.payment_method || '';
+                    document.getElementById('paymentEmail').value = info.payment_email || '';
+                    document.getElementById('iban').value = '';
+                    document.getElementById('swiftCode').value = '';
+                    document.getElementById('bankName').value = info.bank_name || '';
+                    document.getElementById('bankAddress').value = info.bank_address || '';
+                    document.getElementById('accountHolderName').value = info.account_holder_name || '';
+                    document.getElementById('cryptoWallet').value = '';
+                    document.getElementById('cryptoCurrency').value = info.crypto_currency || '';
+                    document.getElementById('taxId').value = info.tax_id || '';
+                    
+                    togglePaymentFields();
+                    updatePaymentInfoDisplay(info);
+                }
+            } catch (error) {
+                console.error('Payment info load error:', error);
+            }
+        }
+        
+        function updatePaymentInfoDisplay(info) {
+            const display = document.getElementById('paymentInfoDisplay');
+            if (!info.payment_method) {
+                display.innerHTML = '<p class="text-gray-600">No payment information on file.</p>';
+                return;
+            }
+            
+            const methodNames = {
+                'paypal': 'PayPal',
+                'wise': 'Wise (TransferWise)',
+                'revolut': 'Revolut',
+                'sepa': 'SEPA Transfer',
+                'swift': 'SWIFT/Wire Transfer',
+                'crypto': 'Cryptocurrency'
+            };
+            
+            const methodName = methodNames[info.payment_method] || info.payment_method;
+            let html = '<div class="space-y-2">';
+            
+            // Format display based on payment method
+            if (info.payment_method === 'paypal' || info.payment_method === 'wise' || info.payment_method === 'revolut') {
+                // Show masked email: p***@email.com
+                let maskedEmail = info.payment_email || '';
+                if (maskedEmail && maskedEmail.includes('@')) {
+                    const [local, domain] = maskedEmail.split('@');
+                    maskedEmail = local.charAt(0) + '***@' + domain;
+                }
+                html += `<p><strong>Payment Method:</strong> ${methodName} (${maskedEmail})</p>`;
+            } else if (info.payment_method === 'sepa') {
+                html += `<p><strong>Payment Method:</strong> ${methodName}</p>`;
+                if (info.iban) {
+                    html += `<p><strong>IBAN:</strong> ${info.iban}</p>`;
+                }
+                if (info.swift_code) {
+                    html += `<p><strong>BIC/SWIFT:</strong> ${info.swift_code}</p>`;
+                }
+                if (info.bank_name) {
+                    html += `<p><strong>Bank:</strong> ${info.bank_name}</p>`;
+                }
+                if (info.account_holder_name) {
+                    html += `<p><strong>Account Holder:</strong> ${info.account_holder_name}</p>`;
+                }
+            } else if (info.payment_method === 'swift') {
+                html += `<p><strong>Payment Method:</strong> ${methodName}</p>`;
+                if (info.bank_account_number) {
+                    html += `<p><strong>Account:</strong> ${info.bank_account_number}</p>`;
+                }
+                if (info.swift_code) {
+                    html += `<p><strong>SWIFT/BIC:</strong> ${info.swift_code}</p>`;
+                }
+                if (info.bank_name) {
+                    html += `<p><strong>Bank:</strong> ${info.bank_name}</p>`;
+                }
+                if (info.account_holder_name) {
+                    html += `<p><strong>Account Holder:</strong> ${info.account_holder_name}</p>`;
+                }
+            } else if (info.payment_method === 'crypto') {
+                html += `<p><strong>Payment Method:</strong> ${methodName}</p>`;
+                if (info.crypto_wallet) {
+                    html += `<p><strong>Wallet:</strong> ${info.crypto_wallet}</p>`;
+                }
+                if (info.crypto_currency) {
+                    html += `<p><strong>Currency:</strong> ${info.crypto_currency}</p>`;
+                }
+            } else {
+                // Fallback for any other method
+                html += `<p><strong>Payment Method:</strong> ${methodName}</p>`;
+            }
+            
+            if (info.tax_id) {
+                html += `<p class="text-sm text-gray-500 mt-2"><strong>Tax ID:</strong> ${info.tax_id}</p>`;
+            }
+            
+            html += '</div>';
+            display.innerHTML = html;
+        }
+        
+        async function savePaymentInfo(e) {
+            e.preventDefault();
+            
+            const method = document.getElementById('paymentMethod').value;
+            const paymentEmail = document.getElementById('paymentEmail').value;
+            const iban = document.getElementById('iban').value;
+            const swiftCode = document.getElementById('swiftCode').value;
+            const bankName = document.getElementById('bankName').value;
+            const bankAddress = document.getElementById('bankAddress').value;
+            const accountHolderName = document.getElementById('accountHolderName').value;
+            const cryptoWallet = document.getElementById('cryptoWallet').value;
+            const cryptoCurrency = document.getElementById('cryptoCurrency').value;
+            const taxId = document.getElementById('taxId').value;
+            const bankAccount = document.getElementById('bankAccountNumber').value;
+            
+            // Validate required fields based on payment method
+            if (method === 'paypal' || method === 'wise' || method === 'revolut') {
+                if (!paymentEmail) {
+                    alert('Payment email is required.');
+                    return;
+                }
+            } else if (method === 'sepa') {
+                if (!iban || !swiftCode || !bankName || !accountHolderName) {
+                    alert('IBAN, BIC/SWIFT code, bank name, and account holder name are required for SEPA transfers.');
+                    return;
+                }
+            } else if (method === 'swift') {
+                if (!bankAccount || !swiftCode || !bankName || !bankAddress || !accountHolderName) {
+                    alert('Account number, SWIFT code, bank name, bank address, and account holder name are required for SWIFT transfers.');
+                    return;
+                }
+            } else if (method === 'crypto') {
+                if (!cryptoWallet || !cryptoCurrency) {
+                    alert('Wallet address and currency type are required for cryptocurrency payments.');
+                    return;
+                }
+            }
+            
+            try {
+                const response = await fetch('/api/v1/broker/payment-info', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: currentBrokerEmail,
+                        payment_method: method,
+                        payment_email: paymentEmail,
+                        iban: iban,
+                        swift_code: swiftCode,
+                        bank_name: bankName,
+                        bank_address: bankAddress,
+                        account_holder_name: accountHolderName,
+                        crypto_wallet: cryptoWallet,
+                        crypto_currency: cryptoCurrency,
+                        tax_id: taxId,
+                        bank_account_number: bankAccount
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    alert(data.message || 'Failed to save payment information.');
+                    return;
+                }
+                
+                alert('Payment information saved successfully!');
+                hidePaymentSettings();
+                // Reload payment info to update display
+                await loadPaymentInfo();
+                // Reload payment info to update display
+                await loadPaymentInfo();
+            } catch (error) {
+                console.error('Payment info save error:', error);
+                alert('Failed to save payment information. Please try again.');
+            }
+        }
+        
         async function loadDashboard() {
             try {
                 const response = await fetch(`/api/v1/broker/dashboard?email=${encodeURIComponent(currentBrokerEmail)}`);
@@ -393,6 +695,9 @@
                     ? '$500 per referral (one-time)' 
                     : '$50/month per referral (recurring)';
                 document.getElementById('commissionModel').textContent = commissionText;
+                
+                // Load payment info
+                await loadPaymentInfo();
                 
                 // Populate table
                 const tbody = document.getElementById('referralsTable');

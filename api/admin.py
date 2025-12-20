@@ -734,9 +734,17 @@ async def approve_partner(
                     ("password_hash", "TEXT"),
                     ("payment_method", "TEXT"),
                     ("payment_email", "TEXT"),
+                    ("iban", "TEXT"),
+                    ("swift_code", "TEXT"),
+                    ("bank_name", "TEXT"),
+                    ("bank_address", "TEXT"),
+                    ("account_holder_name", "TEXT"),
+                    ("crypto_wallet", "TEXT"),
+                    ("crypto_currency", "TEXT"),
+                    ("tax_id", "TEXT"),
+                    # Keep old columns for backward compatibility
                     ("bank_account_number", "TEXT"),
-                    ("bank_routing_number", "TEXT"),
-                    ("tax_id", "TEXT")
+                    ("bank_routing_number", "TEXT")
                 ]:
                     try:
                         cursor.execute(f"ALTER TABLE brokers ADD COLUMN {column_def[0]} {column_def[1]}")
