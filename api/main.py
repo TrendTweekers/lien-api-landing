@@ -4933,7 +4933,7 @@ async def migrate_payment_tracking(username: str = Depends(verify_admin)):
                 ("last_payment_date", "TIMESTAMP"),
                 ("next_payment_due", "TIMESTAMP"),
                 ("total_paid", "DECIMAL(10,2) DEFAULT 0"),
-                ("payment_status", "VARCHAR(50) DEFAULT 'pending_first_payment')")
+                ("payment_status", "VARCHAR(50) DEFAULT 'pending_first_payment'")
             ]
 
             for col_name, col_type in column_definitions:
