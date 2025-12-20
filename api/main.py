@@ -4928,7 +4928,7 @@ async def get_broker_payment_info(request: Request, email: str):
             content={"status": "error", "message": "Failed to retrieve payment information"}
         )
 
-@app.post("/api/admin/migrate-payment-columns")
+@app.get("/api/admin/migrate-payment-columns")
 async def migrate_payment_columns(username: str = Depends(verify_admin)):
     """Migration endpoint to add international payment columns to brokers table"""
     try:
