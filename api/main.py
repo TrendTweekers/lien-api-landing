@@ -5857,8 +5857,6 @@ async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
                 "traceback": traceback_str
             }
         )
-            content={"status": "error", "message": "Failed to get brokers ready to pay", "error": str(e)}
-        )
 
 def send_broker_password_reset_email(email: str, name: str, reset_link: str):
     """Send password reset email to broker"""
