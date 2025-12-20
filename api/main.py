@@ -4723,10 +4723,6 @@ async def save_broker_payment_info(request: Request, data: dict):
         crypto_currency = data.get('crypto_currency', '')
         tax_id = data.get('tax_id', '')
         
-        # Legacy US fields (for backward compatibility)
-        bank_account_number = data.get('bank_account_number', '')
-        bank_routing_number = data.get('bank_routing_number', '')
-        
         if not email:
             return JSONResponse(
                 status_code=400,
