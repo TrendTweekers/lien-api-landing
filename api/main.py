@@ -4928,6 +4928,136 @@ async def get_broker_payment_info(request: Request, email: str):
             content={"status": "error", "message": "Failed to retrieve payment information"}
         )
 
+@app.post("/api/admin/migrate-payment-columns")
+async def migrate_payment_columns(username: str = Depends(verify_admin)):
+    """Migration endpoint to add international payment columns to brokers table"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                # PostgreSQL migration
+                migrations = []
+                
+                # Add new international payment columns
+                new_columns = [
+                    ('payment_method', 'VARCHAR(50)'),
+                    ('payment_email', 'VARCHAR(255)'),
+                    ('iban', 'VARCHAR(255)'),
+                    ('swift_code', 'VARCHAR(100)'),
+                    ('bank_name', 'VARCHAR(255)'),
+                    ('bank_address', 'TEXT'),
+                    ('account_holder_name', 'VARCHAR(255)'),
+                    ('crypto_wallet', 'VARCHAR(255)'),
+                    ('crypto_currency', 'VARCHAR(50)'),
+                    ('tax_id', 'VARCHAR(100)')
+                ]
+                
+                for column_name, column_type in new_columns:
+                    try:
+                        cursor.execute(f"""
+                            DO $$ 
+                            BEGIN
+                                IF NOT EXISTS (
+                                    SELECT 1 FROM information_schema.columns 
+                                    WHERE table_name = 'brokers' AND column_name = '{column_name}'
+                                ) THEN
+                                    ALTER TABLE brokers ADD COLUMN {column_name} {column_type};
+                                END IF;
+                            END $$;
+                        """)
+                        migrations.append(f"✅ Added column: {column_name}")
+                        print(f"✅ Added column: {column_name}")
+                    except Exception as e:
+                        migrations.append(f"⚠️ Column {column_name}: {str(e)}")
+                        print(f"⚠️ Column {column_name} error: {e}")
+                
+                # Remove old US-only columns (if they exist)
+                old_columns = ['bank_account_number', 'bank_routing_number']
+                for column_name in old_columns:
+                    try:
+                        cursor.execute(f"""
+                            DO $$ 
+                            BEGIN
+                                IF EXISTS (
+                                    SELECT 1 FROM information_schema.columns 
+                                    WHERE table_name = 'brokers' AND column_name = '{column_name}'
+                                ) THEN
+                                    ALTER TABLE brokers DROP COLUMN {column_name};
+                                END IF;
+                            END $$;
+                        """)
+                        migrations.append(f"✅ Removed column: {column_name}")
+                        print(f"✅ Removed column: {column_name}")
+                    except Exception as e:
+                        migrations.append(f"⚠️ Could not remove {column_name}: {str(e)}")
+                        print(f"⚠️ Could not remove {column_name}: {e}")
+                
+                conn.commit()
+                
+                return {
+                    "status": "success",
+                    "message": "Migration completed",
+                    "migrations": migrations,
+                    "database_type": "postgresql"
+                }
+            else:
+                # SQLite migration
+                migrations = []
+                
+                # Add new columns
+                new_columns = [
+                    ('payment_method', 'TEXT'),
+                    ('payment_email', 'TEXT'),
+                    ('iban', 'TEXT'),
+                    ('swift_code', 'TEXT'),
+                    ('bank_name', 'TEXT'),
+                    ('bank_address', 'TEXT'),
+                    ('account_holder_name', 'TEXT'),
+                    ('crypto_wallet', 'TEXT'),
+                    ('crypto_currency', 'TEXT'),
+                    ('tax_id', 'TEXT')
+                ]
+                
+                for column_name, column_type in new_columns:
+                    try:
+                        cursor.execute(f"ALTER TABLE brokers ADD COLUMN {column_name} {column_type}")
+                        migrations.append(f"✅ Added column: {column_name}")
+                        print(f"✅ Added column: {column_name}")
+                    except Exception as e:
+                        if "duplicate column" in str(e).lower() or "already exists" in str(e).lower():
+                            migrations.append(f"ℹ️ Column {column_name} already exists")
+                        else:
+                            migrations.append(f"⚠️ Column {column_name}: {str(e)}")
+                            print(f"⚠️ Column {column_name} error: {e}")
+                
+                # Note: SQLite doesn't support DROP COLUMN easily, so we'll keep old columns
+                # They can be ignored in queries
+                migrations.append("ℹ️ Old columns (bank_account_number, bank_routing_number) kept for compatibility")
+                
+                conn.commit()
+                
+                return {
+                    "status": "success",
+                    "message": "Migration completed",
+                    "migrations": migrations,
+                    "database_type": "sqlite",
+                    "note": "Old columns kept for SQLite compatibility"
+                }
+            
+    except Exception as e:
+        print(f"❌ Migration error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": f"Migration failed: {str(e)}",
+                "traceback": traceback.format_exc()
+            }
+        )
+
 @app.get("/api/admin/broker-payment-info/{broker_id}")
 async def get_broker_payment_info_admin(broker_id: int, username: str = Depends(verify_admin)):
     """Get broker payment information for admin (unmasked)"""
