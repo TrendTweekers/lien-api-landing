@@ -1191,9 +1191,138 @@ async function handleMarkPaid(e) {
 }
 
 // 14. Show Mark as Paid Modal
-function showMarkPaidModal(brokerId) {
+function showMarkPaidModal(brokerId, amount) {
     document.getElementById('paid-broker-id').value = brokerId;
+    if (amount) {
+        document.getElementById('paid-amount').value = amount.toFixed(2);
+    }
     document.getElementById('markPaidModal').classList.remove('hidden');
+}
+
+// 15. Load Ready to Pay Brokers
+async function loadReadyToPay() {
+    try {
+        console.log('[Admin] Loading brokers ready to pay...');
+        
+        const response = await fetch('/api/admin/brokers-ready-to-pay', {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            console.error(`[Admin] Ready to pay API error: ${response.status}`);
+            const container = document.getElementById('ready-to-pay-list');
+            if (container) {
+                container.innerHTML = '<p class="text-gray-500 py-4">Error loading brokers ready to pay</p>';
+            }
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('[Admin] Brokers ready to pay:', data);
+        
+        const brokers = data.brokers || [];
+        const container = document.getElementById('ready-to-pay-list');
+        
+        if (!container) {
+            console.warn('[Admin] ready-to-pay-list container not found');
+            return;
+        }
+        
+        if (brokers.length === 0) {
+            container.innerHTML = '';
+            const emptyState = document.getElementById('no-ready-to-pay');
+            if (emptyState) {
+                emptyState.classList.remove('hidden');
+            }
+            const section = document.getElementById('readyToPaySection');
+            if (section) {
+                section.classList.add('hidden');
+            }
+            return;
+        }
+        
+        // Hide empty state
+        const emptyState = document.getElementById('no-ready-to-pay');
+        if (emptyState) {
+            emptyState.classList.add('hidden');
+        }
+        
+        // Sort by days overdue (most overdue first)
+        brokers.sort((a, b) => (b.days_overdue || 0) - (a.days_overdue || 0));
+        
+        // Generate HTML for each broker
+        const html = brokers.map(broker => {
+            const isOverdue = broker.days_overdue > 0;
+            const overdueClass = isOverdue ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white';
+            const overdueBadge = isOverdue 
+                ? `<span class="px-2 py-1 rounded text-xs bg-red-100 text-red-800 font-semibold">${broker.days_overdue} days overdue</span>`
+                : '';
+            const firstPaymentBadge = broker.is_first_payment 
+                ? '<span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 font-semibold">First Payment</span>'
+                : '';
+            
+            const methodNames = {
+                'paypal': 'PayPal',
+                'wise': 'Wise',
+                'revolut': 'Revolut',
+                'sepa': 'SEPA',
+                'swift': 'SWIFT',
+                'crypto': 'Crypto'
+            };
+            const paymentMethod = methodNames[broker.payment_method?.toLowerCase()] || broker.payment_method || 'Not Set';
+            
+            return `
+                <tr class="hover:bg-gray-50 ${overdueClass}">
+                    <td class="py-3 px-6 text-sm font-medium text-gray-900">${broker.name || 'Unknown'}</td>
+                    <td class="py-3 px-6 text-sm text-gray-600">${broker.email || 'N/A'}</td>
+                    <td class="py-3 px-6 text-sm font-semibold text-green-600">$${parseFloat(broker.commission_owed || 0).toFixed(2)}</td>
+                    <td class="py-3 px-6 text-sm text-gray-600">${paymentMethod}</td>
+                    <td class="py-3 px-6 text-sm text-gray-600">${broker.payment_address || 'N/A'}</td>
+                    <td class="py-3 px-6 text-sm text-gray-600">${broker.next_payment_due ? new Date(broker.next_payment_due).toLocaleDateString() : 'N/A'}</td>
+                    <td class="py-3 px-6">
+                        <div class="flex flex-wrap gap-2">
+                            ${overdueBadge}
+                            ${firstPaymentBadge}
+                        </div>
+                    </td>
+                    <td class="py-3 px-6">
+                        <div class="flex gap-2">
+                            <button onclick="viewBrokerPaymentInfo(${broker.id}, '${(broker.name || '').replace(/'/g, "\\'")}', '${(broker.email || '').replace(/'/g, "\\'")}')" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs view-payment-btn">
+                                View Info
+                            </button>
+                            <button onclick="showMarkPaidModal(${broker.id}, ${parseFloat(broker.commission_owed || 0).toFixed(2)})" class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs mark-paid-btn">
+                                Mark as Paid
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        container.innerHTML = html;
+        
+        // Update count
+        const countElement = document.getElementById('readyToPayCount');
+        if (countElement) {
+            countElement.textContent = brokers.length;
+        }
+        
+        // Show the section if it was hidden
+        const section = document.getElementById('readyToPaySection');
+        if (section) {
+            section.classList.remove('hidden');
+        }
+        
+    } catch (error) {
+        console.error('[Admin] Error loading ready to pay:', error);
+        const container = document.getElementById('ready-to-pay-list');
+        if (container) {
+            container.innerHTML = '<p class="text-red-500 py-4">Error loading brokers: ' + error.message + '</p>';
+        }
+    }
 }
 
 // 9. Global functions
