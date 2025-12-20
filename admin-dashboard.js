@@ -216,6 +216,14 @@ window.addEventListener(
       ? { Authorization: window.ADMIN_BASIC_AUTH }
       : { Authorization: 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`) };
 
+    // Handle view payment info button
+    if (btn.classList.contains("view-payment-btn")) {
+      e.preventDefault();
+      e.stopPropagation();
+      await viewBrokerPaymentInfo(brokerId, btn.dataset.brokerName, btn.dataset.brokerEmail);
+      return;
+    }
+
     // Disable button to prevent double clicks
     btn.disabled = true;
 
@@ -512,6 +520,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load data
     loadPartnerApplications();
     loadActiveBrokers();
+    loadPaymentHistory();
     updateAllStats();
     updateLiveAnalytics();
     updateEmailConversion();
@@ -521,6 +530,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(() => {
         loadPartnerApplications();
         loadActiveBrokers();
+        loadPaymentHistory();
         updateAllStats();
         updateLiveAnalytics();
         updateEmailConversion();
@@ -574,23 +584,57 @@ async function loadActiveBrokers() {
                 ? '<span class="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">$500 Bounty</span>'
                 : '<span class="px-2 py-1 rounded text-xs bg-green-100 text-green-800">$50/month</span>';
             
+            // Payment method badge
+            const paymentMethod = broker.payment_method || '';
+            let paymentBadge = '<span class="px-2 py-1 rounded text-xs bg-gray-100 text-gray-600">Not Set ❌</span>';
+            if (paymentMethod) {
+                const methodIcons = {
+                    'paypal': '💰',
+                    'wise': '💸',
+                    'revolut': '💳',
+                    'sepa': '🇪🇺',
+                    'swift': '🌍',
+                    'crypto': '₿'
+                };
+                const icon = methodIcons[paymentMethod.toLowerCase()] || '💰';
+                const methodNames = {
+                    'paypal': 'PayPal',
+                    'wise': 'Wise',
+                    'revolut': 'Revolut',
+                    'sepa': 'SEPA',
+                    'swift': 'SWIFT',
+                    'crypto': 'Crypto'
+                };
+                const name = methodNames[paymentMethod.toLowerCase()] || paymentMethod;
+                paymentBadge = `<span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">${name} ${icon}</span>`;
+            }
+            
             return `
                 <div class="p-4 hover:bg-gray-50">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3 flex-1">
                             <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                                 <span class="text-blue-600 font-semibold">${(broker.name || 'B').charAt(0).toUpperCase()}</span>
                             </div>
-                            <div>
+                            <div class="flex-1">
                                 <div class="font-semibold text-gray-900">${broker.name || 'Unknown'}</div>
                                 <div class="text-sm text-gray-600">${broker.email || ''}</div>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
                             <div class="text-right">
-                                <div class="text-sm text-gray-600">${commissionBadge}</div>
-                                <div class="text-xs text-gray-500 mt-1">Ref: ${broker.referral_code || 'N/A'}</div>
+                                <div class="text-sm text-gray-600 mb-1">${commissionBadge}</div>
+                                <div class="text-xs mb-1">${paymentBadge}</div>
+                                <div class="text-xs text-gray-500">Ref: ${broker.referral_code || 'N/A'}</div>
                             </div>
+                            <button type="button"
+                                class="view-payment-btn px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                                data-broker-id="${broker.id}"
+                                data-broker-name="${(broker.name || 'Unknown').replace(/"/g, '&quot;')}"
+                                data-broker-email="${(broker.email || '').replace(/"/g, '&quot;')}"
+                                title="View Payment Info">
+                                View Payment Info
+                            </button>
                             <button type="button"
                                 class="delete-broker-btn px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
                                 data-broker-id="${broker.id}"

@@ -3158,55 +3158,66 @@ async def setup_referrals_table(username: str = Depends(verify_admin)):
 
 @app.get("/api/admin/brokers")
 async def get_brokers_api(username: str = Depends(verify_admin)):
-    """Return list of brokers"""
-    db = None
+    """Return list of brokers with payment info"""
     try:
-        db = get_db()
-        
-        # Check if table exists
-        tables = db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-        table_names = [t[0] for t in tables]
-        
-        if 'brokers' not in table_names:
-            print("Brokers table does not exist")
-            return []
-        
-        # Try query with created_at, fallback without it
-        try:
-            rows = db.execute("""
-                SELECT id, name, email, referrals, earned, status
-                FROM brokers
-                ORDER BY created_at DESC
-            """).fetchall()
-        except sqlite3.OperationalError:
-            try:
-                rows = db.execute("""
-                    SELECT id, name, email, referrals, earned, status
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get brokers with payment method (PostgreSQL compatible)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id, name, email, referrals, earned, status, payment_method, 
+                           commission_model, referral_code
                     FROM brokers
-                    ORDER BY id DESC
-                """).fetchall()
-            except sqlite3.OperationalError as e:
-                print(f"Error querying brokers: {e}")
-                return []
-        
-        return [
-            {
-                "name": row.get('name') or row.get('email') or 'N/A',
-                "email": row.get('email') or 'N/A',
-                "referrals": row.get('referrals') or 0,
-                "earned": float(row.get('earned') or 0),
-                "status": row.get('status') or 'pending'
-            }
-            for row in rows
-        ]
+                    WHERE status IN ('approved', 'active')
+                    ORDER BY created_at DESC NULLS LAST, id DESC
+                """)
+            else:
+                cursor.execute("""
+                    SELECT id, name, email, referrals, earned, status, payment_method, 
+                           commission_model, referral_code
+                    FROM brokers
+                    WHERE status IN ('approved', 'active') OR status IS NULL
+                    ORDER BY created_at DESC, id DESC
+                """)
+            
+            rows = cursor.fetchall()
+            
+            brokers_list = []
+            for row in rows:
+                if isinstance(row, dict):
+                    broker_dict = {
+                        "id": row.get('id'),
+                        "name": row.get('name') or row.get('email') or 'N/A',
+                        "email": row.get('email') or 'N/A',
+                        "referrals": row.get('referrals') or 0,
+                        "earned": float(row.get('earned') or 0),
+                        "status": row.get('status') or 'pending',
+                        "payment_method": row.get('payment_method'),
+                        "commission_model": row.get('commission_model') or row.get('model'),
+                        "referral_code": row.get('referral_code') or row.get('id')
+                    }
+                else:
+                    broker_dict = {
+                        "id": row[0] if len(row) > 0 else None,
+                        "name": row[1] if len(row) > 1 and row[1] else (row[2] if len(row) > 2 else 'N/A'),
+                        "email": row[2] if len(row) > 2 else 'N/A',
+                        "referrals": row[3] if len(row) > 3 else 0,
+                        "earned": float(row[4] if len(row) > 4 else 0),
+                        "status": row[5] if len(row) > 5 else 'pending',
+                        "payment_method": row[6] if len(row) > 6 else None,
+                        "commission_model": row[7] if len(row) > 7 else None,
+                        "referral_code": row[8] if len(row) > 8 else (row[0] if len(row) > 0 else None)
+                    }
+                brokers_list.append(broker_dict)
+            
+            return {"brokers": brokers_list}
+            
     except Exception as e:
         print(f"Error in get_brokers_api: {e}")
         import traceback
         traceback.print_exc()
-        return []
-    finally:
-        if db:
-            db.close()
+        return {"brokers": []}
 
 @app.get("/api/admin/partner-applications")
 async def get_partner_applications_api(request: Request, status: str = "all", username: str = Depends(verify_admin)):
@@ -5048,7 +5059,7 @@ async def get_broker_payment_info_admin(broker_id: int, username: str = Depends(
                 cursor.execute("""
                     SELECT id, name, email, payment_method, payment_email, iban, swift_code,
                            bank_name, bank_address, account_holder_name, crypto_wallet, 
-                           crypto_currency, tax_id, bank_account_number, bank_routing_number
+                           crypto_currency, tax_id
                     FROM brokers
                     WHERE id = %s
                 """, (broker_id,))
@@ -5056,7 +5067,7 @@ async def get_broker_payment_info_admin(broker_id: int, username: str = Depends(
                 cursor.execute("""
                     SELECT id, name, email, payment_method, payment_email, iban, swift_code,
                            bank_name, bank_address, account_holder_name, crypto_wallet, 
-                           crypto_currency, tax_id, bank_account_number, bank_routing_number
+                           crypto_currency, tax_id
                     FROM brokers
                     WHERE id = ?
                 """, (broker_id,))
