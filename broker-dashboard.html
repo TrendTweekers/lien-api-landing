@@ -557,14 +557,14 @@
                 }
             } else if (info.payment_method === 'swift') {
                 html += `<p><strong>Payment Method:</strong> ${methodName}</p>`;
-                if (info.bank_account_number) {
-                    html += `<p><strong>Account:</strong> ${info.bank_account_number}</p>`;
-                }
                 if (info.swift_code) {
                     html += `<p><strong>SWIFT/BIC:</strong> ${info.swift_code}</p>`;
                 }
                 if (info.bank_name) {
                     html += `<p><strong>Bank:</strong> ${info.bank_name}</p>`;
+                }
+                if (info.bank_address) {
+                    html += `<p><strong>Bank Address:</strong> ${info.bank_address}</p>`;
                 }
                 if (info.account_holder_name) {
                     html += `<p><strong>Account Holder:</strong> ${info.account_holder_name}</p>`;
@@ -603,7 +603,6 @@
             const cryptoWallet = document.getElementById('cryptoWallet').value;
             const cryptoCurrency = document.getElementById('cryptoCurrency').value;
             const taxId = document.getElementById('taxId').value;
-            const bankAccount = document.getElementById('bankAccountNumber').value;
             
             // Validate required fields based on payment method
             if (method === 'paypal' || method === 'wise' || method === 'revolut') {
@@ -617,8 +616,8 @@
                     return;
                 }
             } else if (method === 'swift') {
-                if (!bankAccount || !swiftCode || !bankName || !bankAddress || !accountHolderName) {
-                    alert('Account number, SWIFT code, bank name, bank address, and account holder name are required for SWIFT transfers.');
+                if (!swiftCode || !bankName || !bankAddress || !accountHolderName) {
+                    alert('SWIFT code, bank name, bank address, and account holder name are required for SWIFT transfers.');
                     return;
                 }
             } else if (method === 'crypto') {
@@ -645,8 +644,7 @@
                         account_holder_name: accountHolderName,
                         crypto_wallet: cryptoWallet,
                         crypto_currency: cryptoCurrency,
-                        tax_id: taxId,
-                        bank_account_number: bankAccount
+                        tax_id: taxId
                     })
                 });
                 

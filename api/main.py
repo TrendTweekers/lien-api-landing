@@ -4741,9 +4741,6 @@ async def save_broker_payment_info(request: Request, data: dict):
         encrypted_swift = encrypt_data(swift_code) if swift_code else None
         encrypted_crypto = encrypt_data(crypto_wallet) if crypto_wallet else None
         encrypted_tax_id = encrypt_data(tax_id) if tax_id else None
-        # Legacy fields
-        encrypted_account = encrypt_data(bank_account_number) if bank_account_number else None
-        encrypted_routing = encrypt_data(bank_routing_number) if bank_routing_number else None
         
         with get_db() as conn:
             cursor = get_db_cursor(conn)
@@ -4781,13 +4778,11 @@ async def save_broker_payment_info(request: Request, data: dict):
                         account_holder_name = %s,
                         crypto_wallet = %s,
                         crypto_currency = %s,
-                        tax_id = %s,
-                        bank_account_number = %s,
-                        bank_routing_number = %s
+                        tax_id = %s
                     WHERE LOWER(email) = LOWER(%s)
                 """, (payment_method, payment_email, encrypted_iban, encrypted_swift, 
                       bank_name, bank_address, account_holder_name, encrypted_crypto, 
-                      crypto_currency, encrypted_tax_id, encrypted_account, encrypted_routing, email))
+                      crypto_currency, encrypted_tax_id, email))
             else:
                 cursor.execute("""
                     UPDATE brokers
@@ -4800,13 +4795,11 @@ async def save_broker_payment_info(request: Request, data: dict):
                         account_holder_name = ?,
                         crypto_wallet = ?,
                         crypto_currency = ?,
-                        tax_id = ?,
-                        bank_account_number = ?,
-                        bank_routing_number = ?
+                        tax_id = ?
                     WHERE LOWER(email) = LOWER(?)
                 """, (payment_method, payment_email, encrypted_iban, encrypted_swift,
                       bank_name, bank_address, account_holder_name, encrypted_crypto,
-                      crypto_currency, encrypted_tax_id, encrypted_account, encrypted_routing, email))
+                      crypto_currency, encrypted_tax_id, email))
             
             conn.commit()
             
@@ -4839,16 +4832,14 @@ async def get_broker_payment_info(request: Request, email: str):
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     SELECT payment_method, payment_email, iban, swift_code, bank_name, 
-                           bank_address, account_holder_name, crypto_wallet, crypto_currency, tax_id,
-                           bank_account_number, bank_routing_number
+                           bank_address, account_holder_name, crypto_wallet, crypto_currency, tax_id
                     FROM brokers
                     WHERE LOWER(email) = LOWER(%s)
                 """, (email,))
             else:
                 cursor.execute("""
                     SELECT payment_method, payment_email, iban, swift_code, bank_name, 
-                           bank_address, account_holder_name, crypto_wallet, crypto_currency, tax_id,
-                           bank_account_number, bank_routing_number
+                           bank_address, account_holder_name, crypto_wallet, crypto_currency, tax_id
                     FROM brokers
                     WHERE LOWER(email) = LOWER(?)
                 """, (email,))
@@ -4873,8 +4864,6 @@ async def get_broker_payment_info(request: Request, email: str):
                 crypto_wallet = broker.get('crypto_wallet', '')
                 crypto_currency = broker.get('crypto_currency', '')
                 tax_id = broker.get('tax_id', '')
-                bank_account = broker.get('bank_account_number', '')
-                bank_routing = broker.get('bank_routing_number', '')
             else:
                 payment_method = broker[0] if len(broker) > 0 else ''
                 payment_email = broker[1] if len(broker) > 1 else ''
@@ -4886,8 +4875,6 @@ async def get_broker_payment_info(request: Request, email: str):
                 crypto_wallet = broker[7] if len(broker) > 7 else ''
                 crypto_currency = broker[8] if len(broker) > 8 else ''
                 tax_id = broker[9] if len(broker) > 9 else ''
-                bank_account = broker[10] if len(broker) > 10 else ''
-                bank_routing = broker[11] if len(broker) > 11 else ''
             
             # Import encryption utilities
             from api.encryption import decrypt_data, mask_sensitive_data
@@ -4897,8 +4884,6 @@ async def get_broker_payment_info(request: Request, email: str):
             masked_swift = mask_sensitive_data(decrypt_data(swift_code), show_last=4) if swift_code else ''
             masked_crypto = mask_sensitive_data(decrypt_data(crypto_wallet), show_last=8) if crypto_wallet else ''
             masked_tax_id = mask_sensitive_data(decrypt_data(tax_id), show_last=4) if tax_id else ''
-            masked_account = mask_sensitive_data(decrypt_data(bank_account)) if bank_account else ''
-            masked_routing = mask_sensitive_data(decrypt_data(bank_routing)) if bank_routing else ''
             
             return {
                 "status": "success",
@@ -4912,10 +4897,7 @@ async def get_broker_payment_info(request: Request, email: str):
                     "account_holder_name": account_holder_name,
                     "crypto_wallet": masked_crypto,
                     "crypto_currency": crypto_currency,
-                    "tax_id": masked_tax_id,
-                    # Legacy fields (for backward compatibility)
-                    "bank_account_number": masked_account,
-                    "bank_routing_number": masked_routing
+                    "tax_id": masked_tax_id
                 }
             }
             
@@ -5105,8 +5087,6 @@ async def get_broker_payment_info_admin(broker_id: int, username: str = Depends(
                 crypto_wallet = broker.get('crypto_wallet', '')
                 crypto_currency = broker.get('crypto_currency', '')
                 tax_id = broker.get('tax_id', '')
-                bank_account = broker.get('bank_account_number', '')
-                bank_routing = broker.get('bank_routing_number', '')
             else:
                 broker_name = broker[1] if len(broker) > 1 else ''
                 broker_email = broker[2] if len(broker) > 2 else ''
@@ -5120,8 +5100,6 @@ async def get_broker_payment_info_admin(broker_id: int, username: str = Depends(
                 crypto_wallet = broker[10] if len(broker) > 10 else ''
                 crypto_currency = broker[11] if len(broker) > 11 else ''
                 tax_id = broker[12] if len(broker) > 12 else ''
-                bank_account = broker[13] if len(broker) > 13 else ''
-                bank_routing = broker[14] if len(broker) > 14 else ''
             
             # Import encryption utilities
             from api.encryption import decrypt_data
@@ -5131,8 +5109,6 @@ async def get_broker_payment_info_admin(broker_id: int, username: str = Depends(
             decrypted_swift = decrypt_data(swift_code) if swift_code else ''
             decrypted_crypto = decrypt_data(crypto_wallet) if crypto_wallet else ''
             decrypted_tax_id = decrypt_data(tax_id) if tax_id else ''
-            decrypted_account = decrypt_data(bank_account) if bank_account else ''
-            decrypted_routing = decrypt_data(bank_routing) if bank_routing else ''
             
             return {
                 "status": "success",
@@ -5151,10 +5127,7 @@ async def get_broker_payment_info_admin(broker_id: int, username: str = Depends(
                     "account_holder_name": account_holder_name,
                     "crypto_wallet": decrypted_crypto,
                     "crypto_currency": crypto_currency,
-                    "tax_id": decrypted_tax_id,
-                    # Legacy fields (for backward compatibility)
-                    "bank_account_number": decrypted_account,
-                    "bank_routing_number": decrypted_routing
+                    "tax_id": decrypted_tax_id
                 }
             }
             
