@@ -200,7 +200,8 @@ window.addEventListener(
       e.target.closest(".approve-btn") ||
       e.target.closest(".reject-btn") ||
       e.target.closest(".delete-btn") ||
-      e.target.closest(".delete-broker-btn");
+      e.target.closest(".delete-broker-btn") ||
+      e.target.closest(".view-payment-btn");
 
     if (!btn) return;
 
@@ -216,11 +217,12 @@ window.addEventListener(
       ? { Authorization: window.ADMIN_BASIC_AUTH }
       : { Authorization: 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`) };
 
-    // Handle view payment info button
+    // Handle view payment info button FIRST (before other handlers)
     if (btn.classList.contains("view-payment-btn")) {
-      e.preventDefault();
-      e.stopPropagation();
-      await viewBrokerPaymentInfo(brokerId, btn.dataset.brokerName, btn.dataset.brokerEmail);
+      const brokerId = btn.dataset.brokerId;
+      const brokerName = btn.dataset.brokerName || 'Unknown';
+      const brokerEmail = btn.dataset.brokerEmail || '';
+      await viewBrokerPaymentInfo(brokerId, brokerName, brokerEmail);
       return;
     }
 
