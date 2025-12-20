@@ -5607,6 +5607,184 @@ async def export_payment_history_csv(time_filter: str = "all", username: str = D
             content={"status": "error", "message": "Failed to export payment history"}
         )
 
+@app.get("/api/admin/brokers-ready-to-pay")
+async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
+    """Get list of brokers who are ready to be paid"""
+    try:
+        today = datetime.now()
+        brokers_ready = []
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get all active/approved brokers
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id, name, email, payment_method, payment_email, iban, crypto_wallet,
+                           first_payment_date, last_payment_date, next_payment_due, 
+                           created_at, status, commission_model
+                    FROM brokers
+                    WHERE status IN ('approved', 'active')
+                    ORDER BY next_payment_due ASC NULLS LAST, created_at ASC
+                """)
+            else:
+                cursor.execute("""
+                    SELECT id, name, email, payment_method, payment_email, iban, crypto_wallet,
+                           first_payment_date, last_payment_date, next_payment_due, 
+                           created_at, status, commission_model
+                    FROM brokers
+                    WHERE status IN ('approved', 'active') OR status IS NULL
+                    ORDER BY next_payment_due ASC, created_at ASC
+                """)
+            
+            brokers = cursor.fetchall()
+            
+            for broker in brokers:
+                # Parse broker data
+                if isinstance(broker, dict):
+                    broker_id = broker.get('id')
+                    broker_name = broker.get('name', 'Unknown')
+                    broker_email = broker.get('email', '')
+                    payment_method = broker.get('payment_method', '')
+                    payment_email = broker.get('payment_email', '')
+                    iban = broker.get('iban', '')
+                    crypto_wallet = broker.get('crypto_wallet', '')
+                    first_payment_date = broker.get('first_payment_date')
+                    last_payment_date = broker.get('last_payment_date')
+                    next_payment_due = broker.get('next_payment_due')
+                    created_at = broker.get('created_at')
+                    broker_status = broker.get('status')
+                    commission_model = broker.get('commission_model')
+                else:
+                    broker_id = broker[0] if len(broker) > 0 else None
+                    broker_name = broker[1] if len(broker) > 1 else 'Unknown'
+                    broker_email = broker[2] if len(broker) > 2 else ''
+                    payment_method = broker[3] if len(broker) > 3 else ''
+                    payment_email = broker[4] if len(broker) > 4 else ''
+                    iban = broker[5] if len(broker) > 5 else ''
+                    crypto_wallet = broker[6] if len(broker) > 6 else ''
+                    first_payment_date = broker[7] if len(broker) > 7 else None
+                    last_payment_date = broker[8] if len(broker) > 8 else None
+                    next_payment_due = broker[9] if len(broker) > 9 else None
+                    created_at = broker[10] if len(broker) > 10 else None
+                    broker_status = broker[11] if len(broker) > 11 else None
+                    commission_model = broker[12] if len(broker) > 12 else None
+                
+                # Calculate next payment due date
+                if first_payment_date is None:
+                    # First payment: 60 days after activation/approval
+                    if created_at:
+                        if isinstance(created_at, str):
+                            try:
+                                activation_date = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                            except:
+                                activation_date = datetime.now()
+                        else:
+                            activation_date = created_at
+                    else:
+                        activation_date = datetime.now()
+                    
+                    next_due = activation_date + timedelta(days=60)
+                    is_first_payment = True
+                else:
+                    # Subsequent payments: 30 days after last payment
+                    if isinstance(last_payment_date, str):
+                        try:
+                            last_payment = datetime.fromisoformat(last_payment_date.replace('Z', '+00:00'))
+                        except:
+                            last_payment = datetime.now()
+                    else:
+                        last_payment = last_payment_date or datetime.now()
+                    
+                    next_due = last_payment + timedelta(days=30)
+                    is_first_payment = False
+                
+                # Use stored next_payment_due if available and valid
+                if next_payment_due:
+                    try:
+                        if isinstance(next_payment_due, str):
+                            stored_due = datetime.fromisoformat(next_payment_due.replace('Z', '+00:00'))
+                        else:
+                            stored_due = next_payment_due
+                        if stored_due <= today:
+                            next_due = stored_due
+                    except:
+                        pass
+                
+                # Check if payment is due
+                if next_due <= today:
+                    # Calculate commission owed from referrals
+                    commission_owed = 0.0
+                    
+                    # Get referrals that are ready to pay (status='ready_to_pay' or hold_until has passed)
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute("""
+                            SELECT SUM(payout) as total_commission
+                            FROM referrals
+                            WHERE broker_id = %s 
+                            AND status IN ('ready_to_pay', 'on_hold')
+                            AND (hold_until IS NULL OR hold_until <= NOW())
+                        """, (broker_id,))
+                    else:
+                        cursor.execute("""
+                            SELECT SUM(payout) as total_commission
+                            FROM referrals
+                            WHERE broker_id = ? 
+                            AND status IN ('ready_to_pay', 'on_hold')
+                            AND (hold_until IS NULL OR hold_until <= date('now'))
+                        """, (broker_id,))
+                    
+                    commission_result = cursor.fetchone()
+                    if commission_result:
+                        if isinstance(commission_result, dict):
+                            commission_owed = float(commission_result.get('total_commission') or 0)
+                        else:
+                            commission_owed = float(commission_result[0] if len(commission_result) > 0 and commission_result[0] else 0)
+                    
+                    # Only include if commission > 0
+                    if commission_owed > 0:
+                        # Get payment address based on payment method
+                        payment_address = ''
+                        if payment_method in ['paypal', 'wise', 'revolut']:
+                            payment_address = payment_email or ''
+                        elif payment_method == 'sepa':
+                            payment_address = iban or ''
+                        elif payment_method == 'crypto':
+                            payment_address = crypto_wallet or ''
+                        
+                        # Calculate days overdue
+                        days_overdue = (today - next_due).days if next_due < today else 0
+                        
+                        brokers_ready.append({
+                            'id': broker_id,
+                            'name': broker_name,
+                            'email': broker_email,
+                            'commission_owed': round(commission_owed, 2),
+                            'payment_method': payment_method,
+                            'payment_address': payment_address,
+                            'next_payment_due': next_due.isoformat(),
+                            'days_overdue': days_overdue,
+                            'is_first_payment': is_first_payment
+                        })
+        
+        # Sort by days overdue (most overdue first), then by commission amount
+        brokers_ready.sort(key=lambda x: (x['days_overdue'], -x['commission_owed']), reverse=True)
+        
+        return {
+            "status": "success",
+            "brokers": brokers_ready,
+            "count": len(brokers_ready)
+        }
+        
+    except Exception as e:
+        print(f"❌ Get brokers ready to pay error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": "Failed to get brokers ready to pay", "error": str(e)}
+        )
+
 def send_broker_password_reset_email(email: str, name: str, reset_link: str):
     """Send password reset email to broker"""
     try:
