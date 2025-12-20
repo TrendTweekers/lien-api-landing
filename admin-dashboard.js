@@ -884,6 +884,75 @@ function updateAnalyticsDisplay(stats) {
     analyticsContainer.innerHTML = analyticsHTML;
 }
 
+// 12. Close Modal
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// 13. Handle Mark as Paid
+async function handleMarkPaid(e) {
+    e.preventDefault();
+    
+    const brokerId = document.getElementById('paid-broker-id').value;
+    const amount = document.getElementById('paid-amount').value;
+    const paymentMethod = document.getElementById('paid-method').value;
+    const transactionId = document.getElementById('paid-transaction-id').value;
+    const notes = document.getElementById('paid-notes').value;
+    const confirm = document.getElementById('paid-confirm').checked;
+    
+    if (!confirm) {
+        alert('Please confirm that payment was sent');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/mark-paid', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            },
+            credentials: "include",
+            body: JSON.stringify({
+                broker_id: brokerId,
+                amount: parseFloat(amount),
+                payment_method: paymentMethod,
+                transaction_id: transactionId,
+                notes: notes
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            alert('❌ Error: ' + (error.message || 'Failed to mark payment as paid'));
+            return;
+        }
+        
+        const data = await response.json();
+        alert('✅ Payment marked as paid successfully');
+        
+        // Close modal and refresh
+        closeModal('mark-paid-modal');
+        loadPaymentHistory();
+        
+        // Reset form
+        document.getElementById('mark-paid-form').reset();
+        
+    } catch (error) {
+        console.error('[Admin] Error marking payment as paid:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// 14. Show Mark as Paid Modal
+function showMarkPaidModal(brokerId) {
+    document.getElementById('paid-broker-id').value = brokerId;
+    document.getElementById('mark-paid-modal').classList.remove('hidden');
+}
+
 // 9. Global functions
 window.approveApplication = approveApplication;
 window.rejectApplication = rejectApplication;
@@ -892,3 +961,9 @@ window.deleteActiveBroker = deleteActiveBroker;
 window.loadPartnerApplications = loadPartnerApplications;
 window.loadActiveBrokers = loadActiveBrokers;
 window.loadComprehensiveAnalytics = loadComprehensiveAnalytics;
+window.viewBrokerPaymentInfo = viewBrokerPaymentInfo;
+window.loadPaymentHistory = loadPaymentHistory;
+window.exportPaymentHistory = exportPaymentHistory;
+window.closeModal = closeModal;
+window.handleMarkPaid = handleMarkPaid;
+window.showMarkPaidModal = showMarkPaidModal;

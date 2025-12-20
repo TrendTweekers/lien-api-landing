@@ -5147,6 +5147,315 @@ async def get_broker_payment_info_admin(broker_id: int, username: str = Depends(
             content={"status": "error", "message": "Failed to retrieve payment information"}
         )
 
+@app.get("/api/admin/payment-history")
+async def get_payment_history(filter: str = "all", username: str = Depends(verify_admin)):
+    """Get payment history for admin dashboard"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Create broker_payments table if it doesn't exist
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS broker_payments (
+                        id SERIAL PRIMARY KEY,
+                        broker_id INTEGER NOT NULL,
+                        broker_name VARCHAR(255) NOT NULL,
+                        broker_email VARCHAR(255) NOT NULL,
+                        amount DECIMAL(10,2) NOT NULL,
+                        payment_method VARCHAR(50) NOT NULL,
+                        transaction_id VARCHAR(255),
+                        notes TEXT,
+                        status VARCHAR(50) DEFAULT 'completed',
+                        paid_at TIMESTAMP DEFAULT NOW(),
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        FOREIGN KEY (broker_id) REFERENCES brokers(id)
+                    )
+                """)
+            else:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS broker_payments (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        broker_id INTEGER NOT NULL,
+                        broker_name TEXT NOT NULL,
+                        broker_email TEXT NOT NULL,
+                        amount REAL NOT NULL,
+                        payment_method TEXT NOT NULL,
+                        transaction_id TEXT,
+                        notes TEXT,
+                        status TEXT DEFAULT 'completed',
+                        paid_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (broker_id) REFERENCES brokers(id)
+                    )
+                """)
+            conn.commit()
+            
+            # Build query based on filter
+            if filter == "month":
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        FROM broker_payments bp
+                        LEFT JOIN brokers b ON bp.broker_id = b.id
+                        WHERE bp.paid_at >= NOW() - INTERVAL '30 days'
+                        ORDER BY bp.paid_at DESC
+                    """)
+                else:
+                    cursor.execute("""
+                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        FROM broker_payments bp
+                        LEFT JOIN brokers b ON bp.broker_id = b.id
+                        WHERE bp.paid_at >= datetime('now', '-30 days')
+                        ORDER BY bp.paid_at DESC
+                    """)
+            elif filter == "week":
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        FROM broker_payments bp
+                        LEFT JOIN brokers b ON bp.broker_id = b.id
+                        WHERE bp.paid_at >= NOW() - INTERVAL '7 days'
+                        ORDER BY bp.paid_at DESC
+                    """)
+                else:
+                    cursor.execute("""
+                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        FROM broker_payments bp
+                        LEFT JOIN brokers b ON bp.broker_id = b.id
+                        WHERE bp.paid_at >= datetime('now', '-7 days')
+                        ORDER BY bp.paid_at DESC
+                    """)
+            else:
+                cursor.execute("""
+                    SELECT bp.*, b.name as broker_name, b.email as broker_email
+                    FROM broker_payments bp
+                    LEFT JOIN brokers b ON bp.broker_id = b.id
+                    ORDER BY bp.paid_at DESC
+                """)
+            
+            rows = cursor.fetchall()
+            
+            payments = []
+            for row in rows:
+                if isinstance(row, dict):
+                    payments.append({
+                        "id": row.get('id'),
+                        "broker_id": row.get('broker_id'),
+                        "broker_name": row.get('broker_name') or row.get('name'),
+                        "broker_email": row.get('broker_email') or row.get('email'),
+                        "amount": float(row.get('amount') or 0),
+                        "payment_method": row.get('payment_method'),
+                        "transaction_id": row.get('transaction_id'),
+                        "notes": row.get('notes'),
+                        "status": row.get('status') or 'completed',
+                        "paid_at": row.get('paid_at') or row.get('created_at'),
+                        "created_at": row.get('created_at')
+                    })
+                else:
+                    payments.append({
+                        "id": row[0] if len(row) > 0 else None,
+                        "broker_id": row[1] if len(row) > 1 else None,
+                        "broker_name": row[2] if len(row) > 2 else None,
+                        "broker_email": row[3] if len(row) > 3 else None,
+                        "amount": float(row[4] if len(row) > 4 else 0),
+                        "payment_method": row[5] if len(row) > 5 else None,
+                        "transaction_id": row[6] if len(row) > 6 else None,
+                        "notes": row[7] if len(row) > 7 else None,
+                        "status": row[8] if len(row) > 8 else 'completed',
+                        "paid_at": row[9] if len(row) > 9 else None,
+                        "created_at": row[10] if len(row) > 10 else None
+                    })
+            
+            return {"payments": payments}
+            
+    except Exception as e:
+        print(f"❌ Payment history error: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"payments": []}
+
+@app.post("/api/admin/mark-paid")
+async def mark_payment_paid(request: Request, username: str = Depends(verify_admin)):
+    """Mark a broker payment as paid"""
+    try:
+        data = await request.json()
+        broker_id = data.get('broker_id')
+        amount = data.get('amount')
+        payment_method = data.get('payment_method')
+        transaction_id = data.get('transaction_id')
+        notes = data.get('notes', '')
+        
+        if not broker_id or not amount or not payment_method or not transaction_id:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Missing required fields"}
+            )
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get broker info
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id, name, email FROM brokers WHERE id = %s", (broker_id,))
+            else:
+                cursor.execute("SELECT id, name, email FROM brokers WHERE id = ?", (broker_id,))
+            
+            broker = cursor.fetchone()
+            if not broker:
+                return JSONResponse(
+                    status_code=404,
+                    content={"status": "error", "message": "Broker not found"}
+                )
+            
+            if isinstance(broker, dict):
+                broker_name = broker.get('name', 'Unknown')
+                broker_email = broker.get('email', '')
+            else:
+                broker_name = broker[1] if len(broker) > 1 else 'Unknown'
+                broker_email = broker[2] if len(broker) > 2 else ''
+            
+            # Insert payment record
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    INSERT INTO broker_payments 
+                    (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes, status)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'completed')
+                """, (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes))
+            else:
+                cursor.execute("""
+                    INSERT INTO broker_payments 
+                    (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'completed')
+                """, (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes))
+            
+            conn.commit()
+            
+            return {
+                "status": "success",
+                "message": "Payment marked as paid",
+                "payment_id": cursor.lastrowid if hasattr(cursor, 'lastrowid') else None
+            }
+            
+    except Exception as e:
+        print(f"❌ Mark paid error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": "Failed to mark payment as paid"}
+        )
+
+@app.get("/api/admin/payment-history/export")
+async def export_payment_history_csv(filter: str = "all", username: str = Depends(verify_admin)):
+    """Export payment history as CSV"""
+    try:
+        from fastapi.responses import Response
+        from datetime import datetime
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Build query (same as payment history)
+            if filter == "month":
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        FROM broker_payments bp
+                        LEFT JOIN brokers b ON bp.broker_id = b.id
+                        WHERE bp.paid_at >= NOW() - INTERVAL '30 days'
+                        ORDER BY bp.paid_at DESC
+                    """)
+                else:
+                    cursor.execute("""
+                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        FROM broker_payments bp
+                        LEFT JOIN brokers b ON bp.broker_id = b.id
+                        WHERE bp.paid_at >= datetime('now', '-30 days')
+                        ORDER BY bp.paid_at DESC
+                    """)
+            elif filter == "week":
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        FROM broker_payments bp
+                        LEFT JOIN brokers b ON bp.broker_id = b.id
+                        WHERE bp.paid_at >= NOW() - INTERVAL '7 days'
+                        ORDER BY bp.paid_at DESC
+                    """)
+                else:
+                    cursor.execute("""
+                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        FROM broker_payments bp
+                        LEFT JOIN brokers b ON bp.broker_id = b.id
+                        WHERE bp.paid_at >= datetime('now', '-7 days')
+                        ORDER BY bp.paid_at DESC
+                    """)
+            else:
+                cursor.execute("""
+                    SELECT bp.*, b.name as broker_name, b.email as broker_email
+                    FROM broker_payments bp
+                    LEFT JOIN brokers b ON bp.broker_id = b.id
+                    ORDER BY bp.paid_at DESC
+                """)
+            
+            rows = cursor.fetchall()
+            
+            # Build CSV
+            import csv
+            import io
+            
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Header
+            writer.writerow(['Date', 'Broker Name', 'Broker Email', 'Amount', 'Payment Method', 'Transaction ID', 'Status', 'Notes'])
+            
+            # Rows
+            for row in rows:
+                if isinstance(row, dict):
+                    writer.writerow([
+                        row.get('paid_at') or row.get('created_at') or '',
+                        row.get('broker_name') or row.get('name') or '',
+                        row.get('broker_email') or row.get('email') or '',
+                        row.get('amount') or 0,
+                        row.get('payment_method') or '',
+                        row.get('transaction_id') or '',
+                        row.get('status') or 'completed',
+                        row.get('notes') or ''
+                    ])
+                else:
+                    writer.writerow([
+                        row[9] if len(row) > 9 else '',
+                        row[2] if len(row) > 2 else '',
+                        row[3] if len(row) > 3 else '',
+                        row[4] if len(row) > 4 else 0,
+                        row[5] if len(row) > 5 else '',
+                        row[6] if len(row) > 6 else '',
+                        row[8] if len(row) > 8 else 'completed',
+                        row[7] if len(row) > 7 else ''
+                    ])
+            
+            csv_content = output.getvalue()
+            output.close()
+            
+            return Response(
+                content=csv_content,
+                media_type="text/csv",
+                headers={
+                    "Content-Disposition": f"attachment; filename=payment-history-{filter}-{datetime.now().strftime('%Y-%m-%d')}.csv"
+                }
+            )
+            
+    except Exception as e:
+        print(f"❌ Export CSV error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": "Failed to export payment history"}
+        )
+
 def send_broker_password_reset_email(email: str, name: str, reset_link: str):
     """Send password reset email to broker"""
     try:
