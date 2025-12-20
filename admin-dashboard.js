@@ -884,6 +884,245 @@ function updateAnalyticsDisplay(stats) {
     analyticsContainer.innerHTML = analyticsHTML;
 }
 
+// 9. View Broker Payment Info
+async function viewBrokerPaymentInfo(brokerId, brokerName, brokerEmail) {
+    try {
+        console.log(`[Admin] Loading payment info for broker ${brokerId}...`);
+        
+        const response = await fetch(`/api/admin/broker-payment-info/${brokerId}`, {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            alert('❌ Error loading payment info: ' + response.status);
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('[Admin] Payment info:', data);
+        
+        const paymentInfo = data.payment_info || {};
+        const broker = data.broker || {};
+        
+        // Format payment method name
+        const methodNames = {
+            'paypal': 'PayPal',
+            'wise': 'Wise (TransferWise)',
+            'revolut': 'Revolut',
+            'sepa': 'SEPA Transfer (Europe)',
+            'swift': 'SWIFT/Wire Transfer',
+            'crypto': 'Cryptocurrency'
+        };
+        const paymentMethod = methodNames[paymentInfo.payment_method?.toLowerCase()] || paymentInfo.payment_method || 'Not Set';
+        
+        // Build payment details HTML
+        let paymentDetailsHTML = '';
+        
+        if (paymentInfo.payment_method === 'paypal' || paymentInfo.payment_method === 'wise' || paymentInfo.payment_method === 'revolut') {
+            paymentDetailsHTML = `
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Email:</label>
+                    <p class="text-gray-900 font-mono">${paymentInfo.payment_email || 'Not provided'}</p>
+                </div>
+            `;
+        } else if (paymentInfo.payment_method === 'sepa') {
+            paymentDetailsHTML = `
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">IBAN:</label>
+                    <p class="text-gray-900 font-mono">${paymentInfo.iban || 'Not provided'}</p>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">BIC/SWIFT Code:</label>
+                    <p class="text-gray-900 font-mono">${paymentInfo.swift_code || 'Not provided'}</p>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Bank Name:</label>
+                    <p class="text-gray-900">${paymentInfo.bank_name || 'Not provided'}</p>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Holder Name:</label>
+                    <p class="text-gray-900">${paymentInfo.account_holder_name || 'Not provided'}</p>
+                </div>
+            `;
+        } else if (paymentInfo.payment_method === 'swift') {
+            paymentDetailsHTML = `
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">SWIFT/BIC Code:</label>
+                    <p class="text-gray-900 font-mono">${paymentInfo.swift_code || 'Not provided'}</p>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Bank Name:</label>
+                    <p class="text-gray-900">${paymentInfo.bank_name || 'Not provided'}</p>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Bank Address:</label>
+                    <p class="text-gray-900">${paymentInfo.bank_address || 'Not provided'}</p>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Holder Name:</label>
+                    <p class="text-gray-900">${paymentInfo.account_holder_name || 'Not provided'}</p>
+                </div>
+            `;
+        } else if (paymentInfo.payment_method === 'crypto') {
+            paymentDetailsHTML = `
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Wallet Address:</label>
+                    <p class="text-gray-900 font-mono break-all">${paymentInfo.crypto_wallet || 'Not provided'}</p>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Currency:</label>
+                    <p class="text-gray-900">${paymentInfo.crypto_currency || 'Not provided'}</p>
+                </div>
+            `;
+        }
+        
+        const contentHTML = `
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Broker Name:</label>
+                    <p class="text-gray-900 font-semibold">${broker.name || brokerName || 'Unknown'}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email:</label>
+                    <p class="text-gray-900">${broker.email || brokerEmail || 'Not provided'}</p>
+                </div>
+                <div class="border-t pt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method:</label>
+                    <p class="text-gray-900 font-semibold text-lg">${paymentMethod}</p>
+                </div>
+                ${paymentDetailsHTML}
+                <div class="border-t pt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tax ID:</label>
+                    <p class="text-gray-900">${paymentInfo.tax_id || 'Not provided'}</p>
+                </div>
+            </div>
+        `;
+        
+        safe.html('payment-info-content', contentHTML);
+        safe.show('payment-info-modal');
+        document.getElementById('payment-info-modal').classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('[Admin] Error loading payment info:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// 10. Load Payment History
+async function loadPaymentHistory() {
+    try {
+        const filter = document.getElementById('payment-filter')?.value || 'all';
+        console.log(`[Admin] Loading payment history (filter: ${filter})...`);
+        
+        const response = await fetch(`/api/admin/payment-history?time_filter=${filter}`, {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            console.error(`[Admin] Payment history API error: ${response.status}`);
+            safe.hide('payment-history-table');
+            safe.show('no-payment-history');
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('[Admin] Payment history:', data);
+        
+        const payments = data.payments || [];
+        
+        if (payments.length === 0) {
+            safe.hide('payment-history-table');
+            safe.show('no-payment-history');
+            return;
+        }
+        
+        safe.hide('no-payment-history');
+        safe.show('payment-history-table');
+        
+        const html = payments.map(payment => {
+            const date = new Date(payment.paid_at || payment.created_at);
+            const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            
+            const statusBadge = payment.status === 'completed'
+                ? '<span class="px-2 py-1 rounded text-xs bg-green-100 text-green-800">Completed</span>'
+                : payment.status === 'failed'
+                ? '<span class="px-2 py-1 rounded text-xs bg-red-100 text-red-800">Failed</span>'
+                : '<span class="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">Pending</span>';
+            
+            const methodNames = {
+                'paypal': 'PayPal',
+                'wise': 'Wise',
+                'revolut': 'Revolut',
+                'sepa': 'SEPA',
+                'swift': 'SWIFT',
+                'crypto': 'Crypto',
+                'other': 'Other'
+            };
+            const methodName = methodNames[payment.payment_method?.toLowerCase()] || payment.payment_method || 'N/A';
+            
+            return `
+                <tr class="hover:bg-gray-50">
+                    <td class="py-3 px-6 text-sm text-gray-900">${dateStr}</td>
+                    <td class="py-3 px-6 text-sm text-gray-900">${payment.broker_name || 'Unknown'}</td>
+                    <td class="py-3 px-6 text-sm font-semibold text-gray-900">$${parseFloat(payment.amount || 0).toFixed(2)}</td>
+                    <td class="py-3 px-6 text-sm text-gray-600">${methodName}</td>
+                    <td class="py-3 px-6 text-sm text-gray-600 font-mono">${payment.transaction_id || 'N/A'}</td>
+                    <td class="py-3 px-6">${statusBadge}</td>
+                </tr>
+            `;
+        }).join('');
+        
+        safe.html('payment-history-table', html);
+        
+    } catch (error) {
+        console.error('[Admin] Error loading payment history:', error);
+        safe.hide('payment-history-table');
+        safe.show('no-payment-history');
+    }
+}
+
+// 11. Export Payment History to CSV
+async function exportPaymentHistory() {
+    try {
+        const filter = document.getElementById('payment-filter')?.value || 'all';
+        console.log(`[Admin] Exporting payment history (filter: ${filter})...`);
+        
+        const response = await fetch(`/api/admin/payment-history/export?time_filter=${filter}`, {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            alert('❌ Error exporting payment history: ' + response.status);
+            return;
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `payment-history-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        console.log('✅ Payment history exported');
+        
+    } catch (error) {
+        console.error('[Admin] Error exporting payment history:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
 // 12. Close Modal
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);

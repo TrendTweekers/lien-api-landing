@@ -5195,42 +5195,47 @@ async def get_payment_history(time_filter: str = "all", username: str = Depends(
             if time_filter == "month":
                 if DB_TYPE == 'postgresql':
                     cursor.execute("""
-                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        SELECT bp.id, bp.broker_id, bp.broker_name, bp.broker_email, 
+                               bp.amount, bp.payment_method, bp.transaction_id, bp.notes, 
+                               bp.status, bp.paid_at, bp.created_at
                         FROM broker_payments bp
-                        LEFT JOIN brokers b ON bp.broker_id = b.id
                         WHERE bp.paid_at >= NOW() - INTERVAL '30 days'
                         ORDER BY bp.paid_at DESC
                     """)
                 else:
                     cursor.execute("""
-                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        SELECT bp.id, bp.broker_id, bp.broker_name, bp.broker_email, 
+                               bp.amount, bp.payment_method, bp.transaction_id, bp.notes, 
+                               bp.status, bp.paid_at, bp.created_at
                         FROM broker_payments bp
-                        LEFT JOIN brokers b ON bp.broker_id = b.id
                         WHERE bp.paid_at >= datetime('now', '-30 days')
                         ORDER BY bp.paid_at DESC
                     """)
-            elif filter == "week":
+            elif time_filter == "week":
                 if DB_TYPE == 'postgresql':
                     cursor.execute("""
-                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        SELECT bp.id, bp.broker_id, bp.broker_name, bp.broker_email, 
+                               bp.amount, bp.payment_method, bp.transaction_id, bp.notes, 
+                               bp.status, bp.paid_at, bp.created_at
                         FROM broker_payments bp
-                        LEFT JOIN brokers b ON bp.broker_id = b.id
                         WHERE bp.paid_at >= NOW() - INTERVAL '7 days'
                         ORDER BY bp.paid_at DESC
                     """)
                 else:
                     cursor.execute("""
-                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        SELECT bp.id, bp.broker_id, bp.broker_name, bp.broker_email, 
+                               bp.amount, bp.payment_method, bp.transaction_id, bp.notes, 
+                               bp.status, bp.paid_at, bp.created_at
                         FROM broker_payments bp
-                        LEFT JOIN brokers b ON bp.broker_id = b.id
                         WHERE bp.paid_at >= datetime('now', '-7 days')
                         ORDER BY bp.paid_at DESC
                     """)
             else:
                 cursor.execute("""
-                    SELECT bp.*, b.name as broker_name, b.email as broker_email
+                    SELECT bp.id, bp.broker_id, bp.broker_name, bp.broker_email, 
+                           bp.amount, bp.payment_method, bp.transaction_id, bp.notes, 
+                           bp.status, bp.paid_at, bp.created_at
                     FROM broker_payments bp
-                    LEFT JOIN brokers b ON bp.broker_id = b.id
                     ORDER BY bp.paid_at DESC
                 """)
             
@@ -5360,42 +5365,47 @@ async def export_payment_history_csv(time_filter: str = "all", username: str = D
             if time_filter == "month":
                 if DB_TYPE == 'postgresql':
                     cursor.execute("""
-                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        SELECT bp.id, bp.broker_id, bp.broker_name, bp.broker_email, 
+                               bp.amount, bp.payment_method, bp.transaction_id, bp.notes, 
+                               bp.status, bp.paid_at, bp.created_at
                         FROM broker_payments bp
-                        LEFT JOIN brokers b ON bp.broker_id = b.id
                         WHERE bp.paid_at >= NOW() - INTERVAL '30 days'
                         ORDER BY bp.paid_at DESC
                     """)
                 else:
                     cursor.execute("""
-                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        SELECT bp.id, bp.broker_id, bp.broker_name, bp.broker_email, 
+                               bp.amount, bp.payment_method, bp.transaction_id, bp.notes, 
+                               bp.status, bp.paid_at, bp.created_at
                         FROM broker_payments bp
-                        LEFT JOIN brokers b ON bp.broker_id = b.id
                         WHERE bp.paid_at >= datetime('now', '-30 days')
                         ORDER BY bp.paid_at DESC
                     """)
-            elif filter == "week":
+            elif time_filter == "week":
                 if DB_TYPE == 'postgresql':
                     cursor.execute("""
-                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        SELECT bp.id, bp.broker_id, bp.broker_name, bp.broker_email, 
+                               bp.amount, bp.payment_method, bp.transaction_id, bp.notes, 
+                               bp.status, bp.paid_at, bp.created_at
                         FROM broker_payments bp
-                        LEFT JOIN brokers b ON bp.broker_id = b.id
                         WHERE bp.paid_at >= NOW() - INTERVAL '7 days'
                         ORDER BY bp.paid_at DESC
                     """)
                 else:
                     cursor.execute("""
-                        SELECT bp.*, b.name as broker_name, b.email as broker_email
+                        SELECT bp.id, bp.broker_id, bp.broker_name, bp.broker_email, 
+                               bp.amount, bp.payment_method, bp.transaction_id, bp.notes, 
+                               bp.status, bp.paid_at, bp.created_at
                         FROM broker_payments bp
-                        LEFT JOIN brokers b ON bp.broker_id = b.id
                         WHERE bp.paid_at >= datetime('now', '-7 days')
                         ORDER BY bp.paid_at DESC
                     """)
             else:
                 cursor.execute("""
-                    SELECT bp.*, b.name as broker_name, b.email as broker_email
+                    SELECT bp.id, bp.broker_id, bp.broker_name, bp.broker_email, 
+                           bp.amount, bp.payment_method, bp.transaction_id, bp.notes, 
+                           bp.status, bp.paid_at, bp.created_at
                     FROM broker_payments bp
-                    LEFT JOIN brokers b ON bp.broker_id = b.id
                     ORDER BY bp.paid_at DESC
                 """)
             
