@@ -4917,6 +4917,69 @@ async def get_broker_payment_info(request: Request, email: str):
             content={"status": "error", "message": "Failed to retrieve payment information"}
         )
 
+@app.get("/api/admin/migrate-payment-tracking")
+async def migrate_payment_tracking(username: str = Depends(verify_admin)):
+    """Migration endpoint to add payment tracking columns to brokers table"""
+    migrations = []
+    db_type = None
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            db_type = DB_TYPE
+
+            # Add payment tracking columns
+            column_definitions = [
+                ("first_payment_date", "TIMESTAMP"),
+                ("last_payment_date", "TIMESTAMP"),
+                ("next_payment_due", "TIMESTAMP"),
+                ("total_paid", "DECIMAL(10,2) DEFAULT 0"),
+                ("payment_status", "VARCHAR(50) DEFAULT 'pending_first_payment')")
+            ]
+
+            for col_name, col_type in column_definitions:
+                if db_type == 'postgresql':
+                    cursor.execute(f"""
+                        DO $$
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns
+                                WHERE table_name = 'brokers' AND column_name = '{col_name}'
+                            ) THEN
+                                ALTER TABLE brokers ADD COLUMN {col_name} {col_type};
+                            END IF;
+                        END $$;
+                    """)
+                    migrations.append(f'✅ Added column: {col_name}')
+                else: # SQLite
+                    try:
+                        cursor.execute(f"ALTER TABLE brokers ADD COLUMN {col_name} {col_type}")
+                        migrations.append(f'✅ Added column: {col_name}')
+                    except Exception as e:
+                        if "duplicate column name" in str(e).lower():
+                            migrations.append(f'ℹ️ Column already exists: {col_name}')
+                        else:
+                            migrations.append(f'❌ Failed to add column {col_name}: {e}')
+
+            conn.commit()
+            return {
+                "status": "success",
+                "message": "Payment tracking migration completed",
+                "migrations": migrations,
+                "database_type": db_type
+            }
+
+    except Exception as e:
+        import traceback
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": f"Migration failed: {e}",
+                "traceback": traceback.format_exc(),
+                "database_type": db_type
+            }
+        )
+
 @app.get("/api/admin/migrate-payment-columns")
 async def migrate_payment_columns(username: str = Depends(verify_admin)):
     """Migration endpoint to add international payment columns to brokers table"""
@@ -5320,6 +5383,82 @@ async def mark_payment_paid(request: Request, username: str = Depends(verify_adm
                 broker_name = broker[1] if len(broker) > 1 else 'Unknown'
                 broker_email = broker[2] if len(broker) > 2 else ''
             
+            # Get broker's current payment tracking info
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT first_payment_date, last_payment_date, total_paid, created_at, status
+                    FROM brokers WHERE id = %s
+                """, (broker_id,))
+            else:
+                cursor.execute("""
+                    SELECT first_payment_date, last_payment_date, total_paid, created_at, status
+                    FROM brokers WHERE id = ?
+                """, (broker_id,))
+            
+            broker_info = cursor.fetchone()
+            current_time = datetime.now()
+            
+            # Parse broker info
+            if isinstance(broker_info, dict):
+                first_payment_date = broker_info.get('first_payment_date')
+                last_payment_date = broker_info.get('last_payment_date')
+                total_paid = float(broker_info.get('total_paid') or 0)
+                created_at = broker_info.get('created_at')
+                broker_status = broker_info.get('status')
+            else:
+                first_payment_date = broker_info[0] if len(broker_info) > 0 else None
+                last_payment_date = broker_info[1] if len(broker_info) > 1 else None
+                total_paid = float(broker_info[2] if len(broker_info) > 2 else 0)
+                created_at = broker_info[3] if len(broker_info) > 3 else None
+                broker_status = broker_info[4] if len(broker_info) > 4 else None
+            
+            # Calculate next payment due (30 days after this payment)
+            next_payment_due = current_time + timedelta(days=30)
+            
+            # Update broker payment tracking
+            if DB_TYPE == 'postgresql':
+                if first_payment_date is None:
+                    # First payment
+                    cursor.execute("""
+                        UPDATE brokers 
+                        SET first_payment_date = NOW(),
+                            last_payment_date = NOW(),
+                            next_payment_due = NOW() + INTERVAL '30 days',
+                            total_paid = COALESCE(total_paid, 0) + %s,
+                            payment_status = 'active'
+                        WHERE id = %s
+                    """, (amount, broker_id))
+                else:
+                    # Subsequent payment
+                    cursor.execute("""
+                        UPDATE brokers 
+                        SET last_payment_date = NOW(),
+                            next_payment_due = NOW() + INTERVAL '30 days',
+                            total_paid = COALESCE(total_paid, 0) + %s
+                        WHERE id = %s
+                    """, (amount, broker_id))
+            else:
+                if first_payment_date is None:
+                    # First payment
+                    cursor.execute("""
+                        UPDATE brokers 
+                        SET first_payment_date = CURRENT_TIMESTAMP,
+                            last_payment_date = CURRENT_TIMESTAMP,
+                            next_payment_due = datetime('now', '+30 days'),
+                            total_paid = COALESCE(total_paid, 0) + ?,
+                            payment_status = 'active'
+                        WHERE id = ?
+                    """, (amount, broker_id))
+                else:
+                    # Subsequent payment
+                    cursor.execute("""
+                        UPDATE brokers 
+                        SET last_payment_date = CURRENT_TIMESTAMP,
+                            next_payment_due = datetime('now', '+30 days'),
+                            total_paid = COALESCE(total_paid, 0) + ?
+                        WHERE id = ?
+                    """, (amount, broker_id))
+            
             # Insert payment record
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
@@ -5339,7 +5478,9 @@ async def mark_payment_paid(request: Request, username: str = Depends(verify_adm
             return {
                 "status": "success",
                 "message": "Payment marked as paid",
-                "payment_id": cursor.lastrowid if hasattr(cursor, 'lastrowid') else None
+                "payment_id": cursor.lastrowid if hasattr(cursor, 'lastrowid') else None,
+                "is_first_payment": first_payment_date is None,
+                "next_payment_due": next_payment_due.isoformat()
             }
             
     except Exception as e:

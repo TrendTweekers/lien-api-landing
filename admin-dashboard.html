@@ -44,6 +44,29 @@
     </header>
 
     <div class="p-6">
+        <!-- Ready to Pay Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-orange-200 mb-8">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-900">💰 Brokers Ready for Payment</h2>
+                    <div class="text-sm text-gray-500">
+                        <span id="readyToPayCount">0</span> brokers ready
+                    </div>
+                </div>
+            </div>
+            <div id="ready-to-pay-list" class="divide-y divide-gray-200">
+                <!-- Dynamic broker cards will go here -->
+            </div>
+            <!-- Empty State -->
+            <div id="no-ready-to-pay" class="py-12 text-center hidden">
+                <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <span class="text-gray-400 text-2xl">✅</span>
+                </div>
+                <p class="text-gray-500">All brokers are up to date</p>
+                <p class="text-sm text-gray-400 mt-2">No payments due at this time</p>
+            </div>
+        </div>
+
         <!-- QUICK STATS ROW -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">

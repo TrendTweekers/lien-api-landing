@@ -522,6 +522,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load data
     loadPartnerApplications();
     loadActiveBrokers();
+    loadReadyToPay();
     loadPaymentHistory();
     updateAllStats();
     updateLiveAnalytics();
@@ -532,6 +533,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(() => {
         loadPartnerApplications();
         loadActiveBrokers();
+        loadReadyToPay();
         loadPaymentHistory();
         updateAllStats();
         updateLiveAnalytics();
@@ -1205,6 +1207,7 @@ window.loadComprehensiveAnalytics = loadComprehensiveAnalytics;
 window.viewBrokerPaymentInfo = viewBrokerPaymentInfo;
 window.loadPaymentHistory = loadPaymentHistory;
 window.exportPaymentHistory = exportPaymentHistory;
+window.loadReadyToPay = loadReadyToPay;
 window.closeModal = closeModal;
 window.handleMarkPaid = handleMarkPaid;
 window.showMarkPaidModal = showMarkPaidModal;
