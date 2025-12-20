@@ -2054,7 +2054,7 @@ async def track_email(request_data: TrackEmailRequest, request: Request):
 def check_fraud_signals(broker_id: str, customer_email: str, customer_stripe_id: str, session_data: dict):
     """
     Multi-layer fraud detection for broker referrals.
-    Returns: (fraud_flags: list, risk_score: int, should_flag: bool)
+    Returns: (fraud_flags: list, risk_score: int, should_flag: bool, auto_reject: bool)
     """
     flags = []
     risk_score = 0
@@ -2080,11 +2080,13 @@ def check_fraud_signals(broker_id: str, customer_email: str, customer_stripe_id:
             broker_ip = broker[3] if len(broker) > 3 else None
             
             # LAYER 1: Payment Method Check (Strongest) ⭐⭐⭐
+            same_payment_method = False
             if broker_stripe_id and customer_stripe_id:
                 # Check if same Stripe customer (catches shared payment methods)
                 if broker_stripe_id == customer_stripe_id:
+                    same_payment_method = True
                     flags.append('SAME_STRIPE_CUSTOMER')
-                    risk_score += 50  # Critical flag
+                    risk_score += 50  # Critical flag - automatic flag regardless of score
             
             # LAYER 2: Email Similarity Check ⭐⭐
             broker_base = broker_email.split('@')[0].lower()
@@ -2092,13 +2094,13 @@ def check_fraud_signals(broker_id: str, customer_email: str, customer_stripe_id:
             broker_domain = broker_email.split('@')[1].lower()
             customer_domain = customer_email.split('@')[1].lower()
             
-            # Check for similar usernames
+            # Check for similar usernames (reduced penalty - could be family business)
             from difflib import SequenceMatcher
             similarity = SequenceMatcher(None, broker_base, customer_base).ratio()
             
             if similarity > 0.8:  # 80% similar
                 flags.append('SIMILAR_EMAIL')
-                risk_score += 30
+                risk_score += 15  # Reduced from 30 - could be legitimate family business
             
             # Check for sequential numbers (john1@, john2@)
             import re
@@ -2106,12 +2108,22 @@ def check_fraud_signals(broker_id: str, customer_email: str, customer_stripe_id:
             customer_no_nums = re.sub(r'\d+', '', customer_base)
             if broker_no_nums == customer_no_nums:
                 flags.append('SEQUENTIAL_EMAIL')
-                risk_score += 25
+                risk_score += 15  # Reduced from 25
             
-            # Same domain (company.com)
+            # Same domain check - DON'T penalize alone (brokers referring colleagues is GOOD)
+            # Only penalize if combined with same payment method (real fraud indicator)
+            same_domain = False
             if broker_domain == customer_domain and broker_domain not in ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com']:
+                same_domain = True
                 flags.append('SAME_COMPANY_DOMAIN')
-                risk_score += 20
+                # Don't add points here - brokers referring colleagues is legitimate
+                # Will check combination with payment method below
+            
+            # NEW: Check combination of same domain + same payment method (real fraud)
+            # This catches brokers using their own payment method for "customer" signups
+            if same_domain and same_payment_method:
+                flags.append('SAME_DOMAIN_AND_PAYMENT')
+                risk_score += 40  # Strong fraud indicator
             
             # LAYER 3: Timing Analysis ⭐⭐
             if broker_created:
@@ -2123,18 +2135,19 @@ def check_fraud_signals(broker_id: str, customer_email: str, customer_stripe_id:
                     
                     if time_diff < 1:  # Signup within 1 hour
                         flags.append('IMMEDIATE_SIGNUP')
-                        risk_score += 35
+                        risk_score += 20  # Reduced from 35 - excited customers sign up fast
                     elif time_diff < 24:  # Within 24 hours
                         flags.append('FAST_SIGNUP')
-                        risk_score += 15
+                        risk_score += 10  # Reduced from 15
                 except:
                     pass
             
             # LAYER 4: IP Address Check (if available)
+            # Reduced penalty - could be office meeting or shared network
             customer_ip = session_data.get('customer_details', {}).get('ip_address')
             if broker_ip and customer_ip and broker_ip == customer_ip:
                 flags.append('SAME_IP')
-                risk_score += 40
+                risk_score += 20  # Reduced from 40 - could be legitimate office/VPN
             
             # LAYER 5: Stripe Risk Evaluation (if available)
             stripe_risk = session_data.get('payment_intent', {}).get('charges', {}).get('data', [{}])[0].get('outcome', {}).get('risk_level')
@@ -2150,10 +2163,24 @@ def check_fraud_signals(broker_id: str, customer_email: str, customer_stripe_id:
             """, (broker_id,))
             referral_count = cursor.fetchone()[0]
             
+            # REMOVED: First referral penalty - penalizes all new brokers unfairly
+            # First referral is often their best/most legitimate one
+            # Only flag if combined with other high-risk indicators
             if referral_count == 0:
-                # First referral = more scrutiny
-                flags.append('FIRST_REFERRAL')
-                risk_score += 10
+                flags.append('FIRST_REFERRAL')  # Keep flag for admin visibility, but no penalty
+                # risk_score += 0  # No penalty for first referral
+            
+            # NEW: Check for suspicious velocity (batch fraud)
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM referrals 
+                WHERE broker_id = ? AND created_at > datetime('now', '-24 hours')
+            """, (broker_id,))
+            referrals_last_24h = cursor.fetchone()[0]
+            
+            if referrals_last_24h >= 5:  # 5+ referrals in 24 hours = suspicious
+                flags.append('HIGH_VELOCITY')
+                risk_score += 25  # Suspicious batch fraud pattern
             
             # LAYER 7: Email Age Check (new Gmail accounts are suspicious)
             # Note: This requires external API, skip for now or add later
@@ -2162,15 +2189,33 @@ def check_fraud_signals(broker_id: str, customer_email: str, customer_stripe_id:
             # Note: Requires frontend implementation, skip for now
             
             # Determine if should flag for manual review
-            should_flag = risk_score >= 50 or 'SAME_STRIPE_CUSTOMER' in flags
+            # Updated thresholds:
+            # - 60+ points = flagged for review (allows for 1-2 legitimate coincidences)
+            # - 80+ points = auto-reject (clear fraud, but still reviewable)
+            # - SAME_STRIPE_CUSTOMER = automatic flag regardless of score
             
-            return flags, risk_score, should_flag
+            should_flag = False
+            auto_reject = False
+            
+            if 'SAME_STRIPE_CUSTOMER' in flags:
+                # Same payment method = automatic flag (strongest indicator)
+                should_flag = True
+            elif risk_score >= 80:
+                # Clear fraud pattern
+                should_flag = True
+                auto_reject = True
+                flags.append('AUTO_REJECT_THRESHOLD')
+            elif risk_score >= 60:
+                # Suspicious pattern - needs review
+                should_flag = True
+            
+            return flags, risk_score, should_flag, auto_reject
             
     except Exception as e:
         print(f"❌ Fraud check error: {e}")
         import traceback
         traceback.print_exc()
-        return ['ERROR_DURING_CHECK'], 0, False
+        return ['ERROR_DURING_CHECK'], 0, False, False
 
 
 def send_admin_fraud_alert(broker_email: str, customer_email: str, flags: list, risk_score: int):
@@ -2345,7 +2390,7 @@ async def stripe_webhook(request: Request):
                             payout_type = 'bounty'
                         
                         # RUN FRAUD DETECTION
-                        fraud_flags, risk_score, should_flag = check_fraud_signals(
+                        fraud_flags, risk_score, should_flag, auto_reject = check_fraud_signals(
                             referral_code, 
                             email, 
                             customer_id,
@@ -2354,11 +2399,17 @@ async def stripe_webhook(request: Request):
                         
                         # Calculate hold dates
                         from datetime import datetime, timedelta
-                        hold_until = datetime.now() + timedelta(days=30)
+                        hold_until = datetime.now() + timedelta(days=60)  # 60-day hold period (catches fraud, chargebacks, disputes)
                         clawback_until = datetime.now() + timedelta(days=90)
                         
-                        # Determine status
-                        status = 'flagged_for_review' if should_flag else 'on_hold'
+                        # Determine status based on fraud detection results
+                        if should_flag:
+                            if auto_reject:
+                                status = 'flagged_for_review'  # Auto-reject but still reviewable
+                            else:
+                                status = 'flagged_for_review'
+                        else:
+                            status = 'on_hold'  # Normal referral, 60-day hold
                         
                         # Store referral with fraud data
                         db.execute("""
@@ -2653,7 +2704,7 @@ def send_broker_welcome_email(email: str, name: str, link: str, code: str):
                     <ul style="color: #92400e; line-height: 1.8; margin: 0;">
                         <li><strong>$500 one-time</strong> per signup (bounty model)</li>
                         <li><strong>$50/month recurring</strong> per active subscriber (recurring model)</li>
-                        <li>Commissions paid after 30-day customer retention period</li>
+                        <li>Commissions paid after 60-day customer retention period</li>
                     </ul>
                 </div>
                 
@@ -2702,7 +2753,7 @@ def send_broker_welcome_email(email: str, name: str, link: str, code: str):
             Your referral code: {code}
             
             Share this link with construction clients.
-            You earn $500 per signup (after 30 days).
+            You earn $500 per signup (after 60 days).
             
             Track referrals: https://liendeadline.com/broker-dashboard
             ================================
@@ -2740,13 +2791,13 @@ def send_broker_notification(broker_email: str, customer_email: str):
                     <h3 style="color: #1e293b; margin-top: 0;">Referral Details</h3>
                     <p style="margin: 10px 0;"><strong>Customer Email:</strong> {customer_email}</p>
                     <p style="margin: 10px 0;"><strong>Plan:</strong> Professional ($299/month)</p>
-                    <p style="margin: 10px 0;"><strong>Commission Status:</strong> <span style="color: #f59e0b; font-weight: bold;">Pending (30-day retention period)</span></p>
+                    <p style="margin: 10px 0;"><strong>Commission Status:</strong> <span style="color: #f59e0b; font-weight: bold;">Pending (60-day retention period)</span></p>
                     <p style="margin: 10px 0;"><strong>Commission Amount:</strong> <span style="color: #059669; font-size: 20px; font-weight: bold;">$500</span> (one-time bounty)</p>
                 </div>
                 
                 <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0;">
                     <p style="margin: 0; color: #92400e;">
-                        <strong>⏰ Payment Timeline:</strong> Your commission will be paid after the customer completes their 30-day retention period. You'll receive an email when payment is processed.
+                        <strong>⏰ Payment Timeline:</strong> Your commission will be paid after the customer completes their 60-day retention period. You'll receive an email when payment is processed.
                     </p>
                 </div>
                 
@@ -4232,6 +4283,742 @@ async def global_exception_handler(request: Request, exc: Exception):
             "message": "Internal server error. Our team has been notified."
         }
     )
+
+# ==========================================
+# BROKER AUTHENTICATION ENDPOINTS
+# ==========================================
+
+@app.post("/api/v1/broker/login")
+async def broker_login(request: Request, data: dict):
+    """Broker login with email and password"""
+    try:
+        email = data.get('email', '').lower().strip()
+        password = data.get('password', '')
+        
+        if not email or not password:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Email and password are required"}
+            )
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get broker with password hash
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id, name, email, password_hash, status
+                    FROM brokers
+                    WHERE LOWER(email) = LOWER(%s)
+                    AND status IN ('approved', 'active')
+                """, (email,))
+            else:
+                cursor.execute("""
+                    SELECT id, name, email, password_hash, status
+                    FROM brokers
+                    WHERE LOWER(email) = LOWER(?)
+                    AND status IN ('approved', 'active')
+                """, (email,))
+            
+            broker = cursor.fetchone()
+            
+            if not broker:
+                return JSONResponse(
+                    status_code=401,
+                    content={"status": "error", "message": "Invalid email or password"}
+                )
+            
+            # Handle different row formats
+            if isinstance(broker, dict):
+                broker_id = broker.get('id')
+                broker_name = broker.get('name', '')
+                password_hash = broker.get('password_hash', '')
+                status = broker.get('status', '')
+            else:
+                broker_id = broker[0]
+                broker_name = broker[1] if len(broker) > 1 else ''
+                broker_email = broker[2] if len(broker) > 2 else ''
+                password_hash = broker[3] if len(broker) > 3 else ''
+                status = broker[4] if len(broker) > 4 else ''
+            
+            # Check if password hash exists (for backward compatibility)
+            if not password_hash:
+                return JSONResponse(
+                    status_code=401,
+                    content={"status": "error", "message": "Password not set. Please contact support."}
+                )
+            
+            # Verify password
+            if not bcrypt.checkpw(password.encode(), password_hash.encode()):
+                return JSONResponse(
+                    status_code=401,
+                    content={"status": "error", "message": "Invalid email or password"}
+                )
+            
+            # Generate session token
+            session_token = secrets.token_urlsafe(32)
+            
+            # Store session token (optional - can use cookies instead)
+            # For now, return token in response
+            
+            print(f"✅ Broker login successful: {email} ({broker_name})")
+            
+            return {
+                "status": "success",
+                "message": "Login successful",
+                "broker": {
+                    "id": broker_id,
+                    "name": broker_name,
+                    "email": email
+                },
+                "token": session_token
+            }
+            
+    except Exception as e:
+        print(f"❌ Broker login error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": "Login failed. Please try again."}
+        )
+
+@app.post("/api/v1/broker/change-password")
+async def broker_change_password(request: Request, data: dict):
+    """Change broker password"""
+    try:
+        email = data.get('email', '').lower().strip()
+        old_password = data.get('old_password', '')
+        new_password = data.get('new_password', '')
+        
+        if not email or not old_password or not new_password:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Email, old password, and new password are required"}
+            )
+        
+        if len(new_password) < 8:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "New password must be at least 8 characters"}
+            )
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get broker
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id, password_hash
+                    FROM brokers
+                    WHERE LOWER(email) = LOWER(%s)
+                """, (email,))
+            else:
+                cursor.execute("""
+                    SELECT id, password_hash
+                    FROM brokers
+                    WHERE LOWER(email) = LOWER(?)
+                """, (email,))
+            
+            broker = cursor.fetchone()
+            
+            if not broker:
+                return JSONResponse(
+                    status_code=404,
+                    content={"status": "error", "message": "Broker not found"}
+                )
+            
+            # Handle different row formats
+            if isinstance(broker, dict):
+                broker_id = broker.get('id')
+                password_hash = broker.get('password_hash', '')
+            else:
+                broker_id = broker[0]
+                password_hash = broker[1] if len(broker) > 1 else ''
+            
+            # Verify old password
+            if not password_hash or not bcrypt.checkpw(old_password.encode(), password_hash.encode()):
+                return JSONResponse(
+                    status_code=401,
+                    content={"status": "error", "message": "Invalid old password"}
+                )
+            
+            # Hash new password
+            new_password_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+            
+            # Update password
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE brokers
+                    SET password_hash = %s
+                    WHERE id = %s
+                """, (new_password_hash, broker_id))
+            else:
+                cursor.execute("""
+                    UPDATE brokers
+                    SET password_hash = ?
+                    WHERE id = ?
+                """, (new_password_hash, broker_id))
+            
+            conn.commit()
+            
+            print(f"✅ Password changed for broker: {email}")
+            
+            return {
+                "status": "success",
+                "message": "Password changed successfully"
+            }
+            
+    except Exception as e:
+        print(f"❌ Password change error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": "Password change failed. Please try again."}
+        )
+
+@app.post("/api/v1/broker/request-password-reset")
+async def broker_request_password_reset(request: Request, data: dict):
+    """Request password reset for broker"""
+    try:
+        email = data.get('email', '').lower().strip()
+        
+        if not email:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Email is required"}
+            )
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Check if broker exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id, name, email
+                    FROM brokers
+                    WHERE LOWER(email) = LOWER(%s)
+                    AND status IN ('approved', 'active')
+                """, (email,))
+            else:
+                cursor.execute("""
+                    SELECT id, name, email
+                    FROM brokers
+                    WHERE LOWER(email) = LOWER(?)
+                    AND status IN ('approved', 'active')
+                """, (email,))
+            
+            broker = cursor.fetchone()
+            
+            # Always return success (don't reveal if email exists)
+            if not broker:
+                print(f"⚠️ Password reset requested for non-existent broker: {email}")
+                return {
+                    "status": "success",
+                    "message": "If the email exists, a password reset link has been sent."
+                }
+            
+            # Handle different row formats
+            if isinstance(broker, dict):
+                broker_id = broker.get('id')
+                broker_name = broker.get('name', '')
+            else:
+                broker_id = broker[0]
+                broker_name = broker[1] if len(broker) > 1 else ''
+            
+            # Generate reset token
+            reset_token = secrets.token_urlsafe(32)
+            expires_at = datetime.now() + timedelta(hours=24)  # 24 hour expiry
+            
+            # Create password_reset_tokens table if it doesn't exist
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS broker_password_reset_tokens (
+                        id SERIAL PRIMARY KEY,
+                        email VARCHAR(255) NOT NULL,
+                        token VARCHAR(255) UNIQUE NOT NULL,
+                        expires_at TIMESTAMP NOT NULL,
+                        used BOOLEAN DEFAULT FALSE,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_broker_reset_token ON broker_password_reset_tokens(token)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_broker_reset_email ON broker_password_reset_tokens(email)")
+                
+                cursor.execute("""
+                    INSERT INTO broker_password_reset_tokens (email, token, expires_at)
+                    VALUES (%s, %s, %s)
+                """, (email, reset_token, expires_at))
+            else:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS broker_password_reset_tokens (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        email TEXT NOT NULL,
+                        token TEXT UNIQUE NOT NULL,
+                        expires_at TIMESTAMP NOT NULL,
+                        used INTEGER DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_broker_reset_token ON broker_password_reset_tokens(token)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_broker_reset_email ON broker_password_reset_tokens(email)")
+                
+                cursor.execute("""
+                    INSERT INTO broker_password_reset_tokens (email, token, expires_at)
+                    VALUES (?, ?, ?)
+                """, (email, reset_token, expires_at))
+            
+            conn.commit()
+            
+            # Send reset email
+            reset_link = f"https://liendeadline.com/broker-reset-password.html?token={reset_token}"
+            send_broker_password_reset_email(email, broker_name, reset_link)
+            
+            print(f"✅ Password reset token generated for broker: {email}")
+            
+            return {
+                "status": "success",
+                "message": "If the email exists, a password reset link has been sent."
+            }
+            
+    except Exception as e:
+        print(f"❌ Password reset request error: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "status": "success",
+            "message": "If the email exists, a password reset link has been sent."
+        }
+
+@app.post("/api/v1/broker/reset-password")
+async def broker_reset_password(request: Request, data: dict):
+    """Reset broker password using token"""
+    try:
+        token = data.get('token', '')
+        new_password = data.get('new_password', '')
+        
+        if not token or not new_password:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Token and new password are required"}
+            )
+        
+        if len(new_password) < 8:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Password must be at least 8 characters"}
+            )
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get token
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT email, expires_at, used
+                    FROM broker_password_reset_tokens
+                    WHERE token = %s
+                """, (token,))
+            else:
+                cursor.execute("""
+                    SELECT email, expires_at, used
+                    FROM broker_password_reset_tokens
+                    WHERE token = ?
+                """, (token,))
+            
+            token_data = cursor.fetchone()
+            
+            if not token_data:
+                return JSONResponse(
+                    status_code=400,
+                    content={"status": "error", "message": "Invalid or expired token"}
+                )
+            
+            # Handle different row formats
+            if isinstance(token_data, dict):
+                email = token_data.get('email', '')
+                expires_at = token_data.get('expires_at')
+                used = token_data.get('used', False)
+            else:
+                email = token_data[0] if len(token_data) > 0 else ''
+                expires_at = token_data[1] if len(token_data) > 1 else None
+                used = token_data[2] if len(token_data) > 2 else False
+            
+            # Check if token is expired or used
+            if used or (expires_at and datetime.now() > expires_at):
+                return JSONResponse(
+                    status_code=400,
+                    content={"status": "error", "message": "Invalid or expired token"}
+                )
+            
+            # Hash new password
+            password_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+            
+            # Update password
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE brokers
+                    SET password_hash = %s
+                    WHERE LOWER(email) = LOWER(%s)
+                """, (password_hash, email))
+                
+                # Mark token as used
+                cursor.execute("""
+                    UPDATE broker_password_reset_tokens
+                    SET used = TRUE
+                    WHERE token = %s
+                """, (token,))
+            else:
+                cursor.execute("""
+                    UPDATE brokers
+                    SET password_hash = ?
+                    WHERE LOWER(email) = LOWER(?)
+                """, (password_hash, email))
+                
+                # Mark token as used
+                cursor.execute("""
+                    UPDATE broker_password_reset_tokens
+                    SET used = 1
+                    WHERE token = ?
+                """, (token,))
+            
+            conn.commit()
+            
+            print(f"✅ Password reset successful for broker: {email}")
+            
+            return {
+                "status": "success",
+                "message": "Password reset successful"
+            }
+            
+    except Exception as e:
+        print(f"❌ Password reset error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": "Password reset failed. Please try again."}
+        )
+
+# ==========================================
+# BROKER PAYMENT INFORMATION ENDPOINTS
+# ==========================================
+
+@app.post("/api/v1/broker/payment-info")
+async def save_broker_payment_info(request: Request, data: dict):
+    """Save or update broker payment information"""
+    try:
+        email = data.get('email', '').lower().strip()
+        payment_method = data.get('payment_method', '')
+        payment_email = data.get('payment_email', '')
+        bank_account_number = data.get('bank_account_number', '')
+        bank_routing_number = data.get('bank_routing_number', '')
+        tax_id = data.get('tax_id', '')
+        
+        if not email:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Email is required"}
+            )
+        
+        # Import encryption utilities
+        from api.encryption import encrypt_data
+        
+        # Encrypt sensitive bank data
+        encrypted_account = encrypt_data(bank_account_number) if bank_account_number else None
+        encrypted_routing = encrypt_data(bank_routing_number) if bank_routing_number else None
+        encrypted_tax_id = encrypt_data(tax_id) if tax_id else None
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Verify broker exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id FROM brokers
+                    WHERE LOWER(email) = LOWER(%s)
+                """, (email,))
+            else:
+                cursor.execute("""
+                    SELECT id FROM brokers
+                    WHERE LOWER(email) = LOWER(?)
+                """, (email,))
+            
+            broker = cursor.fetchone()
+            
+            if not broker:
+                return JSONResponse(
+                    status_code=404,
+                    content={"status": "error", "message": "Broker not found"}
+                )
+            
+            # Update payment information
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE brokers
+                    SET payment_method = %s,
+                        payment_email = %s,
+                        bank_account_number = %s,
+                        bank_routing_number = %s,
+                        tax_id = %s
+                    WHERE LOWER(email) = LOWER(%s)
+                """, (payment_method, payment_email, encrypted_account, encrypted_routing, encrypted_tax_id, email))
+            else:
+                cursor.execute("""
+                    UPDATE brokers
+                    SET payment_method = ?,
+                        payment_email = ?,
+                        bank_account_number = ?,
+                        bank_routing_number = ?,
+                        tax_id = ?
+                    WHERE LOWER(email) = LOWER(?)
+                """, (payment_method, payment_email, encrypted_account, encrypted_routing, encrypted_tax_id, email))
+            
+            conn.commit()
+            
+            print(f"✅ Payment info updated for broker: {email}")
+            
+            return {
+                "status": "success",
+                "message": "Payment information saved successfully"
+            }
+            
+    except Exception as e:
+        print(f"❌ Payment info save error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": "Failed to save payment information"}
+        )
+
+@app.get("/api/v1/broker/payment-info")
+async def get_broker_payment_info(request: Request, email: str):
+    """Get broker payment information (masked for security)"""
+    try:
+        email = email.lower().strip()
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get payment info
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT payment_method, payment_email, bank_account_number, bank_routing_number, tax_id
+                    FROM brokers
+                    WHERE LOWER(email) = LOWER(%s)
+                """, (email,))
+            else:
+                cursor.execute("""
+                    SELECT payment_method, payment_email, bank_account_number, bank_routing_number, tax_id
+                    FROM brokers
+                    WHERE LOWER(email) = LOWER(?)
+                """, (email,))
+            
+            broker = cursor.fetchone()
+            
+            if not broker:
+                return JSONResponse(
+                    status_code=404,
+                    content={"status": "error", "message": "Broker not found"}
+                )
+            
+            # Handle different row formats
+            if isinstance(broker, dict):
+                payment_method = broker.get('payment_method', '')
+                payment_email = broker.get('payment_email', '')
+                bank_account = broker.get('bank_account_number', '')
+                bank_routing = broker.get('bank_routing_number', '')
+                tax_id = broker.get('tax_id', '')
+            else:
+                payment_method = broker[0] if len(broker) > 0 else ''
+                payment_email = broker[1] if len(broker) > 1 else ''
+                bank_account = broker[2] if len(broker) > 2 else ''
+                bank_routing = broker[3] if len(broker) > 3 else ''
+                tax_id = broker[4] if len(broker) > 4 else ''
+            
+            # Import encryption utilities
+            from api.encryption import decrypt_data, mask_sensitive_data
+            
+            # Decrypt and mask sensitive data
+            masked_account = mask_sensitive_data(decrypt_data(bank_account)) if bank_account else ''
+            masked_routing = mask_sensitive_data(decrypt_data(bank_routing)) if bank_routing else ''
+            masked_tax_id = mask_sensitive_data(decrypt_data(tax_id), show_last=4) if tax_id else ''
+            
+            return {
+                "status": "success",
+                "payment_info": {
+                    "payment_method": payment_method,
+                    "payment_email": payment_email,
+                    "bank_account_number": masked_account,
+                    "bank_routing_number": masked_routing,
+                    "tax_id": masked_tax_id
+                }
+            }
+            
+    except Exception as e:
+        print(f"❌ Payment info get error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": "Failed to retrieve payment information"}
+        )
+
+@app.get("/api/admin/broker-payment-info/{broker_id}")
+async def get_broker_payment_info_admin(broker_id: int, username: str = Depends(verify_admin)):
+    """Get broker payment information for admin (unmasked)"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get payment info
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id, name, email, payment_method, payment_email, 
+                           bank_account_number, bank_routing_number, tax_id
+                    FROM brokers
+                    WHERE id = %s
+                """, (broker_id,))
+            else:
+                cursor.execute("""
+                    SELECT id, name, email, payment_method, payment_email, 
+                           bank_account_number, bank_routing_number, tax_id
+                    FROM brokers
+                    WHERE id = ?
+                """, (broker_id,))
+            
+            broker = cursor.fetchone()
+            
+            if not broker:
+                return JSONResponse(
+                    status_code=404,
+                    content={"status": "error", "message": "Broker not found"}
+                )
+            
+            # Handle different row formats
+            if isinstance(broker, dict):
+                broker_name = broker.get('name', '')
+                broker_email = broker.get('email', '')
+                payment_method = broker.get('payment_method', '')
+                payment_email = broker.get('payment_email', '')
+                bank_account = broker.get('bank_account_number', '')
+                bank_routing = broker.get('bank_routing_number', '')
+                tax_id = broker.get('tax_id', '')
+            else:
+                broker_name = broker[1] if len(broker) > 1 else ''
+                broker_email = broker[2] if len(broker) > 2 else ''
+                payment_method = broker[3] if len(broker) > 3 else ''
+                payment_email = broker[4] if len(broker) > 4 else ''
+                bank_account = broker[5] if len(broker) > 5 else ''
+                bank_routing = broker[6] if len(broker) > 6 else ''
+                tax_id = broker[7] if len(broker) > 7 else ''
+            
+            # Import encryption utilities
+            from api.encryption import decrypt_data
+            
+            # Decrypt sensitive data for admin
+            decrypted_account = decrypt_data(bank_account) if bank_account else ''
+            decrypted_routing = decrypt_data(bank_routing) if bank_routing else ''
+            decrypted_tax_id = decrypt_data(tax_id) if tax_id else ''
+            
+            return {
+                "status": "success",
+                "broker": {
+                    "id": broker_id,
+                    "name": broker_name,
+                    "email": broker_email
+                },
+                "payment_info": {
+                    "payment_method": payment_method,
+                    "payment_email": payment_email,
+                    "bank_account_number": decrypted_account,
+                    "bank_routing_number": decrypted_routing,
+                    "tax_id": decrypted_tax_id
+                }
+            }
+            
+    except Exception as e:
+        print(f"❌ Admin payment info get error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": "Failed to retrieve payment information"}
+        )
+
+def send_broker_password_reset_email(email: str, name: str, reset_link: str):
+    """Send password reset email to broker"""
+    try:
+        from api.admin import send_email_sync
+        
+        subject = "Reset Your LienDeadline Partner Password"
+        
+        body_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Reset</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f9fafb;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+                    <tr>
+                        <td style="padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1f2937;">
+                                📋 LienDeadline
+                            </h1>
+                            <p style="margin: 12px 0 0; font-size: 16px; color: #6b7280;">
+                                Partner Program
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 40px 40px 20px;">
+                            <h2 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #1f2937;">
+                                Password Reset Request
+                            </h2>
+                            <p style="margin: 0 0 24px; font-size: 16px; color: #4b5563; line-height: 1.6;">
+                                Hi {name},
+                            </p>
+                            <p style="margin: 0 0 24px; font-size: 16px; color: #4b5563; line-height: 1.6;">
+                                You requested a password reset for your LienDeadline Partner account. Click the button below to reset your password:
+                            </p>
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="{reset_link}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; padding: 14px 32px; border-radius: 6px;">
+                                    Reset Password
+                                </a>
+                            </div>
+                            <p style="margin: 24px 0 0; font-size: 14px; color: #6b7280;">
+                                This link will expire in 24 hours. If you didn't request this, please ignore this email.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 32px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+                                © 2025 LienDeadline. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>"""
+        
+        send_email_sync(email, subject, body_html)
+        print(f"✅ Password reset email sent to broker: {email}")
+        
+    except Exception as e:
+        print(f"❌ Password reset email error: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
     import uvicorn

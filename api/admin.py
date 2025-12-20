@@ -12,6 +12,7 @@ import secrets
 import string
 import logging
 import traceback
+import bcrypt
 import smtplib
 import ssl
 from email.mime.text import MIMEText
@@ -26,7 +27,7 @@ from api.short_link_system import ShortLinkGenerator
 
 logger = logging.getLogger(__name__)
 
-def send_welcome_email_background(email: str, referral_link: str, name: str = "", referral_code: str = "", commission_model: str = "bounty"):
+def send_welcome_email_background(email: str, referral_link: str, name: str = "", referral_code: str = "", commission_model: str = "bounty", temp_password: str = ""):
     """Background email function for partner approval with detailed Resend debug logging"""
     try:
         print("=" * 80)
@@ -175,6 +176,19 @@ The LienDeadline Team
                             <p style="margin: 16px 0 0; font-size: 14px; color: #6b7280;">
                                 Login with: <strong style="color: #1f2937;">{email}</strong>
                             </p>
+                            {f'''
+                            <div style="margin-top: 24px; padding: 20px; background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px;">
+                                <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #92400e;">
+                                    🔐 Your Temporary Password
+                                </p>
+                                <p style="margin: 0; font-size: 18px; font-weight: 700; color: #1f2937; font-family: 'Courier New', monospace; letter-spacing: 2px;">
+                                    {temp_password}
+                                </p>
+                                <p style="margin: 12px 0 0; font-size: 13px; color: #92400e;">
+                                    Please change this password after your first login for security.
+                                </p>
+                            </div>
+                            ''' if temp_password else ''}
                         </td>
                     </tr>
                     
@@ -678,6 +692,21 @@ async def approve_partner(
                     cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_short_code ON brokers(short_code)")
                 except Exception:
                     pass
+                
+                try:
+                    cursor.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'brokers' AND column_name = 'password_hash'
+                            ) THEN
+                                ALTER TABLE brokers ADD COLUMN password_hash VARCHAR;
+                            END IF;
+                        END $$;
+                    """)
+                except Exception:
+                    pass
             else:
                 # SQLite
                 cursor.execute("""
@@ -701,19 +730,32 @@ async def approve_partner(
                     ("commission_model", "TEXT"),
                     ("pending_commissions", "INTEGER DEFAULT 0"),
                     ("paid_commissions", "REAL DEFAULT 0"),
-                    ("short_code", "TEXT UNIQUE")
+                    ("short_code", "TEXT UNIQUE"),
+                    ("password_hash", "TEXT"),
+                    ("payment_method", "TEXT"),
+                    ("payment_email", "TEXT"),
+                    ("bank_account_number", "TEXT"),
+                    ("bank_routing_number", "TEXT"),
+                    ("tax_id", "TEXT")
                 ]:
                     try:
                         cursor.execute(f"ALTER TABLE brokers ADD COLUMN {column_def[0]} {column_def[1]}")
                     except Exception:
                         pass
-                
+            
                 try:
                     cursor.execute("CREATE INDEX IF NOT EXISTS idx_brokers_short_code ON brokers(short_code)")
                 except Exception:
                     pass
             
-            # 3) UPSERT broker record (handle duplicates gracefully)
+            # 3) Generate temporary password for broker
+            # Generate secure random password (12 characters)
+            temp_password = secrets.token_urlsafe(12)[:12]  # Generate and truncate to 12 chars
+            password_hash = bcrypt.hashpw(temp_password.encode(), bcrypt.gensalt()).decode()
+            
+            print(f"🔐 Generated temporary password for broker: {email}")
+            
+            # 4) UPSERT broker record (handle duplicates gracefully)
             name = app_dict.get('name', '')
             email = app_dict.get('email', '')
             
@@ -722,16 +764,17 @@ async def approve_partner(
             if DB_TYPE == 'postgresql':
                 # PostgreSQL UPSERT - handle duplicate email gracefully
                 cursor.execute("""
-                    INSERT INTO brokers (name, email, referral_code, short_code, status)
-                    VALUES (%s, %s, %s, %s, 'approved')
+                    INSERT INTO brokers (name, email, referral_code, short_code, status, password_hash)
+                    VALUES (%s, %s, %s, %s, 'approved', %s)
                     ON CONFLICT (email)
                     DO UPDATE SET
                         referral_code = EXCLUDED.referral_code,
                         short_code = EXCLUDED.short_code,
                         name = EXCLUDED.name,
-                        status = 'approved'
+                        status = 'approved',
+                        password_hash = EXCLUDED.password_hash
                     RETURNING id
-                """, (name, email, referral_code, short_code))
+                """, (name, email, referral_code, short_code, password_hash))
                 
                 result = cursor.fetchone()
                 broker_id = result['id'] if isinstance(result, dict) else result[0]
@@ -745,15 +788,15 @@ async def approve_partner(
                     broker_id = existing['id'] if isinstance(existing, dict) else existing[0]
                     cursor.execute("""
                         UPDATE brokers 
-                        SET referral_code = ?, short_code = ?, name = ?, status = 'approved'
+                        SET referral_code = ?, short_code = ?, name = ?, status = 'approved', password_hash = ?
                         WHERE id = ?
-                    """, (referral_code, short_code, name, broker_id))
+                    """, (referral_code, short_code, name, password_hash, broker_id))
                     print(f"✅ BROKER UPSERT OK id={broker_id} (updated existing)")
                 else:
                     cursor.execute("""
-                        INSERT INTO brokers (name, email, referral_code, short_code, status)
-                        VALUES (?, ?, ?, ?, 'approved')
-                    """, (name, email, referral_code, short_code))
+                        INSERT INTO brokers (name, email, referral_code, short_code, status, password_hash)
+                        VALUES (?, ?, ?, ?, 'approved', ?)
+                    """, (name, email, referral_code, short_code, password_hash))
                     broker_id = cursor.lastrowid
                     print(f"✅ BROKER UPSERT OK id={broker_id} (new record)")
             
@@ -902,7 +945,7 @@ async def approve_partner(
         print("=" * 60)
         
         # Schedule email sending in background (non-blocking)
-        background_tasks.add_task(send_welcome_email_background, email, referral_link, name, referral_code, app_dict['commission_model'])
+        background_tasks.add_task(send_welcome_email_background, email, referral_link, name, referral_code, app_dict['commission_model'], temp_password)
         
         logger.info(f"Partner approved: {email} - Referral code: {referral_code} - Email queued for background sending")
         
@@ -2184,7 +2227,7 @@ async def stripe_webhook(request: Request):
     Stripe webhook handler for automated payout queueing.
     
     Listens for invoice.payment_succeeded events and automatically
-    queues payouts after 30 days (anti-churn protection).
+    queues payouts after 60 days (anti-churn protection).
     """
     payload = await request.body()
     sig_header = request.headers.get('stripe-signature')
@@ -2254,8 +2297,8 @@ async def stripe_webhook(request: Request):
                 # Calculate days active
                 days_active = (datetime.now().timestamp() - customer_created) / 86400
                 
-                # Check if 30 days passed
-                if days_active >= 30:
+                # Check if 60 days passed
+                if days_active >= 60:
                     # Get referral code from metadata
                     broker_ref = invoice.get('metadata', {}).get('referral_code') or \
                                 subscription.get('metadata', {}).get('referral_code')

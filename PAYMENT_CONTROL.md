@@ -13,14 +13,14 @@ Day 1: Customer signs up with ?ref=broker_john
      ↓
 Stripe stores metadata: { referral: 'broker_john' }
      ↓
-Day 30: Webhook fires "30 days passed"
+Day 60: Webhook fires "60 days passed"
      ↓
 Check if customer still active
      ↓
 IF active → Auto-queue payout
 IF cancelled → No payout
      ↓
-Day 31: Admin dashboard shows pending payout
+Day 61: Admin dashboard shows pending payout
      ↓
 You click [Approve] → Stripe Connect transfers $500
 ```
@@ -49,7 +49,7 @@ Stripe Connect transfers all at once
 - Broker name
 - Customer name
 - Amount ($500 or $50/month)
-- Days active (must be 30+ for bounty)
+- Days active (must be 60+ for bounty)
 - Status (Ready/Pending)
 
 **Actions**:
@@ -61,7 +61,7 @@ Stripe Connect transfers all at once
 
 1. **Automated Queueing**:
    - System calculates payouts automatically
-   - Checks 30-day churn protection
+   - Checks 60-day churn protection
    - Queues ready payouts
 
 2. **Manual Review**:
@@ -86,7 +86,7 @@ Stripe Connect transfers all at once
 ### What Gets Automated:
 
 ✅ Payout calculation
-✅ 30-day churn check
+✅ 60-day churn check
 ✅ Queue management
 ✅ Email notifications
 ✅ Payment execution (after approval)
@@ -156,10 +156,10 @@ def reject_payout(payout_id: int, reason: str):
 def queue_payouts():
     """Run daily - queue payouts that are ready"""
     
-    # Bounty payouts (30 days active)
+    # Bounty payouts (60 days active)
     active_customers = db.customers.filter(
         status='active',
-        days_active__gte=30,
+        days_active__gte=60,
         payout_status='pending'
     )
     

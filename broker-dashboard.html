@@ -12,6 +12,7 @@
             <h1 class="text-xl font-bold">Broker Dashboard</h1>
             <div>
                 <span id="brokerName" class="text-gray-600"></span>
+                <button onclick="showChangePassword()" class="ml-4 text-blue-600 hover:underline">Change Password</button>
                 <button onclick="logout()" class="ml-4 text-red-600 hover:underline">Logout</button>
             </div>
         </div>
@@ -27,9 +28,70 @@
                     <input type="email" id="loginEmail" required
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                 </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Password</label>
+                    <input type="password" id="loginPassword" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="mb-4 text-right">
+                    <a href="#" onclick="showForgotPassword(); return false;" class="text-sm text-blue-600 hover:underline">
+                        Forgot password?
+                    </a>
+                </div>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg">
                     Login
                 </button>
+            </form>
+        </div>
+        
+        <!-- Forgot Password Form -->
+        <div id="forgotPasswordForm" class="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8 hidden">
+            <h2 class="text-2xl font-bold mb-6">Reset Password</h2>
+            <form onsubmit="requestPasswordReset(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Email</label>
+                    <input type="email" id="resetEmail" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <button type="button" onclick="showLogin()" class="text-sm text-gray-600 hover:underline">
+                        ← Back to login
+                    </button>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg">
+                    Send Reset Link
+                </button>
+            </form>
+        </div>
+        
+        <!-- Change Password Form (shown in dashboard) -->
+        <div id="changePasswordForm" class="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8 hidden">
+            <h2 class="text-2xl font-bold mb-6">Change Password</h2>
+            <form onsubmit="changePassword(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Current Password</label>
+                    <input type="password" id="oldPassword" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">New Password</label>
+                    <input type="password" id="newPassword" required minlength="8"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                    <p class="text-xs text-gray-500 mt-1">Must be at least 8 characters</p>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Confirm New Password</label>
+                    <input type="password" id="confirmPassword" required minlength="8"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="mb-4 flex gap-2">
+                    <button type="button" onclick="hideChangePassword()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-lg">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg">
+                        Change Password
+                    </button>
+                </div>
             </form>
         </div>
         
@@ -68,6 +130,19 @@
                 </p>
             </div>
             
+            <!-- Payment Settings -->
+            <div class="bg-white rounded-lg shadow p-6 mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">Payment Settings</h3>
+                    <button onclick="showPaymentSettings()" class="text-blue-600 hover:underline text-sm">
+                        Update Payment Info
+                    </button>
+                </div>
+                <div id="paymentInfoDisplay" class="text-gray-600">
+                    <p>No payment information on file.</p>
+                </div>
+            </div>
+            
             <!-- Referrals Table -->
             <div class="bg-white rounded-lg shadow overflow-hidden">
                 <div class="p-6 border-b">
@@ -91,26 +166,205 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Payment Settings Form -->
+        <div id="paymentSettingsForm" class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 hidden">
+            <h2 class="text-2xl font-bold mb-6">Payment Settings</h2>
+            <form onsubmit="savePaymentInfo(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Payment Method *</label>
+                    <select id="paymentMethod" required onchange="togglePaymentFields()" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <option value="">Select payment method</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="paypal">PayPal</option>
+                        <option value="venmo">Venmo</option>
+                        <option value="zelle">Zelle</option>
+                        <option value="check">Check (Mail)</option>
+                    </select>
+                </div>
+                
+                <div id="paypalFields" class="mb-4 hidden">
+                    <label class="block text-sm font-medium mb-2">PayPal Email *</label>
+                    <input type="email" id="paymentEmail" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                           placeholder="your@paypal.com">
+                </div>
+                
+                <div id="bankFields" class="hidden">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Bank Account Number *</label>
+                        <input type="text" id="bankAccountNumber" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                               placeholder="Account number">
+                        <p class="text-xs text-gray-500 mt-1">Encrypted and stored securely</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Bank Routing Number *</label>
+                        <input type="text" id="bankRoutingNumber" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                               placeholder="9-digit routing number">
+                        <p class="text-xs text-gray-500 mt-1">Encrypted and stored securely</p>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Tax ID (W9) - Optional</label>
+                    <input type="text" id="taxId" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                           placeholder="SSN or EIN (for tax reporting)">
+                    <p class="text-xs text-gray-500 mt-1">Required for payments over $600/year</p>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button type="button" onclick="hidePaymentSettings()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-lg">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg">
+                        Save Payment Info
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
     
     <script>
         let currentBrokerEmail = localStorage.getItem('brokerEmail');
+        let brokerToken = localStorage.getItem('brokerToken');
         
-        if (currentBrokerEmail) {
+        if (currentBrokerEmail && brokerToken) {
             loadDashboard();
         }
         
-        function login(e) {
+        async function login(e) {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
-            localStorage.setItem('brokerEmail', email);
-            currentBrokerEmail = email;
-            loadDashboard();
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const response = await fetch('/api/v1/broker/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    alert(data.message || 'Login failed. Please check your email and password.');
+                    return;
+                }
+                
+                // Store credentials
+                localStorage.setItem('brokerEmail', email);
+                localStorage.setItem('brokerToken', data.token);
+                currentBrokerEmail = email;
+                brokerToken = data.token;
+                
+                // Load dashboard
+                loadDashboard();
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed. Please try again.');
+            }
         }
         
         function logout() {
             localStorage.removeItem('brokerEmail');
+            localStorage.removeItem('brokerToken');
             location.reload();
+        }
+        
+        function showForgotPassword() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('forgotPasswordForm').classList.remove('hidden');
+        }
+        
+        function showLogin() {
+            document.getElementById('forgotPasswordForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+        }
+        
+        async function requestPasswordReset(e) {
+            e.preventDefault();
+            const email = document.getElementById('resetEmail').value;
+            
+            try {
+                const response = await fetch('/api/v1/broker/request-password-reset', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                alert(data.message || 'If the email exists, a password reset link has been sent.');
+                showLogin();
+            } catch (error) {
+                console.error('Password reset request error:', error);
+                alert('Failed to send reset link. Please try again.');
+            }
+        }
+        
+        function showChangePassword() {
+            document.getElementById('changePasswordForm').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+        }
+        
+        function hideChangePassword() {
+            document.getElementById('changePasswordForm').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+        }
+        
+        async function changePassword(e) {
+            e.preventDefault();
+            const oldPassword = document.getElementById('oldPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (newPassword !== confirmPassword) {
+                alert('New passwords do not match.');
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                alert('Password must be at least 8 characters.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/v1/broker/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: currentBrokerEmail,
+                        old_password: oldPassword,
+                        new_password: newPassword
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    alert(data.message || 'Password change failed.');
+                    return;
+                }
+                
+                alert('Password changed successfully!');
+                hideChangePassword();
+                
+                // Clear password fields
+                document.getElementById('oldPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+            } catch (error) {
+                console.error('Password change error:', error);
+                alert('Password change failed. Please try again.');
+            }
         }
         
         async function loadDashboard() {
@@ -119,7 +373,7 @@
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    alert('Login failed. Please check your email.');
+                    alert(data.message || 'Failed to load dashboard. Please login again.');
                     logout();
                     return;
                 }
