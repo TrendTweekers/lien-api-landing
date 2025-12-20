@@ -5617,24 +5617,61 @@ async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
+            # Check if payment tracking columns exist, if not use created_at as fallback
+            has_payment_columns = False
+            try:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'brokers' AND column_name = 'first_payment_date'
+                    """)
+                    result = cursor.fetchone()
+                    has_payment_columns = result is not None
+                else:
+                    cursor.execute("PRAGMA table_info(brokers)")
+                    columns = cursor.fetchall()
+                    column_names = []
+                    for col in columns:
+                        if isinstance(col, (list, tuple)):
+                            column_names.append(col[1] if len(col) > 1 else '')
+                        elif isinstance(col, dict):
+                            column_names.append(col.get('name', ''))
+                    has_payment_columns = 'first_payment_date' in column_names
+            except Exception as col_check_error:
+                print(f"⚠️ Could not check for payment columns: {col_check_error}")
+                has_payment_columns = False
+            
+            # Build SELECT query based on available columns
+            if has_payment_columns:
+                select_cols = """
+                    id, name, email, payment_method, payment_email, iban, crypto_wallet,
+                    first_payment_date, last_payment_date, next_payment_due, 
+                    created_at, status, commission_model
+                """
+            else:
+                # Fallback: use created_at instead of payment tracking columns
+                print("⚠️ Payment tracking columns not found, using created_at as fallback")
+                select_cols = """
+                    id, name, email, payment_method, payment_email, iban, crypto_wallet,
+                    NULL as first_payment_date, NULL as last_payment_date, NULL as next_payment_due,
+                    created_at, status, commission_model
+                """
+            
             # Get all active/approved brokers
             if DB_TYPE == 'postgresql':
-                cursor.execute("""
-                    SELECT id, name, email, payment_method, payment_email, iban, crypto_wallet,
-                           first_payment_date, last_payment_date, next_payment_due, 
-                           created_at, status, commission_model
+                cursor.execute(f"""
+                    SELECT {select_cols}
                     FROM brokers
                     WHERE status IN ('approved', 'active')
-                    ORDER BY next_payment_due ASC NULLS LAST, created_at ASC
+                    ORDER BY created_at ASC
                 """)
             else:
-                cursor.execute("""
-                    SELECT id, name, email, payment_method, payment_email, iban, crypto_wallet,
-                           first_payment_date, last_payment_date, next_payment_due, 
-                           created_at, status, commission_model
+                cursor.execute(f"""
+                    SELECT {select_cols}
                     FROM brokers
                     WHERE status IN ('approved', 'active') OR status IS NULL
-                    ORDER BY next_payment_due ASC, created_at ASC
+                    ORDER BY created_at ASC
                 """)
             
             brokers = cursor.fetchall()
@@ -5716,30 +5753,60 @@ async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
                     # Calculate commission owed from referrals
                     commission_owed = 0.0
                     
-                    # Get referrals that are ready to pay (status='ready_to_pay' or hold_until has passed)
-                    if DB_TYPE == 'postgresql':
-                        cursor.execute("""
-                            SELECT SUM(payout) as total_commission
-                            FROM referrals
-                            WHERE broker_id = %s 
-                            AND status IN ('ready_to_pay', 'on_hold')
-                            AND (hold_until IS NULL OR hold_until <= NOW())
-                        """, (broker_id,))
-                    else:
-                        cursor.execute("""
-                            SELECT SUM(payout) as total_commission
-                            FROM referrals
-                            WHERE broker_id = ? 
-                            AND status IN ('ready_to_pay', 'on_hold')
-                            AND (hold_until IS NULL OR hold_until <= date('now'))
-                        """, (broker_id,))
-                    
-                    commission_result = cursor.fetchone()
-                    if commission_result:
-                        if isinstance(commission_result, dict):
-                            commission_owed = float(commission_result.get('total_commission') or 0)
+                    # Check if referrals table exists
+                    referrals_exists = False
+                    try:
+                        if DB_TYPE == 'postgresql':
+                            cursor.execute("""
+                                SELECT EXISTS (
+                                    SELECT FROM information_schema.tables 
+                                    WHERE table_name = 'referrals'
+                                )
+                            """)
+                            result = cursor.fetchone()
+                            referrals_exists = result[0] if result else False
                         else:
-                            commission_owed = float(commission_result[0] if len(commission_result) > 0 and commission_result[0] else 0)
+                            cursor.execute("""
+                                SELECT name FROM sqlite_master 
+                                WHERE type='table' AND name='referrals'
+                            """)
+                            referrals_exists = cursor.fetchone() is not None
+                    except Exception as table_check_error:
+                        print(f"⚠️ Could not check for referrals table: {table_check_error}")
+                        referrals_exists = False
+                    
+                    if referrals_exists:
+                        # Get referrals that are ready to pay (status='ready_to_pay' or hold_until has passed)
+                        try:
+                            if DB_TYPE == 'postgresql':
+                                cursor.execute("""
+                                    SELECT COALESCE(SUM(payout), 0) as total_commission
+                                    FROM referrals
+                                    WHERE broker_id = %s 
+                                    AND status IN ('ready_to_pay', 'on_hold')
+                                    AND (hold_until IS NULL OR hold_until <= NOW())
+                                """, (broker_id,))
+                            else:
+                                cursor.execute("""
+                                    SELECT COALESCE(SUM(payout), 0) as total_commission
+                                    FROM referrals
+                                    WHERE broker_id = ? 
+                                    AND status IN ('ready_to_pay', 'on_hold')
+                                    AND (hold_until IS NULL OR hold_until <= date('now'))
+                                """, (broker_id,))
+                            
+                            commission_result = cursor.fetchone()
+                            if commission_result:
+                                if isinstance(commission_result, dict):
+                                    commission_owed = float(commission_result.get('total_commission') or 0)
+                                else:
+                                    commission_owed = float(commission_result[0] if len(commission_result) > 0 and commission_result[0] else 0)
+                        except Exception as commission_error:
+                            print(f"⚠️ Error calculating commission for broker {broker_id}: {commission_error}")
+                            commission_owed = 0.0
+                    else:
+                        print(f"⚠️ Referrals table does not exist, skipping commission calculation")
+                        commission_owed = 0.0
                     
                     # Only include if commission > 0
                     if commission_owed > 0:
@@ -5777,11 +5844,19 @@ async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
         }
         
     except Exception as e:
-        print(f"❌ Get brokers ready to pay error: {e}")
+        error_msg = str(e)
+        print(f"❌ Get brokers ready to pay error: {error_msg}")
         import traceback
-        traceback.print_exc()
+        traceback_str = traceback.format_exc()
+        print(f"❌ Traceback:\n{traceback_str}")
         return JSONResponse(
             status_code=500,
+            content={
+                "status": "error",
+                "message": f"Failed to get brokers ready to pay: {error_msg}",
+                "traceback": traceback_str
+            }
+        )
             content={"status": "error", "message": "Failed to get brokers ready to pay", "error": str(e)}
         )
 
