@@ -2319,6 +2319,18 @@ function displayResults(data) {
     let prelimDate = null;
     let lienDate = null;
     
+    // Extract state code for PDF download link (from response or form)
+    let stateCode = 'CA'; // Default fallback
+    if (data.state) {
+        stateCode = String(data.state).toUpperCase().substring(0, 2);
+    } else {
+        // Try to get from form if not in response
+        const stateSelect = document.getElementById('state');
+        if (stateSelect && stateSelect.value) {
+            stateCode = String(stateSelect.value).toUpperCase().substring(0, 2);
+        }
+    }
+    
     // Extract preliminary notice
     if (data.preliminary_notice) {
         if (typeof data.preliminary_notice === 'object' && data.preliminary_notice !== null) {
@@ -2371,18 +2383,6 @@ function displayResults(data) {
             urgencyBadge = '<div class="mt-4 inline-block px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg text-sm font-semibold">⚠️ ≤ 30 days remaining</div>';
         }
         // > 30 days: no badge (hidden)
-    }
-    
-    // Extract state code for PDF download link
-    let stateCode = 'CA'; // Default fallback
-    if (data.state) {
-        stateCode = data.state.toUpperCase().substring(0, 2);
-    } else {
-        // Try to get from form if not in response
-        const stateSelect = document.getElementById('state');
-        if (stateSelect && stateSelect.value) {
-            stateCode = stateSelect.value.toUpperCase().substring(0, 2);
-        }
     }
     
     // Display results with timeline
