@@ -876,6 +876,211 @@ async def referral_redirect(short_code: str, request: Request):
 def get_states():
     return list(STATE_RULES.keys())
 
+@app.get("/api/v1/guide/{state_code}/pdf")
+async def generate_state_guide_pdf(state_code: str):
+    """Generate PDF guide for a specific state"""
+    state_code = state_code.upper()
+    
+    # Validate state code
+    if state_code not in STATE_RULES:
+        raise HTTPException(
+            status_code=404,
+            detail=f"State '{state_code}' not found. Available states: {', '.join(STATE_RULES.keys())}"
+        )
+    
+    state_data = STATE_RULES[state_code]
+    state_name = state_data.get('state_name', state_code)
+    
+    # Create PDF in memory
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, 
+                            rightMargin=0.75*inch, leftMargin=0.75*inch,
+                            topMargin=0.75*inch, bottomMargin=0.75*inch)
+    
+    # Container for PDF content
+    story = []
+    
+    # Define colors
+    navy = HexColor('#1e3a8a')
+    coral = HexColor('#f97316')
+    
+    # Define styles
+    styles = getSampleStyleSheet()
+    
+    # Custom styles
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=navy,
+        spaceAfter=12,
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold'
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=16,
+        textColor=navy,
+        spaceAfter=8,
+        spaceBefore=12,
+        fontName='Helvetica-Bold'
+    )
+    
+    subheading_style = ParagraphStyle(
+        'CustomSubheading',
+        parent=styles['Heading3'],
+        fontSize=14,
+        textColor=HexColor('#374151'),
+        spaceAfter=6,
+        spaceBefore=8,
+        fontName='Helvetica-Bold'
+    )
+    
+    body_style = ParagraphStyle(
+        'CustomBody',
+        parent=styles['Normal'],
+        fontSize=11,
+        textColor=HexColor('#1f2937'),
+        spaceAfter=6,
+        leading=14,
+        alignment=TA_JUSTIFY
+    )
+    
+    # Header
+    header_text = f"<b>LienDeadline.com</b>"
+    story.append(Paragraph(header_text, ParagraphStyle('Header', parent=styles['Normal'], fontSize=12, textColor=navy, alignment=TA_CENTER)))
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Title
+    title_text = f"{state_name} Mechanics Lien Guide<br/>for Material Suppliers"
+    story.append(Paragraph(title_text, title_style))
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Deadline Summary Box
+    prelim_notice = state_data.get('preliminary_notice', {})
+    lien_filing = state_data.get('lien_filing', {})
+    
+    prelim_days = prelim_notice.get('days', prelim_notice.get('commercial_days', prelim_notice.get('standard_days', 'N/A')))
+    lien_days = lien_filing.get('days', lien_filing.get('commercial_days', lien_filing.get('standard_days', 'N/A')))
+    
+    # Create summary table
+    summary_data = [
+        ['<b>Deadline Summary</b>', ''],
+        ['Preliminary Notice Deadline:', f'{prelim_days} days' if prelim_days != 'N/A' else 'Not required'],
+        ['Lien Filing Deadline:', f'{lien_days} days' if lien_days != 'N/A' else 'N/A'],
+    ]
+    
+    summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), navy),
+        ('TEXTCOLOR', (0, 0), (-1, 0), HexColor('#ffffff')),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), HexColor('#f3f4f6')),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 11),
+        ('GRID', (0, 0), (-1, -1), 1, HexColor('#e5e7eb')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    
+    story.append(summary_table)
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Step-by-Step Instructions
+    story.append(Paragraph("Step-by-Step Instructions", heading_style))
+    
+    # When to send preliminary notice
+    story.append(Paragraph("When to Send Preliminary Notice", subheading_style))
+    prelim_desc = prelim_notice.get('description', 'See state-specific requirements')
+    story.append(Paragraph(f"• {prelim_desc}", body_style))
+    if prelim_notice.get('trigger'):
+        trigger = prelim_notice['trigger'].replace('_', ' ').title()
+        story.append(Paragraph(f"• Trigger: {trigger}", body_style))
+    story.append(Spacer(1, 0.15*inch))
+    
+    # Who to serve it to
+    story.append(Paragraph("Who to Serve It To", subheading_style))
+    serving_reqs = state_data.get('serving_requirements', [])
+    if serving_reqs:
+        for req in serving_reqs:
+            req_formatted = req.replace('_', ' ').title()
+            story.append(Paragraph(f"• {req_formatted}", body_style))
+    else:
+        story.append(Paragraph("• See state-specific requirements", body_style))
+    story.append(Spacer(1, 0.15*inch))
+    
+    # What information to include
+    story.append(Paragraph("What Information to Include", subheading_style))
+    story.append(Paragraph("• Your company name and address", body_style))
+    story.append(Paragraph("• Property owner's name and address", body_style))
+    story.append(Paragraph("• General contractor's name (if applicable)", body_style))
+    story.append(Paragraph("• Description of materials/services provided", body_style))
+    story.append(Paragraph("• Project address or legal description", body_style))
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Common Mistakes
+    story.append(Paragraph("Common Mistakes to Avoid", heading_style))
+    warnings = state_data.get('critical_warnings', [])
+    if warnings:
+        for warning in warnings[:3]:  # Limit to 3
+            warning_clean = warning.replace('⚠️', '').strip()
+            story.append(Paragraph(f"• {warning_clean}", body_style))
+    else:
+        story.append(Paragraph("• Missing the preliminary notice deadline", body_style))
+        story.append(Paragraph("• Serving notice to wrong parties", body_style))
+        story.append(Paragraph("• Missing required information in notice", body_style))
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Quick Checklist
+    story.append(Paragraph("Quick Checklist", heading_style))
+    checklist_items = [
+        f"Send preliminary notice within {prelim_days} days" if prelim_days != 'N/A' else "Check if preliminary notice is required",
+        f"File lien within {lien_days} days of last work" if lien_days != 'N/A' else "File lien within required timeframe",
+        "Serve notice on all required parties",
+        "Include all required information",
+        "Keep proof of service/delivery"
+    ]
+    
+    for item in checklist_items[:5]:  # Limit to 5 items
+        story.append(Paragraph(f"☐ {item}", body_style))
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Statute Citations
+    citations = state_data.get('statute_citations', [])
+    if citations:
+        story.append(Paragraph("Statute Citations", heading_style))
+        for citation in citations:
+            story.append(Paragraph(f"• {citation}", body_style))
+        story.append(Spacer(1, 0.2*inch))
+    
+    # Footer
+    story.append(Spacer(1, 0.3*inch))
+    footer_text = "Generated by LienDeadline.com | Free Calculator: https://liendeadline.com"
+    story.append(Paragraph(footer_text, ParagraphStyle('Footer', parent=styles['Normal'], fontSize=9, textColor=HexColor('#6b7280'), alignment=TA_CENTER)))
+    
+    # Build PDF
+    doc.build(story)
+    buffer.seek(0)
+    
+    # Return PDF file
+    filename = f"{state_code}-lien-guide.pdf"
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Type": "application/pdf"
+        }
+    )
+
 # Calculate deadline request model
 class CalculateDeadlineRequest(BaseModel):
     invoice_date: str
