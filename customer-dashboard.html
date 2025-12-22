@@ -11,22 +11,285 @@
     <!-- Lovable Scale Stylesheet (load first) -->
     <link rel="stylesheet" href="/lovable-scale.css">
     <style>
-        /* Calculator iframe responsive styling */
-        #calculator iframe {
+        /* CSS Variables for consistent theming */
+        :root {
+            --navy: hsl(220 60% 20%);
+            --coral: #f97316;
+            --coral-dark: #ea580c;
+            --coral-light: #fb923c;
+        }
+
+        /* Beautiful visual design */
+        .dashboard-container {
+            background: linear-gradient(135deg, var(--navy), var(--coral));
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        /* Beautiful calculator section */
+        #calculator {
+            margin: 2rem 0;
+        }
+
+        #calculator > div {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        #calculator > div:hover {
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Beautiful heading */
+        #calculator h2 {
+            font-family: 'Instrument Serif', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--navy), var(--coral));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Beautiful date input */
+        #dash_invoice_date {
             width: 100%;
-            min-height: 900px;
-            border: 0;
+            padding: 1rem;
+            border: 2px solid var(--coral);
+            border-radius: 12px;
+            font-size: 1.1rem;
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
-        
-        @media (max-width: 768px) {
-            #calculator iframe {
-                min-height: 800px;
-            }
+
+        #dash_invoice_date:hover {
+            border-color: var(--coral-dark);
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
         }
-        
+
+        #dash_invoice_date:focus {
+            border-color: var(--coral-dark);
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+            outline: none;
+        }
+
+        /* Beautiful state select */
+        #dash_state {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--coral);
+            border-radius: 12px;
+            font-size: 1.1rem;
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        #dash_state:hover {
+            border-color: var(--coral-dark);
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+        }
+
+        #dash_state:focus {
+            border-color: var(--coral-dark);
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+            outline: none;
+        }
+
+        /* Beautiful button */
+        #dash_calc_btn {
+            background: linear-gradient(135deg, var(--coral), var(--coral-dark));
+            border: none;
+            border-radius: 50px;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+        }
+
+        #dash_calc_btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(249, 115, 22, 0.4);
+            background: linear-gradient(135deg, var(--coral-dark), var(--coral));
+        }
+
+        #dash_calc_btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        #dash_calc_btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Beautiful results */
+        #dash_results {
+            margin-top: 3rem;
+        }
+
+        #dash_results > div {
+            transition: all 0.3s ease;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 1rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-4px);
+        }
+
+        /* Beautiful error messages */
+        #dash_calc_error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: #dc2626;
+            font-weight: 500;
+        }
+
+        /* Beautiful PDF button */
+        #dash_pdf_btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 12px;
+            padding: 1rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        #dash_pdf_btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, #059669, #10b981);
+        }
+
+        /* Beautiful labels */
+        #dash_calc_form label {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--navy);
+            margin-bottom: 0.5rem;
+        }
+
         /* Smooth scroll behavior */
         html {
             scroll-behavior: smooth;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            #calculator > div {
+                padding: 2rem 1.5rem;
+                margin: 1rem;
+                border-radius: 16px;
+            }
+
+            #calculator h2 {
+                font-size: 2rem;
+            }
+
+            #dash_calc_btn {
+                width: 100%;
+                padding: 1rem;
+                font-size: 1.1rem;
+            }
+
+            #dash_invoice_date,
+            #dash_state {
+                padding: 0.875rem;
+                font-size: 1rem;
+            }
+
+            .result-card {
+                padding: 1.5rem;
+            }
+        }
+
+        /* Loading animation */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        /* Beautiful focus states */
+        .focus-ring:focus {
+            outline: none;
+            ring: 2px;
+            ring-color: var(--coral);
+            ring-opacity: 0.5;
+        }
+
+        /* Enhanced result cards */
+        #dash_prelim_card,
+        #dash_lien_card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        #dash_prelim_card::before,
+        #dash_lien_card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--coral);
+            transition: width 0.3s ease;
+        }
+
+        #dash_prelim_card:hover::before,
+        #dash_lien_card:hover::before {
+            width: 6px;
+        }
+
+        /* Beautiful serving requirements */
+        #dash_serving_list li {
+            transition: all 0.2s ease;
+        }
+
+        #dash_serving_list li:hover {
+            transform: translateX(4px);
+            color: var(--coral-dark);
+        }
+
+        /* Beautiful warnings section */
+        #dash_warnings_section {
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
     </style>
     <script>
@@ -133,11 +396,11 @@
             </div>
         </div>
 
-        <!-- Deadline Calculator (DASHBOARD - MATCHES HOMEPAGE) -->
+        <!-- Deadline Calculator (DASHBOARD - BEAUTIFUL DESIGN) -->
         <section id="calculator" class="mb-8">
-            <div class="bg-white rounded-3xl shadow-2xl border border-border p-10 lg:p-12">
-                <h2 class="text-xl font-semibold text-gray-900 mb-2">Deadline Calculator</h2>
-                <p class="text-sm text-gray-600 mb-6">Calculate mechanics lien deadlines instantly (unlimited for active customers).</p>
+            <div>
+                <h2 class="mb-2">Deadline Calculator</h2>
+                <p class="text-gray-600 mb-6 text-lg">Calculate mechanics lien deadlines instantly (unlimited for active customers).</p>
                 
                 <form id="dash_calc_form" class="space-y-8">
                     <div class="grid sm:grid-cols-2 gap-6">
@@ -308,7 +571,7 @@
                     const prelimCard = document.createElement('div');
                     prelimCard.id = 'dash_prelim_card';
                     const prelimUrgency = data.preliminary_notice?.urgency || 'normal';
-                    prelimCard.className = `bg-white shadow-lg rounded-lg p-6 border-l-4 ${getUrgencyColor(prelimUrgency)}`;
+                    prelimCard.className = `result-card bg-white shadow-lg rounded-lg p-6 border-l-4 ${getUrgencyColor(prelimUrgency)}`;
                     prelimCard.innerHTML = `
                         <h3 class="text-xl font-bold mb-4" id="dash_prelim_title">${data.preliminary_notice?.name || 'Preliminary Notice'}</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -329,7 +592,7 @@
                     const lienCard = document.createElement('div');
                     lienCard.id = 'dash_lien_card';
                     const lienUrgency = data.lien_filing?.urgency || 'normal';
-                    lienCard.className = `bg-white shadow-lg rounded-lg p-6 border-l-4 ${getUrgencyColor(lienUrgency)}`;
+                    lienCard.className = `result-card bg-white shadow-lg rounded-lg p-6 border-l-4 ${getUrgencyColor(lienUrgency)}`;
                     lienCard.innerHTML = `
                         <h3 class="text-xl font-bold mb-4" id="dash_lien_title">${data.lien_filing?.name || 'Lien Filing Deadline'}</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
