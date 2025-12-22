@@ -108,6 +108,28 @@ if (document.readyState !== 'loading') {
 // API Base URL - use relative URL since API is on same domain
 const API_BASE = '';
 
+// Helper function to parse invoice date (handles both YYYY-MM-DD and MM/DD/YYYY)
+function parseInvoiceDate(raw) {
+    if (!raw) return null;
+    
+    // Native <input type="date"> returns YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        const [y, m, d] = raw.split("-").map(Number);
+        return new Date(y, m - 1, d);
+    }
+    
+    // Fallback: MM/DD/YYYY
+    const mdy = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (mdy) {
+        const [, mm, dd, yyyy] = mdy.map(Number);
+        return new Date(yyyy, mm - 1, dd);
+    }
+    
+    // Last resort
+    const dt = new Date(raw);
+    return isNaN(dt.getTime()) ? null : dt;
+}
+
 // Form submission - NOW WITH SERVER-SIDE TRACKING
 const calculatorForm = document.getElementById('calculatorForm');
 if (calculatorForm) {
@@ -115,7 +137,22 @@ if (calculatorForm) {
         e.preventDefault();
         
         // Get form values
-        const invoiceDate = document.getElementById('invoiceDatePicker').value;
+        const rawDate = document.getElementById('invoice_date')?.value?.trim() || 
+                       document.getElementById('invoiceDatePicker')?.value?.trim() || 
+                       document.getElementById('invoiceDateDisplay')?.value?.trim();
+        const invoiceDateObj = parseInvoiceDate(rawDate);
+        
+        if (!invoiceDateObj) {
+            alert("Please select a valid date.");
+            return;
+        }
+        
+        // Use YYYY-MM-DD format (native date input already provides this)
+        const invoiceDate = rawDate.match(/^\d{4}-\d{2}-\d{2}$/) ? rawDate : 
+                           (invoiceDateObj.getFullYear() + '-' + 
+                            String(invoiceDateObj.getMonth() + 1).padStart(2, '0') + '-' + 
+                            String(invoiceDateObj.getDate()).padStart(2, '0'));
+        
         const state = document.getElementById('state').value;
         const role = document.getElementById('role') ? document.getElementById('role').value : 'supplier';
         
