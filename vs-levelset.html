@@ -49,6 +49,29 @@
         h1, h2, h3, h4, h5, h6 {
             font-family: 'Instrument Serif', serif;
         }
+        
+        /* Enhanced styling for comparison cards */
+        .comparison-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .comparison-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Timeline enhancements */
+        @media (max-width: 768px) {
+            .timeline-point {
+                margin-bottom: 2rem;
+            }
+        }
+        
+        /* Mobile responsive improvements */
+        @media (max-width: 640px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
     
     <!-- FAQ Schema JSON-LD -->
