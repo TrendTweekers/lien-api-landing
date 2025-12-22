@@ -1616,12 +1616,14 @@ async def apply_partner(request: Request):
         client_count = data.get('client_count')
         commission_model = data.get('commission_model')
         message = data.get('message', '')
+        works_with_suppliers = data.get('works_with_suppliers', False)
         
         print(f"👤 Name: {name}")
         print(f"📧 Email: {email}")
         print(f"🏢 Company: {company}")
         print(f"📞 Phone: {phone}")
         print(f"💰 Commission: {commission_model}")
+        print(f"✅ Works with suppliers: {works_with_suppliers}")
         
         # Validate required fields
         if not name or not email or not company or not client_count or not commission_model:
@@ -1630,6 +1632,11 @@ async def apply_partner(request: Request):
                 status_code=400,
                 content={"status": "error", "message": "Missing required fields"}
             )
+        
+        # Auto-approval logic
+        if works_with_suppliers:
+            print("🚀 AUTO-APPROVAL: Creating broker immediately...")
+            return await auto_approve_broker(name, email, company, commission_model, message)
         
         # Insert into database
         print("💾 Attempting database insert...")
