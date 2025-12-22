@@ -894,6 +894,13 @@ def get_states():
 @app.get("/api/v1/guide/{state_code}/pdf")
 async def generate_state_guide_pdf(state_code: str):
     """Generate PDF guide for a specific state"""
+    # Check if ReportLab is available
+    if not REPORTLAB_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="PDF generation is temporarily unavailable. ReportLab library is not installed. Please contact support."
+        )
+    
     state_code = state_code.upper()
     
     # Validate state code
