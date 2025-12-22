@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
         /* Calculator iframe responsive styling */
         #calculator iframe {
@@ -146,11 +147,8 @@
                             name="invoice_date"
                             type="text"
                             placeholder="MM/DD/YYYY"
-                            maxlength="10"
-                            class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                            pattern="\d{2}/\d{2}/\d{4}"
-                            title="Please enter date in MM/DD/YYYY format"
+                            class="w-full rounded-md border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                            autocomplete="off"
                         />
                     </div>
                     
