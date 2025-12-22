@@ -2396,15 +2396,17 @@ async def verify_session(authorization: str = Header(None)):
                 raise HTTPException(status_code=401, detail="Invalid session")
             
             # Extract fields - handle both dict-like and tuple results
-            if isinstance(user, dict):
-                subscription_status = user.get('subscription_status', '')
-                email = user.get('email', '')
-            elif isinstance(user, tuple) or isinstance(user, list):
-                subscription_status = user[4] if len(user) > 4 else ''
-                email = user[1] if len(user) > 1 else ''
-            else:
-                subscription_status = getattr(user, 'subscription_status', '')
-                email = getattr(user, 'email', '')
+            try:
+                subscription_status = user['subscription_status'] if 'subscription_status' in user else user.get('subscription_status', '')
+                email = user['email'] if 'email' in user else user.get('email', '')
+            except (TypeError, KeyError):
+                # Fallback for tuple/list results
+                if isinstance(user, (tuple, list)):
+                    subscription_status = user[4] if len(user) > 4 else ''
+                    email = user[1] if len(user) > 1 else ''
+                else:
+                    subscription_status = getattr(user, 'subscription_status', '')
+                    email = getattr(user, 'email', '')
             
             if subscription_status not in ['active', 'trialing']:
                 raise HTTPException(status_code=403, detail="Subscription expired")
