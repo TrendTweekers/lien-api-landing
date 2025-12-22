@@ -4889,7 +4889,7 @@ async def broker_dashboard(request: Request, email: str):
                     ORDER BY created_at DESC
                 """, (referral_code,))
             else:
-            cursor.execute("""
+                cursor.execute("""
                 SELECT 
                     customer_email,
                     amount,
