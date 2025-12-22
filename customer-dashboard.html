@@ -144,9 +144,13 @@
                         <input
                             id="invoice_date"
                             name="invoice_date"
-                            type="date"
+                            type="text"
+                            placeholder="MM/DD/YYYY"
+                            maxlength="10"
                             class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
+                            pattern="\d{2}/\d{2}/\d{4}"
+                            title="Please enter date in MM/DD/YYYY format"
                         />
                     </div>
                     
