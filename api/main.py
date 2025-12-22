@@ -1914,6 +1914,13 @@ async def serve_calculator():
         raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
     return FileResponse(file_path)
 
+@app.get("/calculator-embed.html")
+async def serve_calculator_embed():
+    file_path = BASE_DIR / "calculator-embed.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
+    return FileResponse(file_path)
+
 @app.get("/dashboard.html")
 async def serve_dashboard():
     file_path = BASE_DIR / "dashboard.html"
