@@ -138,23 +138,62 @@
                     </div>
                     <div class="bg-white rounded-lg border border-border p-6">
                         <h3 class="text-xl font-semibold mb-3">When do I get paid?</h3>
-                        <p class="text-muted-foreground">Commissions are held for 60 days after the customer's payment date. After the hold period, eligible commissions move into "Due" and can be paid in the next payout batch.</p>
+                        <p class="text-muted-foreground mb-2">Commissions are held for 60 days after the FIRST successful customer payment date. For recurring commissions, each monthly invoice has its own 60-day hold period. After the hold period, eligible commissions move into "Due to Pay" status and can be paid in the next payout batch.</p>
                     </div>
                     <div class="bg-white rounded-lg border border-border p-6">
                         <h3 class="text-xl font-semibold mb-3">What happens if a customer refunds, disputes, or cancels?</h3>
-                        <p class="text-muted-foreground">Refunded/chargebacked payments do not become eligible for payout. If a subscription cancels or becomes past-due, recurring commissions stop for that customer until payments resume.</p>
+                        <p class="text-muted-foreground">Refunded/chargebacked payments do not become eligible for payout. Failed payments also void unpaid earnings. If a subscription cancels or becomes past-due, recurring commissions stop for that customer until payments resume.</p>
                     </div>
                     <div class="bg-white rounded-lg border border-border p-6">
                         <h3 class="text-xl font-semibold mb-3">Why is my commission showing "On Hold"?</h3>
-                        <p class="text-muted-foreground">"On Hold" means the 60-day hold window hasn't passed yet. Once it passes, it becomes "Due" automatically.</p>
+                        <p class="text-muted-foreground">"On Hold" means the 60-day hold window hasn't passed yet. Once it passes, it becomes "Due to Pay" automatically.</p>
                     </div>
                     <div class="bg-white rounded-lg border border-border p-6">
                         <h3 class="text-xl font-semibold mb-3">How do payouts get processed?</h3>
-                        <p class="text-muted-foreground">Admin pays brokers in payout batches. Each batch contains one or more eligible (Due) commission events and is marked paid together with a timestamp and optional transaction reference.</p>
+                        <p class="text-muted-foreground">Admin pays brokers in payout batches. Each batch contains one or more eligible ("Due to Pay") commission events and is marked "Paid" together with a timestamp and optional transaction reference.</p>
                     </div>
                     <div class="bg-white rounded-lg border border-border p-6">
                         <h3 class="text-xl font-semibold mb-3">What payment methods are supported?</h3>
                         <p class="text-muted-foreground">We support PayPal, Wise (TransferWise), Revolut, SEPA Transfer (Europe), SWIFT/Wire Transfer, and Cryptocurrency (Bitcoin/USDT). Set your preferred method in your broker dashboard.</p>
+                    </div>
+                </div>
+
+                <!-- Payout Examples -->
+                <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4">Payout Examples</h3>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="font-semibold mb-2">Example 1: $500 One-Time Bounty</h4>
+                            <ul class="list-disc list-inside text-muted-foreground space-y-1 ml-4 text-sm">
+                                <li><strong>Day 0:</strong> Customer pays first invoice → Commission status: "On Hold"</li>
+                                <li><strong>Day 60:</strong> Hold period expires → Commission status: "Due to Pay"</li>
+                                <li><strong>Day 65:</strong> Admin processes payout → Commission status: "Paid"</li>
+                            </ul>
+                            <p class="text-sm text-muted-foreground mt-2">Note: Only one $500 payment per customer, regardless of how many invoices they pay.</p>
+                        </div>
+
+                        <div>
+                            <h4 class="font-semibold mb-2">Example 2: $50/Month Recurring</h4>
+                            <ul class="list-disc list-inside text-muted-foreground space-y-1 ml-4 text-sm">
+                                <li><strong>Month 1, Day 0:</strong> Customer pays first invoice → $50 commission status: "On Hold"</li>
+                                <li><strong>Month 1, Day 60:</strong> First hold expires → $50 commission status: "Due to Pay"</li>
+                                <li><strong>Month 2, Day 0:</strong> Customer pays second invoice → New $50 commission status: "On Hold"</li>
+                                <li><strong>Month 2, Day 60:</strong> Second hold expires → Second $50 commission status: "Due to Pay"</li>
+                                <li><strong>Month 3+:</strong> Process repeats for each monthly payment</li>
+                            </ul>
+                            <p class="text-sm text-muted-foreground mt-2">Note: Each monthly invoice has its own 60-day hold period.</p>
+                        </div>
+
+                        <div>
+                            <h4 class="font-semibold mb-2">Example 3: Refund/Chargeback Scenario</h4>
+                            <ul class="list-disc list-inside text-muted-foreground space-y-1 ml-4 text-sm">
+                                <li><strong>Day 0:</strong> Customer pays invoice → Commission status: "On Hold"</li>
+                                <li><strong>Day 30:</strong> Customer requests refund → Commission status: "Voided" (never becomes "Due to Pay")</li>
+                                <li><strong>Day 60:</strong> Hold period would have expired, but commission remains voided</li>
+                            </ul>
+                            <p class="text-sm text-muted-foreground mt-2">Note: Refunded, chargebacked, or failed payments void the associated commission earnings.</p>
+                        </div>
                     </div>
                 </div>
             </section>

@@ -9,7 +9,7 @@
 <body class="bg-gray-50">
     <div class="max-w-4xl mx-auto px-6 py-12">
         <h1 class="text-4xl font-bold mb-8">Terms of Service</h1>
-        <p class="text-sm text-gray-600 mb-8">Last Updated: December 10, 2025</p>
+        <p class="text-sm text-gray-600 mb-8">Last Updated: January 15, 2025</p>
         
         <div class="prose prose-lg">
             <h2 class="text-2xl font-bold mt-8 mb-4">1. Service Description</h2>
@@ -69,15 +69,16 @@
                         <li>$50/month recurring per active referred customer (paid monthly, after the hold period for each payment)</li>
                     </ul>
                 </li>
-                <li><strong>60-Day Hold Period:</strong> All commissions are held for 60 days after the customer's payment date before becoming eligible for payout. This protects against chargebacks, refunds, and disputes.</li>
-                <li><strong>Eligibility:</strong> Commissions become eligible ("Due") only after:
+                <li><strong>60-Day Hold Period:</strong> All commissions are held for 60 days after the FIRST successful customer payment date before becoming eligible for payout. For recurring commissions, each monthly invoice has its own 60-day hold period. This protects against chargebacks, refunds, and disputes.</li>
+                <li><strong>Eligibility:</strong> Commissions become eligible ("Due to Pay") only after:
                     <ul class="list-disc ml-6 mt-2">
-                        <li>The 60-day hold period has passed</li>
+                        <li>The 60-day hold period has passed from the payment date</li>
                         <li>The customer's payment has not been refunded or charged back</li>
                         <li>The customer's subscription is still active (for recurring commissions)</li>
                     </ul>
+                    <p class="mt-2"><strong>Payout eligibility is determined by LienDeadline's internal tracking and payment processor events.</strong></p>
                 </li>
-                <li><strong>Refunds & Chargebacks:</strong> If a customer refunds, disputes, or charges back a payment, the associated commission does not become eligible for payout. If a subscription cancels or becomes past-due, recurring commissions stop for that customer until payments resume.</li>
+                <li><strong>Refunds & Chargebacks:</strong> If a customer refunds, disputes, or charges back a payment, the associated commission does not become eligible for payout. Failed payments also void unpaid earnings. If a subscription cancels or becomes past-due, recurring commissions stop for that customer until payments resume.</li>
                 <li><strong>Payout Processing:</strong> Admin processes payouts in batches. Each batch contains one or more eligible commission events and is marked paid together with a timestamp and optional transaction reference.</li>
                 <li><strong>Payment Methods:</strong> We support PayPal, Wise (TransferWise), Revolut, SEPA Transfer, SWIFT/Wire Transfer, and Cryptocurrency. You must provide valid payment information in your broker dashboard.</li>
                 <li><strong>Tax Obligations:</strong> You are responsible for reporting and paying taxes on all commissions received. We may request tax identification information (W9, VAT, etc.) for payments over $600/year (US) or equivalent.</li>
