@@ -1445,7 +1445,12 @@ async def calculate_deadline(
                     count = tracking[0] if tracking else 0
                     email = tracking[1] if tracking and len(tracking) > 1 else None
                 
-                # Enforce limits server-side
+                # Check if user is a broker - brokers get same limits as customers
+                is_broker = email and is_broker_email(email)
+                if is_broker:
+                    print(f"⚠️ Broker attempting calculation: {email} - applying same limits as customers")
+                
+                # Enforce limits server-side (same for brokers and customers)
                 if not email and count >= 3:
                     raise HTTPException(
                         status_code=403,
@@ -1453,9 +1458,13 @@ async def calculate_deadline(
                     )
                 
                 if email and count >= 6:
+                    # Brokers get same limits - no unlimited access
+                    error_msg = "Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
+                    if is_broker:
+                        error_msg += " Note: Brokers have the same calculation limits as customers."
                     raise HTTPException(
                         status_code=403,
-                        detail="Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
+                        detail=error_msg
                     )
     except HTTPException:
         raise
