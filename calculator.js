@@ -5,8 +5,19 @@
 
 let userEmail = localStorage.getItem('userEmail') || null; // Still store email locally for display
 
+// Check if calculator is in dashboard mode
+function isDashboardMode() {
+    const calculatorSection = document.getElementById('calculator');
+    return calculatorSection && calculatorSection.hasAttribute('data-dashboard');
+}
+
 // Update remaining calculations counter display (fetches from server)
 async function updateRemainingCounter() {
+    // Skip counter update in dashboard mode
+    if (isDashboardMode()) {
+        return;
+    }
+    
     try {
         // Fetch current count from server
         const response = await fetch('/api/v1/track-calculation', {
@@ -98,32 +109,74 @@ if (document.readyState !== 'loading') {
 const API_BASE = '';
 
 // Form submission - NOW WITH SERVER-SIDE TRACKING
-document.getElementById('calculatorForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    // Get form values
-    const invoiceDate = document.getElementById('invoiceDatePicker').value;
-    const state = document.getElementById('state').value;
-    const role = document.getElementById('role').value;
-    
-    // Show loading state
-    const submitButton = e.target.querySelector('button[type="submit"]');
-    const originalText = submitButton.textContent;
-    submitButton.textContent = 'Checking limits...';
-    submitButton.disabled = true;
-    
-    try {
-        // STEP 1: Check limits server-side BEFORE calculation
-        const trackResponse = await fetch('/api/v1/track-calculation', {
-            method: 'POST',
-            headers: {
+const calculatorForm = document.getElementById('calculatorForm');
+if (calculatorForm) {
+    calculatorForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Get form values
+        const invoiceDate = document.getElementById('invoiceDatePicker').value;
+        const state = document.getElementById('state').value;
+        const role = document.getElementById('role') ? document.getElementById('role').value : 'supplier';
+        
+        // Show loading state
+        const submitButton = e.target.querySelector('button[type="submit"]') || document.getElementById('calculateBtn');
+        const originalText = submitButton.innerHTML || submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.innerHTML = 'Calculating...';
+        
+        try {
+            // Get session token if in dashboard mode
+            const sessionToken = localStorage.getItem('session_token');
+            const headers = {
                 'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                state: state,
-                notice_date: invoiceDate
-            })
-        });
+            };
+            if (sessionToken && isDashboardMode()) {
+                headers['Authorization'] = `Bearer ${sessionToken}`;
+            }
+            
+            // STEP 1: Check limits server-side BEFORE calculation (skip in dashboard mode)
+            let trackData = { status: 'allowed', quota: { unlimited: false } };
+            if (!isDashboardMode()) {
+                const trackResponse = await fetch('/api/v1/track-calculation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        state: state,
+                        notice_date: invoiceDate
+                    })
+                });
+                trackData = await trackResponse.json();
+                
+                // Handle limit reached
+                if (trackData.status === 'limit_reached') {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalText;
+                    
+                    if (trackData.limit_type === 'before_email') {
+                        const emailModal = document.getElementById('emailModal');
+                        if (emailModal) emailModal.classList.remove('hidden');
+                        return;
+                    } else if (trackData.limit_type === 'upgrade_required') {
+                        const upgradeModal = document.getElementById('upgradeModal');
+                        if (upgradeModal) upgradeModal.classList.remove('hidden');
+                        return;
+                    }
+                }
+            }
+            
+            // STEP 2: Proceed with calculation
+            const response = await fetch('/api/v1/calculate-deadline', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    invoice_date: invoiceDate,
+                    state: state,
+                    role: role
+                })
+            });
         
         const trackData = await trackResponse.json();
         
@@ -146,68 +199,72 @@ document.getElementById('calculatorForm').addEventListener('submit', async (e) =
         // STEP 2: If allowed, proceed with calculation
         submitButton.textContent = 'Calculating...';
         
-        const response = await fetch('https://liendeadline.com/api/v1/calculate-deadline', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                invoice_date: invoiceDate,
-                state: state,
-                role: role
-            })
-        });
-        
-        const data = await response.json();
-        
-        // Handle API errors (including 403 from server-side limit check)
-        if (response.status === 403) {
-            // Server-side limit enforcement (backup check)
-            if (data.detail && data.detail.includes('email')) {
-                document.getElementById('emailModal').classList.remove('hidden');
-            } else {
-                document.getElementById('upgradeModal').classList.remove('hidden');
+            
+            const data = await response.json();
+            
+            // Handle API errors (including 403 from server-side limit check)
+            if (response.status === 403 && !isDashboardMode()) {
+                // Server-side limit enforcement (backup check)
+                if (data.detail && data.detail.includes('email')) {
+                    const emailModal = document.getElementById('emailModal');
+                    if (emailModal) emailModal.classList.remove('hidden');
+                } else {
+                    const upgradeModal = document.getElementById('upgradeModal');
+                    if (upgradeModal) upgradeModal.classList.remove('hidden');
+                }
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+                return;
             }
-            submitButton.textContent = originalText;
+            
+            if (data.error || !response.ok) {
+                alert(`Error: ${data.error || data.detail || 'Unknown error'}\n${data.message || ''}`);
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+                return;
+            }
+            
+            // STEP 3: Update counter display (server-side count) - skip in dashboard mode
+            if (!isDashboardMode()) {
+                await updateRemainingCounter();
+                
+                // STEP 4: Check if email gate should appear (based on server response)
+                if (trackData.email_required && !trackData.email_provided) {
+                    // Store result to show after email is entered
+                    window.pendingCalculationResult = data;
+                    const emailModal = document.getElementById('emailModal');
+                    if (emailModal) emailModal.classList.remove('hidden');
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalText;
+                    return;
+                }
+            }
+            
+            // Display results
+            if (typeof displayResults === 'function') {
+                displayResults(data);
+            } else if (typeof window.displayResults === 'function') {
+                window.displayResults(data);
+            }
+            
+            // Scroll to results (if not in dashboard mode)
+            if (!isDashboardMode()) {
+                const resultsEl = document.getElementById('results') || document.getElementById('calculatorResults');
+                if (resultsEl) {
+                    resultsEl.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+            
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to calculate deadlines. Please try again.');
+        } finally {
+            // Reset button
             submitButton.disabled = false;
-            return;
+            submitButton.innerHTML = originalText;
         }
-        
-        if (data.error || !response.ok) {
-            alert(`Error: ${data.error || data.detail || 'Unknown error'}\n${data.message || ''}`);
-            submitButton.textContent = originalText;
-            submitButton.disabled = false;
-            return;
-        }
-        
-        // STEP 3: Update counter display (server-side count)
-        await updateRemainingCounter();
-        
-        // STEP 4: Check if email gate should appear (based on server response)
-        if (trackData.email_required && !trackData.email_provided) {
-            // Store result to show after email is entered
-            window.pendingCalculationResult = data;
-            document.getElementById('emailModal').classList.remove('hidden');
-            submitButton.textContent = originalText;
-            submitButton.disabled = false;
-            return;
-        }
-        
-        // Display results
-        displayResults(data);
-        
-        // Scroll to results
-        document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-        
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to calculate deadlines. Please try again.');
-    } finally {
-        // Reset button
-        submitButton.textContent = originalText;
-        submitButton.disabled = false;
-    }
-});
+    });
+}
 
 // Email submission handler (wait for DOM)
 function initEmailHandler() {

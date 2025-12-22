@@ -1473,6 +1473,43 @@ async def track_calculation(request: Request, request_data: TrackCalculationRequ
         }
 
 @app.post("/v1/calculate")
+def get_user_from_session(request: Request):
+    """Helper to get logged-in user from session token"""
+    authorization = request.headers.get('authorization', '')
+    if not authorization or not authorization.startswith('Bearer '):
+        return None
+    
+    token = authorization.replace('Bearer ', '')
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT email, subscription_status FROM users WHERE session_token = %s", (token,))
+            else:
+                cursor.execute("SELECT email, subscription_status FROM users WHERE session_token = ?", (token,))
+            
+            user = cursor.fetchone()
+            
+            if user:
+                if isinstance(user, dict):
+                    email = user.get('email')
+                    subscription_status = user.get('subscription_status')
+                elif hasattr(user, 'keys'):
+                    email = user['email'] if 'email' in user.keys() else (user[0] if len(user) > 0 else None)
+                    subscription_status = user['subscription_status'] if 'subscription_status' in user.keys() else (user[1] if len(user) > 1 else None)
+                else:
+                    email = user[0] if user and len(user) > 0 else None
+                    subscription_status = user[1] if user and len(user) > 1 else None
+                
+                if subscription_status in ['active', 'trialing']:
+                    return {'email': email, 'subscription_status': subscription_status, 'unlimited': True}
+    except Exception as e:
+        print(f"⚠️ Error checking session: {e}")
+    
+    return None
+
 @app.post("/api/v1/calculate-deadline")
 @limiter.limit("10/minute")
 async def calculate_deadline(
@@ -1489,73 +1526,85 @@ async def calculate_deadline(
     project_type = request_data.project_type
     state_code = state.upper()
     
-    # Get client IP and tracking key
-    client_ip = get_client_ip(request)
-    user_agent_hash = get_user_agent_hash(request)
-    tracking_key = f"{client_ip}:{user_agent_hash}"
+    # Check if user is logged in with active/trialing subscription
+    logged_in_user = get_user_from_session(request)
+    quota = {'unlimited': False, 'remaining': 0, 'limit': 3}
     
-    # Check limits BEFORE processing calculation (server-side enforcement)
-    try:
-        with get_db() as conn:
-            cursor = get_db_cursor(conn)
-            
-            # Get current tracking
-            if DB_TYPE == 'postgresql':
-                cursor.execute("""
-                    SELECT calculation_count, email 
-                    FROM email_gate_tracking 
-                    WHERE tracking_key = %s 
-                    ORDER BY last_calculation_at DESC 
-                    LIMIT 1
-                """, (tracking_key,))
-            else:
-                cursor.execute("""
-                    SELECT calculation_count, email 
-                    FROM email_gate_tracking 
-                    WHERE tracking_key = ? 
-                    ORDER BY last_calculation_at DESC 
-                    LIMIT 1
-                """, (tracking_key,))
-            
-            tracking = cursor.fetchone()
-            
-            if tracking:
-                if isinstance(tracking, dict):
-                    count = tracking.get('calculation_count', 0)
-                    email = tracking.get('email')
-                elif hasattr(tracking, 'keys'):
-                    count = tracking['calculation_count'] if 'calculation_count' in tracking.keys() else tracking[0]
-                    email = tracking['email'] if 'email' in tracking.keys() else (tracking[1] if len(tracking) > 1 else None)
+    if logged_in_user and logged_in_user.get('unlimited'):
+        # Skip limit checks for logged-in active/trialing users
+        quota = {'unlimited': True}
+    else:
+        # Get client IP and tracking key
+        client_ip = get_client_ip(request)
+        user_agent_hash = get_user_agent_hash(request)
+        tracking_key = f"{client_ip}:{user_agent_hash}"
+        
+        # Check limits BEFORE processing calculation (server-side enforcement)
+        try:
+            with get_db() as conn:
+                cursor = get_db_cursor(conn)
+                
+                # Get current tracking
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT calculation_count, email 
+                        FROM email_gate_tracking 
+                        WHERE tracking_key = %s 
+                        ORDER BY last_calculation_at DESC 
+                        LIMIT 1
+                    """, (tracking_key,))
                 else:
-                    count = tracking[0] if tracking else 0
-                    email = tracking[1] if tracking and len(tracking) > 1 else None
+                    cursor.execute("""
+                        SELECT calculation_count, email 
+                        FROM email_gate_tracking 
+                        WHERE tracking_key = ? 
+                        ORDER BY last_calculation_at DESC 
+                        LIMIT 1
+                    """, (tracking_key,))
                 
-                # Check if user is a broker - brokers get same limits as customers
-                is_broker = email and is_broker_email(email)
-                if is_broker:
-                    print(f"⚠️ Broker attempting calculation: {email} - applying same limits as customers")
+                tracking = cursor.fetchone()
                 
-                # Enforce limits server-side (same for brokers and customers)
-                if not email and count >= 3:
-                    raise HTTPException(
-                        status_code=403,
-                        detail="Free trial limit reached. Please provide your email for 3 more calculations."
-                    )
-                
-                if email and count >= 6:
-                    # Brokers get same limits - no unlimited access
-                    error_msg = "Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
+                if tracking:
+                    if isinstance(tracking, dict):
+                        count = tracking.get('calculation_count', 0)
+                        email = tracking.get('email')
+                    elif hasattr(tracking, 'keys'):
+                        count = tracking['calculation_count'] if 'calculation_count' in tracking.keys() else tracking[0]
+                        email = tracking['email'] if 'email' in tracking.keys() else (tracking[1] if len(tracking) > 1 else None)
+                    else:
+                        count = tracking[0] if tracking else 0
+                        email = tracking[1] if tracking and len(tracking) > 1 else None
+                    
+                    # Check if user is a broker - brokers get same limits as customers
+                    is_broker = email and is_broker_email(email)
                     if is_broker:
-                        error_msg += " Note: Brokers have the same calculation limits as customers."
-                    raise HTTPException(
-                        status_code=403,
-                        detail=error_msg
-                    )
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"⚠️ Error checking limits in calculate_deadline: {e}")
-        # Continue with calculation if limit check fails (fail open for UX)
+                        print(f"⚠️ Broker attempting calculation: {email} - applying same limits as customers")
+                    
+                    limit = 6 if email else 3
+                    remaining = max(0, limit - count)
+                    quota = {'unlimited': False, 'remaining': remaining, 'limit': limit}
+                    
+                    # Enforce limits server-side (same for brokers and customers)
+                    if not email and count >= 3:
+                        raise HTTPException(
+                            status_code=403,
+                            detail="Free trial limit reached. Please provide your email for 3 more calculations."
+                        )
+                    
+                    if email and count >= 6:
+                        # Brokers get same limits - no unlimited access
+                        error_msg = "Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
+                        if is_broker:
+                            error_msg += " Note: Brokers have the same calculation limits as customers."
+                        raise HTTPException(
+                            status_code=403,
+                            detail=error_msg
+                        )
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"⚠️ Error checking limits in calculate_deadline: {e}")
+            # Continue with calculation if limit check fails (fail open for UX)
     
     # Validate state
     if state_code not in STATE_RULES:
@@ -1766,7 +1815,9 @@ async def calculate_deadline(
         "critical_warnings": rules.get("critical_warnings", []),
         "notes": rules.get("notes", ""),
         "disclaimer": "⚠️ This is general information only, NOT legal advice.",
-        "response_time_ms": 45
+        "response_time_ms": 45,
+        "quota": quota,
+        "state": state_code
     }
 
 @app.post("/api/contact")
