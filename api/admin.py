@@ -270,6 +270,92 @@ def get_db_path():
 # Router without prefix - prefix will be added in main.py include_router call
 router = APIRouter(tags=["admin"])
 
+def ensure_users_table():
+    """
+    Ensure users table exists with proper schema.
+    Idempotent - safe to call multiple times.
+    Returns True if table was created, False if it already existed.
+    """
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                # Check if table exists
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'users'
+                    )
+                """)
+                result = cursor.fetchone()
+                table_exists = result[0] if result else False
+                
+                if not table_exists:
+                    # Create users table
+                    cursor.execute("""
+                        CREATE TABLE users (
+                            id SERIAL PRIMARY KEY,
+                            email VARCHAR UNIQUE NOT NULL,
+                            password_hash VARCHAR NOT NULL,
+                            stripe_customer_id VARCHAR,
+                            subscription_status VARCHAR NOT NULL DEFAULT 'inactive',
+                            subscription_id VARCHAR,
+                            session_token VARCHAR,
+                            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                            last_login_at TIMESTAMPTZ
+                        )
+                    """)
+                    
+                    # Create indexes
+                    cursor.execute("""
+                        CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
+                    """)
+                    cursor.execute("""
+                        CREATE INDEX IF NOT EXISTS idx_users_subscription_status ON users(subscription_status)
+                    """)
+                    
+                    conn.commit()
+                    print("✅ Users table created successfully")
+                    return True
+                else:
+                    print("✅ Users table already exists")
+                    return False
+            else:
+                # SQLite
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        email TEXT UNIQUE NOT NULL,
+                        password_hash TEXT NOT NULL,
+                        stripe_customer_id TEXT,
+                        subscription_status TEXT NOT NULL DEFAULT 'inactive',
+                        subscription_id TEXT,
+                        session_token TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        last_login_at TIMESTAMP
+                    )
+                """)
+                
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
+                """)
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_users_subscription_status ON users(subscription_status)
+                """)
+                
+                conn.commit()
+                print("✅ Users table check: OK")
+                return True
+    except Exception as e:
+        print(f"❌ Error ensuring users table: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
 # Import get_db from main.py (will be imported at runtime)
 # For now, we'll use a helper function that works with both DB types
 def get_db_connection():
@@ -394,6 +480,9 @@ def create_test_user(
     """
     import bcrypt
     
+    # Ensure users table exists before querying
+    ensure_users_table()
+    
     try:
         with get_db() as conn:
             cursor = get_db_cursor(conn)
@@ -413,45 +502,17 @@ def create_test_user(
             
             # Create user account
             if DB_TYPE == 'postgresql':
-                # Ensure users table exists
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS users (
-                        id SERIAL PRIMARY KEY,
-                        email VARCHAR UNIQUE NOT NULL,
-                        password_hash VARCHAR NOT NULL,
-                        stripe_customer_id VARCHAR,
-                        subscription_status VARCHAR DEFAULT 'active',
-                        subscription_id VARCHAR,
-                        session_token VARCHAR,
-                        created_at TIMESTAMP DEFAULT NOW(),
-                        last_login TIMESTAMP
-                    )
-                """)
-                cursor.execute("""
-                    INSERT INTO users (email, password_hash, subscription_status)
-                    VALUES (%s, %s, 'active')
+                    INSERT INTO users (email, password_hash, subscription_status, updated_at)
+                    VALUES (%s, %s, 'active', NOW())
                     RETURNING id
                 """, (email.lower(), password_hash))
                 result = cursor.fetchone()
                 user_id = result['id'] if isinstance(result, dict) else result[0]
             else:
-                # Ensure users table exists
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS users (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        email TEXT UNIQUE NOT NULL,
-                        password_hash TEXT NOT NULL,
-                        stripe_customer_id TEXT,
-                        subscription_status TEXT DEFAULT 'active',
-                        subscription_id TEXT,
-                        session_token TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        last_login TIMESTAMP
-                    )
-                """)
-                cursor.execute("""
-                    INSERT INTO users (email, password_hash, subscription_status)
-                    VALUES (?, ?, 'active')
+                    INSERT INTO users (email, password_hash, subscription_status, updated_at)
+                    VALUES (?, ?, 'active', CURRENT_TIMESTAMP)
                 """, (email.lower(), password_hash))
                 user_id = cursor.lastrowid
             

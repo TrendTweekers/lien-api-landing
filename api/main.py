@@ -734,6 +734,15 @@ app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
 async def startup():
     init_db()
     
+    # Ensure users table exists
+    try:
+        from api.admin import ensure_users_table
+        ensure_users_table()
+        print("✅ Users table check: OK")
+    except Exception as e:
+        print(f"⚠️ Users table check failed: {e}")
+        # Don't fail startup if migration fails - it can be run manually
+    
     # Verify critical HTML files exist
     critical_files = ["contact.html", "index.html", "terms.html", "admin-dashboard.html"]
     print("\n=== CRITICAL FILES CHECK ===")
@@ -6439,6 +6448,50 @@ async def migrate_payment_tracking(username: str = Depends(verify_admin)):
                 "database_type": db_type
             }
         )
+
+@app.get("/api/admin/migrate-users-table")
+async def migrate_users_table(username: str = Depends(verify_admin)):
+    """
+    Migration endpoint to create users table.
+    Safe and idempotent - can be run multiple times.
+    """
+    from api.admin import ensure_users_table
+    
+    try:
+        created = ensure_users_table()
+        return {
+            "status": "success",
+            "message": "Users table migration completed successfully",
+            "table_created": created,
+            "note": "Table is ready for use"
+        }
+    except Exception as e:
+        print(f"❌ Migration error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")
+
+@app.get("/api/admin/migrate-users-table")
+async def migrate_users_table(username: str = Depends(verify_admin)):
+    """
+    Migration endpoint to create users table.
+    Safe and idempotent - can be run multiple times.
+    """
+    from api.admin import ensure_users_table
+    
+    try:
+        created = ensure_users_table()
+        return {
+            "status": "success",
+            "message": "Users table migration completed successfully",
+            "table_created": created,
+            "note": "Table is ready for use"
+        }
+    except Exception as e:
+        print(f"❌ Migration error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")
 
 @app.get("/api/admin/migrate-payment-columns")
 async def migrate_payment_columns(username: str = Depends(verify_admin)):
