@@ -2403,7 +2403,7 @@ async def capture_email(request: Request):
                 except:
                     pass  # Columns may already exist
             
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_captures_email ON email_captures(email)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_captures_email ON email_captures(email)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_captures_ip ON email_captures(ip_address)")
             
             # Check for duplicate email from different IP
@@ -2568,6 +2568,68 @@ async def capture_email(request: Request):
             content={
                 "status": "error",
                 "message": "Internal server error. Please try again later.",
+                "error_code": "INTERNAL_ERROR"
+            }
+        )
+
+@app.get("/api/v1/verify-email/{token}")
+async def verify_email(token: str):
+    """
+    Verify email address using verification token.
+    This endpoint can be called when email verification is enabled.
+    """
+    from fastapi.responses import JSONResponse
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE email_captures 
+                    SET verified_at = NOW()
+                    WHERE verification_token = %s 
+                    AND verified_at IS NULL
+                    RETURNING email
+                """, (token,))
+            else:
+                cursor.execute("""
+                    UPDATE email_captures 
+                    SET verified_at = CURRENT_TIMESTAMP
+                    WHERE verification_token = ? 
+                    AND verified_at IS NULL
+                """, (token,))
+                cursor.execute("SELECT email FROM email_captures WHERE verification_token = ?", (token,))
+            
+            result = cursor.fetchone()
+            conn.commit()
+            
+            if result:
+                email = result[0] if isinstance(result, tuple) else result.get('email')
+                return {
+                    "status": "success",
+                    "message": "Email verified successfully!",
+                    "email": email
+                }
+            else:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "status": "error",
+                        "message": "Invalid or expired verification token",
+                        "error_code": "INVALID_TOKEN"
+                    }
+                )
+                
+    except Exception as e:
+        print(f"❌ Error verifying email: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "Internal server error",
                 "error_code": "INTERNAL_ERROR"
             }
         )
@@ -3825,7 +3887,7 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
                 cursor.execute("""
                     SELECT id, name, email, referrals, earned, status, payment_method, 
                            commission_model, referral_code
-                    FROM brokers
+                FROM brokers
                     WHERE status IN ('approved', 'active')
                     ORDER BY created_at DESC NULLS LAST, id DESC
                 """)
@@ -3845,10 +3907,10 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
                 if isinstance(row, dict):
                     broker_dict = {
                         "id": row.get('id'),
-                        "name": row.get('name') or row.get('email') or 'N/A',
-                        "email": row.get('email') or 'N/A',
-                        "referrals": row.get('referrals') or 0,
-                        "earned": float(row.get('earned') or 0),
+                "name": row.get('name') or row.get('email') or 'N/A',
+                "email": row.get('email') or 'N/A',
+                "referrals": row.get('referrals') or 0,
+                "earned": float(row.get('earned') or 0),
                         "status": row.get('status') or 'pending',
                         "payment_method": row.get('payment_method'),
                         "commission_model": row.get('commission_model') or row.get('model'),
@@ -4752,9 +4814,9 @@ async def broker_dashboard(request: Request, email: str):
             
             # Verify broker exists AND is approved (accept both 'approved' and 'active' for backward compatibility)
             if DB_TYPE == 'postgresql':
-                cursor.execute("""
+            cursor.execute("""
                     SELECT id, name, referral_code, commission_model, referral_link, short_code, status
-                    FROM brokers
+                FROM brokers
                     WHERE LOWER(email) = LOWER(%s)
                     AND status IN ('approved', 'active')
                 """, (email,))
@@ -4764,7 +4826,7 @@ async def broker_dashboard(request: Request, email: str):
                     FROM brokers
                     WHERE LOWER(email) = LOWER(?)
                     AND status IN ('approved', 'active')
-                """, (email,))
+            """, (email,))
             
             broker = cursor.fetchone()
             
@@ -4785,7 +4847,7 @@ async def broker_dashboard(request: Request, email: str):
                 short_code = broker.get('short_code', '')
                 status = broker.get('status', 'pending')
             else:
-                broker_id = broker[0]
+            broker_id = broker[0]
                 broker_name = broker[1] if len(broker) > 1 else ''
                 referral_code = broker[2] if len(broker) > 2 else ''
                 commission_model = broker[3] if len(broker) > 3 else 'bounty'
@@ -4827,18 +4889,18 @@ async def broker_dashboard(request: Request, email: str):
                     ORDER BY created_at DESC
                 """, (referral_code,))
             else:
-                cursor.execute("""
-                    SELECT 
-                        customer_email,
-                        amount,
-                        payout,
-                        payout_type,
-                        status,
-                        created_at
-                    FROM referrals
-                    WHERE broker_id = ?
-                    ORDER BY created_at DESC
-                """, (referral_code,))
+            cursor.execute("""
+                SELECT 
+                    customer_email,
+                    amount,
+                    payout,
+                    payout_type,
+                    status,
+                    created_at
+                FROM referrals
+                WHERE broker_id = ?
+                ORDER BY created_at DESC
+            """, (referral_code,))
             
             referrals = []
             total_pending = 0
