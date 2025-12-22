@@ -1149,6 +1149,40 @@ def get_user_agent_hash(request: Request) -> str:
     user_agent = request.headers.get('user-agent', 'unknown')
     return hashlib.md5(user_agent.encode()).hexdigest()[:8]
 
+def is_broker_email(email: str) -> bool:
+    """
+    Check if an email belongs to a broker.
+    Returns True if email exists in brokers table with approved/active status.
+    """
+    if not email:
+        return False
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id FROM brokers 
+                    WHERE LOWER(email) = LOWER(%s) 
+                    AND status IN ('approved', 'active')
+                    LIMIT 1
+                """, (email.lower().strip(),))
+            else:
+                cursor.execute("""
+                    SELECT id FROM brokers 
+                    WHERE LOWER(email) = LOWER(?) 
+                    AND status IN ('approved', 'active')
+                    LIMIT 1
+                """, (email.lower().strip(),))
+            
+            result = cursor.fetchone()
+            return result is not None
+            
+    except Exception as e:
+        print(f"⚠️ Error checking broker email: {e}")
+        return False  # Fail closed - assume not a broker if check fails
+
 @app.post("/api/v1/track-calculation")
 @limiter.limit("20/minute")
 async def track_calculation(request: Request, request_data: TrackCalculationRequest = None):
@@ -1726,8 +1760,21 @@ async def serve_calculator_clean():
     return FileResponse(file_path)
 
 @app.get("/dashboard")
-async def serve_dashboard_clean():
-    """Clean URL: /dashboard → dashboard.html"""
+async def serve_dashboard_clean(request: Request):
+    """
+    Customer dashboard - block brokers from accessing.
+    Clean URL: /dashboard → dashboard.html
+    """
+    # Check if user is a broker (via email in query params or session)
+    email = request.query_params.get('email', '').strip()
+    
+    # Block brokers from accessing customer dashboard
+    if email and is_broker_email(email):
+        raise HTTPException(
+            status_code=403,
+            detail="Brokers cannot access customer dashboard. Please use /broker-dashboard"
+        )
+    
     file_path = BASE_DIR / "dashboard.html"
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Dashboard not found")
@@ -1778,8 +1825,21 @@ async def serve_terms_clean():
     return FileResponse(file_path)
 
 @app.get("/customer-dashboard")
-async def serve_customer_dashboard_clean():
-    """Clean URL: /customer-dashboard → customer-dashboard.html"""
+async def serve_customer_dashboard_clean(request: Request):
+    """
+    Customer dashboard - block brokers from accessing.
+    Clean URL: /customer-dashboard → customer-dashboard.html
+    """
+    # Check if user is a broker (via email in query params or session)
+    email = request.query_params.get('email', '').strip()
+    
+    # Block brokers from accessing customer dashboard
+    if email and is_broker_email(email):
+        raise HTTPException(
+            status_code=403,
+            detail="Brokers cannot access customer dashboard. Please use /broker-dashboard"
+        )
+    
     file_path = BASE_DIR / "customer-dashboard.html"
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Customer dashboard not found")
