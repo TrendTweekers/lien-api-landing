@@ -6460,13 +6460,13 @@ async def migrate_users_table(username: str = Depends(verify_admin)):
     Safe and idempotent - can be run multiple times.
     """
     from api.admin import ensure_users_table
+    import traceback
     
     try:
         created = ensure_users_table()
         return {
             "status": "ok",
-            "created": created,
-            "message": "Users table migration completed successfully" if created else "Users table already exists"
+            "created": bool(created)  # Ensure boolean, not int
         }
     except Exception as e:
         error_repr = repr(e)
@@ -6474,15 +6474,25 @@ async def migrate_users_table(username: str = Depends(verify_admin)):
         # Try to get SQLSTATE if available (PostgreSQL)
         sqlstate = getattr(e, 'pgcode', None) or getattr(e, 'sqlstate', None)
         
+        # Build detailed error message
         if sqlstate:
-            detail_msg = f"Migration failed: {error_repr} (SQLSTATE: {sqlstate})"
+            detail_msg = f"{error_repr} (SQLSTATE: {sqlstate})"
         else:
-            detail_msg = f"Migration failed: {error_repr}"
+            detail_msg = error_repr
         
+        # Log full exception
         print(f"❌ Migration error: {detail_msg}")
-        import traceback
+        print(f"   Error message: {error_msg}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=detail_msg)
+        
+        # Return JSON error response
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "detail": detail_msg
+            }
+        )
 
 @app.get("/api/admin/migrate-payment-columns")
 async def migrate_payment_columns(username: str = Depends(verify_admin)):

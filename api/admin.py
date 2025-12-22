@@ -279,18 +279,16 @@ def ensure_users_table(conn=None):
     """
     import traceback
     
-    # Use provided connection or create new one
-    should_close = conn is None
-    
-    try:
-        if conn is None:
-            conn = get_db().__enter__()
-        
-        cursor = get_db_cursor(conn)
-        
-        if DB_TYPE == 'postgresql':
-            # Check if table exists first to determine return value
-            try:
+    # If connection provided, use it (caller manages lifecycle)
+    # Otherwise create our own connection with proper context manager
+    if conn is not None:
+        # Use provided connection - caller manages it
+        cursor = None
+        try:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                # Check if table exists
                 cursor.execute("""
                     SELECT EXISTS (
                         SELECT FROM information_schema.tables 
@@ -302,14 +300,12 @@ def ensure_users_table(conn=None):
                 # Handle both dict-like and tuple results
                 if isinstance(result, dict):
                     table_exists = result.get('table_exists', False)
-                else:
+                elif isinstance(result, tuple) or isinstance(result, list):
                     table_exists = result[0] if result else False
-            except Exception as check_error:
-                print(f"⚠️ Could not check table existence: {check_error}")
-                table_exists = False
-            
-            # Create table if it doesn't exist (PostgreSQL 9.5+ supports IF NOT EXISTS)
-            try:
+                else:
+                    table_exists = bool(result)
+                
+                # Create table if it doesn't exist
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS users (
                         id SERIAL PRIMARY KEY,
@@ -325,7 +321,7 @@ def ensure_users_table(conn=None):
                     )
                 """)
                 
-                # Create indexes (IF NOT EXISTS is safe)
+                # Create indexes
                 cursor.execute("""
                     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
                 """)
@@ -333,36 +329,14 @@ def ensure_users_table(conn=None):
                     CREATE INDEX IF NOT EXISTS idx_users_subscription_status ON users(subscription_status)
                 """)
                 
-                if not should_close:
-                    conn.commit()
-                else:
-                    conn.commit()
-                    conn.close()
-                
                 if table_exists:
-                    print("✅ Users table already exists - migration complete")
+                    print("✅ Users table already exists")
                     return False
                 else:
                     print("✅ Users table created successfully")
                     return True
-            except Exception as create_error:
-                error_msg = str(create_error)
-                error_repr = repr(create_error)
-                # Try to get SQLSTATE if available
-                sqlstate = getattr(create_error, 'pgcode', None) or getattr(create_error, 'sqlstate', None)
-                
-                if sqlstate:
-                    full_error = f"{error_repr} (SQLSTATE: {sqlstate})"
-                else:
-                    full_error = error_repr
-                
-                print(f"❌ Error creating users table: {full_error}")
-                print(f"   Error message: {error_msg}")
-                traceback.print_exc()
-                raise Exception(f"Failed to create users table: {full_error}")
-        else:
-            # SQLite
-            try:
+            else:
+                # SQLite
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS users (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -385,30 +359,117 @@ def ensure_users_table(conn=None):
                     CREATE INDEX IF NOT EXISTS idx_users_subscription_status ON users(subscription_status)
                 """)
                 
-                if not should_close:
-                    conn.commit()
-                else:
-                    conn.commit()
-                    conn.close()
-                
                 print("✅ Users table check: OK")
                 return True
-            except Exception as create_error:
-                error_repr = repr(create_error)
-                print(f"❌ Error creating users table (SQLite): {error_repr}")
-                traceback.print_exc()
-                raise Exception(f"Failed to create users table: {error_repr}")
-    except Exception as e:
-        if should_close and conn:
-            try:
-                conn.rollback()
-                conn.close()
-            except:
-                pass
-        print(f"❌ Error ensuring users table: {repr(e)}")
-        import traceback
-        traceback.print_exc()
-        raise
+        except Exception as e:
+            error_repr = repr(e)
+            print(f"❌ Error ensuring users table: {error_repr}")
+            traceback.print_exc()
+            raise
+        finally:
+            if cursor:
+                try:
+                    cursor.close()
+                except:
+                    pass
+    else:
+        # Create our own connection with proper context manager
+        try:
+            with get_db() as conn:
+                cursor = None
+                try:
+                    cursor = get_db_cursor(conn)
+                    
+                    if DB_TYPE == 'postgresql':
+                        # Check if table exists
+                        cursor.execute("""
+                            SELECT EXISTS (
+                                SELECT FROM information_schema.tables 
+                                WHERE table_schema = 'public' 
+                                AND table_name = 'users'
+                            ) as table_exists
+                        """)
+                        result = cursor.fetchone()
+                        # Handle both dict-like and tuple results
+                        if isinstance(result, dict):
+                            table_exists = result.get('table_exists', False)
+                        elif isinstance(result, tuple) or isinstance(result, list):
+                            table_exists = result[0] if result else False
+                        else:
+                            table_exists = bool(result)
+                        
+                        # Create table if it doesn't exist
+                        cursor.execute("""
+                            CREATE TABLE IF NOT EXISTS users (
+                                id SERIAL PRIMARY KEY,
+                                email VARCHAR UNIQUE NOT NULL,
+                                password_hash VARCHAR NOT NULL,
+                                stripe_customer_id VARCHAR,
+                                subscription_status VARCHAR NOT NULL DEFAULT 'inactive',
+                                subscription_id VARCHAR,
+                                session_token VARCHAR,
+                                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                                last_login_at TIMESTAMPTZ
+                            )
+                        """)
+                        
+                        # Create indexes
+                        cursor.execute("""
+                            CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
+                        """)
+                        cursor.execute("""
+                            CREATE INDEX IF NOT EXISTS idx_users_subscription_status ON users(subscription_status)
+                        """)
+                        
+                        if table_exists:
+                            print("✅ Users table already exists")
+                            return False
+                        else:
+                            print("✅ Users table created successfully")
+                            return True
+                    else:
+                        # SQLite
+                        cursor.execute("""
+                            CREATE TABLE IF NOT EXISTS users (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                email TEXT UNIQUE NOT NULL,
+                                password_hash TEXT NOT NULL,
+                                stripe_customer_id TEXT,
+                                subscription_status TEXT NOT NULL DEFAULT 'inactive',
+                                subscription_id TEXT,
+                                session_token TEXT,
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                last_login_at TIMESTAMP
+                            )
+                        """)
+                        
+                        cursor.execute("""
+                            CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
+                        """)
+                        cursor.execute("""
+                            CREATE INDEX IF NOT EXISTS idx_users_subscription_status ON users(subscription_status)
+                        """)
+                        
+                        print("✅ Users table check: OK")
+                        return True
+                except Exception as e:
+                    error_repr = repr(e)
+                    print(f"❌ Error ensuring users table: {error_repr}")
+                    traceback.print_exc()
+                    raise
+                finally:
+                    if cursor:
+                        try:
+                            cursor.close()
+                        except:
+                            pass
+        except Exception as e:
+            error_repr = repr(e)
+            print(f"❌ Error in ensure_users_table connection management: {error_repr}")
+            traceback.print_exc()
+            raise
 
 # Import get_db from main.py (will be imported at runtime)
 # For now, we'll use a helper function that works with both DB types
