@@ -375,6 +375,106 @@ def create_test_key(
         "message": "Test key created. Expires at 50 calls OR 7 days (whichever first)."
     }
 
+@router.post("/create-test-user")
+def create_test_user(
+    email: str,
+    password: str = "TestPassword123!",
+    user: str = Depends(verify_admin)
+):
+    """
+    Create a test user account for customer dashboard access.
+    
+    Args:
+        email: User email address
+        password: Password (default: TestPassword123!)
+        user: Admin username (from auth)
+    
+    Returns:
+        User account details with email and password
+    """
+    import bcrypt
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Check if user already exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id FROM users WHERE email = %s", (email.lower(),))
+            else:
+                cursor.execute("SELECT id FROM users WHERE email = ?", (email.lower(),))
+            
+            existing = cursor.fetchone()
+            if existing:
+                raise HTTPException(status_code=400, detail=f"User with email {email} already exists")
+            
+            # Hash password
+            password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            
+            # Create user account
+            if DB_TYPE == 'postgresql':
+                # Ensure users table exists
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id SERIAL PRIMARY KEY,
+                        email VARCHAR UNIQUE NOT NULL,
+                        password_hash VARCHAR NOT NULL,
+                        stripe_customer_id VARCHAR,
+                        subscription_status VARCHAR DEFAULT 'active',
+                        subscription_id VARCHAR,
+                        session_token VARCHAR,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        last_login TIMESTAMP
+                    )
+                """)
+                cursor.execute("""
+                    INSERT INTO users (email, password_hash, subscription_status)
+                    VALUES (%s, %s, 'active')
+                    RETURNING id
+                """, (email.lower(), password_hash))
+                result = cursor.fetchone()
+                user_id = result['id'] if isinstance(result, dict) else result[0]
+            else:
+                # Ensure users table exists
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        email TEXT UNIQUE NOT NULL,
+                        password_hash TEXT NOT NULL,
+                        stripe_customer_id TEXT,
+                        subscription_status TEXT DEFAULT 'active',
+                        subscription_id TEXT,
+                        session_token TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        last_login TIMESTAMP
+                    )
+                """)
+                cursor.execute("""
+                    INSERT INTO users (email, password_hash, subscription_status)
+                    VALUES (?, ?, 'active')
+                """, (email.lower(), password_hash))
+                user_id = cursor.lastrowid
+            
+            conn.commit()
+            
+            return {
+                "status": "success",
+                "message": f"Test user account created successfully",
+                "email": email.lower(),
+                "password": password,
+                "user_id": user_id,
+                "subscription_status": "active",
+                "login_url": "/dashboard",
+                "note": "You can now log in at /dashboard with these credentials"
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error creating test user: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
+
 @router.get("/test-keys")
 def list_test_keys(user: str = Depends(verify_admin)):
     """List all test keys"""
