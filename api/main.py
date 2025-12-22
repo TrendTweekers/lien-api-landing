@@ -4814,7 +4814,7 @@ async def broker_dashboard(request: Request, email: str):
             
             # Verify broker exists AND is approved (accept both 'approved' and 'active' for backward compatibility)
             if DB_TYPE == 'postgresql':
-            cursor.execute("""
+                cursor.execute("""
                     SELECT id, name, referral_code, commission_model, referral_link, short_code, status
                 FROM brokers
                     WHERE LOWER(email) = LOWER(%s)
