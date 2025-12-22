@@ -20,7 +20,7 @@ except ImportError:
     print("   Install with: pip install PyPDF2")
 
 # Configuration
-BASE_URL = "http://localhost:8000"  # Change to your production URL if needed
+BASE_URL = "https://liendeadline.com"  # Production URL
 STATE_RULES_FILE = Path("state_rules.json")
 
 def load_state_rules():
