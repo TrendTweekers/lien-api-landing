@@ -1597,6 +1597,107 @@ class TrackEmailRequest(BaseModel):
     email: str
     timestamp: str
 
+async def auto_approve_broker(name: str, email: str, company: str, commission_model: str, message: str):
+    """Auto-approve broker and create account immediately"""
+    import string
+    from api.admin import send_welcome_email_background
+    
+    try:
+        print("=" * 60)
+        print("🚀 AUTO-APPROVING BROKER")
+        print("=" * 60)
+        
+        # Generate referral code: broker_[random6]
+        random_suffix = ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(6))
+        referral_code = f"broker_{random_suffix}"
+        
+        # Generate short code for clean referral link
+        short_code = ShortLinkGenerator.generate_short_code(email, length=4)
+        referral_link = f"https://liendeadline.com/r/{short_code}"
+        
+        # Generate temporary password
+        temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+        
+        # Hash password
+        password_hash = bcrypt.hashpw(temp_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Check for short code collision
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT short_code FROM brokers WHERE short_code = %s", (short_code,))
+            else:
+                cursor.execute("SELECT short_code FROM brokers WHERE short_code = ?", (short_code,))
+            
+            if cursor.fetchone():
+                # Collision - generate longer random code
+                short_code = ShortLinkGenerator.generate_random_code(length=6)
+                referral_link = f"https://liendeadline.com/r/{short_code}"
+                print(f"⚠️ Short code collision, using random code: {short_code}")
+            
+            # Create broker record with status='approved'
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    INSERT INTO brokers 
+                    (name, email, company, referral_code, referral_link, short_code, commission_model, status, password_hash, approved_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'approved', %s, NOW())
+                    ON CONFLICT (email) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        company = EXCLUDED.company,
+                        referral_code = EXCLUDED.referral_code,
+                        referral_link = EXCLUDED.referral_link,
+                        short_code = EXCLUDED.short_code,
+                        commission_model = EXCLUDED.commission_model,
+                        status = 'approved',
+                        password_hash = EXCLUDED.password_hash,
+                        approved_at = NOW()
+                    RETURNING id
+                """, (name, email.lower(), company, referral_code, referral_link, short_code, commission_model, password_hash))
+            else:
+                cursor.execute("""
+                    INSERT OR REPLACE INTO brokers 
+                    (name, email, company, referral_code, referral_link, short_code, commission_model, status, password_hash, approved_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'approved', ?, CURRENT_TIMESTAMP)
+                """, (name, email.lower(), company, referral_code, referral_link, short_code, commission_model, password_hash))
+            
+            conn.commit()
+        
+        print(f"✅ Broker created: {email}")
+        print(f"   Referral code: {referral_code}")
+        print(f"   Short code: {short_code}")
+        print(f"   Referral link: {referral_link}")
+        
+        # Send welcome email in background
+        try:
+            send_welcome_email_background(
+                email=email,
+                referral_link=referral_link,
+                name=name,
+                referral_code=referral_code,
+                commission_model=commission_model,
+                temp_password=temp_password
+            )
+            print("✅ Welcome email queued")
+        except Exception as email_error:
+            print(f"⚠️ Email send error: {email_error}")
+            # Don't fail the request if email fails
+        
+        return {
+            "status": "approved",
+            "referral_link": referral_link,
+            "message": "Broker account created successfully. Check your email for login details."
+        }
+        
+    except Exception as e:
+        print(f"❌ Auto-approval error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": f"Auto-approval failed: {str(e)}"}
+        )
+
 @app.post("/partner-application")
 @app.post("/api/v1/apply-partner")
 async def apply_partner(request: Request):
@@ -1799,8 +1900,8 @@ async def apply_partner(request: Request):
         print("=" * 60)
         
         return {
-            "status": "success",
-            "message": "Application submitted successfully",
+            "status": "pending",
+            "message": "Manual review in 24 hours",
             "application_id": application_id
         }
         
