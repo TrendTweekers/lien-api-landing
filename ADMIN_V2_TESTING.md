@@ -10,10 +10,13 @@ This document provides a comprehensive testing checklist to verify that:
 ## Pre-Testing Setup
 
 ### 1. Access Both Dashboards
-- [ ] V1 Dashboard: Navigate to `/admin-dashboard` (should require HTTP Basic Auth)
-- [ ] V2 Dashboard: Navigate to `/admin-dashboard-v2` (should require HTTP Basic Auth)
-- [ ] Verify both dashboards load without errors
+- [ ] **Default (V2)**: Navigate to `/admin-dashboard` (serves V2 by default, requires HTTP Basic Auth)
+- [ ] **V1 Dashboard**: Navigate to `/admin-dashboard?ui=v1` (requires HTTP Basic Auth)
+- [ ] **V2 Dashboard**: Navigate to `/admin-dashboard?ui=v2` or `/admin-dashboard-v2` (requires HTTP Basic Auth)
+- [ ] Verify all dashboard URLs load without errors
 - [ ] Check browser console for any JavaScript errors
+- [ ] Verify "Switch to V1" link in V2 header works
+- [ ] Verify "Switch to V2" link in V1 header works
 
 ### 2. Authentication
 - [ ] Both dashboards require HTTP Basic Auth (username: `admin`, password: `LienAPI2025`)
@@ -223,8 +226,12 @@ This document provides a comprehensive testing checklist to verify that:
 ## Integration Testing
 
 ### Cross-Dashboard Navigation
-- [ ] "V2 Dashboard" link in V1 header works
-- [ ] "V1 Dashboard" link in V2 header works
+- [ ] "Switch to V2" link in V1 header works (links to `/admin-dashboard?ui=v2`)
+- [ ] "Switch to V1" link in V2 header works (links to `/admin-dashboard?ui=v1`)
+- [ ] Default `/admin-dashboard` serves V2 (no query param needed)
+- [ ] `/admin-dashboard?ui=v1` serves V1 dashboard
+- [ ] `/admin-dashboard?ui=v2` serves V2 dashboard
+- [ ] `/admin-dashboard-v2` still works (backward compatibility)
 - [ ] Navigation doesn't break authentication
 - [ ] Navigation preserves state (if applicable)
 
@@ -241,9 +248,11 @@ This document provides a comprehensive testing checklist to verify that:
 - [ ] Function purposes are clear
 
 ### User Documentation
-- [ ] V2 dashboard is accessible via `/admin-dashboard-v2`
-- [ ] V1 dashboard remains accessible via `/admin-dashboard`
+- [ ] **Default URL**: `/admin-dashboard` serves V2 dashboard
+- [ ] **V1 URL**: `/admin-dashboard?ui=v1` serves V1 dashboard
+- [ ] **V2 URL**: `/admin-dashboard?ui=v2` or `/admin-dashboard-v2` serves V2 dashboard
 - [ ] Both dashboards use same authentication
+- [ ] Header links allow switching between V1 and V2
 
 ## Final Checklist
 

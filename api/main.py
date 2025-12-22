@@ -1879,14 +1879,31 @@ async def serve_admin_dashboard_v2_js(username: str = Depends(verify_admin)):
     )
 
 @app.get("/admin-dashboard")
-async def serve_admin_dashboard_clean(username: str = Depends(verify_admin)):
-    """Clean URL: /admin-dashboard → admin-dashboard.html"""
-    file_path = BASE_DIR / "admin-dashboard.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="Admin dashboard not found")
+async def serve_admin_dashboard_clean(request: Request, username: str = Depends(verify_admin)):
+    """
+    Clean URL: /admin-dashboard → serves V2 by default
+    Query params:
+    - ?ui=v1 → serves V1 (admin-dashboard.html)
+    - ?ui=v2 or no param → serves V2 (admin-dashboard-v2.html)
+    """
+    ui_version = request.query_params.get('ui', 'v2').lower()
     
-    with open(file_path, 'r', encoding='utf-8') as f:
-        html_content = f.read()
+    if ui_version == 'v1':
+        # Serve V1 dashboard
+        file_path = BASE_DIR / "admin-dashboard.html"
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Admin dashboard V1 not found")
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+    else:
+        # Serve V2 dashboard (default)
+        file_path = BASE_DIR / "admin-dashboard-v2.html"
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Admin dashboard V2 not found")
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
     
     return Response(
         content=html_content,
@@ -7279,6 +7296,226 @@ async def export_batch_csv(batch_id: int, username: str = Depends(verify_admin))
         return JSONResponse(
             status_code=500,
             content={"status": "error", "message": "Failed to export batch CSV"}
+        )
+
+@app.get("/api/admin/debug/payout-data")
+async def get_payout_debug_data(username: str = Depends(verify_admin)):
+    """Get debug data for payout system (last 20 records of each type)"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get last 20 referrals
+            # Check if subscription_id column exists
+            has_subscription_id = False
+            try:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'referrals' AND column_name = 'subscription_id'
+                    """)
+                    has_subscription_id = cursor.fetchone() is not None
+                else:
+                    cursor.execute("PRAGMA table_info(referrals)")
+                    columns = cursor.fetchall()
+                    column_names = []
+                    for col in columns:
+                        if isinstance(col, (list, tuple)):
+                            column_names.append(col[1] if len(col) > 1 else '')
+                        elif isinstance(col, dict):
+                            column_names.append(col.get('name', ''))
+                    has_subscription_id = 'subscription_id' in column_names
+            except Exception as e:
+                print(f"⚠️ Could not check for subscription_id column: {e}")
+                has_subscription_id = False
+            
+            if has_subscription_id:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT id, broker_id, customer_email, customer_stripe_id, subscription_id,
+                               status, payment_date, payout, payout_type, created_at, paid_at, paid_batch_id
+                        FROM referrals
+                        ORDER BY created_at DESC
+                        LIMIT 20
+                    """)
+                else:
+                    cursor.execute("""
+                        SELECT id, broker_id, customer_email, customer_stripe_id, subscription_id,
+                               status, payment_date, payout, payout_type, created_at, paid_at, paid_batch_id
+                        FROM referrals
+                        ORDER BY created_at DESC
+                        LIMIT 20
+                    """)
+            else:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT id, broker_id, customer_email, customer_stripe_id, NULL as subscription_id,
+                               status, payment_date, payout, payout_type, created_at, paid_at, paid_batch_id
+                        FROM referrals
+                        ORDER BY created_at DESC
+                        LIMIT 20
+                    """)
+                else:
+                    cursor.execute("""
+                        SELECT id, broker_id, customer_email, customer_stripe_id, NULL as subscription_id,
+                               status, payment_date, payout, payout_type, created_at, paid_at, paid_batch_id
+                        FROM referrals
+                        ORDER BY created_at DESC
+                        LIMIT 20
+                    """)
+            
+            referrals_rows = cursor.fetchall()
+            referrals = []
+            for row in referrals_rows:
+                if isinstance(row, dict):
+                    referrals.append({
+                        "id": row.get('id'),
+                        "broker_id": row.get('broker_id'),
+                        "customer_email": row.get('customer_email') or '—',
+                        "customer_stripe_id": row.get('customer_stripe_id') or '—',
+                        "subscription_id": row.get('subscription_id') or '—',
+                        "status": row.get('status') or '—',
+                        "payment_date": row.get('payment_date').isoformat() if row.get('payment_date') else '—',
+                        "payout": float(row.get('payout', 0)) if row.get('payout') else 0,
+                        "payout_type": row.get('payout_type') or '—',
+                        "created_at": row.get('created_at').isoformat() if row.get('created_at') else '—',
+                        "paid_at": row.get('paid_at').isoformat() if row.get('paid_at') else '—',
+                        "paid_batch_id": row.get('paid_batch_id') or '—'
+                    })
+                else:
+                    referrals.append({
+                        "id": row[0] if len(row) > 0 else None,
+                        "broker_id": row[1] if len(row) > 1 else None,
+                        "customer_email": row[2] if len(row) > 2 else '—',
+                        "customer_stripe_id": row[3] if len(row) > 3 else '—',
+                        "subscription_id": row[4] if len(row) > 4 else '—',
+                        "status": row[5] if len(row) > 5 else '—',
+                        "payment_date": row[6].isoformat() if len(row) > 6 and row[6] else '—',
+                        "payout": float(row[7]) if len(row) > 7 and row[7] else 0,
+                        "payout_type": row[8] if len(row) > 8 else '—',
+                        "created_at": row[9].isoformat() if len(row) > 9 and row[9] else '—',
+                        "paid_at": row[10].isoformat() if len(row) > 10 and row[10] else '—',
+                        "paid_batch_id": row[11] if len(row) > 11 else '—'
+                    })
+            
+            # Get last 20 broker_payments
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id, broker_id, broker_name, broker_email, amount, payment_method, 
+                           transaction_id, status, created_at, paid_at
+                    FROM broker_payments
+                    ORDER BY created_at DESC
+                    LIMIT 20
+                """)
+            else:
+                cursor.execute("""
+                    SELECT id, broker_id, broker_name, broker_email, amount, payment_method, 
+                           transaction_id, status, created_at, paid_at
+                    FROM broker_payments
+                    ORDER BY created_at DESC
+                    LIMIT 20
+                """)
+            
+            payments_rows = cursor.fetchall()
+            payments = []
+            for row in payments_rows:
+                if isinstance(row, dict):
+                    payments.append({
+                        "id": row.get('id'),
+                        "broker_id": row.get('broker_id'),
+                        "broker_name": row.get('broker_name') or '—',
+                        "broker_email": row.get('broker_email') or '—',
+                        "amount": float(row.get('amount', 0)) if row.get('amount') else 0,
+                        "payment_method": row.get('payment_method') or '—',
+                        "transaction_id": row.get('transaction_id') or '—',
+                        "status": row.get('status') or '—',
+                        "created_at": row.get('created_at').isoformat() if row.get('created_at') else '—',
+                        "paid_at": row.get('paid_at').isoformat() if row.get('paid_at') else '—'
+                    })
+                else:
+                    payments.append({
+                        "id": row[0] if len(row) > 0 else None,
+                        "broker_id": row[1] if len(row) > 1 else None,
+                        "broker_name": row[2] if len(row) > 2 else '—',
+                        "broker_email": row[3] if len(row) > 3 else '—',
+                        "amount": float(row[4]) if len(row) > 4 and row[4] else 0,
+                        "payment_method": row[5] if len(row) > 5 else '—',
+                        "transaction_id": row[6] if len(row) > 6 else '—',
+                        "status": row[7] if len(row) > 7 else '—',
+                        "created_at": row[8].isoformat() if len(row) > 8 and row[8] else '—',
+                        "paid_at": row[9].isoformat() if len(row) > 9 and row[9] else '—'
+                    })
+            
+            # Get last 20 payout batches
+            try:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT id, broker_id, broker_name, broker_email, total_amount, 
+                               payment_method, transaction_id, status, created_at, paid_at
+                        FROM broker_payout_batches
+                        ORDER BY created_at DESC
+                        LIMIT 20
+                    """)
+                else:
+                    cursor.execute("""
+                        SELECT id, broker_id, broker_name, broker_email, total_amount, 
+                               payment_method, transaction_id, status, created_at, paid_at
+                        FROM broker_payout_batches
+                        ORDER BY created_at DESC
+                        LIMIT 20
+                    """)
+                
+                batches_rows = cursor.fetchall()
+                batches = []
+                for row in batches_rows:
+                    if isinstance(row, dict):
+                        batches.append({
+                            "id": row.get('id'),
+                            "broker_id": row.get('broker_id'),
+                            "broker_name": row.get('broker_name') or '—',
+                            "broker_email": row.get('broker_email') or '—',
+                            "total_amount": float(row.get('total_amount', 0)) if row.get('total_amount') else 0,
+                            "payment_method": row.get('payment_method') or '—',
+                            "transaction_id": row.get('transaction_id') or '—',
+                            "status": row.get('status') or '—',
+                            "created_at": row.get('created_at').isoformat() if row.get('created_at') else '—',
+                            "paid_at": row.get('paid_at').isoformat() if row.get('paid_at') else '—'
+                        })
+                    else:
+                        batches.append({
+                            "id": row[0] if len(row) > 0 else None,
+                            "broker_id": row[1] if len(row) > 1 else None,
+                            "broker_name": row[2] if len(row) > 2 else '—',
+                            "broker_email": row[3] if len(row) > 3 else '—',
+                            "total_amount": float(row[4]) if len(row) > 4 and row[4] else 0,
+                            "payment_method": row[5] if len(row) > 5 else '—',
+                            "transaction_id": row[6] if len(row) > 6 else '—',
+                            "status": row[7] if len(row) > 7 else '—',
+                            "created_at": row[8].isoformat() if len(row) > 8 and row[8] else '—',
+                            "paid_at": row[9].isoformat() if len(row) > 9 and row[9] else '—'
+                        })
+            except Exception as e:
+                # Table might not exist yet
+                print(f"⚠️ broker_payout_batches table not found: {e}")
+                batches = []
+            
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "referrals": referrals,
+                    "payments": payments,
+                    "batches": batches
+                }
+            )
+            
+    except Exception as e:
+        print(f"❌ Debug data error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": f"Failed to get debug data: {str(e)}"}
         )
 
 @app.get("/api/admin/broker-ledger/{broker_id}")

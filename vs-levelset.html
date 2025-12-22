@@ -21,14 +21,41 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS CDN -->
+    <!-- Tailwind Config to suppress production warning -->
     <script>
+        // Suppress Tailwind warnings
         window.tailwind = window.tailwind || {};
         window.tailwind.config = {
             darkMode: false,
             theme: {
+                extend: {}
+            },
+            plugins: []
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lovable Scale Stylesheet (load first) -->
+    <link rel="stylesheet" href="/lovable-scale.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
                 extend: {
                     colors: {
-                        navy: '#1e3a8a',
+                        background: 'hsl(40 33% 98%)',
+                        foreground: 'hsl(220 20% 15%)',
+                        primary: 'hsl(220 60% 20%)',
+                        'primary-foreground': 'hsl(40 33% 98%)',
+                        secondary: 'hsl(40 30% 94%)',
+                        'secondary-foreground': 'hsl(220 20% 15%)',
+                        accent: 'hsl(16 85% 55%)',
+                        'accent-foreground': 'hsl(0 0% 100%)',
+                        success: 'hsl(152 60% 42%)',
+                        warning: 'hsl(38 95% 50%)',
+                        muted: 'hsl(40 20% 92%)',
+                        'muted-foreground': 'hsl(220 10% 45%)',
+                        border: 'hsl(40 20% 88%)',
                         coral: '#f97316',
                     },
                     fontFamily: {
@@ -36,11 +63,9 @@
                         sans: ['Inter', 'system-ui', 'sans-serif'],
                     }
                 }
-            },
-            plugins: []
-        };
+            }
+        }
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
         /* Color scheme variables */
@@ -1604,21 +1629,68 @@
 </head>
 <body class="bg-gray-50 text-gray-900">
     <!-- Header -->
-    <header class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex justify-between items-center">
-                <a href="/" class="flex items-center space-x-2">
-                    <span class="text-2xl">📅</span>
-                    <span class="text-xl font-bold text-navy">LienDeadline</span>
+    <header class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="/" class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span class="font-serif text-xl font-semibold text-foreground">LienDeadline<span class="text-muted-foreground">.com</span></span>
                 </a>
-                <nav class="flex items-center space-x-6">
-                    <a href="/" class="text-gray-600 hover:text-navy">Home</a>
-                    <a href="/calculator.html" class="text-gray-600 hover:text-navy">Calculator</a>
-                    <a href="/partners.html" class="text-gray-600 hover:text-navy">Partners</a>
+                
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex items-center gap-8">
+                    <a href="#calculator" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Calculator</a>
+                    <a href="#features" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Features</a>
+                    <a href="#pricing" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+                    <a href="/vs-levelset.html" class="text-sm font-medium text-foreground font-semibold transition-colors">Levelset Alternative</a>
+                    <a href="#partners" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Partners</a>
                 </nav>
+                
+                <!-- CTA Button -->
+                <div class="hidden md:block">
+                    <a href="#calculator" class="inline-flex items-center justify-center px-6 py-2 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors">
+                        Start Free Trial
+                    </a>
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <button id="mobileMenuBtn" class="md:hidden p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
             </div>
         </div>
     </header>
+    
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="hidden fixed inset-0 z-50 bg-background md:hidden">
+        <div class="flex justify-between items-center p-6 border-b border-border">
+            <span class="font-serif text-xl font-semibold">LienDeadline.com</span>
+            <button id="closeMobileMenu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="flex flex-col p-6 gap-6">
+            <a href="#calculator" class="py-3 border-b border-border text-lg font-medium">Calculator</a>
+            <a href="#features" class="py-3 border-b border-border text-lg font-medium">Features</a>
+            <a href="#pricing" class="py-3 border-b border-border text-lg font-medium">Pricing</a>
+            <a href="/vs-levelset.html" class="py-3 border-b border-border text-lg font-medium font-semibold">Levelset Alternative</a>
+            <a href="#partners" class="py-3 border-b border-border text-lg font-medium">Partners</a>
+            <a href="#calculator" class="bg-accent text-white px-6 py-3 rounded-lg text-center font-semibold mt-4">
+                Start Free Trial
+            </a>
+        </div>
+    </div>
+    
+    <main class="pt-16">
 
     <!-- V2 Design (Lovable-style) - EXACT COPY FROM LOVABLE REPO -->
     <div id="compare-v2-root" style="display: none;">
@@ -2348,45 +2420,6 @@
             </div>
         </section>
 
-        <!-- CTA Section -->
-        <section class="cta-section">
-            <div class="pattern"></div>
-            <div class="container">
-                <div class="content">
-                    <h2>Try LienDeadline Free</h2>
-                    <p class="description">Get your first 50 calculations free. No credit card required.</p>
-                    <a href="/calculator.html?ref=[REF_CODE]" class="cta-button">
-                        Start Calculating Now
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                            <polyline points="12 5 19 12 12 19"></polyline>
-                        </svg>
-                    </a>
-                    <div class="features">
-                        <div class="feature-item">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="16 18 22 12 16 6"></polyline>
-                                <polyline points="8 6 2 12 8 18"></polyline>
-                            </svg>
-                            <span>API documentation available</span>
-                        </div>
-                        <div class="feature-item">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <polyline points="12 6 12 12 16 14"></polyline>
-                            </svg>
-                            <span>Integrate in minutes</span>
-                        </div>
-                        <div class="feature-item">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                            </svg>
-                            <span>0.3s response time</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         <!-- FAQ Section -->
         <section class="faq-section">
@@ -2806,15 +2839,6 @@
             </div>
         </div>
 
-        <!-- CTA Section -->
-        <div class="bg-gradient-to-r from-coral to-orange-600 rounded-lg shadow-xl p-8 md:p-12 text-center text-white mb-12">
-            <h2 class="font-serif text-3xl md:text-4xl font-bold mb-4">Try LienDeadline Free</h2>
-            <p class="text-xl mb-6 text-orange-50">Get your first 50 calculations free. No credit card required.</p>
-            <a href="/calculator.html?ref=[REF_CODE]" class="inline-block bg-white text-coral font-semibold px-8 py-4 rounded-lg hover:bg-gray-50 transition-colors shadow-lg text-lg">
-                Start Calculating Now →
-            </a>
-            <p class="text-sm text-orange-100 mt-4">API documentation available • Integrate in minutes</p>
-        </div>
 
         <!-- FAQ Section -->
         <div class="bg-white rounded-lg shadow-md p-6 md:p-8 mb-8">
@@ -3010,6 +3034,51 @@
                 });
             }
         })();
+    </script>
+    
+    <!-- Mobile Menu JavaScript -->
+    <script>
+        // Mobile menu functionality
+        function safeAddListener(id, event, handler) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener(event, handler);
+            } else {
+                console.warn(`⚠️ Could not add ${event} listener - #${id} not found`);
+            }
+        }
+
+        safeAddListener('mobileMenuBtn', 'click', () => {
+            const menu = document.getElementById('mobileMenu');
+            if (menu) menu.classList.remove('hidden');
+        });
+
+        safeAddListener('closeMobileMenu', 'click', () => {
+            const menu = document.getElementById('mobileMenu');
+            if (menu) menu.classList.add('hidden');
+        });
+        
+        // Close mobile menu when clicking a link (use event delegation)
+        const mobileMenu = document.getElementById('mobileMenu');
+        if (mobileMenu) {
+            mobileMenu.addEventListener('click', (e) => {
+                // If clicking on a link, close the menu
+                if (e.target.tagName === 'A' || e.target.closest('a')) {
+                    const link = e.target.tagName === 'A' ? e.target : e.target.closest('a');
+                    // Don't prevent default - let links navigate normally
+                    // Only close menu for anchor links (#), external links navigate normally
+                    if (link.getAttribute('href')?.startsWith('#')) {
+                        // Anchor link - smooth scroll will handle it
+                        setTimeout(() => {
+                            mobileMenu.classList.add('hidden');
+                        }, 100);
+                    } else {
+                        // External link - close menu immediately and let navigation proceed
+                        mobileMenu.classList.add('hidden');
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>

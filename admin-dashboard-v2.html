@@ -227,7 +227,7 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <a href="/" class="btn btn-outline btn-sm" target="_blank">View Site</a>
-                    <a href="/admin-dashboard" class="btn btn-outline btn-sm">V1 Dashboard</a>
+                    <a href="/admin-dashboard?ui=v1" class="btn btn-outline btn-sm">Switch to V1</a>
                     <button onclick="logout()" class="btn btn-outline btn-sm" style="color: var(--muted);">Logout</button>
                 </div>
             </div>
@@ -448,6 +448,115 @@
                             <button onclick="payAllReady()" class="btn btn-primary btn-sm">Pay All Ready</button>
                             <button onclick="generateTestKey()" class="btn btn-outline btn-sm">Test Key</button>
                             <button onclick="runBackup()" class="btn btn-outline btn-sm">Backup</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Payout Debug Panel (Collapsed by Default) -->
+            <section class="mt-6">
+                <div class="dashboard-card overflow-hidden">
+                    <button onclick="toggleDebugPanel()" class="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center gap-2">
+                            <span style="color: var(--muted);">🔍</span>
+                            <h3 class="font-semibold">Payout Debug</h3>
+                            <span class="text-xs" style="color: var(--muted);">(Read-only)</span>
+                        </div>
+                        <span id="debug-panel-toggle" class="text-xl">▼</span>
+                    </button>
+                    <div id="debug-panel-content" class="hidden p-5 border-t border-gray-200">
+                        <div class="space-y-6">
+                            <!-- Last 20 Referrals -->
+                            <div>
+                                <h4 class="font-medium mb-3">Last 20 Referrals</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="admin-table">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Broker ID</th>
+                                                <th>Customer Email</th>
+                                                <th>Stripe ID</th>
+                                                <th>Subscription ID</th>
+                                                <th>Status</th>
+                                                <th>Payment Date</th>
+                                                <th>Payout</th>
+                                                <th>Type</th>
+                                                <th>Created</th>
+                                                <th>Paid At</th>
+                                                <th>Batch ID</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="debug-referrals-table">
+                                            <tr>
+                                                <td colspan="12" class="text-center py-4" style="color: var(--muted);">
+                                                    Loading...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Last 20 Broker Payments -->
+                            <div>
+                                <h4 class="font-medium mb-3">Last 20 Broker Payments</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="admin-table">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Broker ID</th>
+                                                <th>Broker Name</th>
+                                                <th>Broker Email</th>
+                                                <th>Amount</th>
+                                                <th>Method</th>
+                                                <th>Transaction ID</th>
+                                                <th>Status</th>
+                                                <th>Created</th>
+                                                <th>Paid At</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="debug-payments-table">
+                                            <tr>
+                                                <td colspan="10" class="text-center py-4" style="color: var(--muted);">
+                                                    Loading...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Last 20 Payout Batches -->
+                            <div>
+                                <h4 class="font-medium mb-3">Last 20 Payout Batches</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="admin-table">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Broker ID</th>
+                                                <th>Broker Name</th>
+                                                <th>Broker Email</th>
+                                                <th>Total Amount</th>
+                                                <th>Method</th>
+                                                <th>Transaction ID</th>
+                                                <th>Status</th>
+                                                <th>Created</th>
+                                                <th>Paid At</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="debug-batches-table">
+                                            <tr>
+                                                <td colspan="10" class="text-center py-4" style="color: var(--muted);">
+                                                    Loading...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

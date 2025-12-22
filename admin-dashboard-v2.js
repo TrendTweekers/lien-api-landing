@@ -1125,7 +1125,126 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 60000);
     
     console.log('✅ Admin Dashboard V2 ready');
+    
+    // Load debug panel data if panel is expanded
+    if (!document.getElementById('debug-panel-content').classList.contains('hidden')) {
+        loadPayoutDebugData();
+    }
 });
+
+// Toggle debug panel
+function toggleDebugPanel() {
+    const content = document.getElementById('debug-panel-content');
+    const toggle = document.getElementById('debug-panel-toggle');
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        toggle.textContent = '▲';
+        loadPayoutDebugData();
+    } else {
+        content.classList.add('hidden');
+        toggle.textContent = '▼';
+    }
+}
+
+// Load payout debug data
+async function loadPayoutDebugData() {
+    try {
+        const response = await fetch('/api/admin/debug/payout-data', {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            console.error('[Admin V2] Error loading debug data:', response.status);
+            safe.html('debug-referrals-table', '<tr><td colspan="11" class="text-center py-4 text-red-500">Error loading data</td></tr>');
+            safe.html('debug-payments-table', '<tr><td colspan="10" class="text-center py-4 text-red-500">Error loading data</td></tr>');
+            safe.html('debug-batches-table', '<tr><td colspan="10" class="text-center py-4 text-red-500">Error loading data</td></tr>');
+            return;
+        }
+        
+        const data = await response.json();
+        
+        // Render referrals
+        const referrals = data.referrals || [];
+        if (referrals.length === 0) {
+            safe.html('debug-referrals-table', '<tr><td colspan="12" class="text-center py-4" style="color: var(--muted);">0 rows</td></tr>');
+        } else {
+            const referralsRows = referrals.map(ref => `
+                <tr>
+                    <td>${ref.id || '—'}</td>
+                    <td>${ref.broker_id || '—'}</td>
+                    <td>${ref.customer_email || '—'}</td>
+                    <td>${ref.customer_stripe_id || '—'}</td>
+                    <td>${ref.subscription_id || '—'}</td>
+                    <td><span class="badge badge-${ref.status === 'paid' ? 'success' : ref.status === 'active' ? 'ready' : 'pending'}">${ref.status || '—'}</span></td>
+                    <td>${ref.payment_date ? new Date(ref.payment_date).toLocaleDateString() : '—'}</td>
+                    <td>$${parseFloat(ref.payout || 0).toFixed(2)}</td>
+                    <td>${ref.payout_type || '—'}</td>
+                    <td>${ref.created_at ? new Date(ref.created_at).toLocaleDateString() : '—'}</td>
+                    <td>${ref.paid_at ? new Date(ref.paid_at).toLocaleDateString() : '—'}</td>
+                    <td>${ref.paid_batch_id || '—'}</td>
+                </tr>
+            `).join('');
+            safe.html('debug-referrals-table', referralsRows);
+        }
+        
+        // Render payments
+        const payments = data.payments || [];
+        if (payments.length === 0) {
+            safe.html('debug-payments-table', '<tr><td colspan="10" class="text-center py-4" style="color: var(--muted);">0 rows</td></tr>');
+        } else {
+            const paymentsRows = payments.map(pay => `
+                <tr>
+                    <td>${pay.id || '—'}</td>
+                    <td>${pay.broker_id || '—'}</td>
+                    <td>${pay.broker_name || '—'}</td>
+                    <td>${pay.broker_email || '—'}</td>
+                    <td>$${parseFloat(pay.amount || 0).toFixed(2)}</td>
+                    <td>${pay.payment_method || '—'}</td>
+                    <td>${pay.transaction_id || '—'}</td>
+                    <td><span class="badge badge-${pay.status === 'completed' ? 'success' : 'pending'}">${pay.status || '—'}</span></td>
+                    <td>${pay.created_at ? new Date(pay.created_at).toLocaleDateString() : '—'}</td>
+                    <td>${pay.paid_at ? new Date(pay.paid_at).toLocaleDateString() : '—'}</td>
+                </tr>
+            `).join('');
+            safe.html('debug-payments-table', paymentsRows);
+        }
+        
+        // Render batches
+        const batches = data.batches || [];
+        if (batches.length === 0) {
+            safe.html('debug-batches-table', '<tr><td colspan="10" class="text-center py-4" style="color: var(--muted);">0 rows</td></tr>');
+        } else {
+            const batchesRows = batches.map(batch => `
+                <tr>
+                    <td>${batch.id || '—'}</td>
+                    <td>${batch.broker_id || '—'}</td>
+                    <td>${batch.broker_name || '—'}</td>
+                    <td>${batch.broker_email || '—'}</td>
+                    <td>$${parseFloat(batch.total_amount || 0).toFixed(2)}</td>
+                    <td>${batch.payment_method || '—'}</td>
+                    <td>${batch.transaction_id || '—'}</td>
+                    <td><span class="badge badge-${batch.status === 'completed' ? 'success' : 'pending'}">${batch.status || '—'}</span></td>
+                    <td>${batch.created_at ? new Date(batch.created_at).toLocaleDateString() : '—'}</td>
+                    <td>${batch.paid_at ? new Date(batch.paid_at).toLocaleDateString() : '—'}</td>
+                </tr>
+            `).join('');
+            safe.html('debug-batches-table', batchesRows);
+        }
+        
+    } catch (error) {
+        console.error('[Admin V2] Error loading debug data:', error);
+        safe.html('debug-referrals-table', '<tr><td colspan="12" class="text-center py-4 text-red-500">Error: ' + error.message + '</td></tr>');
+        safe.html('debug-payments-table', '<tr><td colspan="10" class="text-center py-4 text-red-500">Error: ' + error.message + '</td></tr>');
+        safe.html('debug-batches-table', '<tr><td colspan="10" class="text-center py-4 text-red-500">Error: ' + error.message + '</td></tr>');
+    }
+}
+
+window.toggleDebugPanel = toggleDebugPanel;
+window.loadPayoutDebugData = loadPayoutDebugData;
 
 // Make functions globally available
 window.switchPayoutTab = switchPayoutTab;
