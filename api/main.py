@@ -4847,7 +4847,7 @@ async def broker_dashboard(request: Request, email: str):
                 short_code = broker.get('short_code', '')
                 status = broker.get('status', 'pending')
             else:
-            broker_id = broker[0]
+                broker_id = broker[0]
                 broker_name = broker[1] if len(broker) > 1 else ''
                 referral_code = broker[2] if len(broker) > 2 else ''
                 commission_model = broker[3] if len(broker) > 3 else 'bounty'
