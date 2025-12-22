@@ -573,6 +573,16 @@
                 }
 
                 function displayDashboardResults(data) {
+                    // Track calculator submission
+                    if (typeof gtag !== 'undefined') {
+                        const stateCode = data.state || document.getElementById('dash_state')?.value || 'Unknown';
+                        gtag('event', 'calculator_submit', {
+                            'event_category': 'Calculator',
+                            'event_label': stateCode,
+                            'value': 1
+                        });
+                    }
+                    
                     // Clear previous results
                     resultsWrap.innerHTML = '';
 
@@ -673,7 +683,7 @@
                     pdfDiv.className = 'flex flex-col sm:flex-row gap-4';
                     const stateCode = document.getElementById('dash_state').value.toUpperCase();
                     pdfDiv.innerHTML = `
-                        <a id="dash_pdf_btn" href="/api/v1/guide/${stateCode}/pdf" target="_blank" class="flex-1 bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition duration-200 text-center">
+                        <a id="dash_pdf_btn" href="/api/v1/guide/${stateCode}/pdf" target="_blank" onclick="if(typeof gtag !== 'undefined') { gtag('event', 'pdf_download', { 'event_category': 'PDF', 'event_label': '${stateCode}', 'value': 1 }); }" class="flex-1 bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition duration-200 text-center">
                             📄 Download PDF Report
                         </a>
                     `;

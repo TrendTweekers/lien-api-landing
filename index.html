@@ -1062,7 +1062,7 @@
                                 <span>Monthly law updates</span>
                             </li>
                         </ul>
-                        <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" class="block w-full h-14 px-6 rounded-lg bg-accent text-white font-semibold text-lg hover:bg-accent/90 transition-colors text-center leading-[3.5rem]">
+                        <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" onclick="if(typeof gtag !== 'undefined') { gtag('event', 'begin_checkout', { 'event_category': 'Ecommerce', 'event_label': 'Professional Plan', 'value': 299 }); }" class="block w-full h-14 px-6 rounded-lg bg-accent text-white font-semibold text-lg hover:bg-accent/90 transition-colors text-center leading-[3.5rem]">
                             Upgrade to Professional →
                         </a>
                     </div>
@@ -1493,6 +1493,15 @@
                 if (response.ok) {
                     localStorage.setItem('userEmail', email);
                     
+                    // Track lead generation
+                    if (typeof gtag !== 'undefined') {
+                        gtag('event', 'generate_lead', {
+                            'event_category': 'Lead Generation',
+                            'event_label': 'Newsletter Signup',
+                            'value': 1
+                        });
+                    }
+                    
                     // Show success message
                     const form = e.target;
                     const successMsg = document.createElement('p');
@@ -1570,7 +1579,7 @@
                 <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-elegant">
                     <h3 class="text-2xl font-serif mb-4">Your Free Trial Has Ended</h3>
                     <p class="text-muted-foreground mb-6">You've used all 6 free trial calculations. Upgrade to Pro for unlimited calculations, PDF reports, and calculation history.</p>
-                    <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" class="block w-full h-12 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-colors text-center leading-[3rem] text-lg">
+                    <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" onclick="if(typeof gtag !== 'undefined') { gtag('event', 'begin_checkout', { 'event_category': 'Ecommerce', 'event_label': 'Upgrade Modal', 'value': 299 }); }" class="block w-full h-12 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-colors text-center leading-[3rem] text-lg">
                         Upgrade Now - $299/month
                     </a>
                 </div>
@@ -2059,6 +2068,7 @@
                     <div class="space-y-3">
                         <a 
                             href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00"
+                            onclick="if(typeof gtag !== 'undefined') { gtag('event', 'begin_checkout', { 'event_category': 'Ecommerce', 'event_label': 'Feature Section CTA', 'value': 299 }); }"
                             class="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3.5 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl"
                         >
                             Upgrade Now - $299/month
@@ -2347,6 +2357,16 @@ function showErrorToast(message) {
 // ==========================================
 
 function displayResults(data) {
+    // Track calculator submission
+    if (typeof gtag !== 'undefined') {
+        const stateCode = data.state || (document.getElementById('state')?.value || 'Unknown');
+        gtag('event', 'calculator_submit', {
+            'event_category': 'Calculator',
+            'event_label': stateCode,
+            'value': 1
+        });
+    }
+    
     // Parse API response - handle nested objects
     let prelimNotice = 'N/A';
     let lienFiling = 'N/A';
@@ -2494,7 +2514,7 @@ function displayResults(data) {
             <p class="text-sm text-gray-700 mb-3">
                 Get your complete ${stateCode} mechanics lien deadline guide with step-by-step instructions.
             </p>
-            <a href="/api/v1/guide/${stateCode}/pdf" target="_blank" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded text-sm transition-colors">
+            <a href="/api/v1/guide/${stateCode}/pdf" target="_blank" onclick="if(typeof gtag !== 'undefined') { gtag('event', 'pdf_download', { 'event_category': 'PDF', 'event_label': '${stateCode}', 'value': 1 }); }" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded text-sm transition-colors">
                 Download ${stateCode} Lien Guide (PDF)
             </a>
             <p class="text-xs text-gray-500 mt-2">⭐ Trusted by 500+ material suppliers</p>
@@ -2868,6 +2888,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!upgradeBtn) return;
     
     upgradeBtn.addEventListener('click', function() {
+        // Track checkout initiation
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'begin_checkout', {
+                'event_category': 'Ecommerce',
+                'event_label': 'Upgrade Button',
+                'value': 299
+            });
+        }
+        
         // Replace with your actual Stripe payment link
         const baseStripeUrl = 'https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00';
         const fullUrl = window.buildStripeUrl(baseStripeUrl);

@@ -284,6 +284,15 @@ if (calculatorForm) {
                 window.displayResults(data);
             }
             
+            // Track calculator submission
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'calculator_submit', {
+                    'event_category': 'Calculator',
+                    'event_label': state,
+                    'value': 1
+                });
+            }
+            
             // Scroll to results (if not in dashboard mode)
             if (!isDashboardMode()) {
                 const resultsEl = document.getElementById('results') || document.getElementById('calculatorResults');
@@ -366,6 +375,15 @@ function initEmailHandler() {
         if (!response.ok || data.status === 'error') {
             alert(`Error: ${data.message || 'Failed to save email'}`);
             return;
+        }
+        
+        // Track lead generation
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'generate_lead', {
+                'event_category': 'Lead Generation',
+                'event_label': 'Email Capture',
+                'value': 1
+            });
         }
     } catch (error) {
         console.error('Error tracking email:', error);
@@ -520,14 +538,26 @@ function formatServing(requirement) {
 }
 
 // PDF Download
-document.getElementById('downloadPDF').addEventListener('click', () => {
-    if (!window.currentCalculation) {
-        alert('Please calculate deadlines first');
-        return;
-    }
-    
-    generatePDF(window.currentCalculation);
-});
+const downloadPDFBtn = document.getElementById('downloadPDF');
+if (downloadPDFBtn) {
+    downloadPDFBtn.addEventListener('click', () => {
+        if (!window.currentCalculation) {
+            alert('Please calculate deadlines first');
+            return;
+        }
+        
+        // Track PDF download
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'pdf_download', {
+                'event_category': 'PDF',
+                'event_label': window.currentCalculation.state || 'Unknown',
+                'value': 1
+            });
+        }
+        
+        generatePDF(window.currentCalculation);
+    });
+}
 
 // Store latest calculation results for email
 let latestResults = null;
