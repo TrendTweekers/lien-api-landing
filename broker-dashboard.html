@@ -845,8 +845,8 @@ Try free: ${referralLink}
             document.getElementById('emailClientLink').href = `mailto:?subject=${emailSubject}&body=${emailBody}`;
             
             // Update LinkedIn share link
+            // LinkedIn share URL format: https://www.linkedin.com/sharing/share-offsite/?url=URL
             const linkedInUrl = encodeURIComponent(referralLink);
-            const linkedInText = encodeURIComponent(linkedInPost);
             document.getElementById('linkedInShareLink').href = `https://www.linkedin.com/sharing/share-offsite/?url=${linkedInUrl}`;
         }
         
