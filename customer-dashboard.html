@@ -289,6 +289,24 @@
     <!-- Load calculator.js for inline calculator -->
     <script src="/calculator.js"></script>
     
+    <!-- Flatpickr for date picker -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const el = document.getElementById("invoice_date");
+            if (!el) return;
+
+            // Prevent double-init if your page script re-runs
+            if (el._flatpickr) return;
+
+            flatpickr(el, {
+                dateFormat: "m/d/Y",
+                allowInput: true,
+                clickOpens: true
+            });
+        });
+    </script>
+    
     <script>
         let apiKeyVisible = false;
         let fullApiKey = ''; // Store full key
