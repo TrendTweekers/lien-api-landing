@@ -2084,6 +2084,31 @@
         .animate-fade-in {
             animation: fadeIn 0.2s ease-out;
         }
+        
+        /* Mobile responsive upgrade modal */
+        @media (max-width: 768px) {
+            #upgradeModal {
+                bottom: 10px !important;
+                right: 10px !important;
+                left: 10px !important;
+                max-width: none !important;
+                width: calc(100% - 20px) !important;
+            }
+            
+            #upgradeModal .bg-white {
+                padding: 20px !important;
+            }
+            
+            #upgradeModal button,
+            #upgradeModal a {
+                width: 100% !important;
+                margin-bottom: 10px !important;
+            }
+            
+            #upgradeModal .space-y-3 > *:last-child {
+                margin-bottom: 0 !important;
+            }
+        }
     </style>
 
 // ==========================================
