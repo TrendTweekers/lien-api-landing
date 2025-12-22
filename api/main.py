@@ -48,6 +48,15 @@ from api.admin import router as admin_router
 # Import short link generator
 from api.short_link_system import ShortLinkGenerator
 
+# Import email anti-abuse system
+from api.email_abuse import (
+    is_disposable_email,
+    generate_verification_token,
+    hash_email,
+    check_duplicate_email,
+    validate_email_format
+)
+
 app = FastAPI(title="Lien Deadline API")
 
 # Rate limiting setup
@@ -2301,40 +2310,56 @@ async def apply_partner(request: Request):
 @app.post("/api/v1/capture-email")
 @limiter.limit("5/minute")
 async def capture_email(request: Request):
-    """Capture email from calculator gate"""
+    """
+    Enhanced email capture with comprehensive anti-abuse protection:
+    - Disposable email blocking (1000+ domains)
+    - Email format validation
+    - Duplicate email detection across IPs
+    - Email verification (optional - can be enabled later)
+    """
     from fastapi.responses import JSONResponse
     
     try:
         data = await request.json()
         email = data.get('email', '').strip().lower()
+        recaptcha_token = data.get('recaptcha_token')  # Optional reCAPTCHA token
         
-        # Basic validation
-        if not email:
+        # Get client IP
+        client_ip = get_client_ip(request)
+        user_agent = request.headers.get('user-agent', '')
+        
+        # ========== LAYER 1: Format Validation ==========
+        is_valid, format_error = validate_email_format(email)
+        if not is_valid:
             return JSONResponse(
                 status_code=400,
-                content={"status": "error", "message": "Email is required"}
+                content={
+                    "status": "error",
+                    "message": format_error or "Invalid email format",
+                    "error_code": "INVALID_FORMAT",
+                    "help_text": "Please enter a valid email address (e.g., name@example.com)"
+                }
             )
         
-        if '@' not in email or '.' not in email.split('@')[-1]:
+        # ========== LAYER 2: Disposable Email Blocking ==========
+        is_disposable, disposable_reason = is_disposable_email(email)
+        if is_disposable:
             return JSONResponse(
                 status_code=400,
-                content={"status": "error", "message": "Invalid email format"}
+                content={
+                    "status": "error",
+                    "message": "Temporary or disposable email addresses are not allowed",
+                    "error_code": "DISPOSABLE_EMAIL",
+                    "help_text": "Please use a permanent email address. If you believe this is an error, contact support.",
+                    "reason": disposable_reason
+                }
             )
         
-        # Check disposable domains (optional)
-        disposable_domains = ['tempmail.com', 'throwaway.email', 'mailinator.com']
-        domain = email.split('@')[1]
-        if any(disposable in domain for disposable in disposable_domains):
-            return JSONResponse(
-                status_code=400,
-                content={"status": "error", "message": "Disposable emails not allowed"}
-            )
-        
-        # Save to database
+        # ========== LAYER 3: Duplicate Email Detection ==========
         with get_db() as conn:
-            cursor = conn.cursor()
+            cursor = get_db_cursor(conn)
             
-            # Create email_captures table if it doesn't exist
+            # Ensure email_captures table exists with verification columns
             if DB_TYPE == 'postgresql':
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS email_captures (
@@ -2343,36 +2368,19 @@ async def capture_email(request: Request):
                         ip_address VARCHAR,
                         user_agent TEXT,
                         calculation_count INTEGER DEFAULT 0,
-                        created_at TIMESTAMP DEFAULT NOW()
+                        verification_token VARCHAR,
+                        verified_at TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        last_used_at TIMESTAMP DEFAULT NOW()
                     )
                 ''')
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_captures_email ON email_captures(email)")
-                
-                # Insert or update (PostgreSQL)
-                cursor.execute('''
-                    INSERT INTO email_captures 
-                    (email, ip_address, user_agent, calculation_count)
-                    VALUES (%s, %s, %s, %s)
-                    ON CONFLICT (email) DO UPDATE SET
-                        calculation_count = EXCLUDED.calculation_count,
-                        ip_address = EXCLUDED.ip_address,
-                        user_agent = EXCLUDED.user_agent
-                ''', (
-                    email,
-                    client_ip,
-                    request.headers.get('user-agent', ''),
-                    3  # Give them 3 more calculations
-                ))
-                
-                # Link email to tracking record (update email_gate_tracking)
-                user_agent_hash = get_user_agent_hash(request)
-                tracking_key = f"{client_ip}:{user_agent_hash}"
-                cursor.execute("""
-                    UPDATE email_gate_tracking 
-                    SET email = %s,
-                        email_captured_at = NOW()
-                    WHERE tracking_key = %s
-                """, (email, tracking_key))
+                # Add verification columns if they don't exist
+                try:
+                    cursor.execute("ALTER TABLE email_captures ADD COLUMN IF NOT EXISTS verification_token VARCHAR")
+                    cursor.execute("ALTER TABLE email_captures ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP")
+                    cursor.execute("ALTER TABLE email_captures ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMP DEFAULT NOW()")
+                except:
+                    pass  # Columns may already exist
             else:
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS email_captures (
@@ -2381,41 +2389,174 @@ async def capture_email(request: Request):
                         ip_address TEXT,
                         user_agent TEXT,
                         calculation_count INTEGER DEFAULT 0,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        verification_token TEXT,
+                        verified_at TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_captures_email ON email_captures(email)")
+                # Add verification columns if they don't exist
+                try:
+                    cursor.execute("ALTER TABLE email_captures ADD COLUMN verification_token TEXT")
+                    cursor.execute("ALTER TABLE email_captures ADD COLUMN verified_at TIMESTAMP")
+                    cursor.execute("ALTER TABLE email_captures ADD COLUMN last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+                except:
+                    pass  # Columns may already exist
+            
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_captures_email ON email_captures(email)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_captures_ip ON email_captures(ip_address)")
+            
+            # Check for duplicate email from different IP
+            is_duplicate, duplicate_reason = check_duplicate_email(email, client_ip, cursor)
+            if is_duplicate:
+                # Allow if same IP (legitimate user), block if different IP
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT ip_address FROM email_captures WHERE email = %s LIMIT 1
+                    """, (email,))
+                else:
+                    cursor.execute("""
+                        SELECT ip_address FROM email_captures WHERE email = ? LIMIT 1
+                    """, (email,))
                 
-                # Insert or update (SQLite)
+                existing_record = cursor.fetchone()
+                existing_ip = None
+                if existing_record:
+                    if isinstance(existing_record, dict):
+                        existing_ip = existing_record.get('ip_address')
+                    else:
+                        existing_ip = existing_record[0] if len(existing_record) > 0 else None
+                
+                # Block if different IP
+                if existing_ip and existing_ip != client_ip:
+                    return JSONResponse(
+                        status_code=400,
+                        content={
+                            "status": "error",
+                            "message": "This email address has already been registered from a different location",
+                            "error_code": "DUPLICATE_EMAIL",
+                            "help_text": "Each email address can only be used from one location. If this is your email, please contact support.",
+                            "appeal_url": "/contact.html"
+                        }
+                    )
+            
+            # ========== LAYER 4: Rate Limiting by Email ==========
+            # Check if email was used too frequently
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT COUNT(*), MAX(last_used_at) 
+                    FROM email_captures 
+                    WHERE email = %s 
+                    AND last_used_at > NOW() - INTERVAL '1 hour'
+                """, (email,))
+            else:
+                cursor.execute("""
+                    SELECT COUNT(*), MAX(last_used_at) 
+                    FROM email_captures 
+                    WHERE email = ? 
+                    AND last_used_at > datetime('now', '-1 hour')
+                """, (email,))
+            
+            rate_check = cursor.fetchone()
+            if rate_check:
+                count = rate_check[0] if isinstance(rate_check, tuple) else rate_check.get('count', 0)
+                if count > 10:  # More than 10 uses in 1 hour
+                    return JSONResponse(
+                        status_code=429,
+                        content={
+                            "status": "error",
+                            "message": "Too many requests from this email address",
+                            "error_code": "RATE_LIMIT",
+                            "help_text": "Please wait before trying again. If you need more calculations, consider upgrading to Pro."
+                        }
+                    )
+            
+            # ========== SAVE EMAIL (with verification token) ==========
+            verification_token = generate_verification_token()
+            
+            if DB_TYPE == 'postgresql':
                 cursor.execute('''
-                    INSERT OR REPLACE INTO email_captures 
-                    (email, ip_address, user_agent, calculation_count)
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO email_captures 
+                    (email, ip_address, user_agent, calculation_count, verification_token, last_used_at)
+                    VALUES (%s, %s, %s, %s, %s, NOW())
+                    ON CONFLICT (email) DO UPDATE SET
+                        calculation_count = GREATEST(email_captures.calculation_count, 3),
+                        ip_address = EXCLUDED.ip_address,
+                        user_agent = EXCLUDED.user_agent,
+                        last_used_at = NOW(),
+                        verification_token = COALESCE(email_captures.verification_token, EXCLUDED.verification_token)
                 ''', (
                     email,
                     client_ip,
-                    request.headers.get('user-agent', ''),
-                    3  # Give them 3 more calculations
+                    user_agent,
+                    3,  # Give them 3 more calculations
+                    verification_token
                 ))
+            else:
+                # SQLite: Check if email exists first
+                cursor.execute("SELECT id, verification_token FROM email_captures WHERE email = ?", (email,))
+                existing = cursor.fetchone()
                 
-                # Link email to tracking record (update email_gate_tracking)
-                user_agent_hash = get_user_agent_hash(request)
-                tracking_key = f"{client_ip}:{user_agent_hash}"
+                if existing:
+                    # Update existing record
+                    existing_token = existing[1] if isinstance(existing, tuple) and len(existing) > 1 else None
+                    cursor.execute('''
+                        UPDATE email_captures 
+                        SET calculation_count = MAX(calculation_count, 3),
+                            ip_address = ?,
+                            user_agent = ?,
+                            last_used_at = CURRENT_TIMESTAMP,
+                            verification_token = COALESCE(verification_token, ?)
+                        WHERE email = ?
+                    ''', (client_ip, user_agent, verification_token, email))
+                else:
+                    # Insert new record
+                    cursor.execute('''
+                        INSERT INTO email_captures 
+                        (email, ip_address, user_agent, calculation_count, verification_token, last_used_at)
+                        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ''', (
+                        email,
+                        client_ip,
+                        user_agent,
+                        3,  # Give them 3 more calculations
+                        verification_token
+                    ))
+            
+            # Link email to tracking record (update email_gate_tracking)
+            user_agent_hash = get_user_agent_hash(request)
+            tracking_key = f"{client_ip}:{user_agent_hash}"
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE email_gate_tracking 
+                    SET email = %s,
+                        email_captured_at = NOW(),
+                        calculation_count = GREATEST(calculation_count, 3)
+                    WHERE tracking_key = %s
+                """, (email, tracking_key))
+            else:
                 cursor.execute("""
                     UPDATE email_gate_tracking 
                     SET email = ?,
-                        email_captured_at = CURRENT_TIMESTAMP
+                        email_captured_at = CURRENT_TIMESTAMP,
+                        calculation_count = MAX(calculation_count, 3)
                     WHERE tracking_key = ?
                 """, (email, tracking_key))
             
             conn.commit()
         
-        print(f"✅ Email captured: {email} (linked to tracking_key: {tracking_key})")
+        print(f"✅ Email captured (anti-abuse passed): {email} from {client_ip}")
+        
+        # TODO: Send verification email (optional - can be enabled later)
+        # For now, we'll allow immediate access but can add verification later
         
         return {
             "status": "success",
             "message": "Email saved! You have 3 more calculations.",
-            "calculations_remaining": 3
+            "calculations_remaining": 3,
+            "verification_required": False,  # Set to True when verification is enabled
+            "verification_token": None  # Don't expose token to frontend
         }
         
     except Exception as e:
@@ -2424,7 +2565,11 @@ async def capture_email(request: Request):
         traceback.print_exc()
         return JSONResponse(
             status_code=500,
-            content={"status": "error", "message": "Internal server error"}
+            content={
+                "status": "error",
+                "message": "Internal server error. Please try again later.",
+                "error_code": "INTERNAL_ERROR"
+            }
         )
 
 # UTM tracking endpoint

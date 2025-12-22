@@ -242,6 +242,33 @@ function initEmailHandler() {
         
         const data = await response.json();
         
+        // Handle enhanced error responses
+        if (!response.ok) {
+            const errorCode = data.error_code || 'UNKNOWN_ERROR';
+            let errorMessage = data.message || 'Failed to save email';
+            
+            // Provide user-friendly error messages
+            switch(errorCode) {
+                case 'DISPOSABLE_EMAIL':
+                    errorMessage = '❌ Temporary email addresses are not allowed. Please use a permanent email address.';
+                    break;
+                case 'DUPLICATE_EMAIL':
+                    errorMessage = '❌ This email is already registered from a different location. If this is your email, please contact support.';
+                    break;
+                case 'INVALID_FORMAT':
+                    errorMessage = '❌ Invalid email format. Please check your email address.';
+                    break;
+                case 'RATE_LIMIT':
+                    errorMessage = '⏱️ Too many requests. Please wait a moment before trying again.';
+                    break;
+                default:
+                    errorMessage = data.help_text || errorMessage;
+            }
+            
+            alert(errorMessage);
+            return;
+        }
+        
         if (!response.ok || data.status === 'error') {
             alert(`Error: ${data.message || 'Failed to save email'}`);
             return;
