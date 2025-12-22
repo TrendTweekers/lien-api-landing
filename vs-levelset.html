@@ -354,215 +354,1199 @@
         }
 
         /* ============================================
-           V2 DESIGN - SCOPED TO #compare-page
+           V2 DESIGN - SCOPED TO #compare-v2-root
+           EXACT COPY FROM LOVABLE REPO
            ============================================ */
-        #compare-page {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 2rem 1rem;
+        #compare-v2-root {
+            min-height: 100vh;
+            background: hsl(40 33% 98%);
+            font-family: 'Inter', system-ui, sans-serif;
+            color: hsl(220 20% 15%);
         }
 
-        #compare-page .hero-section {
-            text-align: center;
+        #compare-v2-root h1, #compare-v2-root h2, #compare-v2-root h3 {
+            font-family: 'Instrument Serif', serif;
+            font-weight: 700;
+        }
+
+        /* Hero Section */
+        #compare-v2-root .hero-section {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(180deg, hsl(40 33% 98%) 0%, hsl(0 0% 100%) 100%);
             padding: 4rem 0 3rem;
         }
 
-        #compare-page .hero-section h1 {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #1e3a8a;
-            margin-bottom: 1.5rem;
-            line-height: 1.2;
-        }
-
-        #compare-page .hero-section .subtitle {
-            font-size: 1.25rem;
-            color: #4b5563;
-            max-width: 800px;
-            margin: 0 auto 2rem;
-        }
-
-        #compare-page .comparison-table {
-            background: white;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        #compare-v2-root .hero-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
             overflow: hidden;
-            margin: 3rem 0;
         }
 
-        #compare-page .comparison-table table {
+        #compare-v2-root .hero-section .bg-decoration-1 {
+            position: absolute;
+            top: -10rem;
+            right: -10rem;
+            width: 20rem;
+            height: 20rem;
+            border-radius: 9999px;
+            background: hsl(220 60% 20% / 0.05);
+            filter: blur(3rem);
+        }
+
+        #compare-v2-root .hero-section .bg-decoration-2 {
+            position: absolute;
+            bottom: -10rem;
+            left: -10rem;
+            width: 20rem;
+            height: 20rem;
+            border-radius: 9999px;
+            background: hsl(16 85% 55% / 0.05);
+            filter: blur(3rem);
+        }
+
+        #compare-v2-root .hero-section .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            position: relative;
+        }
+
+        #compare-v2-root .hero-section .content {
+            max-width: 56rem;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        #compare-v2-root .hero-section .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-radius: 9999px;
+            border: 1px solid hsl(16 85% 55% / 0.2);
+            background: hsl(16 85% 55% / 0.05);
+            padding: 0.5rem 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: hsl(16 85% 55%);
+            opacity: 0;
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        #compare-v2-root .hero-section h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            color: hsl(220 20% 15%);
+            opacity: 0;
+            animation: fadeInUp 0.6s ease-out 0.1s forwards;
+        }
+
+        #compare-v2-root .hero-section h1 .text-coral {
+            color: hsl(16 85% 55%);
+        }
+
+        #compare-v2-root .hero-section h1 .text-navy {
+            color: hsl(220 60% 20%);
+        }
+
+        #compare-v2-root .hero-section .subtitle {
+            font-size: 1.125rem;
+            color: hsl(220 10% 45%);
+            margin-bottom: 3rem;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease-out 0.2s forwards;
+        }
+
+        #compare-v2-root .hero-section .speed-comparison {
+            max-width: 42rem;
+            margin: 0 auto;
+            border-radius: 1rem;
+            border: 1px solid hsl(40 20% 88%);
+            background: hsl(0 0% 100%);
+            padding: 1.5rem;
+            box-shadow: 0 20px 25px -5px hsl(220 20% 15% / 0.1), 0 8px 10px -6px hsl(220 20% 15% / 0.1);
+            opacity: 0;
+            animation: fadeInUp 0.6s ease-out 0.3s forwards;
+        }
+
+        #compare-v2-root .hero-section .speed-comparison h3 {
+            text-align: center;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: hsl(220 20% 15%);
+            margin-bottom: 1.5rem;
+        }
+
+        #compare-v2-root .hero-section .speed-bar {
+            margin-bottom: 1.5rem;
+        }
+
+        #compare-v2-root .hero-section .speed-bar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        #compare-v2-root .hero-section .speed-bar-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        #compare-v2-root .hero-section .speed-bar-icon {
+            display: flex;
+            height: 2.5rem;
+            width: 2.5rem;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            background: hsl(16 85% 55% / 0.1);
+        }
+
+        #compare-v2-root .hero-section .speed-bar-icon.ls {
+            background: hsl(40 20% 92%);
+        }
+
+        #compare-v2-root .hero-section .speed-bar-icon span {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: hsl(16 85% 55%);
+        }
+
+        #compare-v2-root .hero-section .speed-bar-icon.ls span {
+            color: hsl(220 10% 45%);
+        }
+
+        #compare-v2-root .hero-section .speed-bar-name {
+            font-weight: 500;
+            color: hsl(220 20% 15%);
+        }
+
+        #compare-v2-root .hero-section .speed-bar-value {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            color: hsl(16 85% 55%);
+        }
+
+        #compare-v2-root .hero-section .speed-bar-value.ls {
+            font-weight: 500;
+            color: hsl(220 10% 45%);
+        }
+
+        #compare-v2-root .hero-section .speed-bar-track {
+            height: 0.75rem;
+            overflow: hidden;
+            border-radius: 9999px;
+            background: hsl(40 20% 92%);
+        }
+
+        #compare-v2-root .hero-section .speed-bar-fill {
+            height: 100%;
+            border-radius: 9999px;
+            background: linear-gradient(135deg, hsl(16 85% 55%) 0%, hsl(20 90% 48%) 100%);
+            transition: width 1s ease-out;
+            width: 0;
+        }
+
+        #compare-v2-root .hero-section .speed-bar-fill.animated {
+            width: 5%;
+        }
+
+        #compare-v2-root .hero-section .speed-bar-fill.ls {
+            background: hsl(220 10% 45% / 0.3);
+            width: 0;
+        }
+
+        #compare-v2-root .hero-section .speed-bar-fill.ls.animated {
+            width: 100%;
+            transition-delay: 0.3s;
+        }
+
+        #compare-v2-root .hero-section .speed-badge {
+            display: flex;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        #compare-v2-root .hero-section .speed-badge-inner {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-radius: 9999px;
+            background: hsl(16 85% 55% / 0.1);
+            padding: 0.5rem 1rem;
+        }
+
+        #compare-v2-root .hero-section .speed-badge-inner span {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: hsl(16 85% 55%);
+        }
+
+        /* Disclaimer Section */
+        #compare-v2-root .disclaimer-section {
+            border-top: 1px solid hsl(40 20% 88%);
+            border-bottom: 1px solid hsl(40 20% 88%);
+            background: hsl(40 20% 92% / 0.5);
+            padding: 1rem 0;
+        }
+
+        #compare-v2-root .disclaimer-section .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        #compare-v2-root .disclaimer-section .content {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            color: hsl(220 10% 45%);
+        }
+
+        #compare-v2-root .disclaimer-section .icon {
+            margin-top: 0.125rem;
+            height: 1rem;
+            width: 1rem;
+            flex-shrink: 0;
+            color: hsl(220 10% 45%);
+        }
+
+        #compare-v2-root .disclaimer-section strong {
+            color: hsl(220 20% 15%);
+        }
+
+        /* Quick Answer Section */
+        #compare-v2-root .quick-answer-section {
+            padding: 4rem 0;
+        }
+
+        #compare-v2-root .quick-answer-section .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        #compare-v2-root .quick-answer-section .content {
+            max-width: 48rem;
+            margin: 0 auto;
+        }
+
+        #compare-v2-root .quick-answer-section h2 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: hsl(220 20% 15%);
+            margin-bottom: 2rem;
+        }
+
+        #compare-v2-root .quick-answer-section .answers {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        #compare-v2-root .quick-answer-section .answer-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid;
+            padding: 1.25rem;
+            transition: all 0.3s;
+        }
+
+        #compare-v2-root .quick-answer-section .answer-item.accent {
+            border-color: hsl(16 85% 55% / 0.2);
+            background: hsl(16 85% 55% / 0.05);
+        }
+
+        #compare-v2-root .quick-answer-section .answer-item.accent:hover {
+            border-color: hsl(16 85% 55% / 0.4);
+        }
+
+        #compare-v2-root .quick-answer-section .answer-item.normal {
+            border-color: hsl(40 20% 88%);
+            background: hsl(0 0% 100%);
+        }
+
+        #compare-v2-root .quick-answer-section .answer-item.normal:hover {
+            border-color: hsl(220 60% 20% / 0.4);
+        }
+
+        #compare-v2-root .quick-answer-section .answer-icon {
+            margin-top: 0.125rem;
+            display: flex;
+            height: 1.5rem;
+            width: 1.5rem;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+        }
+
+        #compare-v2-root .quick-answer-section .answer-icon.accent {
+            background: hsl(16 85% 55% / 0.2);
+        }
+
+        #compare-v2-root .quick-answer-section .answer-icon.normal {
+            background: hsl(40 20% 92%);
+        }
+
+        #compare-v2-root .quick-answer-section .answer-icon svg {
+            height: 1rem;
+            width: 1rem;
+            color: hsl(16 85% 55%);
+        }
+
+        #compare-v2-root .quick-answer-section .answer-icon.normal svg {
+            height: 0.75rem;
+            width: 0.75rem;
+            color: hsl(220 10% 45%);
+        }
+
+        #compare-v2-root .quick-answer-section .answer-text {
+            color: hsl(220 20% 15%);
+        }
+
+        #compare-v2-root .quick-answer-section .answer-text strong {
+            color: hsl(16 85% 55%);
+        }
+
+        #compare-v2-root .quick-answer-section .answer-text.normal strong {
+            color: hsl(220 20% 15%);
+        }
+
+        #compare-v2-root .quick-answer-section .answer-text .muted {
+            color: hsl(220 10% 45%);
+        }
+
+        /* Feature Comparison Table */
+        #compare-v2-root .comparison-section {
+            background: linear-gradient(180deg, hsl(40 33% 98%) 0%, hsl(0 0% 100%) 100%);
+            padding: 4rem 0 5rem;
+        }
+
+        #compare-v2-root .comparison-section .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        #compare-v2-root .comparison-section .content {
+            max-width: 80rem;
+            margin: 0 auto;
+        }
+
+        #compare-v2-root .comparison-section h2 {
+            text-align: center;
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: hsl(220 20% 15%);
+            margin-bottom: 1rem;
+        }
+
+        #compare-v2-root .comparison-section .subtitle {
+            text-align: center;
+            color: hsl(220 10% 45%);
+            margin-bottom: 3rem;
+        }
+
+        #compare-v2-root .comparison-section .table-wrapper {
+            overflow: hidden;
+            border-radius: 1rem;
+            border: 1px solid hsl(40 20% 88%);
+            background: hsl(0 0% 100%);
+            box-shadow: 0 10px 15px -3px hsl(220 20% 15% / 0.1), 0 4px 6px -2px hsl(220 20% 15% / 0.05);
+        }
+
+        #compare-v2-root .comparison-section table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        #compare-page .comparison-table thead {
-            background: #f9fafb;
+        #compare-v2-root .comparison-section thead tr {
+            border-bottom: 1px solid hsl(40 20% 88%);
+            background: hsl(40 20% 92% / 0.5);
         }
 
-        #compare-page .comparison-table th {
+        #compare-v2-root .comparison-section th {
             padding: 1.25rem;
             text-align: left;
+            font-size: 0.875rem;
             font-weight: 600;
-            color: #1f2937;
-            border-bottom: 2px solid #e5e7eb;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: hsl(220 10% 45%);
         }
 
-        #compare-page .comparison-table td {
-            padding: 1.25rem;
-            border-bottom: 1px solid #e5e7eb;
-            color: #374151;
+        #compare-v2-root .comparison-section th.center {
+            text-align: center;
         }
 
-        #compare-page .comparison-table tr:last-child td {
+        #compare-v2-root .comparison-section th .badge-header {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+        }
+
+        #compare-v2-root .comparison-section th .badge-header.coral {
+            background: hsl(16 85% 55% / 0.1);
+        }
+
+        #compare-v2-root .comparison-section th .badge-header.muted {
+            background: hsl(40 20% 92%);
+        }
+
+        #compare-v2-root .comparison-section th .badge-header span {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: hsl(16 85% 55%);
+        }
+
+        #compare-v2-root .comparison-section th .badge-header.muted span {
+            color: hsl(220 10% 45%);
+        }
+
+        #compare-v2-root .comparison-section tbody tr {
+            border-bottom: 1px solid hsl(40 20% 88%);
+            transition: background 0.2s;
+        }
+
+        #compare-v2-root .comparison-section tbody tr:last-child {
             border-bottom: none;
         }
 
-        #compare-page .badge {
-            display: inline-flex;
+        #compare-v2-root .comparison-section tbody tr:nth-child(even) {
+            background: hsl(40 20% 92% / 0.3);
+        }
+
+        #compare-v2-root .comparison-section tbody tr:hover {
+            background: hsl(16 85% 55% / 0.05);
+        }
+
+        #compare-v2-root .comparison-section td {
+            padding: 1.25rem;
+        }
+
+        #compare-v2-root .comparison-section .feature-name {
+            display: flex;
             align-items: center;
-            padding: 0.375rem 0.75rem;
+            gap: 0.75rem;
+        }
+
+        #compare-v2-root .comparison-section .feature-icon {
+            display: flex;
+            height: 2.5rem;
+            width: 2.5rem;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            background: hsl(220 60% 20% / 0.1);
+        }
+
+        #compare-v2-root .comparison-section .feature-icon svg {
+            height: 1.25rem;
+            width: 1.25rem;
+            color: hsl(220 60% 20%);
+        }
+
+        #compare-v2-root .comparison-section .feature-name-text {
+            font-weight: 600;
+            color: hsl(220 20% 15%);
+        }
+
+        #compare-v2-root .comparison-section .feature-value {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        #compare-v2-root .comparison-section .feature-value-inner {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #compare-v2-root .comparison-section .status-icon {
+            height: 1.25rem;
+            width: 1.25rem;
+        }
+
+        #compare-v2-root .comparison-section .status-icon.success {
+            color: hsl(152 60% 42%);
+        }
+
+        #compare-v2-root .comparison-section .status-icon.coral {
+            color: hsl(16 85% 55%);
+        }
+
+        #compare-v2-root .comparison-section .status-icon.destructive {
+            color: hsl(0 84% 51%);
+        }
+
+        #compare-v2-root .comparison-section .status-icon.warning {
+            color: hsl(38 95% 50%);
+        }
+
+        #compare-v2-root .comparison-section .feature-value-text {
+            font-weight: 600;
+            color: hsl(16 85% 55%);
+        }
+
+        #compare-v2-root .comparison-section .feature-value-text.normal {
+            color: hsl(220 20% 15%);
+        }
+
+        #compare-v2-root .comparison-section .feature-subtitle {
+            font-size: 0.875rem;
+            color: hsl(220 10% 45%);
+        }
+
+        /* Mobile Cards */
+        #compare-v2-root .comparison-section .mobile-cards {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            #compare-v2-root .comparison-section .table-wrapper {
+                display: none;
+            }
+
+            #compare-v2-root .comparison-section .mobile-cards {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            #compare-v2-root .comparison-section .mobile-card {
+                border-radius: 0.75rem;
+                border: 1px solid hsl(40 20% 88%);
+                background: hsl(0 0% 100%);
+                padding: 1.25rem;
+                box-shadow: 0 4px 6px -1px hsl(220 20% 15% / 0.1), 0 2px 4px -1px hsl(220 20% 15% / 0.06);
+            }
+
+            #compare-v2-root .comparison-section .mobile-card-header {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                margin-bottom: 1rem;
+            }
+
+            #compare-v2-root .comparison-section .mobile-card-values {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+
+            #compare-v2-root .comparison-section .mobile-value-box {
+                border-radius: 0.5rem;
+                padding: 0.75rem;
+            }
+
+            #compare-v2-root .comparison-section .mobile-value-box.coral {
+                background: hsl(16 85% 55% / 0.05);
+            }
+
+            #compare-v2-root .comparison-section .mobile-value-box.muted {
+                background: hsl(40 20% 92% / 0.5);
+            }
+
+            #compare-v2-root .comparison-section .mobile-value-label {
+                font-size: 0.75rem;
+                font-weight: 500;
+                text-transform: uppercase;
+                margin-bottom: 0.25rem;
+                color: hsl(16 85% 55%);
+            }
+
+            #compare-v2-root .comparison-section .mobile-value-label.muted {
+                color: hsl(220 10% 45%);
+            }
+
+            #compare-v2-root .comparison-section .mobile-value-text {
+                font-weight: 600;
+                color: hsl(220 20% 15%);
+                margin-bottom: 0.125rem;
+            }
+
+            #compare-v2-root .comparison-section .mobile-value-subtitle {
+                font-size: 0.75rem;
+                color: hsl(220 10% 45%);
+            }
+        }
+
+        /* When to Choose Section */
+        #compare-v2-root .when-to-choose-section {
+            padding: 4rem 0 5rem;
+        }
+
+        #compare-v2-root .when-to-choose-section .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        #compare-v2-root .when-to-choose-section .content {
+            max-width: 80rem;
+            margin: 0 auto;
+            display: grid;
+            gap: 2rem;
+        }
+
+        @media (min-width: 768px) {
+            #compare-v2-root .when-to-choose-section .content {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 3rem;
+            }
+        }
+
+        #compare-v2-root .when-to-choose-section .card {
+            border-radius: 1rem;
+            border: 1px solid hsl(40 20% 88%);
+            background: hsl(0 0% 100%);
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px hsl(220 20% 15% / 0.1), 0 4px 6px -2px hsl(220 20% 15% / 0.05);
+        }
+
+        @media (min-width: 768px) {
+            #compare-v2-root .when-to-choose-section .card {
+                padding: 2rem;
+            }
+        }
+
+        #compare-v2-root .when-to-choose-section .card.accent {
+            border-width: 2px;
+            border-color: hsl(16 85% 55% / 0.3);
+            background: hsl(16 85% 55% / 0.05);
+            box-shadow: 0 0 40px hsl(16 85% 55% / 0.25);
+        }
+
+        #compare-v2-root .when-to-choose-section .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        #compare-v2-root .when-to-choose-section .card-icon {
+            display: flex;
+            height: 3rem;
+            width: 3rem;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.75rem;
+            background: hsl(40 20% 92%);
+        }
+
+        #compare-v2-root .when-to-choose-section .card-icon.accent {
+            background: hsl(16 85% 55% / 0.2);
+        }
+
+        #compare-v2-root .when-to-choose-section .card-icon span {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: hsl(220 10% 45%);
+        }
+
+        #compare-v2-root .when-to-choose-section .card-icon.accent span {
+            color: hsl(16 85% 55%);
+        }
+
+        #compare-v2-root .when-to-choose-section .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: hsl(220 20% 15%);
+        }
+
+        #compare-v2-root .when-to-choose-section .card-description {
+            color: hsl(220 10% 45%);
+            margin-bottom: 1.5rem;
+        }
+
+        #compare-v2-root .when-to-choose-section .card-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        #compare-v2-root .when-to-choose-section .card-list-item {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        #compare-v2-root .when-to-choose-section .list-icon {
+            margin-top: 0.25rem;
+            display: flex;
+            height: 1.25rem;
+            width: 1.25rem;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: center;
             border-radius: 9999px;
+            background: hsl(40 20% 92%);
+        }
+
+        #compare-v2-root .when-to-choose-section .list-icon.accent {
+            background: hsl(16 85% 55% / 0.2);
+        }
+
+        #compare-v2-root .when-to-choose-section .list-icon svg {
+            height: 0.75rem;
+            width: 0.75rem;
+            color: hsl(220 10% 45%);
+        }
+
+        #compare-v2-root .when-to-choose-section .list-icon.accent svg {
+            color: hsl(16 85% 55%);
+        }
+
+        #compare-v2-root .when-to-choose-section .list-text {
+            font-weight: 600;
+            color: hsl(220 20% 15%);
+        }
+
+        #compare-v2-root .when-to-choose-section .list-detail {
+            font-size: 0.875rem;
+            color: hsl(220 10% 45%);
+            margin-top: 0.25rem;
+        }
+
+        #compare-v2-root .when-to-choose-section .testimonial {
+            margin-top: 2rem;
+            border-radius: 0.75rem;
+            background: hsl(0 0% 100%);
+            padding: 1.25rem;
+            box-shadow: 0 4px 6px -1px hsl(220 20% 15% / 0.1), 0 2px 4px -1px hsl(220 20% 15% / 0.06);
+        }
+
+        #compare-v2-root .when-to-choose-section .testimonial-stars {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        #compare-v2-root .when-to-choose-section .testimonial-stars svg {
+            height: 1rem;
+            width: 1rem;
+            fill: hsl(38 95% 50%);
+            color: hsl(38 95% 50%);
+        }
+
+        #compare-v2-root .when-to-choose-section .testimonial-rating {
+            margin-left: 0.5rem;
             font-size: 0.875rem;
             font-weight: 500;
+            color: hsl(220 10% 45%);
         }
 
-        #compare-page .badge-success {
-            background: #d1fae5;
-            color: #065f46;
+        #compare-v2-root .when-to-choose-section .testimonial-quote {
+            position: relative;
+            padding-left: 1.5rem;
+            font-style: italic;
+            color: hsl(220 20% 15%);
         }
 
-        #compare-page .badge-warning {
-            background: #fef3c7;
-            color: #92400e;
+        #compare-v2-root .when-to-choose-section .testimonial-quote::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: -0.25rem;
+            height: 1.5rem;
+            width: 1.5rem;
+            color: hsl(16 85% 55% / 0.3);
         }
 
-        #compare-page .badge-neutral {
-            background: #f3f4f6;
-            color: #374151;
+        #compare-v2-root .when-to-choose-section .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 1rem;
         }
 
-        #compare-page .cta-section {
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-            border-radius: 1rem;
-            padding: 3rem 2rem;
-            text-align: center;
-            color: white;
-            margin: 4rem 0;
-        }
-
-        #compare-page .cta-section h2 {
-            font-size: 2.5rem;
+        #compare-v2-root .when-to-choose-section .testimonial-avatar {
+            display: flex;
+            height: 2.5rem;
+            width: 2.5rem;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            background: hsl(220 60% 20% / 0.1);
             font-weight: 700;
-            margin-bottom: 1rem;
-            color: white;
+            color: hsl(220 60% 20%);
         }
 
-        #compare-page .cta-section p {
-            font-size: 1.125rem;
-            margin-bottom: 2rem;
-            opacity: 0.95;
-        }
-
-        #compare-page .cta-button {
-            display: inline-block;
-            background: white;
-            color: #f97316;
-            padding: 1rem 2rem;
-            border-radius: 0.5rem;
+        #compare-v2-root .when-to-choose-section .testimonial-name {
             font-weight: 600;
-            font-size: 1.125rem;
-            text-decoration: none;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            color: hsl(220 20% 15%);
         }
 
-        #compare-page .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+        #compare-v2-root .when-to-choose-section .testimonial-title {
+            font-size: 0.875rem;
+            color: hsl(220 10% 45%);
         }
 
-        #compare-page .faq-section {
-            margin: 4rem 0;
+        /* CTA Section */
+        #compare-v2-root .cta-section {
+            position: relative;
+            overflow: hidden;
+            padding: 4rem 0 6rem;
         }
 
-        #compare-page .faq-section h2 {
-            font-size: 2rem;
+        #compare-v2-root .cta-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: hsl(220 60% 20%);
+        }
+
+        #compare-v2-root .cta-section::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at top right, hsl(16 85% 55% / 0.2), transparent, transparent);
+        }
+
+        #compare-v2-root .cta-section .pattern {
+            position: absolute;
+            inset: 0;
+            opacity: 0.1;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        #compare-v2-root .cta-section .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            position: relative;
+        }
+
+        #compare-v2-root .cta-section .content {
+            max-width: 48rem;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        #compare-v2-root .cta-section h2 {
+            font-size: 1.875rem;
             font-weight: 700;
-            color: #1e3a8a;
-            margin-bottom: 0.5rem;
-            text-align: center;
+            color: hsl(40 33% 98%);
+            margin-bottom: 1rem;
         }
 
-        #compare-page .faq-section .faq-subtitle {
-            text-align: center;
-            color: #6b7280;
+        @media (min-width: 768px) {
+            #compare-v2-root .cta-section h2 {
+                font-size: 2.25rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            #compare-v2-root .cta-section h2 {
+                font-size: 3rem;
+            }
+        }
+
+        #compare-v2-root .cta-section .description {
+            font-size: 1.125rem;
+            color: hsl(220 60% 20% / 0.8);
             margin-bottom: 2rem;
         }
 
-        #compare-page .faq-item {
-            background: white;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            border: 1px solid #e5e7eb;
-            overflow: hidden;
-        }
-
-        #compare-page .faq-question {
-            width: 100%;
-            padding: 1.25rem;
-            text-align: left;
-            background: white;
-            border: none;
+        #compare-v2-root .cta-section .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            height: 3rem;
+            border-radius: 0.75rem;
+            padding: 0 2rem;
             font-size: 1rem;
             font-weight: 600;
-            color: #1f2937;
+            background: hsl(16 85% 55%);
+            color: hsl(0 0% 100%);
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 10px 15px -3px hsl(16 85% 55% / 0.25), 0 4px 6px -2px hsl(16 85% 55% / 0.1);
+            transition: all 0.2s;
+        }
+
+        #compare-v2-root .cta-section .cta-button:hover {
+            background: hsl(16 85% 55% / 0.9);
+            box-shadow: 0 20px 25px -5px hsl(16 85% 55% / 0.3), 0 8px 10px -6px hsl(16 85% 55% / 0.15);
+        }
+
+        #compare-v2-root .cta-section .cta-button svg {
+            height: 1.25rem;
+            width: 1.25rem;
+            transition: transform 0.2s;
+        }
+
+        #compare-v2-root .cta-section .cta-button:hover svg {
+            transform: translateX(0.25rem);
+        }
+
+        #compare-v2-root .cta-section .features {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 2rem;
+            font-size: 0.875rem;
+            color: hsl(220 60% 20% / 0.7);
+        }
+
+        #compare-v2-root .cta-section .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #compare-v2-root .cta-section .feature-item svg {
+            height: 1rem;
+            width: 1rem;
+        }
+
+        /* FAQ Section */
+        #compare-v2-root .faq-section {
+            background: linear-gradient(180deg, hsl(40 33% 98%) 0%, hsl(0 0% 100%) 100%);
+            padding: 4rem 0 5rem;
+        }
+
+        #compare-v2-root .faq-section .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        #compare-v2-root .faq-section .content {
+            max-width: 48rem;
+            margin: 0 auto;
+        }
+
+        #compare-v2-root .faq-section h2 {
+            text-align: center;
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: hsl(220 20% 15%);
+            margin-bottom: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            #compare-v2-root .faq-section h2 {
+                font-size: 2.25rem;
+            }
+        }
+
+        #compare-v2-root .faq-section .subtitle {
+            text-align: center;
+            color: hsl(220 10% 45%);
+            margin-bottom: 3rem;
+        }
+
+        #compare-v2-root .faq-section .faq-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        #compare-v2-root .faq-section .faq-item {
+            border-radius: 0.75rem;
+            border: 1px solid hsl(40 20% 88%);
+            background: hsl(0 0% 100%);
+            padding: 0 1.5rem;
+            box-shadow: 0 4px 6px -1px hsl(220 20% 15% / 0.1), 0 2px 4px -1px hsl(220 20% 15% / 0.06);
+            transition: all 0.2s;
+        }
+
+        #compare-v2-root .faq-section .faq-item:hover {
+            box-shadow: 0 10px 15px -3px hsl(220 20% 15% / 0.1), 0 4px 6px -2px hsl(220 20% 15% / 0.05);
+        }
+
+        #compare-v2-root .faq-section .faq-item[data-state="open"] {
+            border-color: hsl(16 85% 55% / 0.3);
+            box-shadow: 0 10px 15px -3px hsl(220 20% 15% / 0.1), 0 4px 6px -2px hsl(220 20% 15% / 0.05);
+        }
+
+        #compare-v2-root .faq-section .faq-trigger {
+            width: 100%;
+            padding: 1.25rem 0;
+            text-align: left;
+            background: none;
+            border: none;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: hsl(220 20% 15%);
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: background 0.2s;
+            transition: color 0.2s;
         }
 
-        #compare-page .faq-question:hover {
-            background: #f9fafb;
+        #compare-v2-root .faq-section .faq-trigger:hover {
+            color: hsl(16 85% 55%);
         }
 
-        #compare-page .faq-question .icon {
-            transition: transform 0.3s;
-            color: #6b7280;
+        #compare-v2-root .faq-section .faq-trigger svg {
+            height: 1rem;
+            width: 1rem;
+            flex-shrink: 0;
+            transition: transform 0.2s;
+            color: hsl(220 10% 45%);
         }
 
-        #compare-page .faq-item.active .faq-question .icon {
+        #compare-v2-root .faq-section .faq-item[data-state="open"] .faq-trigger svg {
             transform: rotate(180deg);
         }
 
-        #compare-page .faq-answer {
-            max-height: 0;
+        #compare-v2-root .faq-section .faq-content {
             overflow: hidden;
-            transition: max-height 0.3s ease-out;
-            padding: 0 1.25rem;
+            transition: max-height 0.2s ease-out;
+            max-height: 0;
         }
 
-        #compare-page .faq-item.active .faq-answer {
+        #compare-v2-root .faq-section .faq-item[data-state="open"] .faq-content {
             max-height: 500px;
-            padding: 0 1.25rem 1.25rem;
         }
 
-        #compare-page .faq-answer p {
-            color: #4b5563;
-            line-height: 1.6;
+        #compare-v2-root .faq-section .faq-answer {
+            padding-bottom: 1.25rem;
+            line-height: 1.75;
+            color: hsl(220 10% 45%);
+        }
+
+        /* Footer Section */
+        #compare-v2-root .footer-section {
+            border-top: 1px solid hsl(40 20% 88%);
+            background: hsl(0 0% 100%);
+            padding: 2rem 0;
+        }
+
+        #compare-v2-root .footer-section .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        #compare-v2-root .footer-section .content {
+            max-width: 48rem;
+            margin: 0 auto;
+        }
+
+        #compare-v2-root .footer-section .footer-top {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            #compare-v2-root .footer-section .footer-top {
+                flex-direction: row;
+                justify-content: space-between;
+                text-align: left;
+            }
+        }
+
+        #compare-v2-root .footer-section .footer-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #compare-v2-root .footer-section .footer-brand-icon {
+            display: flex;
+            height: 2rem;
+            width: 2rem;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            background: hsl(16 85% 55% / 0.1);
+        }
+
+        #compare-v2-root .footer-section .footer-brand-icon span {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: hsl(16 85% 55%);
+        }
+
+        #compare-v2-root .footer-section .footer-brand-text {
+            font-weight: 600;
+            color: hsl(220 20% 15%);
+        }
+
+        #compare-v2-root .footer-section .footer-links {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            font-size: 0.875rem;
+            color: hsl(220 10% 45%);
+        }
+
+        #compare-v2-root .footer-section .footer-link {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            color: hsl(220 10% 45%);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        #compare-v2-root .footer-section .footer-link:hover {
+            color: hsl(16 85% 55%);
+        }
+
+        #compare-v2-root .footer-section .footer-link svg {
+            height: 0.75rem;
+            width: 0.75rem;
+        }
+
+        #compare-v2-root .footer-section .footer-bottom {
+            border-top: 1px solid hsl(40 20% 88%);
+            padding-top: 1.5rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: hsl(220 10% 45%);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @media (max-width: 768px) {
-            #compare-page .hero-section h1 {
-                font-size: 2rem;
+            #compare-v2-root .hero-section h1 {
+                font-size: 1.875rem;
             }
 
-            #compare-page .comparison-table {
+            #compare-v2-root .comparison-section .table-wrapper {
                 overflow-x: auto;
             }
 
-            #compare-page .cta-section h2 {
+            #compare-v2-root .cta-section h2 {
                 font-size: 1.875rem;
             }
         }
@@ -619,12 +1603,6 @@
     </script>
 </head>
 <body class="bg-gray-50 text-gray-900">
-    <!-- COMPARE_V2: on -->
-    <script>
-        // Feature flag: Set to 'on' to enable V2 design, 'off' for original
-        window.COMPARE_V2 = 'on';
-    </script>
-
     <!-- Header -->
     <header class="bg-white shadow-sm border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -642,126 +1620,894 @@
         </div>
     </header>
 
-    <!-- V2 Design (Lovable-style) -->
-    <main id="compare-page" style="display: none;">
+    <!-- V2 Design (Lovable-style) - EXACT COPY FROM LOVABLE REPO -->
+    <div id="compare-v2-root" style="display: none;">
         <!-- Hero Section -->
         <section class="hero-section">
-            <h1>LienDeadline vs. Levelset: Which Is Right for Material Suppliers?</h1>
-            <p class="subtitle">Compare the two leading mechanics lien deadline solutions. See which one fits your workflow.</p>
+            <div class="bg-decoration-1"></div>
+            <div class="bg-decoration-2"></div>
+            <div class="container">
+                <div class="content">
+                    <div class="badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                        <span>Levelset Alternative</span>
+                    </div>
+                    <h1>
+                        <span class="text-coral">60% Cheaper</span>
+                        <span> & </span>
+                        <span class="text-navy">10x Faster</span>
+                    </h1>
+                    <p class="subtitle">LienDeadline vs. Levelset: Which Is Right for Material Suppliers?</p>
+                    
+                    <!-- Speed Comparison Visual -->
+                    <div class="speed-comparison">
+                        <h3>Speed Comparison</h3>
+                        <div class="speed-bar">
+                            <div class="speed-bar-header">
+                                <div class="speed-bar-label">
+                                    <div class="speed-bar-icon">
+                                        <span>LD</span>
+                                    </div>
+                                    <span class="speed-bar-name">LienDeadline</span>
+                                </div>
+                                <div class="speed-bar-value">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                    </svg>
+                                    <span>0.3s</span>
+                                </div>
+                            </div>
+                            <div class="speed-bar-track">
+                                <div class="speed-bar-fill" id="speed-bar-ld"></div>
+                            </div>
+                        </div>
+                        <div class="speed-bar">
+                            <div class="speed-bar-header">
+                                <div class="speed-bar-label">
+                                    <div class="speed-bar-icon ls">
+                                        <span>LS</span>
+                                    </div>
+                                    <span class="speed-bar-name">Levelset</span>
+                                </div>
+                                <div class="speed-bar-value ls">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                    <span>30-60s</span>
+                                </div>
+                            </div>
+                            <div class="speed-bar-track">
+                                <div class="speed-bar-fill ls" id="speed-bar-ls"></div>
+                            </div>
+                        </div>
+                        <div class="speed-badge">
+                            <div class="speed-badge-inner">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                </svg>
+                                <span>100x Faster Response</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
-        <!-- Comparison Table -->
-        <section class="comparison-table">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Feature</th>
-                        <th>LienDeadline</th>
-                        <th>Levelset</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>Speed</strong></td>
-                        <td><span class="badge badge-success">0.3 seconds</span><br><small>API response time</small></td>
-                        <td><span class="badge badge-neutral">30-60 seconds</span><br><small>Manual form filling</small></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Price</strong></td>
-                        <td><span class="badge badge-success">$299/month</span><br><small>Per branch, unlimited API calls</small></td>
-                        <td><span class="badge badge-neutral">$750+/month</span><br><small>Per user, varies by plan</small></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Fields Required</strong></td>
-                        <td><span class="badge badge-success">3 fields</span><br><small>Invoice date, state, role</small></td>
-                        <td><span class="badge badge-neutral">10+ fields</span><br><small>Project details, parties, dates</small></td>
-                    </tr>
-                    <tr>
-                        <td><strong>API Access</strong></td>
-                        <td><span class="badge badge-success">✅ Yes</span><br><small>REST API for integration</small></td>
-                        <td><span class="badge badge-neutral">❌ No</span><br><small>Web-based platform only</small></td>
-                    </tr>
-                    <tr>
-                        <td><strong>States Supported</strong></td>
-                        <td><span class="badge badge-warning">30+ states</span><br><small>75% of US construction market</small></td>
-                        <td><span class="badge badge-success">All 50 states</span><br><small>Complete coverage</small></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Filing Service</strong></td>
-                        <td><span class="badge badge-neutral">❌ No</span><br><small>Calculation only</small></td>
-                        <td><span class="badge badge-success">✅ Yes</span><br><small>Full-service filing</small></td>
-                    </tr>
-                </tbody>
-            </table>
+        <!-- Disclaimer Section -->
+        <section class="disclaimer-section">
+            <div class="container">
+                <div class="content">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <p>
+                        <strong>Disclaimer:</strong> "Levelset" is a registered trademark of Levelset, Inc. 
+                        This comparison is based on publicly available information from Levelset's website, pricing pages, 
+                        and product documentation as of January 2025. LienDeadline is an independent service and is not 
+                        affiliated with Levelset, Inc. All comparisons are verifiable from public sources.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Answer Section -->
+        <section class="quick-answer-section">
+            <div class="container">
+                <div class="content">
+                    <h2>Quick Answer</h2>
+                    <div class="answers">
+                        <div class="answer-item accent">
+                            <div class="answer-icon accent">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                            </div>
+                            <p class="answer-text">
+                                <strong>Choose LienDeadline</strong>
+                                <span class="muted"> if you need API integration, speed (0.3s response), and lower cost ($299/month vs $750+/month)</span>
+                            </p>
+                        </div>
+                        <div class="answer-item normal">
+                            <div class="answer-icon normal">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </div>
+                            <p class="answer-text normal">
+                                <strong>Choose Levelset</strong>
+                                <span class="muted"> if you need full-service lien filing, all 50 states, and don't need API access</span>
+                            </p>
+                        </div>
+                        <div class="answer-item accent">
+                            <div class="answer-icon accent">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                            </div>
+                            <p class="answer-text">
+                                <strong>Best for material suppliers:</strong>
+                                <span class="muted"> LienDeadline (API-first, faster, cheaper, perfect for high-volume calculations)</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Feature Comparison Table -->
+        <section class="comparison-section">
+            <div class="container">
+                <div class="content">
+                    <h2>Feature Comparison</h2>
+                    <p class="subtitle">See how LienDeadline stacks up against Levelset</p>
+                    
+                    <!-- Desktop Table -->
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Feature</th>
+                                    <th class="center">
+                                        <div class="badge-header coral">
+                                            <span>LienDeadline</span>
+                                        </div>
+                                    </th>
+                                    <th class="center">
+                                        <div class="badge-header muted">
+                                            <span>Levelset</span>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div class="feature-name">
+                                            <div class="feature-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                                </svg>
+                                            </div>
+                                            <span class="feature-name-text">Speed</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="feature-value">
+                                            <div class="feature-value-inner">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon coral">
+                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                                </svg>
+                                                <span class="feature-value-text">0.3 seconds</span>
+                                            </div>
+                                            <span class="feature-subtitle">API response time</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="feature-value">
+                                            <div class="feature-value-inner">
+                                                <span class="feature-value-text normal">30-60 seconds</span>
+                                            </div>
+                                            <span class="feature-subtitle">Manual form filling</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="feature-name">
+                                            <div class="feature-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <line x1="14" y1="2" x2="14" y2="22"></line>
+                                                    <path d="M4 7h16M4 12h16M4 17h16"></path>
+                                                </svg>
+                                            </div>
+                                            <span class="feature-name-text">Fields Required</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="feature-value">
+                                            <div class="feature-value-inner">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon coral">
+                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                                </svg>
+                                                <span class="feature-value-text">3 fields</span>
+                                            </div>
+                                            <span class="feature-subtitle">Invoice date, state, role</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="feature-value">
+                                            <div class="feature-value-inner">
+                                                <span class="feature-value-text normal">10+ fields</span>
+                                            </div>
+                                            <span class="feature-subtitle">Project details, parties, dates</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="feature-name">
+                                            <div class="feature-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                                </svg>
+                                            </div>
+                                            <span class="feature-name-text">Price</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="feature-value">
+                                            <div class="feature-value-inner">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon coral">
+                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                                </svg>
+                                                <span class="feature-value-text">$299/month</span>
+                                            </div>
+                                            <span class="feature-subtitle">Per branch, unlimited API calls</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="feature-value">
+                                            <div class="feature-value-inner">
+                                                <span class="feature-value-text normal">$750+/month</span>
+                                            </div>
+                                            <span class="feature-subtitle">Per user, varies by plan</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="feature-name">
+                                            <div class="feature-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                                    <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                                                </svg>
+                                            </div>
+                                            <span class="feature-name-text">Mobile-Friendly</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="feature-value">
+                                            <div class="feature-value-inner">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon success">
+                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                                </svg>
+                                                <span class="feature-value-text">API-first</span>
+                                            </div>
+                                            <span class="feature-subtitle">Works on any device</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="feature-value">
+                                            <div class="feature-value-inner">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon warning">
+                                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                                                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                                </svg>
+                                                <span class="feature-value-text normal">Web-based</span>
+                                            </div>
+                                            <span class="feature-subtitle">Requires browser</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="feature-name">
+                                            <div class="feature-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                                                    <circle cx="12" cy="10" r="3"></circle>
+                                                </svg>
+                                            </div>
+                                            <span class="feature-name-text">States Supported</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="feature-value">
+                                            <div class="feature-value-inner">
+                                                <span class="feature-value-text normal">30+ states</span>
+                                            </div>
+                                            <span class="feature-subtitle">75% of US construction market</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="feature-value">
+                                            <div class="feature-value-inner">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon success">
+                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                                </svg>
+                                                <span class="feature-value-text normal">All 50 states</span>
+                                            </div>
+                                            <span class="feature-subtitle">Complete coverage</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="feature-name">
+                                            <div class="feature-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                                </svg>
+                                            </div>
+                                            <span class="feature-name-text">Filing Service</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="feature-value">
+                                            <div class="feature-value-inner">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon destructive">
+                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                </svg>
+                                                <span class="feature-value-text normal">No</span>
+                                            </div>
+                                            <span class="feature-subtitle">Calculation only</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="feature-value">
+                                            <div class="feature-value-inner">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon success">
+                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                                </svg>
+                                                <span class="feature-value-text normal">Yes</span>
+                                            </div>
+                                            <span class="feature-subtitle">Full-service filing</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mobile Cards -->
+                    <div class="mobile-cards">
+                        <div class="mobile-card">
+                            <div class="mobile-card-header">
+                                <div class="feature-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                    </svg>
+                                </div>
+                                <span class="feature-name-text">Speed</span>
+                            </div>
+                            <div class="mobile-card-values">
+                                <div class="mobile-value-box coral">
+                                    <div class="mobile-value-label coral">LienDeadline</div>
+                                    <div class="feature-value-inner">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon coral">
+                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                        </svg>
+                                        <span class="mobile-value-text">0.3 seconds</span>
+                                    </div>
+                                    <span class="mobile-value-subtitle">API response time</span>
+                                </div>
+                                <div class="mobile-value-box muted">
+                                    <div class="mobile-value-label muted">Levelset</div>
+                                    <span class="mobile-value-text">30-60 seconds</span>
+                                    <span class="mobile-value-subtitle">Manual form filling</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mobile-card">
+                            <div class="mobile-card-header">
+                                <div class="feature-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="14" y1="2" x2="14" y2="22"></line>
+                                        <path d="M4 7h16M4 12h16M4 17h16"></path>
+                                    </svg>
+                                </div>
+                                <span class="feature-name-text">Fields Required</span>
+                            </div>
+                            <div class="mobile-card-values">
+                                <div class="mobile-value-box coral">
+                                    <div class="mobile-value-label coral">LienDeadline</div>
+                                    <div class="feature-value-inner">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon coral">
+                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                        </svg>
+                                        <span class="mobile-value-text">3 fields</span>
+                                    </div>
+                                    <span class="mobile-value-subtitle">Invoice date, state, role</span>
+                                </div>
+                                <div class="mobile-value-box muted">
+                                    <div class="mobile-value-label muted">Levelset</div>
+                                    <span class="mobile-value-text">10+ fields</span>
+                                    <span class="mobile-value-subtitle">Project details, parties, dates</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mobile-card">
+                            <div class="mobile-card-header">
+                                <div class="feature-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                    </svg>
+                                </div>
+                                <span class="feature-name-text">Price</span>
+                            </div>
+                            <div class="mobile-card-values">
+                                <div class="mobile-value-box coral">
+                                    <div class="mobile-value-label coral">LienDeadline</div>
+                                    <div class="feature-value-inner">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon coral">
+                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                        </svg>
+                                        <span class="mobile-value-text">$299/month</span>
+                                    </div>
+                                    <span class="mobile-value-subtitle">Per branch, unlimited API calls</span>
+                                </div>
+                                <div class="mobile-value-box muted">
+                                    <div class="mobile-value-label muted">Levelset</div>
+                                    <span class="mobile-value-text">$750+/month</span>
+                                    <span class="mobile-value-subtitle">Per user, varies by plan</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mobile-card">
+                            <div class="mobile-card-header">
+                                <div class="feature-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                        <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                                    </svg>
+                                </div>
+                                <span class="feature-name-text">Mobile-Friendly</span>
+                            </div>
+                            <div class="mobile-card-values">
+                                <div class="mobile-value-box coral">
+                                    <div class="mobile-value-label coral">LienDeadline</div>
+                                    <div class="feature-value-inner">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon success">
+                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                        </svg>
+                                        <span class="mobile-value-text">API-first</span>
+                                    </div>
+                                    <span class="mobile-value-subtitle">Works on any device</span>
+                                </div>
+                                <div class="mobile-value-box muted">
+                                    <div class="mobile-value-label muted">Levelset</div>
+                                    <div class="feature-value-inner">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon warning">
+                                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                        </svg>
+                                        <span class="mobile-value-text">Web-based</span>
+                                    </div>
+                                    <span class="mobile-value-subtitle">Requires browser</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mobile-card">
+                            <div class="mobile-card-header">
+                                <div class="feature-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                                        <circle cx="12" cy="10" r="3"></circle>
+                                    </svg>
+                                </div>
+                                <span class="feature-name-text">States Supported</span>
+                            </div>
+                            <div class="mobile-card-values">
+                                <div class="mobile-value-box coral">
+                                    <div class="mobile-value-label coral">LienDeadline</div>
+                                    <span class="mobile-value-text">30+ states</span>
+                                    <span class="mobile-value-subtitle">75% of US construction market</span>
+                                </div>
+                                <div class="mobile-value-box muted">
+                                    <div class="mobile-value-label muted">Levelset</div>
+                                    <div class="feature-value-inner">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon success">
+                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                        </svg>
+                                        <span class="mobile-value-text">All 50 states</span>
+                                    </div>
+                                    <span class="mobile-value-subtitle">Complete coverage</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mobile-card">
+                            <div class="mobile-card-header">
+                                <div class="feature-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                        <polyline points="10 9 9 9 8 9"></polyline>
+                                    </svg>
+                                </div>
+                                <span class="feature-name-text">Filing Service</span>
+                            </div>
+                            <div class="mobile-card-values">
+                                <div class="mobile-value-box coral">
+                                    <div class="mobile-value-label coral">LienDeadline</div>
+                                    <div class="feature-value-inner">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon destructive">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                        <span class="mobile-value-text">No</span>
+                                    </div>
+                                    <span class="mobile-value-subtitle">Calculation only</span>
+                                </div>
+                                <div class="mobile-value-box muted">
+                                    <div class="mobile-value-label muted">Levelset</div>
+                                    <div class="feature-value-inner">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon success">
+                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                        </svg>
+                                        <span class="mobile-value-text">Yes</span>
+                                    </div>
+                                    <span class="mobile-value-subtitle">Full-service filing</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- When to Choose Section -->
+        <section class="when-to-choose-section">
+            <div class="container">
+                <div class="content">
+                    <!-- When to Choose Levelset -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <span>LS</span>
+                            </div>
+                            <h3 class="card-title">When to Choose Levelset</h3>
+                        </div>
+                        <p class="card-description">Levelset is a comprehensive lien management platform. Here's when it makes sense:</p>
+                        <ul class="card-list">
+                            <li class="card-list-item">
+                                <div class="list-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span class="list-text">You need full-service lien filing.</span>
+                                    <p class="list-detail">Levelset handles the entire filing process, including document preparation, notarization, and submission to county recorders.</p>
+                                </div>
+                            </li>
+                            <li class="card-list-item">
+                                <div class="list-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span class="list-text">You work in all 50 states regularly.</span>
+                                    <p class="list-detail">Levelset has complete state coverage, while LienDeadline covers 30+ states (75% of market).</p>
+                                </div>
+                            </li>
+                            <li class="card-list-item">
+                                <div class="list-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span class="list-text">You need project management features.</span>
+                                    <p class="list-detail">Levelset offers project tracking, document management, and team collaboration tools beyond deadline calculation.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- When to Choose LienDeadline -->
+                    <div class="card accent">
+                        <div class="card-header">
+                            <div class="card-icon accent">
+                                <span>LD</span>
+                            </div>
+                            <h3 class="card-title">When to Choose LienDeadline</h3>
+                        </div>
+                        <p class="card-description">LienDeadline is built specifically for material suppliers who need speed, integration, and cost efficiency:</p>
+                        <ul class="card-list">
+                            <li class="card-list-item">
+                                <div class="list-icon accent">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span class="list-text">You need API integration.</span>
+                                    <p class="list-detail">Integrate deadline calculations directly into your ERP, accounting software, or custom applications. No manual data entry required.</p>
+                                </div>
+                            </li>
+                            <li class="card-list-item">
+                                <div class="list-icon accent">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span class="list-text">Speed matters.</span>
+                                    <p class="list-detail">Calculate deadlines in 0.3 seconds vs 30-60 seconds. Process hundreds of invoices per day without slowdown.</p>
+                                </div>
+                            </li>
+                            <li class="card-list-item">
+                                <div class="list-icon accent">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span class="list-text">Cost efficiency is critical.</span>
+                                    <p class="list-detail">At $299/month vs $750+/month, LienDeadline saves $5,400+ per year per branch. For multi-branch operations, savings compound quickly.</p>
+                                </div>
+                            </li>
+                            <li class="card-list-item">
+                                <div class="list-icon accent">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span class="list-text">You handle filing yourself.</span>
+                                    <p class="list-detail">You have in-house legal or use your own attorney. You just need accurate deadline calculations, not filing services.</p>
+                                </div>
+                            </li>
+                        </ul>
+
+                        <!-- Testimonial -->
+                        <div class="testimonial">
+                            <div class="testimonial-stars">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                </svg>
+                                <span class="testimonial-rating">5/5 stars</span>
+                            </div>
+                            <blockquote class="testimonial-quote">
+                                "We process 200+ invoices per day. LienDeadline's API integrates seamlessly with our ERP system. 
+                                We went from spending 2 hours per day on deadline calculations to zero. The $299/month price tag 
+                                pays for itself in the first week."
+                            </blockquote>
+                            <div class="testimonial-author">
+                                <div class="testimonial-avatar">SM</div>
+                                <div>
+                                    <div class="testimonial-name">Sarah M.</div>
+                                    <div class="testimonial-title">Credit Manager, ABC Lumber</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- CTA Section -->
         <section class="cta-section">
-            <h2>Try LienDeadline Free</h2>
-            <p>Get your first 50 calculations free. No credit card required.</p>
-            <a href="/calculator.html?ref=[REF_CODE]" class="cta-button">Start Calculating Now →</a>
-            <p style="font-size: 0.875rem; margin-top: 1rem; opacity: 0.9;">API documentation available • Integrate in minutes</p>
+            <div class="pattern"></div>
+            <div class="container">
+                <div class="content">
+                    <h2>Try LienDeadline Free</h2>
+                    <p class="description">Get your first 50 calculations free. No credit card required.</p>
+                    <a href="/calculator.html?ref=[REF_CODE]" class="cta-button">
+                        Start Calculating Now
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                    <div class="features">
+                        <div class="feature-item">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="16 18 22 12 16 6"></polyline>
+                                <polyline points="8 6 2 12 8 18"></polyline>
+                            </svg>
+                            <span>API documentation available</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span>Integrate in minutes</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg>
+                            <span>0.3s response time</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- FAQ Section -->
         <section class="faq-section">
-            <h2>Frequently Asked Questions</h2>
-            <p class="faq-subtitle">Everything you need to know about choosing between LienDeadline and Levelset</p>
-            
-            <div class="faq-item">
-                <button class="faq-question" onclick="toggleFaq(this)">
-                    <span>Is LienDeadline really 60% cheaper than Levelset?</span>
-                    <span class="icon">▼</span>
-                </button>
-                <div class="faq-answer">
-                    <p>Yes. LienDeadline costs $299/month per branch. Levelset's pricing starts around $750/month per user (based on public pricing pages). That's a 60% savings, or $5,400+ per year per branch.</p>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question" onclick="toggleFaq(this)">
-                    <span>How fast is LienDeadline compared to Levelset?</span>
-                    <span class="icon">▼</span>
-                </button>
-                <div class="faq-answer">
-                    <p>LienDeadline API responds in 0.3 seconds. Levelset requires manual form filling in a web interface, which takes 30-60 seconds per calculation. For high-volume users, this difference adds up to hours saved per day.</p>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question" onclick="toggleFaq(this)">
-                    <span>Does LienDeadline offer filing services like Levelset?</span>
-                    <span class="icon">▼</span>
-                </button>
-                <div class="faq-answer">
-                    <p>No. LienDeadline focuses exclusively on deadline calculation via API. Levelset offers full-service lien filing. If you need filing services, Levelset is the better choice. If you just need accurate deadlines and handle filing yourself, LienDeadline is faster and cheaper.</p>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question" onclick="toggleFaq(this)">
-                    <span>Which states does LienDeadline support?</span>
-                    <span class="icon">▼</span>
-                </button>
-                <div class="faq-answer">
-                    <p>LienDeadline supports 30+ states covering 75% of the US construction market, including California, Texas, Florida, New York, Pennsylvania, and more. Levelset supports all 50 states. If you work exclusively in the top construction markets, LienDeadline covers your needs.</p>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <button class="faq-question" onclick="toggleFaq(this)">
-                    <span>Can I integrate LienDeadline into my existing software?</span>
-                    <span class="icon">▼</span>
-                </button>
-                <div class="faq-answer">
-                    <p>Yes. LienDeadline is API-first and designed for integration into ERP systems, accounting software, and custom applications. Levelset is primarily a web-based platform. If you need programmatic access, LienDeadline is the clear choice.</p>
+            <div class="container">
+                <div class="content">
+                    <h2>Frequently Asked Questions</h2>
+                    <p class="subtitle">Everything you need to know about choosing between LienDeadline and Levelset</p>
+                    
+                    <div class="faq-list">
+                        <div class="faq-item" data-state="closed">
+                            <button class="faq-trigger" onclick="toggleV2Faq(this)">
+                                Is LienDeadline really 60% cheaper than Levelset?
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                            <div class="faq-content">
+                                <p class="faq-answer">Yes. LienDeadline costs $299/month per branch. Levelset's pricing starts around $750/month per user (based on public pricing pages). That's a 60% savings, or $5,400+ per year per branch.</p>
+                            </div>
+                        </div>
+                        <div class="faq-item" data-state="closed">
+                            <button class="faq-trigger" onclick="toggleV2Faq(this)">
+                                How fast is LienDeadline compared to Levelset?
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                            <div class="faq-content">
+                                <p class="faq-answer">LienDeadline API responds in 0.3 seconds. Levelset requires manual form filling in a web interface, which takes 30-60 seconds per calculation. For high-volume users, this difference adds up to hours saved per day.</p>
+                            </div>
+                        </div>
+                        <div class="faq-item" data-state="closed">
+                            <button class="faq-trigger" onclick="toggleV2Faq(this)">
+                                Does LienDeadline offer filing services like Levelset?
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                            <div class="faq-content">
+                                <p class="faq-answer">No. LienDeadline focuses exclusively on deadline calculation via API. Levelset offers full-service lien filing. If you need filing services, Levelset is the better choice. If you just need accurate deadlines and handle filing yourself, LienDeadline is faster and cheaper.</p>
+                            </div>
+                        </div>
+                        <div class="faq-item" data-state="closed">
+                            <button class="faq-trigger" onclick="toggleV2Faq(this)">
+                                Which states does LienDeadline support?
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                            <div class="faq-content">
+                                <p class="faq-answer">LienDeadline supports 30+ states covering 75% of the US construction market, including California, Texas, Florida, New York, Pennsylvania, and more. Levelset supports all 50 states. If you work exclusively in the top construction markets, LienDeadline covers your needs.</p>
+                            </div>
+                        </div>
+                        <div class="faq-item" data-state="closed">
+                            <button class="faq-trigger" onclick="toggleV2Faq(this)">
+                                Can I integrate LienDeadline into my existing software?
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                            <div class="faq-content">
+                                <p class="faq-answer">Yes. LienDeadline is API-first and designed for integration into ERP systems, accounting software, and custom applications. Levelset is primarily a web-based platform. If you need programmatic access, LienDeadline is the clear choice.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
-    </main>
+
+        <!-- Footer Section -->
+        <footer class="footer-section">
+            <div class="container">
+                <div class="content">
+                    <div class="footer-top">
+                        <div class="footer-brand">
+                            <div class="footer-brand-icon">
+                                <span>LD</span>
+                            </div>
+                            <span class="footer-brand-text">LienDeadline.com</span>
+                        </div>
+                        <div class="footer-links">
+                            <a href="https://liendeadline.com" class="footer-link" target="_blank" rel="noopener noreferrer">
+                                Home
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                </svg>
+                            </a>
+                            <a href="https://liendeadline.com/#pricing" class="footer-link" target="_blank" rel="noopener noreferrer">
+                                Pricing
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                </svg>
+                            </a>
+                            <a href="https://liendeadline.com/calculator.html" class="footer-link" target="_blank" rel="noopener noreferrer">
+                                Calculator
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="footer-bottom">
+                        <p>
+                            <strong>Sources:</strong> All pricing and feature information based on publicly available data from Levelset.com 
+                            and LienDeadline.com as of January 2025. Pricing may vary. Contact vendors directly for current pricing.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
 
     <!-- Original Design (V1) -->
-    <main id="compare-v1" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12" style="display: none;">
+    <div id="compare-v1-root" style="display: none;">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <!-- Breadcrumb Navigation -->
         <nav class="breadcrumb" aria-label="Breadcrumb">
             <a href="/">Home</a>
@@ -1101,40 +2847,111 @@
         <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-600">
             <p><strong>Sources:</strong> All comparisons based on publicly available information from Levelset.com pricing pages, product documentation, and feature descriptions as of January 2025. LienDeadline pricing and features verified from current product documentation.</p>
         </div>
-    </main>
+        </main>
+    </div>
 
     <!-- Version Toggle Script -->
     <script>
         (function() {
-            const COMPARE_V2 = window.COMPARE_V2 || 'off';
-            const v2Page = document.getElementById('compare-page');
-            const v1Page = document.getElementById('compare-v1');
+            // Feature flag system: query param > localStorage > default (V2 ON)
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryVersion = urlParams.get('v');
+            const storedVersion = localStorage.getItem('compare_version');
             
-            if (COMPARE_V2 === 'on') {
-                if (v2Page) v2Page.style.display = 'block';
-                if (v1Page) v1Page.style.display = 'none';
-            } else {
-                if (v2Page) v2Page.style.display = 'none';
-                if (v1Page) v1Page.style.display = 'block';
+            let activeVersion = '2'; // Default: V2 ON
+            
+            if (queryVersion === '1' || queryVersion === '2') {
+                activeVersion = queryVersion;
+                localStorage.setItem('compare_version', queryVersion);
+            } else if (storedVersion === '1' || storedVersion === '2') {
+                activeVersion = storedVersion;
             }
+            
+            const v2Root = document.getElementById('compare-v2-root');
+            const v1Root = document.getElementById('compare-v1-root');
+            
+            // Hide both initially to prevent layout shift
+            if (v2Root) v2Root.style.display = 'none';
+            if (v1Root) v1Root.style.display = 'none';
+            
+            // Show selected version after DOM loads
+            document.addEventListener('DOMContentLoaded', function() {
+                if (activeVersion === '2') {
+                    if (v2Root) v2Root.style.display = 'block';
+                    if (v1Root) v1Root.style.display = 'none';
+                    
+                    // Animate speed bars
+                    setTimeout(function() {
+                        const ldBar = document.getElementById('speed-bar-ld');
+                        const lsBar = document.getElementById('speed-bar-ls');
+                        if (ldBar) {
+                            ldBar.classList.add('animated');
+                            ldBar.style.width = '5%';
+                        }
+                        if (lsBar) {
+                            lsBar.classList.add('animated');
+                            setTimeout(function() {
+                                lsBar.style.width = '100%';
+                            }, 300);
+                        }
+                    }, 500);
+                } else {
+                    if (v2Root) v2Root.style.display = 'none';
+                    if (v1Root) v1Root.style.display = 'block';
+                }
+            });
 
-            // FAQ Accordion Toggle
-            window.toggleFaq = function(button) {
+            // V2 FAQ Accordion Toggle
+            window.toggleV2Faq = function(button) {
                 const faqItem = button.closest('.faq-item');
-                const isActive = faqItem.classList.contains('active');
+                const isOpen = faqItem.getAttribute('data-state') === 'open';
                 
                 // Close all FAQ items
-                document.querySelectorAll('#compare-page .faq-item').forEach(item => {
-                    item.classList.remove('active');
+                document.querySelectorAll('#compare-v2-root .faq-item').forEach(item => {
+                    item.setAttribute('data-state', 'closed');
                 });
                 
-                // Open clicked item if it wasn't active
-                if (!isActive) {
-                    faqItem.classList.add('active');
+                // Open clicked item if it wasn't open
+                if (!isOpen) {
+                    faqItem.setAttribute('data-state', 'open');
                 }
             };
         })();
     </script>
+
+    <!-- TESTING SECTION -->
+    <!--
+    HOW TO TEST V1/V2:
+    
+    1. Force V1:
+       - URL: ?v=1
+       - Console: localStorage.setItem('compare_version', '1'); location.reload();
+    
+    2. Force V2:
+       - URL: ?v=2
+       - Console: localStorage.setItem('compare_version', '2'); location.reload();
+    
+    3. Check Console:
+       - Should see: activeVersion = '1' or '2'
+       - Check: document.getElementById('compare-v2-root').style.display
+       - Check: document.getElementById('compare-v1-root').style.display
+    
+    4. Required IDs:
+       - #compare-v2-root (V2 container)
+       - #compare-v1-root (V1 container)
+       - #speed-bar-ld (LienDeadline speed bar)
+       - #speed-bar-ls (Levelset speed bar)
+    
+    5. Test FAQ:
+       - Click FAQ questions in V2
+       - Should toggle open/close
+       - Only one open at a time
+    
+    6. Test Referral Codes:
+       - Add ?ref=TEST123 to URL
+       - Check calculator links have ref=TEST123
+       - Works in both V1 and V2
+    -->
 
     <!-- Footer -->
     <footer class="bg-gray-800 text-white mt-16 py-12">
