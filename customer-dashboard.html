@@ -132,87 +132,233 @@
             </div>
         </div>
 
-        <!-- Calculator Section -->
-        <div id="calculator" class="bg-white rounded-lg shadow p-6 mb-8" data-dashboard="1">
-            <h2 class="text-2xl font-bold mb-4">Deadline Calculator</h2>
-            <p class="text-gray-600 mb-4">Calculate mechanics lien deadlines for any state and project type.</p>
-            
-            <form id="calculatorForm" class="space-y-6">
-                <div class="grid sm:grid-cols-2 gap-6">
-                    <!-- Date Input -->
+        <!-- Deadline Calculator (DASHBOARD INLINE - WORKING) -->
+        <section id="calculator" class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm mb-8">
+            <div class="flex items-start justify-between gap-4 mb-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">Deadline Calculator</h2>
+                    <p class="text-sm text-gray-600 mt-1">Calculate mechanics lien deadlines instantly (unlimited for active customers).</p>
+                </div>
+            </div>
+
+            <form id="dashboardCalculatorForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="invoice_date">Invoice / Delivery Date</label>
+                    <input
+                        id="invoice_date"
+                        name="invoice_date"
+                        type="date"
+                        required
+                        class="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="state">State</label>
+                    <select
+                        id="state"
+                        name="state"
+                        required
+                        class="w-full rounded-md border border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="" selected disabled>Select a state…</option>
+                        <option value="AL">Alabama</option>
+                        <option value="AZ">Arizona</option>
+                        <option value="CA">California</option>
+                        <option value="CO">Colorado</option>
+                        <option value="FL">Florida</option>
+                        <option value="GA">Georgia</option>
+                        <option value="IL">Illinois</option>
+                        <option value="IN">Indiana</option>
+                        <option value="KY">Kentucky</option>
+                        <option value="MA">Massachusetts</option>
+                        <option value="MD">Maryland</option>
+                        <option value="MI">Michigan</option>
+                        <option value="MN">Minnesota</option>
+                        <option value="NC">North Carolina</option>
+                        <option value="NJ">New Jersey</option>
+                        <option value="NV">Nevada</option>
+                        <option value="NY">New York</option>
+                        <option value="OH">Ohio</option>
+                        <option value="OR">Oregon</option>
+                        <option value="PA">Pennsylvania</option>
+                        <option value="SC">South Carolina</option>
+                        <option value="TN">Tennessee</option>
+                        <option value="TX">Texas</option>
+                        <option value="UT">Utah</option>
+                        <option value="VA">Virginia</option>
+                        <option value="WA">Washington</option>
+                        <option value="WI">Wisconsin</option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <button
+                        id="dashboardCalcBtn"
+                        type="submit"
+                        class="w-full rounded-md bg-blue-600 text-white py-3 font-semibold hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                        Calculate Deadlines →
+                    </button>
+                    <p id="dashboardCalcError" class="hidden mt-3 text-sm text-red-600"></p>
+                </div>
+            </form>
+
+            <!-- Results -->
+            <div id="dashboardCalcResults" class="hidden mt-6 border-t border-gray-200 pt-6">
+                <div class="flex items-start justify-between gap-4 flex-wrap">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Invoice / Delivery Date</label>
-                        <input
-                            id="invoice_date"
-                            name="invoice_date"
-                            type="text"
-                            placeholder="MM/DD/YYYY"
-                            class="w-full rounded-md border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                            autocomplete="off"
-                        />
+                        <h3 class="text-lg font-semibold text-gray-900">Results</h3>
+                        <p class="text-sm text-gray-600 mt-1" id="dashboardCalcSummary"></p>
                     </div>
-                    
-                    <!-- State Select -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            State
-                        </label>
-                        <select
-                            id="state"
-                            name="state"
-                            required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                            <option value="">Select a state...</option>
-                            <option value="AL">Alabama</option>
-                            <option value="AZ">Arizona</option>
-                            <option value="CA">California</option>
-                            <option value="CO">Colorado</option>
-                            <option value="FL">Florida</option>
-                            <option value="GA">Georgia</option>
-                            <option value="IL">Illinois</option>
-                            <option value="IN">Indiana</option>
-                            <option value="KY">Kentucky</option>
-                            <option value="MA">Massachusetts</option>
-                            <option value="MD">Maryland</option>
-                            <option value="MI">Michigan</option>
-                            <option value="MN">Minnesota</option>
-                            <option value="NC">North Carolina</option>
-                            <option value="NJ">New Jersey</option>
-                            <option value="NV">Nevada</option>
-                            <option value="NY">New York</option>
-                            <option value="OH">Ohio</option>
-                            <option value="OR">Oregon</option>
-                            <option value="PA">Pennsylvania</option>
-                            <option value="SC">South Carolina</option>
-                            <option value="TN">Tennessee</option>
-                            <option value="TX">Texas</option>
-                            <option value="UT">Utah</option>
-                            <option value="VA">Virginia</option>
-                            <option value="WA">Washington</option>
-                            <option value="WI">Wisconsin</option>
-                        </select>
+
+                    <a
+                        id="dashboardPdfLink"
+                        href="#"
+                        target="_blank"
+                        class="inline-flex items-center justify-center rounded-md bg-orange-600 text-white px-4 py-2 font-semibold hover:bg-orange-700 transition"
+                    >
+                        Download PDF Guide
+                    </a>
+                </div>
+
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="rounded-lg border border-gray-200 p-4">
+                        <div class="text-sm text-gray-600">Preliminary Notice</div>
+                        <div class="mt-1 text-xl font-semibold text-gray-900" id="res_prelim">—</div>
+                    </div>
+                    <div class="rounded-lg border border-gray-200 p-4">
+                        <div class="text-sm text-gray-600">Lien Filing Deadline</div>
+                        <div class="mt-1 text-xl font-semibold text-gray-900" id="res_lien">—</div>
+                    </div>
+                    <div class="rounded-lg border border-gray-200 p-4">
+                        <div class="text-sm text-gray-600">Serve/Notice Requirements</div>
+                        <div class="mt-2 text-sm text-gray-800 whitespace-pre-line" id="res_requirements">—</div>
                     </div>
                 </div>
-                
-                <!-- CTA Button -->
-                <button
-                    type="submit"
-                    id="calculateBtn"
-                    class="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                >
-                    Calculate Deadlines
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                    </svg>
-                </button>
-            </form>
-            
-            <!-- Results Panel -->
-            <div id="calculatorResults" class="hidden mt-6 space-y-4">
-                <!-- Results will be inserted here -->
+
+                <div class="mt-4 rounded-lg bg-gray-50 border border-gray-200 p-4">
+                    <div class="text-sm font-medium text-gray-900">Notes</div>
+                    <div class="mt-1 text-sm text-gray-700 whitespace-pre-line" id="res_notes">—</div>
+                </div>
             </div>
-        </div>
+        </section>
+
+        <script>
+            (function () {
+                const form = document.getElementById("dashboardCalculatorForm");
+                const btn = document.getElementById("dashboardCalcBtn");
+                const err = document.getElementById("dashboardCalcError");
+
+                const resultsWrap = document.getElementById("dashboardCalcResults");
+                const summary = document.getElementById("dashboardCalcSummary");
+                const pdfLink = document.getElementById("dashboardPdfLink");
+
+                const resPrelim = document.getElementById("res_prelim");
+                const resLien = document.getElementById("res_lien");
+                const resReq = document.getElementById("res_requirements");
+                const resNotes = document.getElementById("res_notes");
+
+                function showError(message) {
+                    err.textContent = message || "Something went wrong.";
+                    err.classList.remove("hidden");
+                }
+
+                function clearError() {
+                    err.textContent = "";
+                    err.classList.add("hidden");
+                }
+
+                function getSessionToken() {
+                    // Try common keys (adjust if yours differs)
+                    return (
+                        localStorage.getItem("session_token") ||
+                        localStorage.getItem("sessionToken") ||
+                        sessionStorage.getItem("session_token") ||
+                        sessionStorage.getItem("sessionToken") ||
+                        ""
+                    );
+                }
+
+                function fmtDate(d) {
+                    // d is ISO date string YYYY-MM-DD
+                    try {
+                        const dt = new Date(d + "T00:00:00");
+                        return dt.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+                    } catch {
+                        return d;
+                    }
+                }
+
+                form.addEventListener("submit", async (e) => {
+                    e.preventDefault();
+                    clearError();
+
+                    const invoice_date = document.getElementById("invoice_date").value;
+                    const state = document.getElementById("state").value;
+
+                    if (!invoice_date || !state) {
+                        showError("Please select a date and a state.");
+                        return;
+                    }
+
+                    btn.disabled = true;
+                    btn.textContent = "Calculating…";
+
+                    try {
+                        const token = getSessionToken();
+                        const headers = { "Content-Type": "application/json" };
+                        if (token) headers["Authorization"] = "Bearer " + token;
+
+                        const resp = await fetch("/api/v1/calculate-deadline", {
+                            method: "POST",
+                            headers,
+                            body: JSON.stringify({ invoice_date, state })
+                        });
+
+                        const data = await resp.json();
+                        if (!resp.ok) {
+                            showError(data?.detail || data?.message || "Calculation failed.");
+                            return;
+                        }
+
+                        // These keys may differ depending on your backend response.
+                        // We handle common variants safely:
+                        const prelim = data.preliminary_notice?.deadline || data.preliminary_notice_deadline || data.prelim_notice_deadline || data.preliminary_notice || data.prelim || null;
+                        const lien = data.lien_filing?.deadline || data.lien_filing_deadline || data.lien_deadline || data.lien || null;
+
+                        resPrelim.textContent = prelim ? fmtDate(prelim) : "—";
+                        resLien.textContent = lien ? fmtDate(lien) : "—";
+
+                        const req = data.serving_requirements || data.requirements || data.serve || [];
+                        if (Array.isArray(req)) {
+                            resReq.textContent = req.length ? req.map(x => "• " + x).join("\n") : "—";
+                        } else {
+                            resReq.textContent = req ? String(req) : "—";
+                        }
+
+                        const notes = data.notes || data.warning || data.disclaimer || "";
+                        resNotes.textContent = notes ? String(notes) : "—";
+
+                        summary.textContent = `State: ${state} • Invoice/Delivery: ${fmtDate(invoice_date)}`;
+
+                        // PDF route you already have: /api/v1/guide/{state_code}/pdf
+                        // Pass invoice_date as query so the PDF can be tailored if your backend supports it.
+                        pdfLink.href = `/api/v1/guide/${encodeURIComponent(state)}/pdf?invoice_date=${encodeURIComponent(invoice_date)}`;
+
+                        resultsWrap.classList.remove("hidden");
+                        resultsWrap.scrollIntoView({ behavior: "smooth", block: "start" });
+
+                    } catch (ex) {
+                        showError("Network error. Please try again.");
+                        console.error(ex);
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = "Calculate Deadlines →";
+                    }
+                });
+            })();
+        </script>
 
         <!-- API Key Section -->
         <div class="bg-white rounded-lg shadow p-6 mb-8">
