@@ -215,112 +215,143 @@
             
             <!-- Comparison Cards Grid -->
             <div class="grid md:grid-cols-2 gap-6 mb-8 comparison-grid">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Feature</th>
-                            <th class="px-6 py-4 text-center text-sm font-semibold text-navy">LienDeadline</th>
-                            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">Levelset</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        <!-- Speed -->
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">Speed</td>
-                            <td class="px-6 py-4 text-sm text-center">
+                <!-- Speed -->
+                <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 comparison-card">
+                    <h3 class="font-semibold text-gray-900 mb-4">Speed</h3>
+                    <div class="space-y-4">
+                        <div class="bg-green-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-navy">LienDeadline</span>
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                                     0.3 seconds
                                 </span>
-                                <p class="text-xs text-gray-500 mt-1">API response time</p>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-center">
+                            </div>
+                            <p class="text-xs text-gray-600">API response time</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-gray-700">Levelset</span>
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
                                     30-60 seconds
                                 </span>
-                                <p class="text-xs text-gray-500 mt-1">Manual form filling</p>
-                            </td>
-                        </tr>
-                        <!-- Fields Required -->
-                        <tr class="bg-gray-50">
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">Fields Required</td>
-                            <td class="px-6 py-4 text-sm text-center">
-                                <span class="text-gray-900 font-medium">3 fields</span>
-                                <p class="text-xs text-gray-500 mt-1">Invoice date, state, role</p>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-center">
-                                <span class="text-gray-900 font-medium">10+ fields</span>
-                                <p class="text-xs text-gray-500 mt-1">Project details, parties, dates</p>
-                            </td>
-                        </tr>
-                        <!-- Price -->
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">Price</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="text-coral font-bold text-lg">$299/month</span>
-                                <p class="text-xs text-gray-500 mt-1">Per branch, unlimited API calls</p>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="text-gray-900 font-medium">$750+/month</span>
-                                <p class="text-xs text-gray-500 mt-1">Per user, varies by plan</p>
-                            </td>
-                        </tr>
-                        <!-- Mobile -->
-                        <tr class="bg-gray-50">
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">Mobile-Friendly</td>
-                            <td class="px-6 py-4 text-center">
+                            </div>
+                            <p class="text-xs text-gray-600">Manual form filling</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fields Required -->
+                <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 comparison-card">
+                    <h3 class="font-semibold text-gray-900 mb-4">Fields Required</h3>
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-navy">LienDeadline</span>
+                                <span class="text-gray-900 font-bold">3 fields</span>
+                            </div>
+                            <p class="text-xs text-gray-600">Invoice date, state, role</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-gray-700">Levelset</span>
+                                <span class="text-gray-900 font-bold">10+ fields</span>
+                            </div>
+                            <p class="text-xs text-gray-600">Project details, parties, dates</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Price -->
+                <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-coral comparison-card">
+                    <h3 class="font-semibold text-gray-900 mb-4">Price</h3>
+                    <div class="space-y-4">
+                        <div class="bg-gradient-to-br from-coral/10 to-orange-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-navy">LienDeadline</span>
+                                <span class="text-coral font-bold text-xl">$299/month</span>
+                            </div>
+                            <p class="text-xs text-gray-600">Per branch, unlimited API calls</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-gray-700">Levelset</span>
+                                <span class="text-gray-900 font-bold text-lg">$750+/month</span>
+                            </div>
+                            <p class="text-xs text-gray-600">Per user, varies by plan</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile-Friendly -->
+                <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500 comparison-card">
+                    <h3 class="font-semibold text-gray-900 mb-4">Mobile-Friendly</h3>
+                    <div class="space-y-4">
+                        <div class="bg-green-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-navy">LienDeadline</span>
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                                     ✅ API-first
                                 </span>
-                                <p class="text-xs text-gray-500 mt-1">Works on any device</p>
-                            </td>
-                            <td class="px-6 py-4 text-center">
+                            </div>
+                            <p class="text-xs text-gray-600">Works on any device</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-gray-700">Levelset</span>
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
                                     ⚠️ Web-based
                                 </span>
-                                <p class="text-xs text-gray-500 mt-1">Requires browser</p>
-                            </td>
-                        </tr>
-                        <!-- States -->
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">States Supported</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="text-gray-900 font-medium">30+ states</span>
-                                <p class="text-xs text-gray-500 mt-1">75% of US construction market</p>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="text-gray-900 font-medium">All 50 states</span>
-                                <p class="text-xs text-gray-500 mt-1">Complete coverage</p>
-                            </td>
-                        </tr>
-                        <!-- Filing Service -->
-                        <tr class="bg-gray-50">
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">Filing Service</td>
-                            <td class="px-6 py-4 text-center">
+                            </div>
+                            <p class="text-xs text-gray-600">Requires browser</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- States Supported -->
+                <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-indigo-500 comparison-card">
+                    <h3 class="font-semibold text-gray-900 mb-4">States Supported</h3>
+                    <div class="space-y-4">
+                        <div class="bg-indigo-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-navy">LienDeadline</span>
+                                <span class="text-gray-900 font-bold">30+ states</span>
+                            </div>
+                            <p class="text-xs text-gray-600">75% of US construction market</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-gray-700">Levelset</span>
+                                <span class="text-gray-900 font-bold">All 50 states</span>
+                            </div>
+                            <p class="text-xs text-gray-600">Complete coverage</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filing Service -->
+                <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500 comparison-card">
+                    <h3 class="font-semibold text-gray-900 mb-4">Filing Service</h3>
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-navy">LienDeadline</span>
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
                                     ❌ No
                                 </span>
-                                <p class="text-xs text-gray-500 mt-1">Calculation only</p>
-                            </td>
-                            <td class="px-6 py-4 text-center">
+                            </div>
+                            <p class="text-xs text-gray-600">Calculation only</p>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-gray-700">Levelset</span>
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                                     ✅ Yes
                                 </span>
-                                <p class="text-xs text-gray-500 mt-1">Full-service filing</p>
-                            </td>
-                        </tr>
-                        <!-- Target User -->
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">Target User</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="text-gray-900 font-medium">Material suppliers</span>
-                                <p class="text-xs text-gray-500 mt-1">High-volume, API integration</p>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="text-gray-900 font-medium">General contractors</span>
-                                <p class="text-xs text-gray-500 mt-1">Full-service needs</p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                            </div>
+                            <p class="text-xs text-gray-600">Full-service filing</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
