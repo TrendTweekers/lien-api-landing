@@ -143,6 +143,61 @@
                 </div>
             </div>
             
+            <!-- Marketing Materials -->
+            <div class="bg-white rounded-lg shadow p-6 mb-8">
+                <h3 class="text-xl font-bold mb-4">📬 Copy-Paste Marketing</h3>
+                <p class="text-gray-600 text-sm mb-6">Ready-to-use templates for email, LinkedIn, and SMS. All templates include your referral link.</p>
+                
+                <!-- Email Template -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-sm font-semibold text-gray-700">Email Template</label>
+                        <div class="flex gap-2">
+                            <button onclick="copyEmail()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                                Copy to Clipboard
+                            </button>
+                            <a id="emailClientLink" href="#" onclick="emailClient(event)" class="bg-coral hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm">
+                                📧 Email a Client
+                            </a>
+                        </div>
+                    </div>
+                    <textarea id="emailTemplate" readonly rows="12" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm"></textarea>
+                </div>
+                
+                <!-- LinkedIn Template -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-sm font-semibold text-gray-700">LinkedIn Post (280 characters)</label>
+                        <div class="flex gap-2">
+                            <button onclick="copyLinkedIn()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                                Copy to Clipboard
+                            </button>
+                            <a id="linkedInShareLink" href="#" target="_blank" class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm">
+                                💼 Share on LinkedIn
+                            </a>
+                        </div>
+                    </div>
+                    <textarea id="linkedInTemplate" readonly rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">
+                        <span id="linkedInCharCount">0</span>/280 characters
+                    </p>
+                </div>
+                
+                <!-- SMS Template -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-sm font-semibold text-gray-700">SMS Text (160 characters)</label>
+                        <button onclick="copySMS()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                            Copy to Clipboard
+                        </button>
+                    </div>
+                    <textarea id="smsTemplate" readonly rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">
+                        <span id="smsCharCount">0</span>/160 characters
+                    </p>
+                </div>
+            </div>
+            
             <!-- Referrals Table -->
             <div class="bg-white rounded-lg shadow overflow-hidden">
                 <div class="p-6 border-b">
@@ -682,6 +737,9 @@
                 document.getElementById('paidCommissions').textContent = `$${data.total_paid.toFixed(2)}`;
                 document.getElementById('referralLink').value = data.referral_link;
                 
+                // Populate marketing materials
+                populateMarketingMaterials(data.broker_name, data.referral_link, data.referral_code);
+                
                 const commissionText = data.commission_model === 'bounty' 
                     ? '$500 per referral (one-time)' 
                     : '$50/month per referral (recurring)';
@@ -728,6 +786,124 @@
             document.execCommand('copy');
             alert('Referral link copied!');
         }
+        
+        // Marketing Materials Functions
+        let brokerName = '';
+        let referralLink = '';
+        let referralCode = '';
+        
+        function populateMarketingMaterials(name, link, code) {
+            brokerName = name || '[BROKER_NAME]';
+            referralLink = link || '[REF_CODE]';
+            referralCode = code || '[REF_CODE]';
+            
+            // Email Template
+            const emailTemplate = `Subject: Never Miss a Mechanics Lien Deadline Again
+
+Hi [CLIENT_NAME],
+
+I wanted to share a tool that could save your business thousands of dollars.
+
+LienDeadline.com calculates mechanics lien filing deadlines instantly. Building material suppliers lose $1.2 billion per year by missing these critical deadlines.
+
+Here's what makes it valuable:
+• Calculate deadlines in 0.3 seconds (vs 30-60 seconds manually)
+• API integration for your ERP/accounting software
+• $299/month per branch (60% cheaper than alternatives)
+• First 50 calculations free - no credit card required
+
+Try it free: ${referralLink}
+
+If you have questions, feel free to reach out.
+
+Best regards,
+${brokerName}`;
+            
+            document.getElementById('emailTemplate').value = emailTemplate;
+            
+            // LinkedIn Template (280 chars max)
+            const linkedInPost = `🚨 Building suppliers: Missing lien deadlines costs $1.2B/year.
+
+LienDeadline calculates deadlines in 0.3s via API. $299/mo, 60% cheaper than alternatives.
+
+Try free: ${referralLink}
+
+#ConstructionTech #LienManagement`;
+            
+            document.getElementById('linkedInTemplate').value = linkedInPost;
+            document.getElementById('linkedInCharCount').textContent = linkedInPost.length;
+            
+            // SMS Template (160 chars max)
+            const smsText = `Hi! Check out LienDeadline - calculates mechanics lien deadlines instantly. Try free: ${referralLink}`;
+            
+            document.getElementById('smsTemplate').value = smsText;
+            document.getElementById('smsCharCount').textContent = smsText.length;
+            
+            // Update email client link
+            const emailSubject = encodeURIComponent('Never Miss a Mechanics Lien Deadline Again');
+            const emailBody = encodeURIComponent(emailTemplate.replace('[CLIENT_NAME]', ''));
+            document.getElementById('emailClientLink').href = `mailto:?subject=${emailSubject}&body=${emailBody}`;
+            
+            // Update LinkedIn share link
+            const linkedInUrl = encodeURIComponent(referralLink);
+            const linkedInText = encodeURIComponent(linkedInPost);
+            document.getElementById('linkedInShareLink').href = `https://www.linkedin.com/sharing/share-offsite/?url=${linkedInUrl}`;
+        }
+        
+        async function copyEmail() {
+            const textarea = document.getElementById('emailTemplate');
+            try {
+                await navigator.clipboard.writeText(textarea.value);
+                alert('Email template copied to clipboard!');
+            } catch (err) {
+                // Fallback for older browsers
+                textarea.select();
+                document.execCommand('copy');
+                alert('Email template copied to clipboard!');
+            }
+        }
+        
+        async function copyLinkedIn() {
+            const textarea = document.getElementById('linkedInTemplate');
+            try {
+                await navigator.clipboard.writeText(textarea.value);
+                alert('LinkedIn post copied to clipboard!');
+            } catch (err) {
+                // Fallback for older browsers
+                textarea.select();
+                document.execCommand('copy');
+                alert('LinkedIn post copied to clipboard!');
+            }
+        }
+        
+        async function copySMS() {
+            const textarea = document.getElementById('smsTemplate');
+            try {
+                await navigator.clipboard.writeText(textarea.value);
+                alert('SMS text copied to clipboard!');
+            } catch (err) {
+                // Fallback for older browsers
+                textarea.select();
+                document.execCommand('copy');
+                alert('SMS text copied to clipboard!');
+            }
+        }
+        
+        function emailClient(e) {
+            e.preventDefault();
+            // mailto link is already set up in populateMarketingMaterials
+            window.location.href = document.getElementById('emailClientLink').href;
+        }
     </script>
+    
+    <style>
+        /* Coral accent color */
+        .bg-coral {
+            background-color: #f97316;
+        }
+        .hover\:bg-orange-600:hover {
+            background-color: #ea580c;
+        }
+    </style>
 </body>
 </html>
