@@ -351,36 +351,6 @@
             }
         }
         
-        // Date picker sync for dashboard calculator
-        window.addEventListener('DOMContentLoaded', function() {
-            const datePicker = document.getElementById('invoiceDatePicker');
-            const dateDisplay = document.getElementById('invoiceDateDisplay');
-            
-            if (datePicker && dateDisplay) {
-                datePicker.addEventListener('change', function() {
-                    const date = new Date(this.value);
-                    if (!isNaN(date.getTime())) {
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        const year = date.getFullYear();
-                        dateDisplay.value = `${month}/${day}/${year}`;
-                    }
-                });
-                
-                dateDisplay.addEventListener('input', function() {
-                    const value = this.value.replace(/\D/g, '');
-                    if (value.length >= 8) {
-                        const month = value.substring(0, 2);
-                        const day = value.substring(2, 4);
-                        const year = value.substring(4, 8);
-                        if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900) {
-                            datePicker.value = `${year}-${month}-${day}`;
-                        }
-                    }
-                });
-            }
-        });
-        
         // Dashboard-specific displayResults function
         window.displayResults = function(data) {
             let prelimNotice = 'N/A';
