@@ -98,12 +98,22 @@
         }
         .timeline-line {
             position: absolute;
-            top: 1.5rem;
+            top: 1rem;
             left: 0;
             right: 0;
             height: 0.25rem;
             background: #e5e7eb;
             z-index: 1;
+        }
+        @media (min-width: 768px) {
+            .timeline-line {
+                display: block;
+            }
+        }
+        @media (max-width: 767px) {
+            .timeline-line {
+                display: none;
+            }
         }
         .timeline-points {
             position: relative;
@@ -171,49 +181,50 @@
             border-radius: 0.75rem;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             padding: 1.5rem;
-            border-left-width: 4px;
+            border-width: 2px;
+            border-style: solid;
             transition: all 0.3s ease;
         }
         .comparison-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
         }
         .comparison-card.speed {
-            border-left-color: var(--green);
+            border-color: var(--green);
         }
         .comparison-card.speed:hover {
-            border-left-color: #059669;
+            border-color: #059669;
         }
         .comparison-card.fields {
-            border-left-color: #3b82f6;
+            border-color: #3b82f6;
         }
         .comparison-card.fields:hover {
-            border-left-color: #2563eb;
+            border-color: #2563eb;
         }
         .comparison-card.price {
-            border-left-color: var(--coral);
+            border-color: var(--coral);
             background: linear-gradient(to bottom right, white, var(--coral-light));
         }
         .comparison-card.price:hover {
-            border-left-color: var(--coral-dark);
+            border-color: var(--coral-dark);
         }
         .comparison-card.mobile {
-            border-left-color: #a855f7;
+            border-color: #a855f7;
         }
         .comparison-card.mobile:hover {
-            border-left-color: #9333ea;
+            border-color: #9333ea;
         }
         .comparison-card.states {
-            border-left-color: #6366f1;
+            border-color: #6366f1;
         }
         .comparison-card.states:hover {
-            border-left-color: #4f46e5;
+            border-color: #4f46e5;
         }
         .comparison-card.filing {
-            border-left-color: var(--red);
+            border-color: var(--red);
         }
         .comparison-card.filing:hover {
-            border-left-color: #b91c1c;
+            border-color: #b91c1c;
         }
 
         /* CTA button styling */
