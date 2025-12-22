@@ -4995,18 +4995,18 @@ async def broker_dashboard(request: Request, email: str):
                     ORDER BY created_at DESC
                 """, (referral_code,))
             else:
-            cursor.execute("""
-                SELECT 
-                    customer_email,
-                    amount,
-                    payout,
-                    payout_type,
-                    status,
-                    created_at
-                FROM referrals
-                WHERE broker_id = ?
-                ORDER BY created_at DESC
-            """, (referral_code,))
+                cursor.execute("""
+                    SELECT 
+                        customer_email,
+                        amount,
+                        payout,
+                        payout_type,
+                        status,
+                        created_at
+                    FROM referrals
+                    WHERE broker_id = ?
+                    ORDER BY created_at DESC
+                """, (referral_code,))
             
             referrals = []
             total_pending = 0
