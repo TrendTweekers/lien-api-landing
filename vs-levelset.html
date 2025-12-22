@@ -352,6 +352,220 @@
                 margin-bottom: 4rem;
             }
         }
+
+        /* ============================================
+           V2 DESIGN - SCOPED TO #compare-page
+           ============================================ */
+        #compare-page {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        #compare-page .hero-section {
+            text-align: center;
+            padding: 4rem 0 3rem;
+        }
+
+        #compare-page .hero-section h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        #compare-page .hero-section .subtitle {
+            font-size: 1.25rem;
+            color: #4b5563;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+        }
+
+        #compare-page .comparison-table {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin: 3rem 0;
+        }
+
+        #compare-page .comparison-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #compare-page .comparison-table thead {
+            background: #f9fafb;
+        }
+
+        #compare-page .comparison-table th {
+            padding: 1.25rem;
+            text-align: left;
+            font-weight: 600;
+            color: #1f2937;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        #compare-page .comparison-table td {
+            padding: 1.25rem;
+            border-bottom: 1px solid #e5e7eb;
+            color: #374151;
+        }
+
+        #compare-page .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        #compare-page .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        #compare-page .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        #compare-page .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        #compare-page .badge-neutral {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        #compare-page .cta-section {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            border-radius: 1rem;
+            padding: 3rem 2rem;
+            text-align: center;
+            color: white;
+            margin: 4rem 0;
+        }
+
+        #compare-page .cta-section h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: white;
+        }
+
+        #compare-page .cta-section p {
+            font-size: 1.125rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        #compare-page .cta-button {
+            display: inline-block;
+            background: white;
+            color: #f97316;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1.125rem;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        #compare-page .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+        }
+
+        #compare-page .faq-section {
+            margin: 4rem 0;
+        }
+
+        #compare-page .faq-section h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        #compare-page .faq-section .faq-subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 2rem;
+        }
+
+        #compare-page .faq-item {
+            background: white;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+        }
+
+        #compare-page .faq-question {
+            width: 100%;
+            padding: 1.25rem;
+            text-align: left;
+            background: white;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1f2937;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        #compare-page .faq-question:hover {
+            background: #f9fafb;
+        }
+
+        #compare-page .faq-question .icon {
+            transition: transform 0.3s;
+            color: #6b7280;
+        }
+
+        #compare-page .faq-item.active .faq-question .icon {
+            transform: rotate(180deg);
+        }
+
+        #compare-page .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            padding: 0 1.25rem;
+        }
+
+        #compare-page .faq-item.active .faq-answer {
+            max-height: 500px;
+            padding: 0 1.25rem 1.25rem;
+        }
+
+        #compare-page .faq-answer p {
+            color: #4b5563;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            #compare-page .hero-section h1 {
+                font-size: 2rem;
+            }
+
+            #compare-page .comparison-table {
+                overflow-x: auto;
+            }
+
+            #compare-page .cta-section h2 {
+                font-size: 1.875rem;
+            }
+        }
     </style>
     
     <!-- FAQ Schema JSON-LD -->
@@ -405,6 +619,12 @@
     </script>
 </head>
 <body class="bg-gray-50 text-gray-900">
+    <!-- COMPARE_V2: on -->
+    <script>
+        // Feature flag: Set to 'on' to enable V2 design, 'off' for original
+        window.COMPARE_V2 = 'on';
+    </script>
+
     <!-- Header -->
     <header class="bg-white shadow-sm border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -422,8 +642,126 @@
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+    <!-- V2 Design (Lovable-style) -->
+    <main id="compare-page" style="display: none;">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <h1>LienDeadline vs. Levelset: Which Is Right for Material Suppliers?</h1>
+            <p class="subtitle">Compare the two leading mechanics lien deadline solutions. See which one fits your workflow.</p>
+        </section>
+
+        <!-- Comparison Table -->
+        <section class="comparison-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>LienDeadline</th>
+                        <th>Levelset</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Speed</strong></td>
+                        <td><span class="badge badge-success">0.3 seconds</span><br><small>API response time</small></td>
+                        <td><span class="badge badge-neutral">30-60 seconds</span><br><small>Manual form filling</small></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Price</strong></td>
+                        <td><span class="badge badge-success">$299/month</span><br><small>Per branch, unlimited API calls</small></td>
+                        <td><span class="badge badge-neutral">$750+/month</span><br><small>Per user, varies by plan</small></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fields Required</strong></td>
+                        <td><span class="badge badge-success">3 fields</span><br><small>Invoice date, state, role</small></td>
+                        <td><span class="badge badge-neutral">10+ fields</span><br><small>Project details, parties, dates</small></td>
+                    </tr>
+                    <tr>
+                        <td><strong>API Access</strong></td>
+                        <td><span class="badge badge-success">✅ Yes</span><br><small>REST API for integration</small></td>
+                        <td><span class="badge badge-neutral">❌ No</span><br><small>Web-based platform only</small></td>
+                    </tr>
+                    <tr>
+                        <td><strong>States Supported</strong></td>
+                        <td><span class="badge badge-warning">30+ states</span><br><small>75% of US construction market</small></td>
+                        <td><span class="badge badge-success">All 50 states</span><br><small>Complete coverage</small></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Filing Service</strong></td>
+                        <td><span class="badge badge-neutral">❌ No</span><br><small>Calculation only</small></td>
+                        <td><span class="badge badge-success">✅ Yes</span><br><small>Full-service filing</small></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <h2>Try LienDeadline Free</h2>
+            <p>Get your first 50 calculations free. No credit card required.</p>
+            <a href="/calculator.html?ref=[REF_CODE]" class="cta-button">Start Calculating Now →</a>
+            <p style="font-size: 0.875rem; margin-top: 1rem; opacity: 0.9;">API documentation available • Integrate in minutes</p>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="faq-section">
+            <h2>Frequently Asked Questions</h2>
+            <p class="faq-subtitle">Everything you need to know about choosing between LienDeadline and Levelset</p>
+            
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    <span>Is LienDeadline really 60% cheaper than Levelset?</span>
+                    <span class="icon">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Yes. LienDeadline costs $299/month per branch. Levelset's pricing starts around $750/month per user (based on public pricing pages). That's a 60% savings, or $5,400+ per year per branch.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    <span>How fast is LienDeadline compared to Levelset?</span>
+                    <span class="icon">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>LienDeadline API responds in 0.3 seconds. Levelset requires manual form filling in a web interface, which takes 30-60 seconds per calculation. For high-volume users, this difference adds up to hours saved per day.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    <span>Does LienDeadline offer filing services like Levelset?</span>
+                    <span class="icon">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>No. LienDeadline focuses exclusively on deadline calculation via API. Levelset offers full-service lien filing. If you need filing services, Levelset is the better choice. If you just need accurate deadlines and handle filing yourself, LienDeadline is faster and cheaper.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    <span>Which states does LienDeadline support?</span>
+                    <span class="icon">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>LienDeadline supports 30+ states covering 75% of the US construction market, including California, Texas, Florida, New York, Pennsylvania, and more. Levelset supports all 50 states. If you work exclusively in the top construction markets, LienDeadline covers your needs.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    <span>Can I integrate LienDeadline into my existing software?</span>
+                    <span class="icon">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Yes. LienDeadline is API-first and designed for integration into ERP systems, accounting software, and custom applications. Levelset is primarily a web-based platform. If you need programmatic access, LienDeadline is the clear choice.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Original Design (V1) -->
+    <main id="compare-v1" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12" style="display: none;">
         <!-- Breadcrumb Navigation -->
         <nav class="breadcrumb" aria-label="Breadcrumb">
             <a href="/">Home</a>
@@ -764,6 +1102,39 @@
             <p><strong>Sources:</strong> All comparisons based on publicly available information from Levelset.com pricing pages, product documentation, and feature descriptions as of January 2025. LienDeadline pricing and features verified from current product documentation.</p>
         </div>
     </main>
+
+    <!-- Version Toggle Script -->
+    <script>
+        (function() {
+            const COMPARE_V2 = window.COMPARE_V2 || 'off';
+            const v2Page = document.getElementById('compare-page');
+            const v1Page = document.getElementById('compare-v1');
+            
+            if (COMPARE_V2 === 'on') {
+                if (v2Page) v2Page.style.display = 'block';
+                if (v1Page) v1Page.style.display = 'none';
+            } else {
+                if (v2Page) v2Page.style.display = 'none';
+                if (v1Page) v1Page.style.display = 'block';
+            }
+
+            // FAQ Accordion Toggle
+            window.toggleFaq = function(button) {
+                const faqItem = button.closest('.faq-item');
+                const isActive = faqItem.classList.contains('active');
+                
+                // Close all FAQ items
+                document.querySelectorAll('#compare-page .faq-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                // Open clicked item if it wasn't active
+                if (!isActive) {
+                    faqItem.classList.add('active');
+                }
+            };
+        })();
+    </script>
 
     <!-- Footer -->
     <footer class="bg-gray-800 text-white mt-16 py-12">
