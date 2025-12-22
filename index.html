@@ -2453,10 +2453,15 @@ function displayResults(data) {
         </div>
         
         <!-- PDF Guide Download -->
-        <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <p class="text-sm text-gray-700">
-                📄 <a href="/api/v1/guide/${stateCode}/pdf" target="_blank" class="text-blue-600 hover:text-blue-800 underline font-medium">Download ${stateCode} Lien Guide (PDF)</a>
+        <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p class="text-sm font-semibold text-gray-900 mb-2">📄 Download Free Guide</p>
+            <p class="text-sm text-gray-700 mb-3">
+                Get your complete ${stateCode} mechanics lien deadline guide with step-by-step instructions.
             </p>
+            <a href="/api/v1/guide/${stateCode}/pdf" target="_blank" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded text-sm transition-colors">
+                Download ${stateCode} Lien Guide (PDF)
+            </a>
+            <p class="text-xs text-gray-500 mt-2">⭐ Trusted by 500+ material suppliers</p>
         </div>
     `;
     
