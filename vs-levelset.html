@@ -43,33 +43,302 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
+        /* Color scheme variables */
+        :root {
+            --navy: #1e3a8a;
+            --coral: #f97316;
+            --coral-light: #fed7aa;
+            --coral-dark: #ea580c;
+            --red: #dc2626;
+            --orange: #f59e0b;
+            --green: #10b981;
+        }
+
+        /* Base styling */
         body {
             font-family: 'Inter', system-ui, sans-serif;
-        }
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'Instrument Serif', serif;
+            color: #1f2937;
         }
         
-        /* Enhanced styling for comparison cards */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Instrument Serif', serif;
+            font-weight: 700;
+        }
+
+        /* Breadcrumb styling */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: #4b5563;
+            margin-bottom: 2rem;
+        }
+        .breadcrumb a {
+            color: #4b5563;
+            transition: color 0.2s;
+        }
+        .breadcrumb a:hover {
+            color: var(--coral);
+        }
+        .breadcrumb .chevron {
+            width: 1rem;
+            height: 1rem;
+            color: #9ca3af;
+        }
+        .breadcrumb .current {
+            color: #1f2937;
+            font-weight: 500;
+        }
+
+        /* Timeline styling */
+        .timeline-container {
+            position: relative;
+            padding: 3rem 0;
+        }
+        .timeline-line {
+            position: absolute;
+            top: 1.5rem;
+            left: 0;
+            right: 0;
+            height: 0.25rem;
+            background: #e5e7eb;
+            z-index: 1;
+        }
+        .timeline-points {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            align-items: center;
+        }
+        @media (min-width: 768px) {
+            .timeline-points {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+        .timeline-marker {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 9999px;
+            border: 4px solid white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .timeline-marker.today {
+            background: var(--coral);
+        }
+        .timeline-marker.preliminary {
+            background: var(--orange);
+        }
+        .timeline-marker.lien {
+            background: var(--red);
+        }
+        .timeline-label {
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+        }
+        .timeline-point {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Comparison cards styling */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+        @media (min-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
         .comparison-card {
-            transition: transform 0.2s, box-shadow 0.2s;
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+            border-left-width: 4px;
+            transition: all 0.3s ease;
         }
         .comparison-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
-        
-        /* Timeline enhancements */
-        @media (max-width: 768px) {
-            .timeline-point {
-                margin-bottom: 2rem;
-            }
+        .comparison-card.speed {
+            border-left-color: var(--green);
         }
-        
-        /* Mobile responsive improvements */
+        .comparison-card.speed:hover {
+            border-left-color: #059669;
+        }
+        .comparison-card.fields {
+            border-left-color: #3b82f6;
+        }
+        .comparison-card.fields:hover {
+            border-left-color: #2563eb;
+        }
+        .comparison-card.price {
+            border-left-color: var(--coral);
+            background: linear-gradient(to bottom right, white, var(--coral-light));
+        }
+        .comparison-card.price:hover {
+            border-left-color: var(--coral-dark);
+        }
+        .comparison-card.mobile {
+            border-left-color: #a855f7;
+        }
+        .comparison-card.mobile:hover {
+            border-left-color: #9333ea;
+        }
+        .comparison-card.states {
+            border-left-color: #6366f1;
+        }
+        .comparison-card.states:hover {
+            border-left-color: #4f46e5;
+        }
+        .comparison-card.filing {
+            border-left-color: var(--red);
+        }
+        .comparison-card.filing:hover {
+            border-left-color: #b91c1c;
+        }
+
+        /* CTA button styling */
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            color: white;
+            background: var(--coral);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .cta-button:hover {
+            background: var(--coral-dark);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-1px);
+        }
+
+        /* Hover effects for interactive elements */
+        .hover-lift {
+            transition: all 0.3s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Color-coded backgrounds */
+        .bg-coral-light {
+            background-color: var(--coral-light);
+        }
+        .bg-coral-dark {
+            background-color: var(--coral-dark);
+        }
+        .bg-navy {
+            background-color: var(--navy);
+        }
+
+        /* Timeline specific styling */
+        .timeline-speed {
+            background: linear-gradient(to right, var(--coral), var(--coral-dark));
+        }
+        .timeline-levelset {
+            background: linear-gradient(to right, var(--red), #b91c1c);
+        }
+
+        /* Enhanced card content styling */
+        .comparison-card h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .comparison-card .feature-box {
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+        .comparison-card .feature-box.liendeadline {
+            background: rgba(16, 185, 129, 0.1);
+        }
+        .comparison-card .feature-box.levelset {
+            background: #f3f4f6;
+        }
+        .comparison-card .feature-label {
+            font-weight: 600;
+            color: var(--navy);
+            margin-bottom: 0.25rem;
+        }
+        .comparison-card .feature-value {
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+
+        /* Mobile responsiveness */
         @media (max-width: 640px) {
             .comparison-grid {
                 grid-template-columns: 1fr;
+            }
+            .timeline-points {
+                flex-direction: column;
+                align-items: center;
+                gap: 2rem;
+            }
+            .timeline-marker {
+                margin: 0.5rem 0;
+            }
+            .comparison-card {
+                padding: 1rem;
+            }
+            h1 {
+                font-size: 1.875rem;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Smooth animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Enhanced section spacing */
+        section {
+            margin-bottom: 3rem;
+        }
+        @media (min-width: 768px) {
+            section {
+                margin-bottom: 4rem;
             }
         }
     </style>
@@ -264,114 +533,114 @@
                 </div>
 
                 <!-- Fields Required -->
-                <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 comparison-card">
-                    <h3 class="font-semibold text-gray-900 mb-4">Fields Required</h3>
+                <div class="comparison-card fields hover-lift fade-in">
+                    <h3>Fields Required</h3>
                     <div class="space-y-4">
-                        <div class="bg-blue-50 rounded-lg p-4">
+                        <div class="feature-box" style="background: rgba(59, 130, 246, 0.1);">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="font-semibold text-navy">LienDeadline</span>
+                                <span class="feature-label">LienDeadline</span>
                                 <span class="text-gray-900 font-bold">3 fields</span>
                             </div>
-                            <p class="text-xs text-gray-600">Invoice date, state, role</p>
+                            <p class="feature-value">Invoice date, state, role</p>
                         </div>
-                        <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="feature-box levelset">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="font-semibold text-gray-700">Levelset</span>
+                                <span class="feature-label" style="color: #374151;">Levelset</span>
                                 <span class="text-gray-900 font-bold">10+ fields</span>
                             </div>
-                            <p class="text-xs text-gray-600">Project details, parties, dates</p>
+                            <p class="feature-value">Project details, parties, dates</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Price -->
-                <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-coral comparison-card">
-                    <h3 class="font-semibold text-gray-900 mb-4">Price</h3>
+                <div class="comparison-card price hover-lift fade-in">
+                    <h3>Price</h3>
                     <div class="space-y-4">
-                        <div class="bg-gradient-to-br from-coral/10 to-orange-50 rounded-lg p-4">
+                        <div class="feature-box" style="background: linear-gradient(to bottom right, var(--coral-light), #fff7ed);">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="font-semibold text-navy">LienDeadline</span>
-                                <span class="text-coral font-bold text-xl">$299/month</span>
+                                <span class="feature-label">LienDeadline</span>
+                                <span style="color: var(--coral); font-weight: 700; font-size: 1.25rem;">$299/month</span>
                             </div>
-                            <p class="text-xs text-gray-600">Per branch, unlimited API calls</p>
+                            <p class="feature-value">Per branch, unlimited API calls</p>
                         </div>
-                        <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="feature-box levelset">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="font-semibold text-gray-700">Levelset</span>
+                                <span class="feature-label" style="color: #374151;">Levelset</span>
                                 <span class="text-gray-900 font-bold text-lg">$750+/month</span>
                             </div>
-                            <p class="text-xs text-gray-600">Per user, varies by plan</p>
+                            <p class="feature-value">Per user, varies by plan</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Mobile-Friendly -->
-                <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500 comparison-card">
-                    <h3 class="font-semibold text-gray-900 mb-4">Mobile-Friendly</h3>
+                <div class="comparison-card mobile hover-lift fade-in">
+                    <h3>Mobile-Friendly</h3>
                     <div class="space-y-4">
-                        <div class="bg-green-50 rounded-lg p-4">
+                        <div class="feature-box liendeadline">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="font-semibold text-navy">LienDeadline</span>
+                                <span class="feature-label">LienDeadline</span>
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                                     ✅ API-first
                                 </span>
                             </div>
-                            <p class="text-xs text-gray-600">Works on any device</p>
+                            <p class="feature-value">Works on any device</p>
                         </div>
-                        <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="feature-box levelset">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="font-semibold text-gray-700">Levelset</span>
+                                <span class="feature-label" style="color: #374151;">Levelset</span>
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
                                     ⚠️ Web-based
                                 </span>
                             </div>
-                            <p class="text-xs text-gray-600">Requires browser</p>
+                            <p class="feature-value">Requires browser</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- States Supported -->
-                <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-indigo-500 comparison-card">
-                    <h3 class="font-semibold text-gray-900 mb-4">States Supported</h3>
+                <div class="comparison-card states hover-lift fade-in">
+                    <h3>States Supported</h3>
                     <div class="space-y-4">
-                        <div class="bg-indigo-50 rounded-lg p-4">
+                        <div class="feature-box" style="background: rgba(99, 102, 241, 0.1);">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="font-semibold text-navy">LienDeadline</span>
+                                <span class="feature-label">LienDeadline</span>
                                 <span class="text-gray-900 font-bold">30+ states</span>
                             </div>
-                            <p class="text-xs text-gray-600">75% of US construction market</p>
+                            <p class="feature-value">75% of US construction market</p>
                         </div>
-                        <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="feature-box levelset">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="font-semibold text-gray-700">Levelset</span>
+                                <span class="feature-label" style="color: #374151;">Levelset</span>
                                 <span class="text-gray-900 font-bold">All 50 states</span>
                             </div>
-                            <p class="text-xs text-gray-600">Complete coverage</p>
+                            <p class="feature-value">Complete coverage</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Filing Service -->
-                <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500 comparison-card">
-                    <h3 class="font-semibold text-gray-900 mb-4">Filing Service</h3>
+                <div class="comparison-card filing hover-lift fade-in">
+                    <h3>Filing Service</h3>
                     <div class="space-y-4">
-                        <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="feature-box levelset">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="font-semibold text-navy">LienDeadline</span>
+                                <span class="feature-label">LienDeadline</span>
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
                                     ❌ No
                                 </span>
                             </div>
-                            <p class="text-xs text-gray-600">Calculation only</p>
+                            <p class="feature-value">Calculation only</p>
                         </div>
-                        <div class="bg-green-50 rounded-lg p-4">
+                        <div class="feature-box liendeadline">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="font-semibold text-gray-700">Levelset</span>
+                                <span class="feature-label" style="color: #374151;">Levelset</span>
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                                     ✅ Yes
                                 </span>
                             </div>
-                            <p class="text-xs text-gray-600">Full-service filing</p>
+                            <p class="feature-value">Full-service filing</p>
                         </div>
                     </div>
                 </div>
