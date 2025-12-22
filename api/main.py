@@ -1780,6 +1780,14 @@ async def serve_customer_dashboard_html(request: Request):
         raise HTTPException(status_code=404, detail="customer-dashboard.html not found in project root")
     return FileResponse(file_path)
 
+@app.get("/vs-levelset.html")
+async def serve_vs_levelset_html():
+    """Serve Levelset comparison page"""
+    file_path = BASE_DIR / "vs-levelset.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="vs-levelset.html not found in project root")
+    return FileResponse(file_path, media_type="text/html")
+
 # Clean URLs (without .html extension)
 @app.get("/calculator")
 async def serve_calculator_clean():
