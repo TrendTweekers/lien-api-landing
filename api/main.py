@@ -733,6 +733,18 @@ app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
 @app.on_event("startup")
 async def startup():
     init_db()
+    
+    # Verify critical HTML files exist
+    critical_files = ["contact.html", "index.html", "terms.html", "admin-dashboard.html"]
+    print("\n=== CRITICAL FILES CHECK ===")
+    for filename in critical_files:
+        file_path = BASE_DIR / filename
+        if file_path.exists():
+            print(f"✅ {filename} found at: {file_path.absolute()}")
+        else:
+            print(f"❌ {filename} NOT FOUND at: {file_path.absolute()}")
+    print("============================\n")
+    
     # Log registered routes for debugging
     print("\n=== REGISTERED ROUTES ===")
     for route in app.routes:
@@ -1979,6 +1991,32 @@ async def serve_vs_levelset_html():
     file_path = BASE_DIR / "vs-levelset.html"
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="vs-levelset.html not found in project root")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/contact.html")
+async def serve_contact_html():
+    """
+    Serve contact page
+    
+    Smoke test:
+    - curl -I http://localhost:8080/contact.html should return 200 and Content-Type: text/html
+    """
+    file_path = BASE_DIR / "contact.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="contact.html not found in project root")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/contact")
+async def serve_contact_clean():
+    """
+    Clean URL: /contact → contact.html
+    
+    Smoke test:
+    - curl -I http://localhost:8080/contact should return 200 and Content-Type: text/html
+    """
+    file_path = BASE_DIR / "contact.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Contact page not found")
     return FileResponse(file_path, media_type="text/html")
 
 # Clean URLs (without .html extension)
