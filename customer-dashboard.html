@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
+    <!-- Lovable Scale Stylesheet (load first) -->
+    <link rel="stylesheet" href="/lovable-scale.css">
     <style>
         /* Calculator iframe responsive styling */
         #calculator iframe {
@@ -131,132 +133,152 @@
             </div>
         </div>
 
-        <!-- Deadline Calculator (DASHBOARD INLINE - WORKING) -->
-        <section id="calculator" class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm mb-8">
-            <div class="flex items-start justify-between gap-4 mb-4">
-                <div>
-                    <h2 class="text-xl font-semibold text-gray-900">Deadline Calculator</h2>
-                    <p class="text-sm text-gray-600 mt-1">Calculate mechanics lien deadlines instantly (unlimited for active customers).</p>
-                </div>
-            </div>
-
-            <form id="dashboardCalculatorForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1" for="invoice_date">Invoice / Delivery Date</label>
-                    <input
-                        id="invoice_date"
-                        name="invoice_date"
-                        type="date"
-                        required
-                        class="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1" for="state">State</label>
-                    <select
-                        id="state"
-                        name="state"
-                        required
-                        class="w-full rounded-md border border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="" selected disabled>Select a state…</option>
-                        <option value="AL">Alabama</option>
-                        <option value="AZ">Arizona</option>
-                        <option value="CA">California</option>
-                        <option value="CO">Colorado</option>
-                        <option value="FL">Florida</option>
-                        <option value="GA">Georgia</option>
-                        <option value="IL">Illinois</option>
-                        <option value="IN">Indiana</option>
-                        <option value="KY">Kentucky</option>
-                        <option value="MA">Massachusetts</option>
-                        <option value="MD">Maryland</option>
-                        <option value="MI">Michigan</option>
-                        <option value="MN">Minnesota</option>
-                        <option value="NC">North Carolina</option>
-                        <option value="NJ">New Jersey</option>
-                        <option value="NV">Nevada</option>
-                        <option value="NY">New York</option>
-                        <option value="OH">Ohio</option>
-                        <option value="OR">Oregon</option>
-                        <option value="PA">Pennsylvania</option>
-                        <option value="SC">South Carolina</option>
-                        <option value="TN">Tennessee</option>
-                        <option value="TX">Texas</option>
-                        <option value="UT">Utah</option>
-                        <option value="VA">Virginia</option>
-                        <option value="WA">Washington</option>
-                        <option value="WI">Wisconsin</option>
-                    </select>
-                </div>
-
-                <div class="md:col-span-2">
+        <!-- Deadline Calculator (DASHBOARD - MATCHES HOMEPAGE) -->
+        <section id="calculator" class="mb-8">
+            <div class="bg-white rounded-3xl shadow-2xl border border-border p-10 lg:p-12">
+                <h2 class="text-xl font-semibold text-gray-900 mb-2">Deadline Calculator</h2>
+                <p class="text-sm text-gray-600 mb-6">Calculate mechanics lien deadlines instantly (unlimited for active customers).</p>
+                
+                <form id="dash_calc_form" class="space-y-8">
+                    <div class="grid sm:grid-cols-2 gap-6">
+                        <!-- Date Input -->
+                        <div>
+                            <label class="block text-lg font-medium text-foreground mb-3">
+                                Invoice / Delivery Date
+                            </label>
+                            <input
+                                id="dash_invoice_date"
+                                name="invoice_date"
+                                type="date"
+                                required
+                                class="w-full h-16 px-5 rounded-xl border-2 border-border bg-white text-foreground text-lg focus:outline-none focus:ring-4 focus:ring-accent/20 focus:border-accent transition-all"
+                            />
+                        </div>
+                        
+                        <!-- State Select -->
+                        <div>
+                            <label class="block text-lg font-medium text-foreground mb-3">
+                                State
+                            </label>
+                            <select
+                                id="dash_state"
+                                name="state"
+                                required
+                                class="w-full h-16 px-5 rounded-xl border-2 border-border bg-white text-foreground text-lg focus:outline-none focus:ring-4 focus:ring-accent/20 focus:border-accent transition-all"
+                            >
+                                <option value="">Select a state...</option>
+                                <option value="AL">Alabama</option>
+                                <option value="AZ">Arizona</option>
+                                <option value="CA">California</option>
+                                <option value="CO">Colorado</option>
+                                <option value="FL">Florida</option>
+                                <option value="GA">Georgia</option>
+                                <option value="IL">Illinois</option>
+                                <option value="IN">Indiana</option>
+                                <option value="KY">Kentucky</option>
+                                <option value="MA">Massachusetts</option>
+                                <option value="MD">Maryland</option>
+                                <option value="MI">Michigan</option>
+                                <option value="MN">Minnesota</option>
+                                <option value="NC">North Carolina</option>
+                                <option value="NJ">New Jersey</option>
+                                <option value="NV">Nevada</option>
+                                <option value="NY">New York</option>
+                                <option value="OH">Ohio</option>
+                                <option value="OR">Oregon</option>
+                                <option value="PA">Pennsylvania</option>
+                                <option value="SC">South Carolina</option>
+                                <option value="TN">Tennessee</option>
+                                <option value="TX">Texas</option>
+                                <option value="UT">Utah</option>
+                                <option value="VA">Virginia</option>
+                                <option value="WA">Washington</option>
+                                <option value="WI">Wisconsin</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- CTA Button -->
                     <button
-                        id="dashboardCalcBtn"
                         type="submit"
-                        class="w-full rounded-md bg-blue-600 text-white py-3 font-semibold hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        id="dash_calc_btn"
+                        class="w-full h-16 px-6 rounded-xl bg-accent text-white font-semibold hover:bg-accent/90 transition-all flex items-center justify-center gap-3 text-xl shadow-lg hover:shadow-xl"
                     >
-                        Calculate Deadlines →
+                        Calculate Deadlines
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
                     </button>
-                    <p id="dashboardCalcError" class="hidden mt-3 text-sm text-red-600"></p>
-                </div>
-            </form>
-
-            <!-- Results -->
-            <div id="dashboardCalcResults" class="hidden mt-6 border-t border-gray-200 pt-6">
-                <div class="flex items-start justify-between gap-4 flex-wrap">
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-900">Results</h3>
-                        <p class="text-sm text-gray-600 mt-1" id="dashboardCalcSummary"></p>
-                    </div>
-
-                    <a
-                        id="dashboardPdfLink"
-                        href="#"
-                        target="_blank"
-                        class="inline-flex items-center justify-center rounded-md bg-orange-600 text-white px-4 py-2 font-semibold hover:bg-orange-700 transition"
-                    >
-                        Download PDF Guide
-                    </a>
-                </div>
-
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="rounded-lg border border-gray-200 p-4">
-                        <div class="text-sm text-gray-600">Preliminary Notice</div>
-                        <div class="mt-1 text-xl font-semibold text-gray-900" id="res_prelim">—</div>
-                    </div>
-                    <div class="rounded-lg border border-gray-200 p-4">
-                        <div class="text-sm text-gray-600">Lien Filing Deadline</div>
-                        <div class="mt-1 text-xl font-semibold text-gray-900" id="res_lien">—</div>
-                    </div>
-                    <div class="rounded-lg border border-gray-200 p-4">
-                        <div class="text-sm text-gray-600">Serve/Notice Requirements</div>
-                        <div class="mt-2 text-sm text-gray-800 whitespace-pre-line" id="res_requirements">—</div>
-                    </div>
-                </div>
-
-                <div class="mt-4 rounded-lg bg-gray-50 border border-gray-200 p-4">
-                    <div class="text-sm font-medium text-gray-900">Notes</div>
-                    <div class="mt-1 text-sm text-gray-700 whitespace-pre-line" id="res_notes">—</div>
+                    <p id="dash_calc_error" class="hidden mt-3 text-sm text-red-600"></p>
+                </form>
+                
+                <!-- Results Panel -->
+                <div id="dash_results" class="hidden mt-10 space-y-6">
+                    <!-- Results will be inserted here -->
                 </div>
             </div>
         </section>
 
         <script>
             (function () {
-                const form = document.getElementById("dashboardCalculatorForm");
-                const btn = document.getElementById("dashboardCalcBtn");
-                const err = document.getElementById("dashboardCalcError");
+                // UTC Date Parsing (CRITICAL - prevents timezone shifting)
+                function parseISODateAsUTC(iso) {
+                    const [y, m, d] = iso.split("-").map(Number);
+                    return new Date(Date.UTC(y, m - 1, d));
+                }
 
-                const resultsWrap = document.getElementById("dashboardCalcResults");
-                const summary = document.getElementById("dashboardCalcSummary");
-                const pdfLink = document.getElementById("dashboardPdfLink");
+                function formatDateUTC(dateStr) {
+                    // Parse as UTC to avoid timezone shifts
+                    const date = parseISODateAsUTC(dateStr);
+                    return new Intl.DateTimeFormat('en-US', {
+                        timeZone: 'UTC',
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    }).format(date);
+                }
 
-                const resPrelim = document.getElementById("res_prelim");
-                const resLien = document.getElementById("res_lien");
-                const resReq = document.getElementById("res_requirements");
-                const resNotes = document.getElementById("res_notes");
+                function formatDateShortUTC(dateStr) {
+                    const date = parseISODateAsUTC(dateStr);
+                    return new Intl.DateTimeFormat('en-US', {
+                        timeZone: 'UTC',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    }).format(date);
+                }
+
+                function getUrgencyColor(urgency) {
+                    switch(urgency) {
+                        case 'critical': return 'border-red-500';
+                        case 'warning': return 'border-yellow-500';
+                        default: return 'border-green-500';
+                    }
+                }
+
+                function getUrgencyTextColor(urgency) {
+                    switch(urgency) {
+                        case 'critical': return 'text-red-600';
+                        case 'warning': return 'text-yellow-600';
+                        default: return 'text-green-600';
+                    }
+                }
+
+                function formatServing(requirement) {
+                    const map = {
+                        'property_owner': 'Property Owner',
+                        'original_contractor': 'Original Contractor',
+                        'direct_contractor': 'Direct Contractor',
+                        'construction_lender': 'Construction Lender'
+                    };
+                    return map[requirement] || requirement;
+                }
+
+                const form = document.getElementById("dash_calc_form");
+                const btn = document.getElementById("dash_calc_btn");
+                const err = document.getElementById("dash_calc_error");
+                const resultsWrap = document.getElementById("dash_results");
 
                 function showError(message) {
                     err.textContent = message || "Something went wrong.";
@@ -269,7 +291,6 @@
                 }
 
                 function getSessionToken() {
-                    // Try common keys (adjust if yours differs)
                     return (
                         localStorage.getItem("session_token") ||
                         localStorage.getItem("sessionToken") ||
@@ -279,22 +300,124 @@
                     );
                 }
 
-                function fmtDate(d) {
-                    // d is ISO date string YYYY-MM-DD
-                    try {
-                        const dt = new Date(d + "T00:00:00");
-                        return dt.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-                    } catch {
-                        return d;
+                function displayDashboardResults(data) {
+                    // Clear previous results
+                    resultsWrap.innerHTML = '';
+
+                    // Preliminary Notice Card
+                    const prelimCard = document.createElement('div');
+                    prelimCard.id = 'dash_prelim_card';
+                    const prelimUrgency = data.preliminary_notice?.urgency || 'normal';
+                    prelimCard.className = `bg-white shadow-lg rounded-lg p-6 border-l-4 ${getUrgencyColor(prelimUrgency)}`;
+                    prelimCard.innerHTML = `
+                        <h3 class="text-xl font-bold mb-4" id="dash_prelim_title">${data.preliminary_notice?.name || 'Preliminary Notice'}</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-600">Deadline</p>
+                                <p class="text-2xl font-bold" id="dash_prelim_date">${data.preliminary_notice?.deadline ? formatDateUTC(data.preliminary_notice.deadline) : 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Days From Now</p>
+                                <p class="text-2xl font-bold ${getUrgencyTextColor(prelimUrgency)}" id="dash_prelim_days">${data.preliminary_notice?.days_from_now || 'N/A'} days</p>
+                            </div>
+                        </div>
+                        <p class="mt-4 text-sm text-gray-600" id="dash_prelim_description">${data.preliminary_notice?.description || ''}</p>
+                    `;
+                    resultsWrap.appendChild(prelimCard);
+
+                    // Lien Filing Card
+                    const lienCard = document.createElement('div');
+                    lienCard.id = 'dash_lien_card';
+                    const lienUrgency = data.lien_filing?.urgency || 'normal';
+                    lienCard.className = `bg-white shadow-lg rounded-lg p-6 border-l-4 ${getUrgencyColor(lienUrgency)}`;
+                    lienCard.innerHTML = `
+                        <h3 class="text-xl font-bold mb-4" id="dash_lien_title">${data.lien_filing?.name || 'Lien Filing Deadline'}</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-600">Deadline</p>
+                                <p class="text-2xl font-bold" id="dash_lien_date">${data.lien_filing?.deadline ? formatDateUTC(data.lien_filing.deadline) : 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Days From Now</p>
+                                <p class="text-2xl font-bold ${getUrgencyTextColor(lienUrgency)}" id="dash_lien_days">${data.lien_filing?.days_from_now || 'N/A'} days</p>
+                            </div>
+                        </div>
+                        <p class="mt-4 text-sm text-gray-600" id="dash_lien_description">${data.lien_filing?.description || ''}</p>
+                    `;
+                    resultsWrap.appendChild(lienCard);
+
+                    // Serving Requirements
+                    if (data.serving_requirements && data.serving_requirements.length > 0) {
+                        const servingDiv = document.createElement('div');
+                        servingDiv.className = 'bg-blue-50 rounded-lg p-6';
+                        servingDiv.innerHTML = '<h4 class="font-bold text-lg mb-3">Must Serve:</h4><ul id="dash_serving_list" class="space-y-2"></ul>';
+                        const servingList = servingDiv.querySelector('#dash_serving_list');
+                        data.serving_requirements.forEach(req => {
+                            const li = document.createElement('li');
+                            li.className = 'flex items-center text-gray-700';
+                            li.innerHTML = `
+                                <svg class="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                ${formatServing(req)}
+                            `;
+                            servingList.appendChild(li);
+                        });
+                        resultsWrap.appendChild(servingDiv);
                     }
+
+                    // Critical Warnings
+                    if (data.critical_warnings && data.critical_warnings.length > 0) {
+                        const warningsDiv = document.createElement('div');
+                        warningsDiv.id = 'dash_warnings_section';
+                        warningsDiv.className = 'bg-red-50 border-l-4 border-red-400 p-6';
+                        warningsDiv.innerHTML = '<h4 class="font-bold text-lg mb-3 text-red-800">⚠️ Critical Warnings:</h4><ul id="dash_warnings_list" class="space-y-2"></ul>';
+                        const warningsList = warningsDiv.querySelector('#dash_warnings_list');
+                        data.critical_warnings.forEach(warning => {
+                            const li = document.createElement('li');
+                            li.className = 'text-red-700 text-sm';
+                            li.textContent = warning;
+                            warningsList.appendChild(li);
+                        });
+                        resultsWrap.appendChild(warningsDiv);
+                    }
+
+                    // Statute Citations
+                    if (data.statute_citations && data.statute_citations.length > 0) {
+                        const citationsDiv = document.createElement('div');
+                        citationsDiv.className = 'bg-gray-50 rounded-lg p-6';
+                        citationsDiv.innerHTML = '<h4 class="font-bold text-lg mb-3">Legal References:</h4><ul id="dash_citations_list" class="space-y-1 text-sm text-gray-600"></ul>';
+                        const citationsList = citationsDiv.querySelector('#dash_citations_list');
+                        data.statute_citations.forEach(citation => {
+                            const li = document.createElement('li');
+                            li.textContent = citation;
+                            citationsList.appendChild(li);
+                        });
+                        resultsWrap.appendChild(citationsDiv);
+                    }
+
+                    // PDF Download Button
+                    const pdfDiv = document.createElement('div');
+                    pdfDiv.className = 'flex flex-col sm:flex-row gap-4';
+                    const stateCode = document.getElementById('dash_state').value.toUpperCase();
+                    pdfDiv.innerHTML = `
+                        <a id="dash_pdf_btn" href="/api/v1/guide/${stateCode}/pdf" target="_blank" class="flex-1 bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition duration-200 text-center">
+                            📄 Download PDF Report
+                        </a>
+                    `;
+                    resultsWrap.appendChild(pdfDiv);
+
+                    // Show results
+                    resultsWrap.classList.remove('hidden');
+                    resultsWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
 
                 form.addEventListener("submit", async (e) => {
                     e.preventDefault();
                     clearError();
 
-                    const invoice_date = document.getElementById("invoice_date").value;
-                    const state = document.getElementById("state").value;
+                    const invoice_date = document.getElementById("dash_invoice_date").value;
+                    const state = document.getElementById("dash_state").value;
 
                     if (!invoice_date || !state) {
                         showError("Please select a date and a state.");
@@ -302,7 +425,7 @@
                     }
 
                     btn.disabled = true;
-                    btn.textContent = "Calculating…";
+                    btn.innerHTML = 'Calculating... <svg class="animate-spin h-5 w-5 inline-block" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
 
                     try {
                         const token = getSessionToken();
@@ -321,39 +444,20 @@
                             return;
                         }
 
-                        // These keys may differ depending on your backend response.
-                        // We handle common variants safely:
-                        const prelim = data.preliminary_notice?.deadline || data.preliminary_notice_deadline || data.prelim_notice_deadline || data.preliminary_notice || data.prelim || null;
-                        const lien = data.lien_filing?.deadline || data.lien_filing_deadline || data.lien_deadline || data.lien || null;
-
-                        resPrelim.textContent = prelim ? fmtDate(prelim) : "—";
-                        resLien.textContent = lien ? fmtDate(lien) : "—";
-
-                        const req = data.serving_requirements || data.requirements || data.serve || [];
-                        if (Array.isArray(req)) {
-                            resReq.textContent = req.length ? req.map(x => "• " + x).join("\n") : "—";
-                        } else {
-                            resReq.textContent = req ? String(req) : "—";
-                        }
-
-                        const notes = data.notes || data.warning || data.disclaimer || "";
-                        resNotes.textContent = notes ? String(notes) : "—";
-
-                        summary.textContent = `State: ${state} • Invoice/Delivery: ${fmtDate(invoice_date)}`;
-
-                        // PDF route you already have: /api/v1/guide/{state_code}/pdf
-                        // Pass invoice_date as query so the PDF can be tailored if your backend supports it.
-                        pdfLink.href = `/api/v1/guide/${encodeURIComponent(state)}/pdf?invoice_date=${encodeURIComponent(invoice_date)}`;
-
-                        resultsWrap.classList.remove("hidden");
-                        resultsWrap.scrollIntoView({ behavior: "smooth", block: "start" });
+                        // Display results using dashboard-specific renderer
+                        displayDashboardResults(data);
 
                     } catch (ex) {
                         showError("Network error. Please try again.");
                         console.error(ex);
                     } finally {
                         btn.disabled = false;
-                        btn.textContent = "Calculate Deadlines →";
+                        btn.innerHTML = `
+                            Calculate Deadlines
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            </svg>
+                        `;
                     }
                 });
             })();
