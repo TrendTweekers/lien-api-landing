@@ -6601,14 +6601,33 @@ async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
                         referrals_exists = False
                     
                     if referrals_exists:
-                        # Get referrals that are ready to pay (status='ready_to_pay' or hold_until has passed)
+                        # Get referrals that are ready to pay
+                        # Try broker_id first, then fallback to referral_code
                         try:
+                            # First, get the broker's referral_code if we need it
+                            broker_referral_code = None
+                            if DB_TYPE == 'postgresql':
+                                cursor.execute("""
+                                    SELECT referral_code FROM brokers WHERE id = %s
+                                """, (broker_id,))
+                            else:
+                                cursor.execute("""
+                                    SELECT referral_code FROM brokers WHERE id = ?
+                                """, (broker_id,))
+                            broker_ref_result = cursor.fetchone()
+                            if broker_ref_result:
+                                if isinstance(broker_ref_result, dict):
+                                    broker_referral_code = broker_ref_result.get('referral_code')
+                                else:
+                                    broker_referral_code = broker_ref_result[0] if len(broker_ref_result) > 0 else None
+                            
+                            # Try querying by broker_id first
                             if DB_TYPE == 'postgresql':
                                 cursor.execute("""
                                     SELECT COALESCE(SUM(payout), 0) as total_commission
                                     FROM referrals
                                     WHERE broker_id = %s 
-                                    AND status IN ('ready_to_pay', 'on_hold')
+                                    AND (status IN ('ready_to_pay', 'on_hold', 'active') OR status IS NULL)
                                     AND (hold_until IS NULL OR hold_until <= NOW())
                                 """, (broker_id,))
                             else:
@@ -6616,18 +6635,44 @@ async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
                                     SELECT COALESCE(SUM(payout), 0) as total_commission
                                     FROM referrals
                                     WHERE broker_id = ? 
-                                    AND status IN ('ready_to_pay', 'on_hold')
+                                    AND (status IN ('ready_to_pay', 'on_hold', 'active') OR status IS NULL)
                                     AND (hold_until IS NULL OR hold_until <= date('now'))
                                 """, (broker_id,))
                             
                             commission_result = cursor.fetchone()
+                            
+                            # If no results with broker_id, try referral_code
+                            if not commission_result or (isinstance(commission_result, dict) and commission_result.get('total_commission', 0) == 0) or (not isinstance(commission_result, dict) and len(commission_result) > 0 and commission_result[0] == 0):
+                                if broker_referral_code:
+                                    if DB_TYPE == 'postgresql':
+                                        cursor.execute("""
+                                            SELECT COALESCE(SUM(payout), 0) as total_commission
+                                            FROM referrals
+                                            WHERE broker_code = %s 
+                                            AND (status IN ('ready_to_pay', 'on_hold', 'active') OR status IS NULL)
+                                            AND (hold_until IS NULL OR hold_until <= NOW())
+                                        """, (broker_referral_code,))
+                                    else:
+                                        cursor.execute("""
+                                            SELECT COALESCE(SUM(payout), 0) as total_commission
+                                            FROM referrals
+                                            WHERE broker_code = ? 
+                                            AND (status IN ('ready_to_pay', 'on_hold', 'active') OR status IS NULL)
+                                            AND (hold_until IS NULL OR hold_until <= date('now'))
+                                        """, (broker_referral_code,))
+                                    commission_result = cursor.fetchone()
+                            
                             if commission_result:
                                 if isinstance(commission_result, dict):
                                     commission_owed = float(commission_result.get('total_commission') or 0)
                                 else:
                                     commission_owed = float(commission_result[0] if len(commission_result) > 0 and commission_result[0] else 0)
+                            
+                            print(f"✅ Broker {broker_id} ({broker_name}): commission_owed = ${commission_owed:.2f}")
                         except Exception as commission_error:
-                            print(f"⚠️ Error calculating commission for broker {broker_id}: {commission_error}")
+                            print(f"⚠️ Error calculating commission for broker {broker_id} ({broker_name}): {commission_error}")
+                            import traceback
+                            traceback.print_exc()
                             commission_owed = 0.0
                     else:
                         print(f"⚠️ Referrals table does not exist, skipping commission calculation")
