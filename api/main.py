@@ -737,11 +737,15 @@ async def startup():
     # Ensure users table exists
     try:
         from api.admin import ensure_users_table
-        ensure_users_table()
-        print("✅ Users table check: OK")
+        created = ensure_users_table()
+        if created:
+            print("✅ Users table created on startup")
+        else:
+            print("✅ Users table check: OK")
     except Exception as e:
-        print(f"⚠️ Users table check failed: {e}")
-        # Don't fail startup if migration fails - it can be run manually
+        error_repr = repr(e)
+        print(f"⚠️ Users table check failed: {error_repr}")
+        # Don't fail startup if migration fails - it can be run manually via /api/admin/migrate-users-table
     
     # Verify critical HTML files exist
     critical_files = ["contact.html", "index.html", "terms.html", "admin-dashboard.html"]
@@ -6460,38 +6464,25 @@ async def migrate_users_table(username: str = Depends(verify_admin)):
     try:
         created = ensure_users_table()
         return {
-            "status": "success",
-            "message": "Users table migration completed successfully",
-            "table_created": created,
-            "note": "Table is ready for use"
+            "status": "ok",
+            "created": created,
+            "message": "Users table migration completed successfully" if created else "Users table already exists"
         }
     except Exception as e:
-        print(f"❌ Migration error: {e}")
+        error_repr = repr(e)
+        error_msg = str(e)
+        # Try to get SQLSTATE if available (PostgreSQL)
+        sqlstate = getattr(e, 'pgcode', None) or getattr(e, 'sqlstate', None)
+        
+        if sqlstate:
+            detail_msg = f"Migration failed: {error_repr} (SQLSTATE: {sqlstate})"
+        else:
+            detail_msg = f"Migration failed: {error_repr}"
+        
+        print(f"❌ Migration error: {detail_msg}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")
-
-@app.get("/api/admin/migrate-users-table")
-async def migrate_users_table(username: str = Depends(verify_admin)):
-    """
-    Migration endpoint to create users table.
-    Safe and idempotent - can be run multiple times.
-    """
-    from api.admin import ensure_users_table
-    
-    try:
-        created = ensure_users_table()
-        return {
-            "status": "success",
-            "message": "Users table migration completed successfully",
-            "table_created": created,
-            "note": "Table is ready for use"
-        }
-    except Exception as e:
-        print(f"❌ Migration error: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=detail_msg)
 
 @app.get("/api/admin/migrate-payment-columns")
 async def migrate_payment_columns(username: str = Depends(verify_admin)):
