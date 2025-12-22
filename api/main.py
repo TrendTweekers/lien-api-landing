@@ -6633,39 +6633,78 @@ async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
                         print(f"⚠️ Referrals table does not exist, skipping commission calculation")
                         commission_owed = 0.0
                     
-                    # Only include if commission > 0
-                    if commission_owed > 0:
+                    # Include broker if commission > 0 OR payment is overdue (even with $0 commission)
+                    # This helps identify brokers who need payment setup
+                    if commission_owed > 0 or next_due < today:
                         # Get payment address based on payment method
                         payment_address = ''
+                        payment_method_display = payment_method or 'Not Set'
+                        
                         if payment_method in ['paypal', 'wise', 'revolut']:
                             payment_address = payment_email or ''
+                            if not payment_address:
+                                payment_method_display = f"{payment_method} (Email Missing)"
                         elif payment_method == 'sepa':
                             payment_address = iban or ''
+                            if not payment_address:
+                                payment_method_display = "SEPA (IBAN Missing)"
+                        elif payment_method == 'swift':
+                            payment_address = iban or ''
+                            if not payment_address:
+                                payment_method_display = "SWIFT (Account Missing)"
                         elif payment_method == 'crypto':
                             payment_address = crypto_wallet or ''
+                            if not payment_address:
+                                payment_method_display = "Crypto (Wallet Missing)"
                         
                         # Calculate days overdue
                         days_overdue = (today - next_due).days if next_due < today else 0
+                        
+                        # Determine payment setup status
+                        payment_setup_complete = bool(
+                            payment_method and (
+                                (payment_method in ['paypal', 'wise', 'revolut'] and payment_email) or
+                                (payment_method in ['sepa', 'swift'] and iban) or
+                                (payment_method == 'crypto' and crypto_wallet)
+                            )
+                        )
                         
                         brokers_ready.append({
                             'id': broker_id,
                             'name': broker_name,
                             'email': broker_email,
                             'commission_owed': round(commission_owed, 2),
-                            'payment_method': payment_method,
+                            'payment_method': payment_method_display,
                             'payment_address': payment_address,
+                            'payment_setup_complete': payment_setup_complete,
                             'next_payment_due': next_due.isoformat(),
                             'days_overdue': days_overdue,
-                            'is_first_payment': is_first_payment
+                            'is_first_payment': is_first_payment,
+                            'needs_setup': not payment_setup_complete and commission_owed > 0
                         })
         
-        # Sort by days overdue (most overdue first), then by commission amount
-        brokers_ready.sort(key=lambda x: (x['days_overdue'], -x['commission_owed']), reverse=True)
+        # Sort by: needs_setup first, then days overdue (most overdue first), then by commission amount
+        brokers_ready.sort(key=lambda x: (
+            not x.get('needs_setup', False),  # needs_setup=True comes first
+            -x['days_overdue'],  # Most overdue first
+            -x['commission_owed']  # Highest commission first
+        ))
+        
+        # Add summary statistics
+        total_commission = sum(b['commission_owed'] for b in brokers_ready)
+        brokers_needing_setup = sum(1 for b in brokers_ready if b.get('needs_setup', False))
+        brokers_overdue = sum(1 for b in brokers_ready if b['days_overdue'] > 0)
         
         return {
             "status": "success",
             "brokers": brokers_ready,
-            "count": len(brokers_ready)
+            "count": len(brokers_ready),
+            "summary": {
+                "total_commission_owed": round(total_commission, 2),
+                "brokers_needing_setup": brokers_needing_setup,
+                "brokers_overdue": brokers_overdue,
+                "brokers_ready_to_pay": len([b for b in brokers_ready if b['commission_owed'] > 0 and b.get('payment_setup_complete', False)])
+            }
         }
         
     except Exception as e:
