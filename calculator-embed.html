@@ -258,6 +258,8 @@
                 <div id="calculatorResults" class="hidden mt-10 space-y-6">
                     <!-- Results will be inserted here -->
                 </div>
+                <!-- Alias for calculator.js compatibility -->
+                <div id="results" class="hidden"></div>
                 
                 <!-- Remaining Counter -->
                 <p class="text-center text-lg text-muted-foreground mt-8">
@@ -421,16 +423,20 @@
             // Show results container
             resultsDiv.classList.remove('hidden');
             
+            // Also show/hide the alias div for calculator.js compatibility
+            const resultsAlias = document.getElementById('results');
+            if (resultsAlias) {
+                resultsAlias.classList.remove('hidden');
+            }
+            
             // Scroll to results (for calculator.js compatibility)
             setTimeout(() => {
                 resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }, 100);
         }
         
-        // Override calculator.js displayResults if it exists
-        if (typeof window.displayResultsOverride === 'undefined') {
-            window.displayResultsOverride = displayResults;
-        }
+        // Override calculator.js displayResults function
+        window.displayResults = displayResults;
     </script>
     
     <!-- Date picker sync script -->
