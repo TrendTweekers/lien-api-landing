@@ -1571,59 +1571,53 @@
                 return;
             }
             
-            // Get current count BEFORE incrementing
-            let calcCount = parseInt(localStorage.getItem('calculationCount') || '0');
-            const userEmail = localStorage.getItem('userEmail');
-            const emailGiven = localStorage.getItem('emailGiven');
-            
-            console.log('🔢 Current calculation count:', calcCount);
-            console.log('📧 User email:', userEmail);
-            console.log('📧 Email given flag:', emailGiven);
-            
-            // Check gates BEFORE incrementing (to allow exactly 3 calculations)
-            // After calc 1: count = 1, check >= 3? No, proceed
-            // After calc 2: count = 2, check >= 3? No, proceed
-            // After calc 3: count = 3, check >= 3? Yes, block (this is the 4th attempt)
-            if (calcCount >= 6) {
-                console.log('🚫 At 6 calculations - showing upgrade modal');
-                const upgradeModal = document.getElementById('upgradeModal');
-                if (upgradeModal) {
-                    upgradeModal.classList.remove('hidden');
-                    upgradeModal.style.display = 'flex';
-                    console.log('✅ Upgrade modal shown');
-                } else {
-                    console.error('❌ upgradeModal element not found!');
-                    alert('Calculation limit reached. Please upgrade to continue.');
-                }
-                return; // Stop here
-            }
-            
-            if (calcCount >= 3 && !userEmail && !emailGiven) {
-                console.log('🚫 At 3 calculations (4th attempt), no email - showing email modal');
-                const emailModal = document.getElementById('emailCaptureModal');
-                if (emailModal) {
-                    emailModal.classList.remove('hidden');
-                    emailModal.style.display = 'flex';
-                    document.body.style.overflow = 'hidden';
-                    console.log('✅ Email modal shown');
-                } else {
-                    console.error('❌ emailCaptureModal element not found!');
-                    alert('Please enter your email to continue with calculations.');
-                }
-                return; // Stop here
-            }
-            
-            // Increment AFTER passing gates (only if proceeding with calculation)
-            calcCount++;
-            localStorage.setItem('calculationCount', calcCount.toString());
-            
-            console.log('🔢 New calculation count:', calcCount);
-            console.log('✅ Proceeding with calculation...');
-            
-            // Update counter display
-            updateCounterDisplay();
+            // SERVER-SIDE TRACKING: Check limits BEFORE calculation
+            console.log('🔒 Checking server-side limits...');
             
             try {
+                // STEP 1: Check limits server-side
+                const trackResponse = await fetch('/api/v1/track-calculation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        state: state,
+                        notice_date: invoiceDate
+                    })
+                });
+                
+                const trackData = await trackResponse.json();
+                
+                // Handle limit reached
+                if (trackData.status === 'limit_reached') {
+                    if (trackData.limit_type === 'before_email') {
+                        console.log('🚫 Limit reached - email required');
+                        const emailModal = document.getElementById('emailCaptureModal');
+                        if (emailModal) {
+                            emailModal.classList.remove('hidden');
+                            emailModal.style.display = 'flex';
+                            document.body.style.overflow = 'hidden';
+                        } else {
+                            alert('Please enter your email to continue with calculations.');
+                        }
+                        return;
+                    } else if (trackData.limit_type === 'upgrade_required') {
+                        console.log('🚫 Limit reached - upgrade required');
+                        const upgradeModal = document.getElementById('upgradeModal');
+                        if (upgradeModal) {
+                            upgradeModal.classList.remove('hidden');
+                            upgradeModal.style.display = 'flex';
+                        } else {
+                            alert('Calculation limit reached. Please upgrade to continue.');
+                        }
+                        return;
+                    }
+                }
+                
+                console.log('✅ Server allows calculation:', trackData);
+                
+                // STEP 2: Proceed with calculation
                 console.log('Calling API with:', {
                     invoice_date: invoiceDate,
                     state: state,
@@ -1645,47 +1639,25 @@
                 console.log('API response status:', response.status);
                 
                 if (!response.ok) {
-                    // Handle 403 errors (rate limit / email gate)
+                    // Handle 403 errors (server-side limit enforcement backup)
                     if (response.status === 403) {
                         try {
                             const errorData = await response.json();
                             console.log('403 error data:', errorData);
                             
-                            // Get current count and email status
-                            const calcCount = parseInt(localStorage.getItem('calculationCount') || '0');
-                            const userEmail = localStorage.getItem('userEmail');
-                            
-                            console.log('Current state:', { calcCount, userEmail });
-                            
-                            // Decision tree:
-                            if (calcCount >= 6) {
-                                // User hit 10 limit - show upgrade modal
-                                showUpgradeModal();
-                            } else if (calcCount >= 3 && !userEmail) {
-                                // User hit 3 limit without email - show email modal
+                            // Check error message to determine which modal to show
+                            if (errorData.detail && errorData.detail.includes('email')) {
                                 showEmailCaptureModal();
+                            } else if (errorData.detail && (errorData.detail.includes('Upgrade') || errorData.detail.includes('6'))) {
+                                showUpgradeModal();
                             } else {
-                                // Fallback - check API error message
-                                if (errorData.detail && (errorData.detail.includes('10') || errorData.detail.includes('Upgrade'))) {
-                                    showUpgradeModal();
-                                } else if (errorData.detail && errorData.detail.includes('email')) {
-                                    showEmailCaptureModal();
-                                } else {
-                                    alert('Calculation limit reached. Please contact support.');
-                                }
+                                alert('Calculation limit reached. Please contact support.');
                             }
                             return;
                         } catch (e) {
                             // If JSON parsing fails, try text
                             const errorText = await response.text();
-                            const calcCount = parseInt(localStorage.getItem('calculationCount') || '0');
-                            const userEmail = localStorage.getItem('userEmail');
-                            
-                            if (calcCount >= 6) {
-                                showUpgradeModal();
-                            } else if (calcCount >= 3 && !userEmail) {
-                                showEmailCaptureModal();
-                            } else if (errorText.includes('email') || errorText.includes('Email')) {
+                            if (errorText.includes('email') || errorText.includes('Email')) {
                                 showEmailCaptureModal();
                             } else {
                                 showUpgradeModal();
@@ -1736,20 +1708,22 @@
                 // Display results using displayResults function (includes timeline)
                 displayResults(data);
                 
-                // INCREMENT CALCULATION COUNT using handleCalculation()
-                const count = handleCalculation();
-                console.log(`📊 Calculation count after handleCalculation(): ${count}`);
-                
-                // Update display (handleCalculation already updates counter, but keep this for compatibility)
-                const countElement = document.getElementById('calculationCount');
-                if (countElement) {
-                    const userEmail = localStorage.getItem('userEmail');
-                    const limit = userEmail ? TOTAL_FREE_CALCULATIONS : CALCULATIONS_BEFORE_EMAIL;
-                    countElement.textContent = `${count} / ${limit}`;
+                // Update counter display from server response
+                if (trackData && trackData.calculation_count !== undefined) {
+                    const countElement = document.getElementById('calculationCount');
+                    if (countElement) {
+                        const limit = trackData.email_provided ? 6 : 3;
+                        countElement.textContent = `${trackData.calculation_count} / ${limit}`;
+                    }
                 }
                 
-                // Note: handleCalculation() already checks for modals and triggers them
-                // Email gate and upgrade modals are also handled by API 403 responses as backup
+                // Check if email gate should appear (based on server response)
+                if (trackData && trackData.email_required && !trackData.email_provided) {
+                    // Store result to show after email is entered
+                    window.pendingCalculationResult = data;
+                    showEmailCaptureModal();
+                    return;
+                }
                 
             } catch (error) {
                 console.error('Full error details:', error);
