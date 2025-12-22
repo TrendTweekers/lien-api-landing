@@ -1,56 +1,68 @@
 // calculator.js
 
-// Usage tracking - check localStorage for calcCount and userEmail
-// CRITICAL: Initialize counter at 0 if not set
-let calcCount = parseInt(localStorage.getItem('calcCount') || '0');
-let userEmail = localStorage.getItem('userEmail') || null;
+// Server-side tracking - no more localStorage counting!
+// Counter is now managed server-side via /api/v1/track-calculation
 
-// Update remaining calculations counter display
-function updateRemainingCounter() {
-    // Refresh values from localStorage
-    calcCount = parseInt(localStorage.getItem('calcCount') || '0');
-    userEmail = localStorage.getItem('userEmail') || null;
-    
-    const limit = userEmail ? 10 : 3;
-    const remaining = Math.max(0, limit - calcCount);
-    
-    // Update counter in form area (always visible)
-    const remainingCalcsTop = document.getElementById('remainingCalcsTop');
-    if (remainingCalcsTop) {
-        if (remaining > 0) {
-            remainingCalcsTop.textContent = `${remaining} of ${limit} free calculations remaining`;
-        } else {
-            remainingCalcsTop.textContent = `0 of ${limit} free calculations remaining`;
+let userEmail = localStorage.getItem('userEmail') || null; // Still store email locally for display
+
+// Update remaining calculations counter display (fetches from server)
+async function updateRemainingCounter() {
+    try {
+        // Fetch current count from server
+        const response = await fetch('/api/v1/track-calculation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'allowed' || data.status === 'limit_reached') {
+            const count = data.calculation_count || 0;
+            const remaining = data.remaining_calculations || 0;
+            const emailProvided = data.email_provided || false;
+            const limit = emailProvided ? 6 : 3;
+            
+            // Update counter in form area (always visible)
+            const remainingCalcsTop = document.getElementById('remainingCalcsTop');
+            if (remainingCalcsTop) {
+                if (remaining > 0) {
+                    remainingCalcsTop.textContent = `${remaining} of ${limit} free calculations remaining`;
+                } else {
+                    remainingCalcsTop.textContent = `0 of ${limit} free calculations remaining`;
+                }
+            }
+            
+            // Update counter in results area (if visible)
+            const remainingCalcsEl = document.getElementById('remainingCalcs');
+            if (remainingCalcsEl) {
+                if (remaining > 0) {
+                    remainingCalcsEl.textContent = `${remaining} of ${limit} free calculations remaining`;
+                    remainingCalcsEl.parentElement.classList.remove('hidden');
+                } else {
+                    remainingCalcsEl.textContent = `0 of ${limit} free calculations remaining`;
+                }
+            }
         }
-    }
-    
-    // Update counter in results area (if visible)
-    const remainingCalcsEl = document.getElementById('remainingCalcs');
-    if (remainingCalcsEl) {
-        if (remaining > 0) {
-            remainingCalcsEl.textContent = `${remaining} of ${limit} free calculations remaining`;
-            remainingCalcsEl.parentElement.classList.remove('hidden');
-        } else {
-            remainingCalcsEl.textContent = `0 of ${limit} free calculations remaining`;
+    } catch (error) {
+        console.error('Error updating counter:', error);
+        // Fallback: show default message
+        const remainingCalcsTop = document.getElementById('remainingCalcsTop');
+        if (remainingCalcsTop) {
+            remainingCalcsTop.textContent = 'Free calculations available';
         }
     }
 }
 
-// Initialize counter on page load - ensure it starts at 0
+// Initialize counter on page load
 window.addEventListener('DOMContentLoaded', function() {
-    if (!localStorage.getItem('calcCount')) {
-        localStorage.setItem('calcCount', '0');
-        calcCount = 0;
-    }
     updateRemainingCounter();
 });
 
 // Also run if DOM already loaded
 if (document.readyState !== 'loading') {
-    if (!localStorage.getItem('calcCount')) {
-        localStorage.setItem('calcCount', '0');
-        calcCount = 0;
-    }
     updateRemainingCounter();
 }
 
@@ -85,24 +97,9 @@ if (document.readyState !== 'loading') {
 // API Base URL - use relative URL since API is on same domain
 const API_BASE = '';
 
-// Form submission
+// Form submission - NOW WITH SERVER-SIDE TRACKING
 document.getElementById('calculatorForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    // Refresh values from localStorage before checking
-    calcCount = parseInt(localStorage.getItem('calcCount') || '0');
-    userEmail = localStorage.getItem('userEmail') || null;
-    
-    // Check limits BEFORE calculation (prevent API call if already at limit)
-    if (calcCount >= 10) {
-        document.getElementById('upgradeModal').classList.remove('hidden');
-        return;
-    }
-    
-    if (calcCount >= 3 && !userEmail) {
-        document.getElementById('emailModal').classList.remove('hidden');
-        return;
-    }
     
     // Get form values
     const invoiceDate = document.getElementById('invoiceDatePicker').value;
@@ -112,11 +109,43 @@ document.getElementById('calculatorForm').addEventListener('submit', async (e) =
     // Show loading state
     const submitButton = e.target.querySelector('button[type="submit"]');
     const originalText = submitButton.textContent;
-    submitButton.textContent = 'Calculating...';
+    submitButton.textContent = 'Checking limits...';
     submitButton.disabled = true;
     
     try {
-        // Call API with POST and JSON body
+        // STEP 1: Check limits server-side BEFORE calculation
+        const trackResponse = await fetch('/api/v1/track-calculation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                state: state,
+                notice_date: invoiceDate
+            })
+        });
+        
+        const trackData = await trackResponse.json();
+        
+        // Handle limit reached
+        if (trackData.status === 'limit_reached') {
+            submitButton.textContent = originalText;
+            submitButton.disabled = false;
+            
+            if (trackData.limit_type === 'before_email') {
+                // Show email gate modal
+                document.getElementById('emailModal').classList.remove('hidden');
+                return;
+            } else if (trackData.limit_type === 'upgrade_required') {
+                // Show upgrade modal
+                document.getElementById('upgradeModal').classList.remove('hidden');
+                return;
+            }
+        }
+        
+        // STEP 2: If allowed, proceed with calculation
+        submitButton.textContent = 'Calculating...';
+        
         const response = await fetch('https://liendeadline.com/api/v1/calculate-deadline', {
             method: 'POST',
             headers: {
@@ -131,43 +160,40 @@ document.getElementById('calculatorForm').addEventListener('submit', async (e) =
         
         const data = await response.json();
         
-        if (data.error) {
-            alert(`Error: ${data.error}\n${data.message || ''}`);
+        // Handle API errors (including 403 from server-side limit check)
+        if (response.status === 403) {
+            // Server-side limit enforcement (backup check)
+            if (data.detail && data.detail.includes('email')) {
+                document.getElementById('emailModal').classList.remove('hidden');
+            } else {
+                document.getElementById('upgradeModal').classList.remove('hidden');
+            }
+            submitButton.textContent = originalText;
+            submitButton.disabled = false;
             return;
         }
         
-        // CRITICAL: Increment calculation count AFTER successful API response
-        calcCount++;
-        localStorage.setItem('calcCount', calcCount.toString());
+        if (data.error || !response.ok) {
+            alert(`Error: ${data.error || data.detail || 'Unknown error'}\n${data.message || ''}`);
+            submitButton.textContent = originalText;
+            submitButton.disabled = false;
+            return;
+        }
         
-        // Refresh userEmail from localStorage
-        userEmail = localStorage.getItem('userEmail') || null;
+        // STEP 3: Update counter display (server-side count)
+        await updateRemainingCounter();
         
-        // Update counter display
-        updateRemainingCounter();
-        
-        // CRITICAL: Check limits AFTER incrementing (this is when modals should appear)
-        if (!userEmail && calcCount >= 3) {
-            // Show EMAIL GATE after 3 calculations (no email yet)
-            // Store the result so we can display it after email is entered
+        // STEP 4: Check if email gate should appear (based on server response)
+        if (trackData.email_required && !trackData.email_provided) {
+            // Store result to show after email is entered
             window.pendingCalculationResult = data;
             document.getElementById('emailModal').classList.remove('hidden');
-            // Don't display results yet - user must enter email first
-            // Reset button before returning
-            submitButton.textContent = originalText;
-            submitButton.disabled = false;
-            return;
-        } else if (userEmail && calcCount >= 10) {
-            // Show UPGRADE GATE after 10 calculations (email already provided)
-            document.getElementById('upgradeModal').classList.remove('hidden');
-            // Don't display results - user must upgrade
-            // Reset button before returning
             submitButton.textContent = originalText;
             submitButton.disabled = false;
             return;
         }
         
-        // Display results only if we haven't hit a limit
+        // Display results
         displayResults(data);
         
         // Scroll to results
@@ -197,14 +223,13 @@ function initEmailHandler() {
         return;
     }
     
-    // Store email
+    // Store email locally (for display purposes)
     userEmail = email;
     localStorage.setItem('userEmail', email);
     
-    // Track email submission
+    // Send email to server (links to tracking record)
     try {
-        // Get IP address (simplified - in production use a proper IP service)
-        const response = await fetch('/track-email', {
+        const response = await fetch('/api/v1/capture-email', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -215,21 +240,26 @@ function initEmailHandler() {
             })
         });
         
-        if (!response.ok) {
-            console.error('Failed to track email');
+        const data = await response.json();
+        
+        if (!response.ok || data.status === 'error') {
+            alert(`Error: ${data.message || 'Failed to save email'}`);
+            return;
         }
     } catch (error) {
         console.error('Error tracking email:', error);
+        alert('Email saved locally, but server sync failed. Please try again.');
+        return;
     }
     
     // Hide modal
     document.getElementById('emailModal').classList.add('hidden');
     
-    // Update counter display to show new limit (now 10 instead of 3)
-    updateRemainingCounter();
+    // Update counter display (now shows 6 total instead of 3)
+    await updateRemainingCounter();
     
     // Show success message
-    alert('Email saved! You now have 7 more free calculations (10 total).');
+    alert('Email saved! You now have 3 more free calculations (6 total).');
     
     // Display the pending calculation result (the one that triggered the email gate)
     if (window.pendingCalculationResult) {

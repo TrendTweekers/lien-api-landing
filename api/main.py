@@ -1113,6 +1113,12 @@ async def generate_state_guide_pdf(state_code: str):
     )
 
 # Calculate deadline request model
+class TrackCalculationRequest(BaseModel):
+    """Request model for tracking calculation attempts"""
+    state: str = None
+    notice_date: str = None
+    last_work_date: str = None
+
 class CalculateDeadlineRequest(BaseModel):
     invoice_date: str
     state: str
@@ -1128,6 +1134,211 @@ def get_client_ip(request: Request) -> str:
         (request.client.host if request.client else "unknown")
     )
 
+def get_user_agent_hash(request: Request) -> str:
+    """Get a hash of user agent for better tracking (handles shared IPs)"""
+    import hashlib
+    user_agent = request.headers.get('user-agent', 'unknown')
+    return hashlib.md5(user_agent.encode()).hexdigest()[:8]
+
+@app.post("/api/v1/track-calculation")
+@limiter.limit("20/minute")
+async def track_calculation(request: Request, request_data: TrackCalculationRequest = None):
+    """
+    Track calculation attempt and enforce server-side limits.
+    Returns whether calculation is allowed and current count.
+    """
+    from fastapi.responses import JSONResponse
+    
+    try:
+        client_ip = get_client_ip(request)
+        user_agent = request.headers.get('user-agent', 'unknown')
+        user_agent_hash = get_user_agent_hash(request)
+        
+        # Create composite key: IP + user agent hash (handles shared IPs better)
+        tracking_key = f"{client_ip}:{user_agent_hash}"
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Ensure email_gate_tracking table exists with tracking_key column
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS email_gate_tracking (
+                        id SERIAL PRIMARY KEY,
+                        ip_address VARCHAR NOT NULL,
+                        tracking_key VARCHAR NOT NULL,
+                        email VARCHAR,
+                        calculation_count INTEGER DEFAULT 0,
+                        first_calculation_at TIMESTAMP DEFAULT NOW(),
+                        last_calculation_at TIMESTAMP DEFAULT NOW(),
+                        email_captured_at TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                # Add tracking_key column if it doesn't exist (migration)
+                try:
+                    cursor.execute("ALTER TABLE email_gate_tracking ADD COLUMN IF NOT EXISTS tracking_key VARCHAR")
+                except:
+                    pass  # Column might already exist
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_tracking_key ON email_gate_tracking(tracking_key)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_ip ON email_gate_tracking(ip_address)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_email ON email_gate_tracking(email)")
+                
+                # Get current tracking record
+                cursor.execute("""
+                    SELECT calculation_count, email, email_captured_at 
+                    FROM email_gate_tracking 
+                    WHERE tracking_key = %s 
+                    ORDER BY last_calculation_at DESC 
+                    LIMIT 1
+                """, (tracking_key,))
+            else:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS email_gate_tracking (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ip_address TEXT NOT NULL,
+                        tracking_key TEXT NOT NULL,
+                        email TEXT,
+                        calculation_count INTEGER DEFAULT 0,
+                        first_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        last_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        email_captured_at TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                # Add tracking_key column if it doesn't exist (migration)
+                try:
+                    cursor.execute("ALTER TABLE email_gate_tracking ADD COLUMN tracking_key TEXT")
+                except:
+                    pass  # Column might already exist
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_tracking_key ON email_gate_tracking(tracking_key)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_ip ON email_gate_tracking(ip_address)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_email ON email_gate_tracking(email)")
+                
+                cursor.execute("""
+                    SELECT calculation_count, email, email_captured_at 
+                    FROM email_gate_tracking 
+                    WHERE tracking_key = ? 
+                    ORDER BY last_calculation_at DESC 
+                    LIMIT 1
+                """, (tracking_key,))
+            
+            tracking = cursor.fetchone()
+            
+            # Parse tracking data
+            if tracking:
+                if isinstance(tracking, dict):
+                    count = tracking.get('calculation_count', 0)
+                    email = tracking.get('email')
+                    email_captured_at = tracking.get('email_captured_at')
+                elif hasattr(tracking, 'keys'):
+                    count = tracking['calculation_count'] if 'calculation_count' in tracking.keys() else tracking[0]
+                    email = tracking['email'] if 'email' in tracking.keys() else (tracking[1] if len(tracking) > 1 else None)
+                    email_captured_at = tracking['email_captured_at'] if 'email_captured_at' in tracking.keys() else (tracking[2] if len(tracking) > 2 else None)
+                else:
+                    count = tracking[0] if tracking else 0
+                    email = tracking[1] if tracking and len(tracking) > 1 else None
+                    email_captured_at = tracking[2] if tracking and len(tracking) > 2 else None
+            else:
+                count = 0
+                email = None
+                email_captured_at = None
+            
+            # Determine limits
+            CALCULATIONS_BEFORE_EMAIL = 3
+            TOTAL_FREE_CALCULATIONS = 6
+            
+            # Check if limit exceeded
+            if not email:
+                # No email provided yet
+                if count >= CALCULATIONS_BEFORE_EMAIL:
+                    return JSONResponse(
+                        status_code=403,
+                        content={
+                            "status": "limit_reached",
+                            "message": "Free trial limit reached. Please provide your email for 3 more calculations.",
+                            "calculation_count": count,
+                            "remaining_calculations": 0,
+                            "email_required": True,
+                            "limit_type": "before_email"
+                        }
+                    )
+                remaining = CALCULATIONS_BEFORE_EMAIL - count
+            else:
+                # Email provided
+                if count >= TOTAL_FREE_CALCULATIONS:
+                    return JSONResponse(
+                        status_code=403,
+                        content={
+                            "status": "limit_reached",
+                            "message": "Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month.",
+                            "calculation_count": count,
+                            "remaining_calculations": 0,
+                            "email_required": False,
+                            "limit_type": "upgrade_required"
+                        }
+                    )
+                remaining = TOTAL_FREE_CALCULATIONS - count
+            
+            # Increment count BEFORE allowing calculation
+            new_count = count + 1
+            
+            if tracking:
+                # Update existing record
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        UPDATE email_gate_tracking 
+                        SET calculation_count = %s,
+                            last_calculation_at = NOW()
+                        WHERE tracking_key = %s
+                    """, (new_count, tracking_key))
+                else:
+                    cursor.execute("""
+                        UPDATE email_gate_tracking 
+                        SET calculation_count = ?,
+                            last_calculation_at = CURRENT_TIMESTAMP
+                        WHERE tracking_key = ?
+                    """, (new_count, tracking_key))
+            else:
+                # Create new record
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        INSERT INTO email_gate_tracking (ip_address, tracking_key, calculation_count)
+                        VALUES (%s, %s, 1)
+                    """, (client_ip, tracking_key))
+                else:
+                    cursor.execute("""
+                        INSERT INTO email_gate_tracking (ip_address, tracking_key, calculation_count)
+                        VALUES (?, ?, 1)
+                    """, (client_ip, tracking_key))
+            
+            conn.commit()
+            
+            # Return success with updated count
+            return {
+                "status": "allowed",
+                "calculation_count": new_count,
+                "remaining_calculations": remaining - 1,  # Subtract 1 since we just incremented
+                "email_required": not email and new_count >= CALCULATIONS_BEFORE_EMAIL,
+                "email_provided": bool(email)
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error in track_calculation: {e}")
+        import traceback
+        traceback.print_exc()
+        # On error, allow calculation (fail open for better UX)
+        return {
+            "status": "allowed",
+            "calculation_count": 0,
+            "remaining_calculations": 3,
+            "email_required": False,
+            "email_provided": False,
+            "error": str(e)
+        }
+
 @app.post("/v1/calculate")
 @app.post("/api/v1/calculate-deadline")
 @limiter.limit("10/minute")
@@ -1135,73 +1346,47 @@ async def calculate_deadline(
     request: Request,
     request_data: CalculateDeadlineRequest
 ):
+    """
+    Calculate deadline - now enforces server-side limits.
+    Frontend should call /api/v1/track-calculation first to check limits.
+    """
     invoice_date = request_data.invoice_date
     state = request_data.state
     role = request_data.role
     project_type = request_data.project_type
     state_code = state.upper()
     
-    # Get client IP for email gate tracking
+    # Get client IP and tracking key
     client_ip = get_client_ip(request)
+    user_agent_hash = get_user_agent_hash(request)
+    tracking_key = f"{client_ip}:{user_agent_hash}"
     
-    # Email gate tracking - check if IP has exceeded free limit (PostgreSQL compatible)
+    # Check limits BEFORE processing calculation (server-side enforcement)
     try:
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Create email_gate_tracking table if it doesn't exist
+            # Get current tracking
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS email_gate_tracking (
-                        id SERIAL PRIMARY KEY,
-                        ip_address VARCHAR NOT NULL,
-                        email VARCHAR,
-                        calculation_count INTEGER DEFAULT 1,
-                        first_calculation_at TIMESTAMP DEFAULT NOW(),
-                        last_calculation_at TIMESTAMP DEFAULT NOW(),
-                        email_captured_at TIMESTAMP,
-                        created_at TIMESTAMP DEFAULT NOW()
-                    )
-                """)
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_ip ON email_gate_tracking(ip_address)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_email ON email_gate_tracking(email)")
-                
-                # Check if IP has exceeded free limit without providing email
-                cursor.execute("""
-                    SELECT calculation_count, email, email_captured_at 
+                    SELECT calculation_count, email 
                     FROM email_gate_tracking 
-                    WHERE ip_address = %s 
+                    WHERE tracking_key = %s 
                     ORDER BY last_calculation_at DESC 
                     LIMIT 1
-                """, (client_ip,))
+                """, (tracking_key,))
             else:
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS email_gate_tracking (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        ip_address TEXT NOT NULL,
-                        email TEXT,
-                        calculation_count INTEGER DEFAULT 1,
-                        first_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        last_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        email_captured_at TIMESTAMP,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_ip ON email_gate_tracking(ip_address)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_email ON email_gate_tracking(email)")
-                
-                cursor.execute("""
-                    SELECT calculation_count, email, email_captured_at 
+                    SELECT calculation_count, email 
                     FROM email_gate_tracking 
-                    WHERE ip_address = ? 
+                    WHERE tracking_key = ? 
                     ORDER BY last_calculation_at DESC 
                     LIMIT 1
-                """, (client_ip,))
+                """, (tracking_key,))
             
             tracking = cursor.fetchone()
             
             if tracking:
-                # Handle different row formats
                 if isinstance(tracking, dict):
                     count = tracking.get('calculation_count', 0)
                     email = tracking.get('email')
@@ -1212,62 +1397,23 @@ async def calculate_deadline(
                     count = tracking[0] if tracking else 0
                     email = tracking[1] if tracking and len(tracking) > 1 else None
                 
-                # TEMPORARY: Disable backend 403 blocking - let frontend handle the flow
-                # Frontend will show modals at calculation 3 and 6
-                # if not email and count >= 3:
-                #     raise HTTPException(
-                #         status_code=403,
-                #         detail="Free trial limit reached. Please provide your email for 3 more calculations."
-                #     )
-                
-                # if email and count >= 6:
-                #     raise HTTPException(
-                #         status_code=403,
-                #         detail="Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
-                #     )
-                
-                # Log for debugging
+                # Enforce limits server-side
                 if not email and count >= 3:
-                    print(f"⚠️ User at calculation {count} without email - frontend will handle modal")
-                if email and count >= 6:
-                    print(f"⚠️ User at calculation {count} with email - frontend will handle upgrade modal")
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Free trial limit reached. Please provide your email for 3 more calculations."
+                    )
                 
-                # Update count
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        UPDATE email_gate_tracking 
-                        SET calculation_count = calculation_count + 1,
-                            last_calculation_at = NOW()
-                        WHERE ip_address = %s
-                    """, (client_ip,))
-                else:
-                    cursor.execute("""
-                        UPDATE email_gate_tracking 
-                        SET calculation_count = calculation_count + 1,
-                            last_calculation_at = CURRENT_TIMESTAMP
-                        WHERE ip_address = ?
-                    """, (client_ip,))
-            else:
-                # First calculation from this IP
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        INSERT INTO email_gate_tracking (ip_address, calculation_count)
-                        VALUES (%s, 1)
-                    """, (client_ip,))
-                else:
-                    cursor.execute("""
-                        INSERT INTO email_gate_tracking (ip_address, calculation_count)
-                        VALUES (?, 1)
-                    """, (client_ip,))
-            
-            conn.commit()
+                if email and count >= 6:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
+                    )
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error in email gate tracking: {e}")
-        import traceback
-        traceback.print_exc()
-        # Continue with calculation even if tracking fails
+        print(f"⚠️ Error checking limits in calculate_deadline: {e}")
+        # Continue with calculation if limit check fails (fail open for UX)
     
     # Validate state
     if state_code not in STATE_RULES:
@@ -2213,10 +2359,20 @@ async def capture_email(request: Request):
                         user_agent = EXCLUDED.user_agent
                 ''', (
                     email,
-                    request.client.host,
+                    client_ip,
                     request.headers.get('user-agent', ''),
                     3  # Give them 3 more calculations
                 ))
+                
+                # Link email to tracking record (update email_gate_tracking)
+                user_agent_hash = get_user_agent_hash(request)
+                tracking_key = f"{client_ip}:{user_agent_hash}"
+                cursor.execute("""
+                    UPDATE email_gate_tracking 
+                    SET email = %s,
+                        email_captured_at = NOW()
+                    WHERE tracking_key = %s
+                """, (email, tracking_key))
             else:
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS email_captures (
@@ -2237,12 +2393,24 @@ async def capture_email(request: Request):
                     VALUES (?, ?, ?, ?)
                 ''', (
                     email,
-                    request.client.host,
+                    client_ip,
                     request.headers.get('user-agent', ''),
                     3  # Give them 3 more calculations
                 ))
+                
+                # Link email to tracking record (update email_gate_tracking)
+                user_agent_hash = get_user_agent_hash(request)
+                tracking_key = f"{client_ip}:{user_agent_hash}"
+                cursor.execute("""
+                    UPDATE email_gate_tracking 
+                    SET email = ?,
+                        email_captured_at = CURRENT_TIMESTAMP
+                    WHERE tracking_key = ?
+                """, (email, tracking_key))
+            
+            conn.commit()
         
-        print(f"✅ Email captured: {email}")
+        print(f"✅ Email captured: {email} (linked to tracking_key: {tracking_key})")
         
         return {
             "status": "success",
