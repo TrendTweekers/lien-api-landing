@@ -51,7 +51,7 @@ def send_welcome_email_background(email: str, referral_link: str, name: str = ""
         # Use short link format if referral_link is provided, otherwise fallback to old format
         if not referral_link:
             referral_link = f"https://liendeadline.com/?ref={referral_code}"
-        commission_text = "$500 per sale" if commission_model == "bounty" else "$50/month recurring"
+        # Commission text will be dynamic in the email body
         
         # Convert plain text body to HTML format for Resend
         body_plain = f"""Hi {name},
@@ -61,7 +61,15 @@ Congratulations! Your application to join the LienDeadline Partner Program has b
 Here's your unique referral information:
 
 🔗 Referral Link: {referral_link}
-💰 Commission: {commission_text}
+
+Your Commission Structure:
+Your account is approved under one of the following commission models:
+ • $500 one-time bounty per referred customer, OR
+ • $50 per month for each active paying customer you refer
+
+Your specific commission model is visible in your broker dashboard.
+
+All commissions are subject to a 60-day holding period after customer payment.
 
 How it works:
 1. Share your referral link with construction companies and contractors
@@ -137,11 +145,21 @@ The LienDeadline Team
                     <tr>
                         <td style="padding: 0 40px 30px;">
                             <div style="background-color: #eff6ff; border-left: 4px solid #2563eb; border-radius: 4px; padding: 20px;">
-                                <p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    Commission Structure
+                                <h3 style="margin: 0 0 12px; font-size: 16px; font-weight: 600; color: #1e40af;">
+                                    Your Commission Structure
+                                </h3>
+                                <p style="margin: 0 0 12px; font-size: 15px; color: #1f2937; line-height: 1.6;">
+                                    Your account is approved under one of the following commission models:
                                 </p>
-                                <p style="margin: 0; font-size: 20px; font-weight: 700; color: #1f2937;">
-                                    {commission_text}
+                                <ul style="margin: 0 0 12px; padding-left: 20px; color: #1f2937; font-size: 15px; line-height: 1.8;">
+                                    <li style="margin-bottom: 8px;"><strong>$500 one-time bounty</strong> per referred customer, OR</li>
+                                    <li style="margin-bottom: 8px;"><strong>$50 per month</strong> for each active paying customer you refer</li>
+                                </ul>
+                                <p style="margin: 0 0 8px; font-size: 14px; color: #4b5563; line-height: 1.5;">
+                                    Your specific commission model is visible in your broker dashboard.
+                                </p>
+                                <p style="margin: 0; font-size: 13px; color: #6b7280; font-style: italic;">
+                                    All commissions are subject to a 60-day holding period after customer payment.
                                 </p>
                             </div>
                         </td>

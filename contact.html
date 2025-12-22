@@ -124,6 +124,67 @@
                 </ul>
             </div>
 
+            <!-- Contact Form -->
+            <div class="bg-white rounded-lg border border-border p-6 mb-12">
+                <h2 class="text-2xl font-bold mb-4">Send Us a Message</h2>
+                <p class="text-muted-foreground mb-6">Fill out the form below and we'll get back to you as soon as possible.</p>
+                
+                <form id="contactForm" class="space-y-6">
+                    <!-- Honeypot field (hidden) -->
+                    <input type="text" name="website" id="website" tabindex="-1" autocomplete="off" style="position: absolute; left: -9999px;" aria-hidden="true">
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-foreground mb-2">Name *</label>
+                            <input type="text" id="name" name="name" required
+                                   class="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                                   placeholder="Your name">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-foreground mb-2">Email *</label>
+                            <input type="email" id="email" name="email" required
+                                   class="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                                   placeholder="your@email.com">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="company" class="block text-sm font-medium text-foreground mb-2">Company (Optional)</label>
+                        <input type="text" id="company" name="company"
+                               class="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                               placeholder="Your company name">
+                    </div>
+                    
+                    <div>
+                        <label for="topic" class="block text-sm font-medium text-foreground mb-2">Topic *</label>
+                        <select id="topic" name="topic" required
+                                class="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
+                            <option value="">Select a topic</option>
+                            <option value="Support">Support</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Partner Program">Partner Program</option>
+                            <option value="Legal">Legal</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="message" class="block text-sm font-medium text-foreground mb-2">Message *</label>
+                        <textarea id="message" name="message" required minlength="20" rows="6"
+                                  class="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                                  placeholder="Please provide details about your inquiry (minimum 20 characters)"></textarea>
+                        <p class="text-xs text-muted-foreground mt-1">Minimum 20 characters required</p>
+                    </div>
+                    
+                    <div id="formMessage" class="hidden p-4 rounded-lg"></div>
+                    
+                    <button type="submit" id="submitBtn"
+                            class="w-full bg-accent hover:bg-accent/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+                        Send Message
+                    </button>
+                </form>
+            </div>
+
             <!-- Office Hours -->
             <div class="bg-white rounded-lg border border-border p-6">
                 <h2 class="text-2xl font-bold mb-4">Office Hours</h2>
@@ -195,12 +256,110 @@
     </footer>
 
     <script>
+        // Mobile menu toggle
         document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
             document.getElementById('mobileMenu')?.classList.remove('hidden');
         });
         document.getElementById('closeMobileMenu')?.addEventListener('click', () => {
             document.getElementById('mobileMenu')?.classList.add('hidden');
         });
+
+        // Contact form submission
+        document.getElementById('contactForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const form = e.target;
+            const submitBtn = document.getElementById('submitBtn');
+            const messageDiv = document.getElementById('formMessage');
+            
+            // Get form data
+            const formData = {
+                name: document.getElementById('name').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                company: document.getElementById('company').value.trim(),
+                topic: document.getElementById('topic').value,
+                message: document.getElementById('message').value.trim(),
+                website: document.getElementById('website').value // honeypot
+            };
+            
+            // Client-side validation
+            if (!formData.name || !formData.email || !formData.topic || !formData.message) {
+                showMessage('Please fill in all required fields.', 'error');
+                return;
+            }
+            
+            if (formData.message.length < 20) {
+                showMessage('Message must be at least 20 characters long.', 'error');
+                return;
+            }
+            
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(formData.email)) {
+                showMessage('Please enter a valid email address.', 'error');
+                return;
+            }
+            
+            // Honeypot check
+            if (formData.website) {
+                // Spam detected - silently fail
+                showMessage('Thank you for your message. We\'ll get back to you soon.', 'success');
+                form.reset();
+                return;
+            }
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+            
+            try {
+                const response = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: formData.name,
+                        email: formData.email,
+                        company: formData.company || null,
+                        topic: formData.topic,
+                        message: formData.message
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Thank you for your message! We\'ll get back to you within 24 hours.', 'success');
+                    form.reset();
+                } else {
+                    showMessage(data.detail || data.message || 'Failed to send message. Please try again or email us directly.', 'error');
+                }
+            } catch (error) {
+                console.error('Contact form error:', error);
+                showMessage('An error occurred. Please try again or email us directly at support@liendeadline.com', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message';
+            }
+        });
+        
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('formMessage');
+            messageDiv.textContent = text;
+            messageDiv.className = `p-4 rounded-lg ${type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`;
+            messageDiv.classList.remove('hidden');
+            
+            // Scroll to message
+            messageDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            
+            // Hide after 5 seconds for success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageDiv.classList.add('hidden');
+                }, 5000);
+            }
+        }
     </script>
 </body>
 </html>

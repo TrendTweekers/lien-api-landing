@@ -128,6 +128,9 @@
                 <p class="text-sm text-gray-600 mt-2">
                     Commission Model: <span id="commissionModel" class="font-semibold"></span>
                 </p>
+                <p class="text-xs text-gray-500 mt-2 italic">
+                    Commissions appear as 'On Hold' for 60 days after customer payment before becoming eligible for payout.
+                </p>
             </div>
             
             <!-- Payment Settings -->
@@ -853,9 +856,15 @@
                 // Populate marketing materials
                 populateMarketingMaterials(data.broker_name, data.referral_link, data.referral_code);
                 
-                const commissionText = data.commission_model === 'bounty' 
-                    ? '$500 per referral (one-time)' 
-                    : '$50/month per referral (recurring)';
+                // Display commission model dynamically
+                let commissionText;
+                if (data.commission_model === 'bounty') {
+                    commissionText = '$500 one-time per customer';
+                } else if (data.commission_model === 'recurring' || data.commission_model === 'monthly') {
+                    commissionText = '$50 per month per active customer';
+                } else {
+                    commissionText = 'See details below';
+                }
                 document.getElementById('commissionModel').textContent = commissionText;
                 
                 // Load payment info

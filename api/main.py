@@ -682,6 +682,38 @@ def init_db():
             except Exception as e:
                 print(f"Note: Could not check/insert sample data: {e}")
             
+            # Contact messages table
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS contact_messages (
+                        id SERIAL PRIMARY KEY,
+                        name VARCHAR NOT NULL,
+                        email VARCHAR NOT NULL,
+                        company VARCHAR,
+                        topic VARCHAR NOT NULL,
+                        message TEXT NOT NULL,
+                        ip_address VARCHAR,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_contact_email ON contact_messages(email)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_contact_created ON contact_messages(created_at)")
+            else:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS contact_messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        email TEXT NOT NULL,
+                        company TEXT,
+                        topic TEXT NOT NULL,
+                        message TEXT NOT NULL,
+                        ip_address TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_contact_email ON contact_messages(email)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_contact_created ON contact_messages(created_at)")
+            
             # Commit is handled automatically by context manager
             print("✅ Database initialized")
     except Exception as e:
@@ -1140,6 +1172,13 @@ async def generate_state_guide_pdf(state_code: str):
     )
 
 # Calculate deadline request model
+class ContactRequest(BaseModel):
+    name: str
+    email: EmailStr
+    company: str | None = None
+    topic: str
+    message: str
+
 class TrackCalculationRequest(BaseModel):
     """Request model for tracking calculation attempts"""
     state: str = None
@@ -1704,6 +1743,142 @@ async def calculate_deadline(
         "disclaimer": "⚠️ This is general information only, NOT legal advice.",
         "response_time_ms": 45
     }
+
+@app.post("/api/contact")
+@limiter.limit("5/minute")
+async def submit_contact_form(request: Request, contact_data: ContactRequest):
+    """
+    Handle contact form submissions.
+    Validates input, stores in database, and sends email via Resend.
+    """
+    from api.admin import send_email_sync
+    
+    try:
+        # Get client IP
+        client_ip = get_client_ip(request)
+        
+        # Server-side validation
+        if not contact_data.name or len(contact_data.name.strip()) < 2:
+            raise HTTPException(status_code=400, detail="Name must be at least 2 characters")
+        
+        if not contact_data.message or len(contact_data.message.strip()) < 20:
+            raise HTTPException(status_code=400, detail="Message must be at least 20 characters")
+        
+        valid_topics = ["Support", "Sales", "Partner Program", "Legal", "Other"]
+        if contact_data.topic not in valid_topics:
+            raise HTTPException(status_code=400, detail=f"Topic must be one of: {', '.join(valid_topics)}")
+        
+        # Store in database
+        try:
+            with get_db() as conn:
+                cursor = get_db_cursor(conn)
+                
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        INSERT INTO contact_messages (name, email, company, topic, message, ip_address)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (
+                        contact_data.name.strip(),
+                        contact_data.email.strip(),
+                        contact_data.company.strip() if contact_data.company else None,
+                        contact_data.topic,
+                        contact_data.message.strip(),
+                        client_ip
+                    ))
+                else:
+                    cursor.execute("""
+                        INSERT INTO contact_messages (name, email, company, topic, message, ip_address)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    """, (
+                        contact_data.name.strip(),
+                        contact_data.email.strip(),
+                        contact_data.company.strip() if contact_data.company else None,
+                        contact_data.topic,
+                        contact_data.message.strip(),
+                        client_ip
+                    ))
+                
+                conn.commit()
+                print(f"✅ Contact message saved: {contact_data.email} - {contact_data.topic}")
+        except Exception as db_error:
+            print(f"⚠️ Failed to save contact message to database: {db_error}")
+            # Continue even if DB save fails - still send email
+        
+        # Determine recipient email based on topic
+        recipient_email = "partners@liendeadline.com" if contact_data.topic == "Partner Program" else "support@liendeadline.com"
+        
+        # Create email subject
+        subject = f"[Contact] {contact_data.topic} – {contact_data.email}"
+        
+        # Create email body (HTML) - escape HTML to prevent XSS
+        import html
+        
+        name_escaped = html.escape(contact_data.name)
+        email_escaped = html.escape(contact_data.email)
+        company_escaped = html.escape(contact_data.company) if contact_data.company else ""
+        topic_escaped = html.escape(contact_data.topic)
+        message_escaped = html.escape(contact_data.message).replace('\n', '<br>')
+        ip_escaped = html.escape(client_ip)
+        
+        company_line = f"<p><strong>Company:</strong> {company_escaped}</p>" if contact_data.company else ""
+        
+        body_html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #f9fafb; border-radius: 8px; padding: 24px; border: 1px solid #e5e7eb;">
+        <h2 style="color: #1f2937; margin-top: 0; font-size: 24px;">New Contact Form Submission</h2>
+        
+        <div style="background-color: white; border-radius: 6px; padding: 20px; margin-top: 16px;">
+            <p><strong>Name:</strong> {name_escaped}</p>
+            <p><strong>Email:</strong> <a href="mailto:{email_escaped}">{email_escaped}</a></p>
+            {company_line}
+            <p><strong>Topic:</strong> {topic_escaped}</p>
+            <p><strong>IP Address:</strong> {ip_escaped}</p>
+        </div>
+        
+        <div style="background-color: white; border-radius: 6px; padding: 20px; margin-top: 16px;">
+            <h3 style="color: #1f2937; margin-top: 0;">Message:</h3>
+            <div style="white-space: pre-wrap; color: #4b5563; line-height: 1.8;">{message_escaped}</div>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 14px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+            This message was submitted via the LienDeadline contact form at {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+        </p>
+    </div>
+</body>
+</html>"""
+        
+        # Send email via Resend
+        try:
+            send_email_sync(recipient_email, subject, body_html)
+            print(f"✅ Contact email sent to {recipient_email}")
+        except Exception as email_error:
+            print(f"❌ Failed to send contact email: {email_error}")
+            import traceback
+            traceback.print_exc()
+            # Still return success if DB save worked, but log the email failure
+            return {
+                "status": "success",
+                "message": "Your message has been received. We'll get back to you soon.",
+                "note": "Email notification may be delayed"
+            }
+        
+        return {
+            "status": "success",
+            "message": "Thank you for your message! We'll get back to you within 24 hours."
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Contact form error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to process contact form. Please try again or email us directly.")
 
 # Serve HTML files
 # Serve HTML files (with .html extension)
