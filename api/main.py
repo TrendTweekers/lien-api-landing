@@ -4920,7 +4920,7 @@ async def broker_dashboard(request: Request, email: str):
             
             # Verify broker exists AND is approved (accept both 'approved' and 'active' for backward compatibility)
             if DB_TYPE == 'postgresql':
-                cursor.execute("""
+            cursor.execute("""
                     SELECT id, name, referral_code, commission_model, referral_link, short_code, status
                 FROM brokers
                     WHERE LOWER(email) = LOWER(%s)
@@ -4953,7 +4953,7 @@ async def broker_dashboard(request: Request, email: str):
                 short_code = broker.get('short_code', '')
                 status = broker.get('status', 'pending')
             else:
-                broker_id = broker[0]
+            broker_id = broker[0]
                 broker_name = broker[1] if len(broker) > 1 else ''
                 referral_code = broker[2] if len(broker) > 2 else ''
                 commission_model = broker[3] if len(broker) > 3 else 'bounty'
@@ -4995,7 +4995,7 @@ async def broker_dashboard(request: Request, email: str):
                     ORDER BY created_at DESC
                 """, (referral_code,))
             else:
-                cursor.execute("""
+            cursor.execute("""
                 SELECT 
                     customer_email,
                     amount,
@@ -6442,17 +6442,23 @@ async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Check if payment tracking columns exist, if not use created_at as fallback
+            # Check what columns actually exist in brokers table
             has_payment_columns = False
+            has_created_at = False
+            has_approved_at = False
+            
             try:
                 if DB_TYPE == 'postgresql':
                     cursor.execute("""
                         SELECT column_name 
                         FROM information_schema.columns 
-                        WHERE table_name = 'brokers' AND column_name = 'first_payment_date'
+                        WHERE table_name = 'brokers'
                     """)
-                    result = cursor.fetchone()
-                    has_payment_columns = result is not None
+                    columns = cursor.fetchall()
+                    column_names = [col[0] if isinstance(col, (list, tuple)) else col.get('column_name', '') for col in columns]
+                    has_payment_columns = 'first_payment_date' in column_names
+                    has_created_at = 'created_at' in column_names
+                    has_approved_at = 'approved_at' in column_names
                 else:
                     cursor.execute("PRAGMA table_info(brokers)")
                     columns = cursor.fetchall()
@@ -6463,40 +6469,56 @@ async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
                         elif isinstance(col, dict):
                             column_names.append(col.get('name', ''))
                     has_payment_columns = 'first_payment_date' in column_names
+                    has_created_at = 'created_at' in column_names
+                    has_approved_at = 'approved_at' in column_names
             except Exception as col_check_error:
-                print(f"⚠️ Could not check for payment columns: {col_check_error}")
+                print(f"⚠️ Could not check for columns: {col_check_error}")
                 has_payment_columns = False
+                has_created_at = False
+                has_approved_at = True  # Default to approved_at which should exist
+            
+            # Determine date column to use (created_at, approved_at, or fallback)
+            date_column = 'approved_at'  # Default
+            if has_created_at:
+                date_column = 'created_at'
+            elif has_approved_at:
+                date_column = 'approved_at'
+            else:
+                date_column = 'NULL'  # Fallback if neither exists
             
             # Build SELECT query based on available columns
             if has_payment_columns:
-                select_cols = """
+                select_cols = f"""
                     id, name, email, payment_method, payment_email, iban, crypto_wallet,
                     first_payment_date, last_payment_date, next_payment_due, 
-                    created_at, status, commission_model
+                    {date_column} as created_at, status, commission_model
                 """
             else:
-                # Fallback: use created_at instead of payment tracking columns
-                print("⚠️ Payment tracking columns not found, using created_at as fallback")
-                select_cols = """
+                # Fallback: use approved_at/created_at instead of payment tracking columns
+                print(f"⚠️ Payment tracking columns not found, using {date_column} as fallback")
+                select_cols = f"""
                     id, name, email, payment_method, payment_email, iban, crypto_wallet,
                     NULL as first_payment_date, NULL as last_payment_date, NULL as next_payment_due,
-                    created_at, status, commission_model
+                    {date_column} as created_at, status, commission_model
                 """
             
             # Get all active/approved brokers
+            # Use the date_column we determined above for ordering
+            order_by_col = date_column if date_column != 'NULL' else 'id'
+            
             if DB_TYPE == 'postgresql':
                 cursor.execute(f"""
                     SELECT {select_cols}
                     FROM brokers
                     WHERE status IN ('approved', 'active')
-                    ORDER BY created_at ASC
+                    ORDER BY {order_by_col} ASC
                 """)
             else:
                 cursor.execute(f"""
                     SELECT {select_cols}
                     FROM brokers
                     WHERE status IN ('approved', 'active') OR status IS NULL
-                    ORDER BY created_at ASC
+                    ORDER BY {order_by_col} ASC
                 """)
             
             brokers = cursor.fetchall()
