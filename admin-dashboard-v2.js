@@ -1,0 +1,899 @@
+// ==================== ADMIN DASHBOARD V2 ====================
+// Reuses all existing API endpoints and functions from admin-dashboard.js
+// Only changes: UI rendering to match Lovable design
+
+console.log('🛡️ Admin Dashboard V2 Loading...');
+
+// Admin credentials (same as V1)
+const ADMIN_USER = window.ADMIN_USER || 'admin';
+const ADMIN_PASS = window.ADMIN_PASS || 'LienAPI2025';
+
+// Safe helper functions (same as V1)
+window.safe = {
+    get: function(id) {
+        const el = document.getElementById(id);
+        if (!el && id) {
+            console.log(`[Safe] Creating dummy #${id}`);
+            const dummy = document.createElement('div');
+            dummy.id = id;
+            dummy.className = 'safe-dummy';
+            dummy.style.display = 'none';
+            document.body.appendChild(dummy);
+            return dummy;
+        }
+        return el;
+    },
+    text: function(id, text) {
+        const el = this.get(id);
+        if (el) {
+            el.textContent = text;
+        }
+    },
+    html: function(id, html) {
+        const el = this.get(id);
+        if (el) {
+            el.innerHTML = html;
+        }
+    },
+    hide: function(id) {
+        const el = this.get(id);
+        if (el) el.style.display = 'none';
+    },
+    show: function(id) {
+        const el = this.get(id);
+        if (el) el.style.display = '';
+    }
+};
+
+// Tab switching for payouts
+function switchPayoutTab(tab) {
+    // Hide all tabs
+    document.querySelectorAll('#admin-v2 .tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.querySelectorAll('#admin-v2 .tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    const tabContent = document.getElementById(`payout-tab-${tab}`);
+    const tabButton = document.getElementById(`tab-${tab}`);
+    if (tabContent) tabContent.classList.add('active');
+    if (tabButton) tabButton.classList.add('active');
+}
+
+// Load partner applications (reuses V1 API)
+async function loadPartnerApplications() {
+    try {
+        const response = await fetch('/api/admin/partner-applications?status=pending', {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            safe.html('v2-applicationsTable', '<tr><td colspan="6" class="text-center py-8 text-red-500">Error loading applications</td></tr>');
+            return;
+        }
+        
+        const data = await response.json();
+        let applications = data.applications || data || [];
+        applications = applications.filter(app => app.status === 'pending' || !app.status);
+        
+        if (!Array.isArray(applications) || applications.length === 0) {
+            safe.html('v2-applicationsTable', `
+                <tr>
+                    <td colspan="6" class="text-center py-12">
+                        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-3xl">
+                            📋
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">No Applications Yet</h3>
+                        <p class="text-gray-600">Partner applications will appear here when submitted</p>
+                    </td>
+                </tr>
+            `);
+            safe.text('v2-pendingCount', '0 Pending');
+            safe.text('v2-pendingApps', '0');
+            return;
+        }
+        
+        const html = applications.map(app => {
+            const commissionBadge = app.commission_model === 'bounty' 
+                ? '<span class="badge badge-bounty">$500 Bounty</span>'
+                : '<span class="badge badge-monthly">$50/month</span>';
+            
+            const statusBadge = app.status === 'approved'
+                ? '<span class="badge badge-success">Approved</span>'
+                : app.status === 'rejected'
+                ? '<span class="badge badge-error">Rejected</span>'
+                : '<span class="badge badge-pending">Pending</span>';
+            
+            let dateStr = 'Recently';
+            if (app.created_at || app.applied_at || app.timestamp) {
+                try {
+                    const date = new Date(app.created_at || app.applied_at || app.timestamp);
+                    dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                } catch (e) {
+                    dateStr = 'Recently';
+                }
+            }
+            
+            return `
+                <tr class="hover:bg-gray-50">
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                <span class="text-blue-600 font-semibold">${(app.name || 'U').charAt(0).toUpperCase()}</span>
+                            </div>
+                            <div>
+                                <div class="font-semibold">${app.name || 'Unknown'}</div>
+                                <div class="text-sm" style="color: var(--muted);">${app.email || ''}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${commissionBadge}</td>
+                    <td style="color: var(--muted);">${app.company || 'N/A'}</td>
+                    <td class="text-sm" style="color: var(--muted);">${dateStr}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div class="flex gap-2">
+                            <button onclick="approveApplication(${app.id}, '${(app.email || '').replace(/'/g, "\\'")}', '${(app.name || 'Unknown').replace(/'/g, "\\'")}', '${app.commission_model || 'bounty'}')" class="btn btn-success btn-sm">
+                                ✓ Approve
+                            </button>
+                            <button onclick="rejectApplication(${app.id})" class="btn btn-danger btn-sm">
+                                ✗ Reject
+                            </button>
+                            <button onclick="deleteApplication(${app.id})" class="btn btn-outline btn-sm">
+                                🗑️
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        safe.html('v2-applicationsTable', html);
+        safe.text('v2-pendingCount', `${applications.length} Pending`);
+        safe.text('v2-pendingApps', applications.length.toString());
+        
+    } catch (error) {
+        console.error('[Admin V2] Error loading applications:', error);
+        safe.html('v2-applicationsTable', '<tr><td colspan="6" class="text-center py-8 text-red-500">Error: ' + error.message + '</td></tr>');
+    }
+}
+
+// Load active brokers (reuses V1 API)
+async function loadActiveBrokers() {
+    try {
+        const response = await fetch('/api/admin/brokers', {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            safe.html('v2-brokersList', '<tr><td colspan="8" class="text-center py-8 text-red-500">Error loading brokers</td></tr>');
+            return;
+        }
+        
+        const data = await response.json();
+        const brokers = data.brokers || data || [];
+        
+        if (!brokers || brokers.length === 0) {
+            safe.html('v2-brokersList', `
+                <tr>
+                    <td colspan="8" class="text-center py-12">
+                        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-3xl">
+                            👥
+                        </div>
+                        <p style="color: var(--muted);">No active brokers yet</p>
+                    </td>
+                </tr>
+            `);
+            safe.text('v2-brokerCount', '0');
+            safe.text('v2-activePartners', '0');
+            return;
+        }
+        
+        const html = brokers.map(broker => {
+            const commissionBadge = broker.commission_model === 'bounty' || broker.model === 'bounty'
+                ? '<span class="badge badge-bounty">$500 Bounty</span>'
+                : '<span class="badge badge-monthly">$50/month</span>';
+            
+            const paymentMethod = broker.payment_method || '';
+            let paymentBadge = '<span class="badge badge-pending">Not Set</span>';
+            if (paymentMethod) {
+                const methodNames = {
+                    'paypal': 'PayPal',
+                    'wise': 'Wise',
+                    'revolut': 'Revolut',
+                    'sepa': 'SEPA',
+                    'swift': 'SWIFT',
+                    'crypto': 'Crypto'
+                };
+                const name = methodNames[paymentMethod.toLowerCase()] || paymentMethod;
+                paymentBadge = `<span class="badge badge-ready">${name}</span>`;
+            }
+            
+            let paymentStatusBadge = '<span class="badge badge-pending">Pending</span>';
+            if (broker.payment_status === 'active') {
+                paymentStatusBadge = '<span class="badge badge-success">Active</span>';
+            } else if (broker.payment_status === 'suspended') {
+                paymentStatusBadge = '<span class="badge badge-error">Suspended</span>';
+            }
+            
+            const lastPaymentDate = broker.last_payment_date 
+                ? new Date(broker.last_payment_date).toLocaleDateString()
+                : 'Never';
+            
+            const totalPaid = broker.total_paid ? `$${parseFloat(broker.total_paid).toFixed(2)}` : '$0.00';
+            
+            return `
+                <tr class="hover:bg-gray-50">
+                    <td class="font-medium">${broker.name || 'Unknown'}</td>
+                    <td style="color: var(--muted);">${broker.email || 'N/A'}</td>
+                    <td>${commissionBadge}</td>
+                    <td>${paymentBadge}</td>
+                    <td>${paymentStatusBadge}</td>
+                    <td style="color: var(--muted);">${lastPaymentDate}</td>
+                    <td class="font-semibold" style="color: var(--success);">${totalPaid}</td>
+                    <td>
+                        <div class="flex gap-2">
+                            <button onclick="viewBrokerPaymentInfo(${broker.id}, '${(broker.name || 'Unknown').replace(/'/g, "\\'")}', '${(broker.email || '').replace(/'/g, "\\'")}')" class="btn btn-outline btn-sm">
+                                👁️ View
+                            </button>
+                            <button onclick="deleteActiveBroker(${broker.id})" class="btn btn-danger btn-sm">
+                                🗑️
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        safe.html('v2-brokersList', html);
+        safe.text('v2-brokerCount', brokers.length.toString());
+        safe.text('v2-activePartners', brokers.length.toString());
+        
+    } catch (error) {
+        console.error('[Admin V2] Error loading brokers:', error);
+        safe.html('v2-brokersList', '<tr><td colspan="8" class="text-center py-8 text-red-500">Error: ' + error.message + '</td></tr>');
+    }
+}
+
+// Load ready to pay brokers (reuses V1 API)
+async function loadReadyToPay() {
+    try {
+        const response = await fetch('/api/admin/brokers-ready-to-pay', {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            safe.html('v2-ready-to-pay-list', '<tr><td colspan="7" class="text-center py-8 text-red-500">Error loading brokers ready to pay</td></tr>');
+            return;
+        }
+        
+        const data = await response.json();
+        const brokers = data.brokers || [];
+        
+        if (brokers.length === 0) {
+            safe.html('v2-ready-to-pay-list', `
+                <tr>
+                    <td colspan="7" class="text-center py-12">
+                        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-3xl">
+                            ✅
+                        </div>
+                        <p style="color: var(--muted);">All brokers are up to date</p>
+                    </td>
+                </tr>
+            `);
+            safe.text('pending-badge', '0');
+            safe.text('v2-pendingPayouts', '0');
+            return;
+        }
+        
+        brokers.sort((a, b) => (b.days_overdue || 0) - (a.days_overdue || 0));
+        
+        const html = brokers.map(broker => {
+            const isOverdue = broker.days_overdue > 0;
+            const overdueBadge = isOverdue 
+                ? `<span class="badge badge-overdue">${broker.days_overdue} days overdue</span>`
+                : '<span class="badge badge-ready">Ready</span>';
+            
+            const methodNames = {
+                'paypal': 'PayPal',
+                'wise': 'Wise',
+                'revolut': 'Revolut',
+                'sepa': 'SEPA',
+                'swift': 'SWIFT',
+                'crypto': 'Crypto'
+            };
+            const paymentMethod = methodNames[broker.payment_method?.toLowerCase()] || broker.payment_method || 'Not Set';
+            
+            const commissionBadge = broker.commission_model === 'bounty'
+                ? '<span class="badge badge-bounty">$500 Bounty</span>'
+                : '<span class="badge badge-monthly">$50/month</span>';
+            
+            return `
+                <tr class="hover:bg-gray-50 ${isOverdue ? 'bg-red-50' : ''}">
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                <span class="text-blue-600 font-semibold">${(broker.name || 'U').charAt(0).toUpperCase()}</span>
+                            </div>
+                            <div>
+                                <div class="font-semibold">${broker.name || 'Unknown'}</div>
+                                <div class="text-sm" style="color: var(--muted);">${broker.email || 'N/A'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${commissionBadge}</td>
+                    <td class="font-semibold" style="color: var(--success);">$${parseFloat(broker.commission_owed || 0).toFixed(2)}</td>
+                    <td style="color: var(--muted);">${paymentMethod}</td>
+                    <td style="color: var(--muted);">${broker.next_payment_due ? new Date(broker.next_payment_due).toLocaleDateString() : 'N/A'}</td>
+                    <td>${overdueBadge}</td>
+                    <td>
+                        <div class="flex gap-2">
+                            <button onclick="viewBrokerPaymentInfo(${broker.id}, '${(broker.name || '').replace(/'/g, "\\'")}', '${(broker.email || '').replace(/'/g, "\\'")}')" class="btn btn-outline btn-sm">
+                                👁️ View
+                            </button>
+                            <button onclick="showMarkPaidModal(${broker.id}, ${parseFloat(broker.commission_owed || 0).toFixed(2)})" class="btn btn-success btn-sm">
+                                ✓ Mark Paid
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        safe.html('v2-ready-to-pay-list', html);
+        safe.text('pending-badge', brokers.length.toString());
+        safe.text('v2-pendingPayouts', brokers.length.toString());
+        
+        // Update overdue count
+        const overdueCount = brokers.filter(b => b.days_overdue > 0).length;
+        safe.text('v2-overduePayments', overdueCount.toString());
+        
+    } catch (error) {
+        console.error('[Admin V2] Error loading ready to pay:', error);
+        safe.html('v2-ready-to-pay-list', '<tr><td colspan="7" class="text-center py-8 text-red-500">Error: ' + error.message + '</td></tr>');
+    }
+}
+
+// Load payment history (reuses V1 API)
+async function loadPaymentHistory() {
+    try {
+        const filter = document.getElementById('v2-payment-filter')?.value || 'all';
+        const response = await fetch(`/api/admin/payment-history?time_filter=${filter}`, {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            safe.html('v2-payment-history-table', '<tr><td colspan="7" class="text-center py-8 text-red-500">Error loading payment history</td></tr>');
+            return;
+        }
+        
+        const data = await response.json();
+        const payments = data.payments || [];
+        
+        if (payments.length === 0) {
+            safe.html('v2-payment-history-table', `
+                <tr>
+                    <td colspan="7" class="text-center py-12">
+                        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-3xl">
+                            💸
+                        </div>
+                        <p style="color: var(--muted);">No payment history yet</p>
+                    </td>
+                </tr>
+            `);
+            safe.text('paid-badge', '0');
+            return;
+        }
+        
+        const html = payments.map(payment => {
+            const date = new Date(payment.paid_at || payment.created_at);
+            const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            
+            const statusBadge = payment.status === 'completed'
+                ? '<span class="badge badge-success">Completed</span>'
+                : payment.status === 'failed' || payment.status === 'rejected'
+                ? '<span class="badge badge-error">Failed</span>'
+                : '<span class="badge badge-pending">Pending</span>';
+            
+            const methodNames = {
+                'paypal': 'PayPal',
+                'wise': 'Wise',
+                'revolut': 'Revolut',
+                'sepa': 'SEPA',
+                'swift': 'SWIFT',
+                'crypto': 'Crypto',
+                'other': 'Other'
+            };
+            const methodName = methodNames[payment.payment_method?.toLowerCase()] || payment.payment_method || 'N/A';
+            
+            const notes = payment.notes || '';
+            const notesDisplay = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
+            
+            return `
+                <tr class="hover:bg-gray-50">
+                    <td style="color: var(--muted);">${dateStr}</td>
+                    <td class="font-medium">${payment.broker_name || 'Unknown'}</td>
+                    <td class="font-semibold">$${parseFloat(payment.amount || 0).toFixed(2)}</td>
+                    <td style="color: var(--muted);">${methodName}</td>
+                    <td class="font-mono text-xs" style="color: var(--muted);">${payment.transaction_id || 'N/A'}</td>
+                    <td>${statusBadge}</td>
+                    <td style="color: var(--muted);" title="${notes}">${notesDisplay || '—'}</td>
+                </tr>
+            `;
+        }).join('');
+        
+        safe.html('v2-payment-history-table', html);
+        safe.text('paid-badge', payments.length.toString());
+        
+        // Update total paid
+        const totalPaid = payments
+            .filter(p => p.status === 'completed')
+            .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+        safe.text('v2-totalPaid', `$${totalPaid.toFixed(2)}`);
+        
+    } catch (error) {
+        console.error('[Admin V2] Error loading payment history:', error);
+        safe.html('v2-payment-history-table', '<tr><td colspan="7" class="text-center py-8 text-red-500">Error: ' + error.message + '</td></tr>');
+    }
+}
+
+// Load comprehensive analytics (reuses V1 API)
+async function loadComprehensiveAnalytics() {
+    try {
+        const response = await fetch('/api/admin/analytics/comprehensive', {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            // Show "—" for missing data
+            safe.text('v2-calc-today', '—');
+            safe.text('v2-calc-week', '—');
+            safe.text('v2-calc-month', '—');
+            safe.text('v2-calc-all', '—');
+            return;
+        }
+        
+        const stats = await response.json();
+        
+        safe.text('v2-calc-today', (stats.calculations_today || 0).toString());
+        safe.text('v2-calc-week', (stats.calculations_week || 0).toString());
+        safe.text('v2-calc-month', (stats.calculations_month || 0).toString());
+        safe.text('v2-calc-all', (stats.calculations_all || 0).toString());
+        
+        safe.text('v2-rev-today', `$${(stats.revenue_today || 0).toFixed(2)}`);
+        safe.text('v2-rev-week', `$${(stats.revenue_week || 0).toFixed(2)}`);
+        safe.text('v2-rev-month', `$${(stats.revenue_month || 0).toFixed(2)}`);
+        safe.text('v2-rev-all', `$${(stats.revenue_all || 0).toFixed(2)}`);
+        
+        safe.text('v2-email-today', (stats.emails_today || 0).toString());
+        safe.text('v2-email-week', (stats.emails_week || 0).toString());
+        safe.text('v2-email-month', (stats.emails_month || 0).toString());
+        safe.text('v2-email-all', (stats.emails_all || 0).toString());
+        
+    } catch (error) {
+        console.error('[Admin V2] Error loading analytics:', error);
+        // Show "—" on error
+        safe.text('v2-calc-today', '—');
+        safe.text('v2-rev-today', '—');
+        safe.text('v2-email-today', '—');
+    }
+}
+
+// Update live analytics (reuses V1 API)
+async function updateLiveAnalytics() {
+    try {
+        const response = await fetch('/api/analytics/today');
+        if (!response.ok) {
+            safe.text('v2-pvToday', '—');
+            safe.text('v2-uvToday', '—');
+            safe.text('v2-calcToday', '—');
+            safe.text('v2-paidToday', '—');
+            return;
+        }
+        
+        const data = await response.json();
+        safe.text('v2-pvToday', data.pv || '0');
+        safe.text('v2-uvToday', data.uv || '0');
+        safe.text('v2-calcToday', data.calc || '0');
+        safe.text('v2-paidToday', data.paid ? `$${parseFloat(data.paid).toFixed(2)}` : '$0');
+        
+    } catch (error) {
+        console.error('[Admin V2] Error updating live analytics:', error);
+        safe.text('v2-pvToday', '—');
+        safe.text('v2-uvToday', '—');
+        safe.text('v2-calcToday', '—');
+        safe.text('v2-paidToday', '—');
+    }
+}
+
+// Update all stats (reuses V1 API)
+async function updateAllStats() {
+    try {
+        const calcResponse = await fetch('/api/admin/calculations-today', {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        if (calcResponse.ok) {
+            const calcData = await calcResponse.json();
+            safe.text('v2-calculationsToday', calcData.calculations_today || '0');
+        } else {
+            safe.text('v2-calculationsToday', '—');
+        }
+        
+        // Set defaults for other stats
+        safe.text('v2-todayRevenue', '$0');
+        safe.text('v2-activeCustomers', '0');
+        
+    } catch (error) {
+        console.error('[Admin V2] Error updating stats:', error);
+        safe.text('v2-calculationsToday', '—');
+    }
+}
+
+// ==================== REUSE EXISTING FUNCTIONS FROM V1 ====================
+// These functions are copied from admin-dashboard.js to maintain compatibility
+
+async function approveApplication(id, email, name, commissionModel) {
+    if (!confirm(`Approve ${name} (${email}) with ${commissionModel === 'bounty' ? '$500 bounty' : '$50/month recurring'} commission?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/admin/approve-partner/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            },
+            body: JSON.stringify({
+                commission_model: commissionModel || 'bounty'
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            alert(`❌ Error: ${errorText || 'Failed to approve application'}`);
+            return;
+        }
+        
+        alert('✅ Application approved!');
+        loadPartnerApplications();
+        loadActiveBrokers();
+        updateAllStats();
+        
+    } catch (error) {
+        console.error('[Admin V2] Error approving application:', error);
+        alert(`❌ Error: ${error.message || 'Network error occurred'}`);
+    }
+}
+
+async function rejectApplication(id) {
+    if (!confirm('Reject this application?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/admin/reject-partner/${id}`, {
+            method: 'POST',
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            alert('❌ Error: Failed to reject application');
+            return;
+        }
+        
+        alert('❌ Application rejected');
+        loadPartnerApplications();
+        
+    } catch (error) {
+        console.error('[Admin V2] Error rejecting application:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+async function deleteApplication(id) {
+    if (!confirm('Permanently delete this application? This cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/admin/delete-partner/${id}`, {
+            method: 'DELETE',
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            alert('❌ Error: Failed to delete application');
+            return;
+        }
+        
+        alert('✅ Application deleted successfully');
+        loadPartnerApplications();
+        
+    } catch (error) {
+        console.error('[Admin V2] Error deleting application:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+async function deleteActiveBroker(brokerId) {
+    if (!confirm('Delete this broker? This will also delete all their referrals and commission data. This cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/admin/delete-broker/${brokerId}`, {
+            method: 'DELETE',
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            alert('❌ Error: Failed to delete broker');
+            return;
+        }
+        
+        alert('✅ Broker deleted successfully');
+        loadActiveBrokers();
+        
+    } catch (error) {
+        console.error('[Admin V2] Error deleting broker:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+async function viewBrokerPaymentInfo(brokerId, brokerName, brokerEmail) {
+    try {
+        const response = await fetch(`/api/admin/broker-payment-info/${brokerId}`, {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            alert('❌ Error loading payment info: ' + response.status);
+            return;
+        }
+        
+        const data = await response.json();
+        const paymentInfo = data.payment_info || {};
+        const broker = data.broker || {};
+        
+        const methodNames = {
+            'paypal': 'PayPal',
+            'wise': 'Wise (TransferWise)',
+            'revolut': 'Revolut',
+            'sepa': 'SEPA Transfer (Europe)',
+            'swift': 'SWIFT/Wire Transfer',
+            'crypto': 'Cryptocurrency'
+        };
+        const paymentMethod = methodNames[paymentInfo.payment_method?.toLowerCase()] || paymentInfo.payment_method || 'Not Set';
+        
+        let paymentDetailsHTML = '';
+        if (paymentInfo.payment_method === 'paypal' || paymentInfo.payment_method === 'wise' || paymentInfo.payment_method === 'revolut') {
+            paymentDetailsHTML = `<div class="mb-4"><label class="block text-sm font-medium mb-1">Payment Email:</label><p class="font-mono">${paymentInfo.payment_email || 'Not provided'}</p></div>`;
+        } else if (paymentInfo.payment_method === 'sepa') {
+            paymentDetailsHTML = `
+                <div class="mb-4"><label class="block text-sm font-medium mb-1">IBAN:</label><p class="font-mono">${paymentInfo.iban || 'Not provided'}</p></div>
+                <div class="mb-4"><label class="block text-sm font-medium mb-1">BIC/SWIFT Code:</label><p class="font-mono">${paymentInfo.swift_code || 'Not provided'}</p></div>
+                <div class="mb-4"><label class="block text-sm font-medium mb-1">Bank Name:</label><p>${paymentInfo.bank_name || 'Not provided'}</p></div>
+            `;
+        } else if (paymentInfo.payment_method === 'crypto') {
+            paymentDetailsHTML = `<div class="mb-4"><label class="block text-sm font-medium mb-1">Wallet Address:</label><p class="font-mono break-all">${paymentInfo.crypto_wallet || 'Not provided'}</p></div>`;
+        }
+        
+        const contentHTML = `
+            <div class="space-y-4">
+                <div><label class="block text-sm font-medium mb-1">Broker Name:</label><p class="font-semibold">${broker.name || brokerName || 'Unknown'}</p></div>
+                <div><label class="block text-sm font-medium mb-1">Email:</label><p>${broker.email || brokerEmail || 'Not provided'}</p></div>
+                <div class="border-t pt-4"><label class="block text-sm font-medium mb-1">Payment Method:</label><p class="font-semibold text-lg">${paymentMethod}</p></div>
+                ${paymentDetailsHTML}
+                <div class="border-t pt-4"><label class="block text-sm font-medium mb-1">Tax ID:</label><p>${paymentInfo.tax_id || 'Not provided'}</p></div>
+            </div>
+        `;
+        
+        safe.html('payment-info-content', contentHTML);
+        document.getElementById('paymentInfoModal').classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('[Admin V2] Error loading payment info:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function showMarkPaidModal(brokerId, amount) {
+    document.getElementById('paid-broker-id').value = brokerId;
+    if (amount) {
+        document.getElementById('paid-amount').value = amount.toFixed(2);
+    }
+    document.getElementById('markPaidModal').classList.remove('hidden');
+}
+
+async function handleMarkPaid(e) {
+    e.preventDefault();
+    
+    const brokerId = document.getElementById('paid-broker-id').value;
+    const amount = document.getElementById('paid-amount').value;
+    const paymentMethod = document.getElementById('paid-method').value;
+    const transactionId = document.getElementById('paid-transaction-id').value;
+    const notes = document.getElementById('paid-notes').value;
+    const confirm = document.getElementById('paid-confirm').checked;
+    
+    if (!confirm) {
+        alert('Please confirm that payment was sent');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/mark-paid', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            },
+            credentials: "include",
+            body: JSON.stringify({
+                broker_id: brokerId,
+                amount: parseFloat(amount),
+                payment_method: paymentMethod,
+                transaction_id: transactionId,
+                notes: notes
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            alert('❌ Error: ' + (error.message || 'Failed to mark payment as paid'));
+            return;
+        }
+        
+        alert('✅ Payment marked as paid successfully');
+        closeModal('markPaidModal');
+        loadPaymentHistory();
+        loadReadyToPay();
+        document.getElementById('mark-paid-form').reset();
+        
+    } catch (error) {
+        console.error('[Admin V2] Error marking payment as paid:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+async function exportPaymentHistory() {
+    try {
+        const filter = document.getElementById('v2-payment-filter')?.value || 'all';
+        const response = await fetch(`/api/admin/payment-history/export?time_filter=${filter}`, {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            alert('❌ Error exporting payment history: ' + response.status);
+            return;
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `payment-history-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+    } catch (error) {
+        console.error('[Admin V2] Error exporting payment history:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+function exportApplications() {
+    alert('Export CSV functionality - using same endpoint as V1');
+    // TODO: Implement CSV export if endpoint exists
+}
+
+function approveAllPending() {
+    alert('Approve all pending - functionality coming soon');
+}
+
+function payAllReady() {
+    alert('Pay all ready - functionality coming soon');
+}
+
+function generateTestKey() {
+    alert('Generate test key - functionality coming soon');
+}
+
+function runBackup() {
+    alert('Run backup - functionality coming soon');
+}
+
+function logout() {
+    if (confirm('Are you sure you want to logout?')) {
+        window.location.href = '/';
+    }
+}
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initializing Admin Dashboard V2...');
+    
+    // Load all data
+    loadPartnerApplications();
+    loadActiveBrokers();
+    loadReadyToPay();
+    loadPaymentHistory();
+    loadComprehensiveAnalytics();
+    updateAllStats();
+    updateLiveAnalytics();
+    
+    // Auto-refresh every 60 seconds
+    setInterval(() => {
+        loadPartnerApplications();
+        loadActiveBrokers();
+        loadReadyToPay();
+        loadPaymentHistory();
+        updateAllStats();
+        updateLiveAnalytics();
+    }, 60000);
+    
+    console.log('✅ Admin Dashboard V2 ready');
+});
+
+// Make functions globally available
+window.switchPayoutTab = switchPayoutTab;
+window.approveApplication = approveApplication;
+window.rejectApplication = rejectApplication;
+window.deleteApplication = deleteApplication;
+window.deleteActiveBroker = deleteActiveBroker;
+window.viewBrokerPaymentInfo = viewBrokerPaymentInfo;
+window.closeModal = closeModal;
+window.handleMarkPaid = handleMarkPaid;
+window.showMarkPaidModal = showMarkPaidModal;
+window.exportPaymentHistory = exportPaymentHistory;
+window.exportApplications = exportApplications;
+window.approveAllPending = approveAllPending;
+window.payAllReady = payAllReady;
+window.generateTestKey = generateTestKey;
+window.runBackup = runBackup;
+window.logout = logout;
+

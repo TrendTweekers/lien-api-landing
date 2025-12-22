@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard V2 - LienDeadline.com</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer data-domain="liendeadline.com" src="https://plausible.io/js/script.js"></script>
+    
+    <!-- V2 Scoped Styles -->
+    <style>
+      #admin-v2 {
+        font-family: "Inter", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        --navy: #1e3a8a;
+        --coral: #f97316;
+        --background: #faf9f6;
+        --foreground: #1f2937;
+        --card: #ffffff;
+        --border: #e5e7eb;
+        --muted: #6b7280;
+        --muted-bg: #f3f4f6;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --error: #dc2626;
+        --primary: #1e3a8a;
+      }
+      
+      #admin-v2 {
+        background: var(--background);
+        color: var(--foreground);
+        min-height: 100vh;
+      }
+      
+      #admin-v2 .dashboard-card {
+        background: var(--card);
+        border-radius: 0.5rem;
+        border: 1px solid var(--border);
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+      }
+      
+      #admin-v2 .kpi-card {
+        background: var(--card);
+        border-radius: 0.5rem;
+        border: 1px solid var(--border);
+        padding: 1.25rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+      }
+      
+      #admin-v2 .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      
+      #admin-v2 .admin-table thead {
+        background: var(--muted-bg);
+      }
+      
+      #admin-v2 .admin-table th {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--muted);
+        border-bottom: 1px solid var(--border);
+      }
+      
+      #admin-v2 .admin-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--border);
+      }
+      
+      #admin-v2 .admin-table tbody tr:hover {
+        background: var(--muted-bg);
+      }
+      
+      #admin-v2 .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+      
+      #admin-v2 .badge-pending {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      
+      #admin-v2 .badge-ready {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      
+      #admin-v2 .badge-paid {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      
+      #admin-v2 .badge-overdue {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      
+      #admin-v2 .badge-success {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      
+      #admin-v2 .badge-error {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      
+      #admin-v2 .badge-monthly {
+        background: #f3e8ff;
+        color: #6b21a8;
+      }
+      
+      #admin-v2 .badge-bounty {
+        background: #fed7aa;
+        color: #9a3412;
+      }
+      
+      #admin-v2 .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        font-size: 0.875rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      #admin-v2 .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+      
+      #admin-v2 .btn-primary:hover {
+        background: #1e40af;
+      }
+      
+      #admin-v2 .btn-success {
+        background: var(--success);
+        color: white;
+      }
+      
+      #admin-v2 .btn-success:hover {
+        background: #059669;
+      }
+      
+      #admin-v2 .btn-danger {
+        background: var(--error);
+        color: white;
+      }
+      
+      #admin-v2 .btn-danger:hover {
+        background: #b91c1c;
+      }
+      
+      #admin-v2 .btn-outline {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--foreground);
+      }
+      
+      #admin-v2 .btn-outline:hover {
+        background: var(--muted-bg);
+      }
+      
+      #admin-v2 .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
+      }
+      
+      #admin-v2 .tab-button {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        font-weight: 500;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: all 0.2s;
+      }
+      
+      #admin-v2 .tab-button:hover {
+        color: var(--foreground);
+      }
+      
+      #admin-v2 .tab-button.active {
+        color: var(--coral);
+        border-bottom-color: var(--coral);
+      }
+      
+      #admin-v2 .tab-content {
+        display: none;
+      }
+      
+      #admin-v2 .tab-content.active {
+        display: block;
+      }
+      
+      #admin-v2 h1, #admin-v2 h2, #admin-v2 h3 {
+        font-family: 'Instrument Serif', serif;
+      }
+    </style>
+</head>
+<body>
+    <div id="admin-v2">
+        <!-- Header -->
+        <header class="sticky top-0 z-50 bg-white border-b border-gray-200">
+            <div class="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h1 class="text-xl font-semibold" style="color: var(--foreground);">LienDeadline Admin</h1>
+                    <p class="text-sm" style="color: var(--muted);">Dashboard for managing brokers and customers</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="/" class="btn btn-outline btn-sm" target="_blank">View Site</a>
+                    <a href="/admin-dashboard" class="btn btn-outline btn-sm">V1 Dashboard</a>
+                    <button onclick="logout()" class="btn btn-outline btn-sm" style="color: var(--muted);">Logout</button>
+                </div>
+            </div>
+        </header>
+        
+        <main class="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
+            <!-- KPI Cards -->
+            <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div class="kpi-card">
+                    <div class="flex items-start justify-between">
+                        <div class="space-y-1">
+                            <p class="text-sm font-medium" style="color: var(--muted);">Today's Revenue</p>
+                            <p class="text-2xl font-semibold tracking-tight" id="v2-todayRevenue">$0</p>
+                        </div>
+                        <div class="flex items-center justify-center w-10 h-10 rounded-lg" style="background: rgba(30, 58, 138, 0.1);">
+                            <span style="color: var(--primary);">💰</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="flex items-start justify-between">
+                        <div class="space-y-1">
+                            <p class="text-sm font-medium" style="color: var(--muted);">Active Customers</p>
+                            <p class="text-2xl font-semibold tracking-tight" id="v2-activeCustomers">0</p>
+                        </div>
+                        <div class="flex items-center justify-center w-10 h-10 rounded-lg" style="background: rgba(16, 185, 129, 0.1);">
+                            <span style="color: var(--success);">👥</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="flex items-start justify-between">
+                        <div class="space-y-1">
+                            <p class="text-sm font-medium" style="color: var(--muted);">Calculations Today</p>
+                            <p class="text-2xl font-semibold tracking-tight" id="v2-calculationsToday">0</p>
+                        </div>
+                        <div class="flex items-center justify-center w-10 h-10 rounded-lg" style="background: rgba(245, 158, 11, 0.1);">
+                            <span style="color: var(--warning);">📊</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="flex items-start justify-between">
+                        <div class="space-y-1">
+                            <p class="text-sm font-medium" style="color: var(--muted);">Pending Payouts</p>
+                            <p class="text-2xl font-semibold tracking-tight" id="v2-pendingPayouts">0</p>
+                        </div>
+                        <div class="flex items-center justify-center w-10 h-10 rounded-lg" style="background: rgba(220, 38, 38, 0.1);">
+                            <span style="color: var(--error);">💸</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="flex items-start justify-between">
+                        <div class="space-y-1">
+                            <p class="text-sm font-medium" style="color: var(--muted);">Total Paid (All Time)</p>
+                            <p class="text-2xl font-semibold tracking-tight" id="v2-totalPaid">$0</p>
+                        </div>
+                        <div class="flex items-center justify-center w-10 h-10 rounded-lg" style="background: rgba(16, 185, 129, 0.1);">
+                            <span style="color: var(--success);">✅</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="flex items-start justify-between">
+                        <div class="space-y-1">
+                            <p class="text-sm font-medium" style="color: var(--muted);">Overdue Payments</p>
+                            <p class="text-2xl font-semibold tracking-tight" id="v2-overduePayments">0</p>
+                        </div>
+                        <div class="flex items-center justify-center w-10 h-10 rounded-lg" style="background: rgba(245, 158, 11, 0.1);">
+                            <span style="color: var(--warning);">⚠️</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Comprehensive Analytics -->
+            <section>
+                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <span style="color: var(--primary);">📊</span>
+                    Comprehensive Analytics
+                </h2>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="dashboard-card p-6">
+                        <h3 class="text-lg font-semibold mb-4">📊 Calculations</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span style="color: var(--muted);">Today:</span>
+                                <span class="font-semibold" id="v2-calc-today">0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span style="color: var(--muted);">This Week:</span>
+                                <span class="font-semibold" id="v2-calc-week">0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span style="color: var(--muted);">This Month:</span>
+                                <span class="font-semibold" id="v2-calc-month">0</span>
+                            </div>
+                            <div class="flex justify-between border-t pt-2 mt-2">
+                                <span class="font-medium">All Time:</span>
+                                <span class="font-bold" style="color: var(--primary);" id="v2-calc-all">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dashboard-card p-6">
+                        <h3 class="text-lg font-semibold mb-4">💰 Revenue</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span style="color: var(--muted);">Today:</span>
+                                <span class="font-semibold" id="v2-rev-today">$0.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span style="color: var(--muted);">This Week:</span>
+                                <span class="font-semibold" id="v2-rev-week">$0.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span style="color: var(--muted);">This Month:</span>
+                                <span class="font-semibold" id="v2-rev-month">$0.00</span>
+                            </div>
+                            <div class="flex justify-between border-t pt-2 mt-2">
+                                <span class="font-medium">All Time:</span>
+                                <span class="font-bold" style="color: var(--success);" id="v2-rev-all">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dashboard-card p-6">
+                        <h3 class="text-lg font-semibold mb-4">📧 Email Captures</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span style="color: var(--muted);">Today:</span>
+                                <span class="font-semibold" id="v2-email-today">0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span style="color: var(--muted);">This Week:</span>
+                                <span class="font-semibold" id="v2-email-week">0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span style="color: var(--muted);">This Month:</span>
+                                <span class="font-semibold" id="v2-email-month">0</span>
+                            </div>
+                            <div class="flex justify-between border-t pt-2 mt-2">
+                                <span class="font-medium">All Time:</span>
+                                <span class="font-bold" style="color: #9333ea;" id="v2-email-all">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Partner Stats Row -->
+            <section class="grid md:grid-cols-2 gap-4">
+                <div class="dashboard-card p-5 flex items-center justify-between">
+                    <span style="color: var(--muted);">Active Partners:</span>
+                    <span class="text-2xl font-semibold" style="color: var(--primary);" id="v2-activePartners">0</span>
+                </div>
+                <div class="dashboard-card p-5 flex items-center justify-between">
+                    <span style="color: var(--muted);">Pending Applications:</span>
+                    <span class="text-2xl font-semibold" style="color: var(--warning);" id="v2-pendingApps">0</span>
+                </div>
+            </section>
+            
+            <!-- Partner Applications + System Panel -->
+            <section class="grid lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2">
+                    <div class="dashboard-card overflow-hidden">
+                        <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                            <h2 class="text-lg font-semibold">Partner Applications</h2>
+                            <div class="flex items-center gap-3">
+                                <span class="badge badge-pending" id="v2-pendingCount">0 Pending</span>
+                                <button onclick="exportApplications()" class="btn btn-outline btn-sm">
+                                    📥 Export CSV
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Applicant</th>
+                                        <th>Commission Model</th>
+                                        <th>Company</th>
+                                        <th>Applied</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="v2-applicationsTable">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="dashboard-card p-6">
+                        <h3 class="font-medium mb-4">System Health</h3>
+                        <div class="space-y-2 mb-6">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                                <span>API: Online</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                                <span>Database: Healthy</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                                <span>Email: Connected</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                                <span>Stripe: Active</span>
+                            </div>
+                        </div>
+                        <h3 class="font-medium mb-3">Quick Actions</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="approveAllPending()" class="btn btn-success btn-sm">Approve All</button>
+                            <button onclick="payAllReady()" class="btn btn-primary btn-sm">Pay All Ready</button>
+                            <button onclick="generateTestKey()" class="btn btn-outline btn-sm">Test Key</button>
+                            <button onclick="runBackup()" class="btn btn-outline btn-sm">Backup</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Broker Payouts Section -->
+            <section>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <div>
+                        <h2 class="text-xl font-semibold flex items-center gap-2">
+                            <span style="color: var(--primary);">💰</span>
+                            Broker Payouts
+                        </h2>
+                        <p class="text-sm" style="color: var(--muted);">Manage broker balances, commissions, and payouts</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="exportPaymentHistory()" class="btn btn-outline btn-sm">
+                            📥 Export All
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Payouts Tabs -->
+                <div class="dashboard-card overflow-hidden">
+                    <div class="p-5 border-b border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <button class="tab-button active" onclick="switchPayoutTab('pending')" id="tab-pending">
+                                ⏰ Due to Pay <span class="badge badge-ready" id="pending-badge">0</span>
+                            </button>
+                            <button class="tab-button" onclick="switchPayoutTab('paid')" id="tab-paid">
+                                ✅ Paid <span class="badge badge-paid" id="paid-badge">0</span>
+                            </button>
+                            <button class="tab-button" onclick="switchPayoutTab('batches')" id="tab-batches">
+                                📦 Batches
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Pending Tab -->
+                    <div id="payout-tab-pending" class="tab-content active p-5">
+                        <div class="overflow-x-auto">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Broker</th>
+                                        <th>Commission Model</th>
+                                        <th>Amount Owed</th>
+                                        <th>Payment Method</th>
+                                        <th>Next Payment Due</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="v2-ready-to-pay-list">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Paid Tab -->
+                    <div id="payout-tab-paid" class="tab-content p-5">
+                        <div class="flex items-center justify-end mb-4">
+                            <select id="v2-payment-filter" onchange="loadPaymentHistory()" class="px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                                <option value="all">All Payments</option>
+                                <option value="month">This Month</option>
+                                <option value="week">This Week</option>
+                            </select>
+                            <button onclick="exportPaymentHistory()" class="btn btn-outline btn-sm ml-2">
+                                📥 Export CSV
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Broker</th>
+                                        <th>Amount</th>
+                                        <th>Method</th>
+                                        <th>Transaction ID</th>
+                                        <th>Status</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="v2-payment-history-table">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Batches Tab -->
+                    <div id="payout-tab-batches" class="tab-content p-5">
+                        <p style="color: var(--muted);">Batch payment functionality coming soon. For now, process payments individually from the Due to Pay tab.</p>
+                        <div class="mt-4 p-4 rounded-lg" style="background: #dbeafe; border: 1px solid #93c5fd;">
+                            <p class="text-sm" style="color: #1e40af;">
+                                <strong>Note:</strong> Batch payments will allow you to process multiple broker payouts at once. This feature is currently under development.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Active Brokers -->
+            <section>
+                <div class="dashboard-card overflow-hidden">
+                    <div class="p-5 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-lg font-semibold">Active Brokers</h2>
+                            <div class="text-sm" style="color: var(--muted);">
+                                <span id="v2-brokerCount">0</span> brokers
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Commission</th>
+                                    <th>Payment Method</th>
+                                    <th>Payment Status</th>
+                                    <th>Last Payment</th>
+                                    <th>Total Paid</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="v2-brokersList">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Live Analytics Bar -->
+            <section>
+                <div class="dashboard-card p-5">
+                    <h3 class="text-lg font-semibold mb-4">Live Analytics</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div>
+                            <div class="text-2xl font-bold" id="v2-pvToday">—</div>
+                            <div class="text-sm" style="color: var(--muted);">Page Views Today</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold" id="v2-uvToday">—</div>
+                            <div class="text-sm" style="color: var(--muted);">Unique Visitors Today</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold" id="v2-calcToday">—</div>
+                            <div class="text-sm" style="color: var(--muted);">Calculations Today</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold" id="v2-paidToday">—</div>
+                            <div class="text-sm" style="color: var(--muted);">Paid All Time</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Modals (reuse existing modal IDs for compatibility) -->
+    <div id="paymentInfoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Broker Payment Information</h2>
+                <button onclick="closeModal('paymentInfoModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div id="payment-info-content" class="space-y-4">
+                <!-- Content loaded dynamically -->
+            </div>
+            <div class="mt-6 flex gap-4">
+                <button onclick="closeModal('paymentInfoModal')" class="btn btn-outline flex-1">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="markPaidModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h2 class="text-2xl font-bold mb-4">Mark Payment as Paid</h2>
+            <form id="mark-paid-form" onsubmit="handleMarkPaid(event)" class="space-y-4">
+                <input type="hidden" id="paid-broker-id">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Payment Method Used *</label>
+                    <select id="paid-method" required class="w-full px-4 py-2 border border-gray-300 rounded-md">
+                        <option value="">Select payment method</option>
+                        <option value="paypal">PayPal</option>
+                        <option value="wise">Wise (TransferWise)</option>
+                        <option value="revolut">Revolut</option>
+                        <option value="sepa">SEPA Transfer</option>
+                        <option value="swift">SWIFT/Wire Transfer</option>
+                        <option value="crypto">Cryptocurrency</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Transaction ID / Reference Number *</label>
+                    <input type="text" id="paid-transaction-id" required placeholder="WS-12345678" class="w-full px-4 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Amount Paid *</label>
+                    <input type="number" id="paid-amount" required step="0.01" min="0" placeholder="100.00" class="w-full px-4 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Notes (Optional)</label>
+                    <textarea id="paid-notes" rows="3" placeholder="Paid via Wise batch" class="w-full px-4 py-2 border border-gray-300 rounded-md"></textarea>
+                </div>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="paid-confirm" required class="mr-2">
+                        <span class="text-sm">I confirm payment was sent</span>
+                    </label>
+                </div>
+                <div class="flex gap-4">
+                    <button type="submit" class="btn btn-success flex-1">Mark as Paid</button>
+                    <button type="button" onclick="closeModal('markPaidModal')" class="btn btn-outline flex-1">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="/admin-dashboard-v2.js?v=20250113"></script>
+</body>
+</html>
+

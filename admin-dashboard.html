@@ -23,29 +23,176 @@
     <!-- Privacy-friendly analytics by Plausible -->
     <script defer data-domain="liendeadline.com" src="https://plausible.io/js/script.js"></script>
     
-    <!-- Clean Admin Dashboard Styles -->
+    <!-- Lovable Design System Styles -->
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-      html{ font-family:"Inter",system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+      :root {
+        --navy: #1e3a8a;
+        --coral: #f97316;
+        --coral-light: #fed7aa;
+        --coral-dark: #ea580c;
+        --red: #dc2626;
+        --orange: #f59e0b;
+        --green: #10b981;
+        --background: #faf9f6;
+        --foreground: #1f2937;
+        --card: #ffffff;
+        --border: #e5e7eb;
+        --muted: #6b7280;
+        --muted-bg: #f3f4f6;
+      }
+      html { 
+        font-family: "Inter", system-ui, sans-serif; 
+        -webkit-font-smoothing: antialiased;
+        background: var(--background);
+      }
+      h1, h2, h3, h4, h5, h6 {
+        font-family: 'Instrument Serif', serif;
+      }
+      
+      /* Tab Styles */
+      .tab-container {
+        border-bottom: 2px solid var(--border);
+        margin-bottom: 1.5rem;
+      }
+      .tab-button {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        font-weight: 500;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: all 0.2s;
+      }
+      .tab-button:hover {
+        color: var(--foreground);
+      }
+      .tab-button.active {
+        color: var(--coral);
+        border-bottom-color: var(--coral);
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      
+      /* Lovable Card Styles */
+      .lovable-card {
+        background: var(--card);
+        border-radius: 0.75rem;
+        border: 1px solid var(--border);
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        transition: box-shadow 0.2s;
+      }
+      .lovable-card:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+      
+      /* Button Styles */
+      .btn-primary {
+        background: var(--coral);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn-primary:hover {
+        background: var(--coral-dark);
+      }
+      .btn-secondary {
+        background: var(--muted-bg);
+        color: var(--foreground);
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        border: 1px solid var(--border);
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn-secondary:hover {
+        background: #e5e7eb;
+      }
+      .btn-danger {
+        background: var(--red);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn-danger:hover {
+        background: #b91c1c;
+      }
+      .btn-success {
+        background: var(--green);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn-success:hover {
+        background: #059669;
+      }
     </style>
 </head>
 <body class="min-h-screen bg-gray-50">
-    <!-- TOP NAVIGATION -->
-    <header class="bg-white shadow-sm border-b px-6 py-4">
+    <!-- TOP NAVIGATION - Lovable Style -->
+    <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
         <div class="flex justify-between items-center">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">LienDeadline Admin</h1>
-                <p class="text-sm text-gray-600">Dashboard for managing brokers and customers</p>
+                <h1 class="text-2xl font-bold" style="color: var(--navy);">LienDeadline Admin</h1>
+                <p class="text-sm" style="color: var(--muted);">Dashboard for managing brokers and customers</p>
             </div>
             <div class="flex items-center space-x-4">
-                <a href="/" class="text-blue-600 hover:text-blue-800 text-sm">View Site</a>
-                <button onclick="logout()" class="text-gray-600 hover:text-gray-800 text-sm">Logout</button>
+                <a href="/" class="text-sm font-medium" style="color: var(--coral);">View Site</a>
+                <a href="/admin-dashboard-v2" class="text-sm font-medium" style="color: var(--coral); font-weight: 600;">V2 Dashboard</a>
+                <button onclick="logout()" class="text-sm font-medium" style="color: var(--muted);">Logout</button>
             </div>
         </div>
     </header>
 
-    <div class="p-6">
-        <!-- Ready to Pay Section -->
-        <div id="readyToPaySection" class="bg-white rounded-xl shadow-sm border border-orange-200 mb-8">
+    <div class="p-6" style="background: var(--background);">
+        <!-- PAYOUTS SECTION WITH TABS -->
+        <div class="lovable-card mb-8">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold" style="color: var(--navy);">💰 Payouts</h2>
+                    <div class="text-sm" style="color: var(--muted);">
+                        <span id="readyToPayCount">0</span> brokers ready
+                    </div>
+                </div>
+                
+                <!-- Tabs -->
+                <div class="tab-container">
+                    <button class="tab-button active" onclick="switchPayoutTab('pending')" id="tab-pending">
+                        Pending
+                        <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800" id="pending-badge">0</span>
+                    </button>
+                    <button class="tab-button" onclick="switchPayoutTab('paid')" id="tab-paid">
+                        Paid
+                    </button>
+                    <button class="tab-button" onclick="switchPayoutTab('batches')" id="tab-batches">
+                        Batches
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Pending Tab Content -->
+            <div id="payout-tab-pending" class="tab-content active">
+                <!-- Ready to Pay Section -->
+                <div id="readyToPaySection">
             <div class="p-6 border-b border-gray-200">
                 <div class="flex justify-between items-center">
                     <h2 class="text-lg font-semibold text-gray-900">💰 Brokers Ready for Payment</h2>
@@ -54,38 +201,96 @@
                     </div>
                 </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Amount Owed</th>
-                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Payment Method</th>
-                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Payment Address</th>
-                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Next Payment Due</th>
-                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ready-to-pay-list" class="divide-y divide-gray-200">
-                        <!-- Dynamic broker rows will go here -->
-                    </tbody>
-                </table>
-            </div>
-            <!-- Empty State -->
-            <div id="no-ready-to-pay" class="py-12 text-center hidden">
-                <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <span class="text-gray-400 text-2xl">✅</span>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Amount Owed</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Payment Method</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Payment Address</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Next Payment Due</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ready-to-pay-list" class="divide-y divide-gray-200">
+                                <!-- Dynamic broker rows will go here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Empty State -->
+                    <div id="no-ready-to-pay" class="py-12 text-center hidden">
+                        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <span class="text-gray-400 text-2xl">✅</span>
+                        </div>
+                        <p class="text-gray-500">All brokers are up to date</p>
+                        <p class="text-sm text-gray-400 mt-2">No payments due at this time</p>
+                    </div>
                 </div>
-                <p class="text-gray-500">All brokers are up to date</p>
-                <p class="text-sm text-gray-400 mt-2">No payments due at this time</p>
+            </div>
+            
+            <!-- Paid Tab Content -->
+            <div id="payout-tab-paid" class="tab-content">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold mb-4" style="color: var(--navy);">Payment History</h3>
+                    <div class="flex items-center gap-2 mb-4">
+                        <button onclick="exportPaymentHistory()" class="btn-secondary text-sm">
+                            Export CSV
+                        </button>
+                        <select id="payment-filter" onchange="loadPaymentHistory()" class="px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                            <option value="all">All Payments</option>
+                            <option value="month">This Month</option>
+                            <option value="week">This Week</option>
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Broker</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Transaction ID</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payment-history-table" class="divide-y divide-gray-200">
+                                <!-- Dynamic rows will go here -->
+                            </tbody>
+                        </table>
+                        <!-- Empty State -->
+                        <div id="no-payment-history" class="py-12 text-center hidden">
+                            <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <span class="text-gray-400 text-2xl">💸</span>
+                            </div>
+                            <p class="text-gray-500">No payment history yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Batches Tab Content -->
+            <div id="payout-tab-batches" class="tab-content">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold mb-4" style="color: var(--navy);">Payment Batches</h3>
+                    <p class="text-gray-500 mb-4">Batch payment functionality coming soon. For now, process payments individually from the Pending tab.</p>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p class="text-sm text-blue-800">
+                            <strong>Note:</strong> Batch payments will allow you to process multiple broker payouts at once. 
+                            This feature is currently under development.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- QUICK STATS ROW -->
+        <!-- QUICK STATS ROW - Lovable Style -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div class="lovable-card p-5">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-sm text-gray-500">Today's Revenue</p>
@@ -96,55 +301,55 @@
                     </div>
                 </div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div class="lovable-card p-5">
                 <div class="flex justify-between items-start">
                     <div>
-                        <p class="text-sm text-gray-500">Active Customers</p>
-                        <p class="text-3xl font-bold text-gray-900" id="activeCustomers">0</p>
+                        <p class="text-sm" style="color: var(--muted);">Active Customers</p>
+                        <p class="text-3xl font-bold" style="color: var(--foreground);" id="activeCustomers">0</p>
                     </div>
                     <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
                         <span class="text-green-600 text-xl">👥</span>
                     </div>
                 </div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div class="lovable-card p-5">
                 <div class="flex justify-between items-start">
                     <div>
-                        <p class="text-sm text-gray-500">Calculations Today</p>
-                        <p class="text-3xl font-bold text-gray-900" id="calculationsToday">0</p>
+                        <p class="text-sm" style="color: var(--muted);">Calculations Today</p>
+                        <p class="text-3xl font-bold" style="color: var(--foreground);" id="calculationsToday">0</p>
                     </div>
                     <div class="w-12 h-12 bg-yellow-50 rounded-lg flex items-center justify-center">
                         <span class="text-yellow-600 text-xl">📊</span>
                     </div>
                 </div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div class="lovable-card p-5">
                 <div class="flex justify-between items-start">
                     <div>
-                        <p class="text-sm text-gray-500">Pending Payouts</p>
-                        <p class="text-3xl font-bold text-gray-900" id="pendingPayouts">0</p>
+                        <p class="text-sm" style="color: var(--muted);">Pending Payouts</p>
+                        <p class="text-3xl font-bold" style="color: var(--foreground);" id="pendingPayouts">0</p>
                     </div>
                     <div class="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
                         <span class="text-red-600 text-xl">💸</span>
                     </div>
                 </div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div class="lovable-card p-5">
                 <div class="flex justify-between items-start">
                     <div>
-                        <p class="text-sm text-gray-500">Total Paid (All Time)</p>
-                        <p class="text-3xl font-bold text-gray-900" id="totalPaid">$0</p>
+                        <p class="text-sm" style="color: var(--muted);">Total Paid (All Time)</p>
+                        <p class="text-3xl font-bold" style="color: var(--foreground);" id="totalPaid">$0</p>
                     </div>
                     <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
                         <span class="text-green-600 text-xl">✅</span>
                     </div>
                 </div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <div class="lovable-card p-5">
                 <div class="flex justify-between items-start">
                     <div>
-                        <p class="text-sm text-gray-500">Overdue Payments</p>
-                        <p class="text-3xl font-bold text-gray-900" id="overduePayments">0</p>
+                        <p class="text-sm" style="color: var(--muted);">Overdue Payments</p>
+                        <p class="text-3xl font-bold" style="color: var(--foreground);" id="overduePayments">0</p>
                     </div>
                     <div class="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center">
                         <span class="text-orange-600 text-xl">⚠️</span>
@@ -157,8 +362,8 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- LEFT COLUMN: Pending Actions -->
             <div class="lg:col-span-2 space-y-8">
-                <!-- Partner Applications Section -->
-                <div class="bg-white rounded-xl shadow-sm border">
+                <!-- Partner Applications Section - Lovable Style -->
+                <div class="lovable-card">
                     <div class="p-6 border-b border-gray-200">
                         <div class="flex justify-between items-center">
                             <h2 class="text-lg font-semibold text-gray-900">Partner Applications</h2>
@@ -242,51 +447,6 @@
                     </div>
                 </div>
 
-                <!-- Payment History Section -->
-                <div class="bg-white rounded-xl shadow-sm border">
-                    <div class="p-6 border-b border-gray-200">
-                        <div class="flex justify-between items-center">
-                            <h2 class="text-lg font-semibold text-gray-900">Payment History</h2>
-                            <div class="flex items-center gap-2">
-                                <button onclick="exportPaymentHistory()" class="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
-                                    Export CSV
-                                </button>
-                                <select id="payment-filter" onchange="loadPaymentHistory()" class="px-3 py-2 text-sm border border-gray-300 rounded-lg">
-                                    <option value="all">All Payments</option>
-                                    <option value="month">This Month</option>
-                                    <option value="week">This Week</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Broker</th>
-                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
-                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Transaction ID</th>
-                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
-                                </tr>
-                            </thead>
-                            <tbody id="payment-history-table" class="divide-y divide-gray-200">
-                                <!-- Dynamic rows will go here -->
-                            </tbody>
-                        </table>
-                        
-                        <!-- Empty State -->
-                        <div id="no-payment-history" class="py-12 text-center hidden">
-                            <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                <span class="text-gray-400 text-2xl">💸</span>
-                            </div>
-                            <p class="text-gray-500">No payment history yet</p>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Customers Section -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

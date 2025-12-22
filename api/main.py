@@ -1818,6 +1818,48 @@ async def serve_dashboard_clean(request: Request):
         raise HTTPException(status_code=404, detail="Dashboard not found")
     return FileResponse(file_path)
 
+@app.get("/admin-dashboard-v2")
+async def serve_admin_dashboard_v2(username: str = Depends(verify_admin)):
+    """Serve admin dashboard V2 with HTTP Basic Auth"""
+    file_path = BASE_DIR / "admin-dashboard-v2.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Admin dashboard V2 not found")
+    
+    # Read file content
+    with open(file_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    
+    # Return with proper headers
+    return Response(
+        content=html_content,
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
+
+@app.get("/admin-dashboard-v2.js")
+async def serve_admin_dashboard_v2_js(username: str = Depends(verify_admin)):
+    """Serve admin dashboard V2 JavaScript"""
+    file_path = BASE_DIR / "admin-dashboard-v2.js"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Admin dashboard V2 JS not found")
+    
+    with open(file_path, 'r', encoding='utf-8') as f:
+        js_content = f.read()
+    
+    return Response(
+        content=js_content,
+        media_type="application/javascript",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
+
 @app.get("/admin-dashboard")
 async def serve_admin_dashboard_clean(username: str = Depends(verify_admin)):
     """Clean URL: /admin-dashboard → admin-dashboard.html"""
