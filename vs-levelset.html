@@ -414,16 +414,12 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <!-- Breadcrumb Navigation -->
-        <nav class="mb-6" aria-label="Breadcrumb">
-            <ol class="flex items-center space-x-2 text-sm text-gray-600">
-                <li><a href="/" class="hover:text-navy transition-colors">Home</a></li>
-                <li class="flex items-center">
-                    <svg class="w-4 h-4 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                    </svg>
-                </li>
-                <li class="text-gray-900 font-medium">Levelset Alternative</li>
-            </ol>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="/">Home</a>
+            <svg class="chevron" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <span class="current">Levelset Alternative</span>
         </nav>
 
         <!-- Disclaimer Box -->
@@ -439,41 +435,41 @@
         </h1>
 
         <!-- Color-Coded Timeline Component -->
-        <div class="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Speed Comparison Timeline</h3>
-            <div class="relative">
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200 fade-in">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">Speed Comparison Timeline</h3>
+            <div class="timeline-container">
                 <!-- Timeline Line -->
-                <div class="hidden md:block absolute top-6 left-0 right-0 h-1 bg-gray-200"></div>
+                <div class="timeline-line"></div>
                 
                 <!-- Timeline Points -->
-                <div class="flex flex-col md:flex-row md:justify-between items-start md:items-center relative">
+                <div class="timeline-points">
                     <!-- LienDeadline Point -->
-                    <div class="flex flex-col items-center mb-6 md:mb-0 relative z-10">
-                        <div class="w-12 h-12 rounded-full bg-coral flex items-center justify-center shadow-lg mb-2">
+                    <div class="timeline-point">
+                        <div class="timeline-marker today">
                             <span class="text-white font-bold text-sm">LD</span>
                         </div>
-                        <div class="text-center">
+                        <div class="text-center mt-2">
                             <p class="font-semibold text-gray-900">LienDeadline</p>
                             <p class="text-xs text-gray-600 mt-1">0.3 seconds</p>
                         </div>
                     </div>
                     
                     <!-- Middle Point -->
-                    <div class="hidden md:flex flex-col items-center relative z-10">
-                        <div class="w-8 h-8 rounded-full bg-orange-400 flex items-center justify-center shadow-md mb-2">
+                    <div class="timeline-point hidden md:block">
+                        <div class="w-8 h-8 rounded-full bg-orange-400 flex items-center justify-center shadow-md">
                             <span class="text-white text-xs">⚡</span>
                         </div>
-                        <div class="text-center">
-                            <p class="text-xs text-gray-500">10x Faster</p>
+                        <div class="text-center mt-2">
+                            <p class="text-xs text-gray-500 font-medium">10x Faster</p>
                         </div>
                     </div>
                     
                     <!-- Levelset Point -->
-                    <div class="flex flex-col items-center relative z-10">
-                        <div class="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center shadow-lg mb-2">
+                    <div class="timeline-point">
+                        <div class="timeline-marker lien">
                             <span class="text-white font-bold text-sm">LS</span>
                         </div>
-                        <div class="text-center">
+                        <div class="text-center mt-2">
                             <p class="font-semibold text-gray-900">Levelset</p>
                             <p class="text-xs text-gray-600 mt-1">30-60 seconds</p>
                         </div>
