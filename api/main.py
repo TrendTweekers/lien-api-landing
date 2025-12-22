@@ -5952,6 +5952,96 @@ async def get_broker_payment_info(request: Request, email: str):
             content={"status": "error", "message": "Failed to retrieve payment information"}
         )
 
+@app.get("/api/admin/migrate-payout-batches")
+async def migrate_payout_batches(username: str = Depends(verify_admin)):
+    """
+    Migration endpoint to create broker_payout_batches table.
+    Safe and idempotent - can be run multiple times.
+    """
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS broker_payout_batches (
+                        id SERIAL PRIMARY KEY,
+                        broker_id INTEGER NOT NULL,
+                        broker_name VARCHAR(255) NOT NULL,
+                        broker_email VARCHAR(255) NOT NULL,
+                        total_amount DECIMAL(10,2) NOT NULL,
+                        currency VARCHAR(10) DEFAULT 'USD',
+                        payment_method VARCHAR(50) NOT NULL,
+                        transaction_id VARCHAR(255),
+                        notes TEXT,
+                        status VARCHAR(50) DEFAULT 'pending',
+                        referral_ids TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        paid_at TIMESTAMP,
+                        created_by_admin VARCHAR(255)
+                    )
+                """)
+                
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_batch_broker ON broker_payout_batches(broker_id)
+                """)
+                
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_batch_status ON broker_payout_batches(status)
+                """)
+            else:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS broker_payout_batches (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        broker_id INTEGER NOT NULL,
+                        broker_name TEXT NOT NULL,
+                        broker_email TEXT NOT NULL,
+                        total_amount REAL NOT NULL,
+                        currency TEXT DEFAULT 'USD',
+                        payment_method TEXT NOT NULL,
+                        transaction_id TEXT,
+                        notes TEXT,
+                        status TEXT DEFAULT 'pending',
+                        referral_ids TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        paid_at TIMESTAMP,
+                        created_by_admin TEXT
+                    )
+                """)
+                
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_batch_broker ON broker_payout_batches(broker_id)
+                """)
+                
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_batch_status ON broker_payout_batches(status)
+                """)
+            
+            conn.commit()
+            
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "status": "success",
+                    "message": "Payout batches migration completed successfully",
+                    "database_type": DB_TYPE
+                }
+            )
+            
+    except Exception as e:
+        print(f"❌ Migration error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": f"Migration failed: {str(e)}",
+                "database_type": DB_TYPE,
+                "traceback": traceback.format_exc()
+            }
+        )
+
 @app.get("/api/admin/migrate-payout-ledger")
 async def migrate_payout_ledger(username: str = Depends(verify_admin)):
     """
@@ -6797,6 +6887,398 @@ async def export_payment_history_csv(time_filter: str = "all", username: str = D
         return JSONResponse(
             status_code=500,
             content={"status": "error", "message": "Failed to export payment history"}
+        )
+
+@app.post("/api/admin/payout-batches/create")
+async def create_payout_batch(request: Request, username: str = Depends(verify_admin)):
+    """Create a payout batch and mark referrals as paid atomically"""
+    try:
+        data = await request.json()
+        broker_id = data.get('broker_id')
+        referral_ids = data.get('referral_ids', [])
+        payment_method = data.get('payment_method')
+        transaction_id = data.get('transaction_id', '')
+        notes = data.get('notes', '')
+        
+        if not broker_id or not referral_ids or not payment_method:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Missing required fields: broker_id, referral_ids, payment_method"}
+            )
+        
+        if not isinstance(referral_ids, list) or len(referral_ids) == 0:
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "referral_ids must be a non-empty array"}
+            )
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get broker info
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id, name, email FROM brokers WHERE id = %s", (broker_id,))
+            else:
+                cursor.execute("SELECT id, name, email FROM brokers WHERE id = ?", (broker_id,))
+            
+            broker = cursor.fetchone()
+            if not broker:
+                return JSONResponse(
+                    status_code=404,
+                    content={"status": "error", "message": "Broker not found"}
+                )
+            
+            if isinstance(broker, dict):
+                broker_name = broker.get('name', 'Unknown')
+                broker_email = broker.get('email', '')
+            else:
+                broker_name = broker[1] if len(broker) > 1 else 'Unknown'
+                broker_email = broker[2] if len(broker) > 2 else ''
+            
+            # Calculate total amount from selected referrals
+            if DB_TYPE == 'postgresql':
+                placeholders = ','.join(['%s'] * len(referral_ids))
+                cursor.execute(f"""
+                    SELECT COALESCE(SUM(payout), 0) as total
+                    FROM referrals
+                    WHERE id IN ({placeholders})
+                    AND status != 'paid'
+                """, referral_ids)
+            else:
+                placeholders = ','.join(['?'] * len(referral_ids))
+                cursor.execute(f"""
+                    SELECT COALESCE(SUM(payout), 0) as total
+                    FROM referrals
+                    WHERE id IN ({placeholders})
+                    AND status != 'paid'
+                """, referral_ids)
+            
+            total_result = cursor.fetchone()
+            total_amount = 0.0
+            if total_result:
+                if isinstance(total_result, dict):
+                    total_amount = float(total_result.get('total', 0))
+                else:
+                    total_amount = float(total_result[0] if len(total_result) > 0 else 0)
+            
+            if total_amount <= 0:
+                return JSONResponse(
+                    status_code=400,
+                    content={"status": "error", "message": "Selected referrals have no unpaid amount or are already paid"}
+                )
+            
+            # Generate batch ID if transaction_id not provided
+            if not transaction_id:
+                transaction_id = f"BATCH-{datetime.now().strftime('%Y%m%d')}-{secrets.token_hex(4).upper()}"
+            
+            # Create batch record
+            referral_ids_json = json.dumps(referral_ids)
+            current_time = datetime.now()
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    INSERT INTO broker_payout_batches 
+                    (broker_id, broker_name, broker_email, total_amount, currency, payment_method, 
+                     transaction_id, notes, status, referral_ids, created_at, created_by_admin)
+                    VALUES (%s, %s, %s, %s, 'USD', %s, %s, %s, 'pending', %s, NOW(), %s)
+                    RETURNING id
+                """, (broker_id, broker_name, broker_email, total_amount, payment_method, 
+                      transaction_id, notes, referral_ids_json, username))
+                
+                batch_id = cursor.fetchone()[0]
+            else:
+                cursor.execute("""
+                    INSERT INTO broker_payout_batches 
+                    (broker_id, broker_name, broker_email, total_amount, currency, payment_method, 
+                     transaction_id, notes, status, referral_ids, created_at, created_by_admin)
+                    VALUES (?, ?, ?, ?, 'USD', ?, ?, ?, 'pending', ?, CURRENT_TIMESTAMP, ?)
+                """, (broker_id, broker_name, broker_email, total_amount, payment_method,
+                      transaction_id, notes, referral_ids_json, username))
+                
+                batch_id = cursor.lastrowid
+            
+            # Mark referrals as paid atomically
+            if DB_TYPE == 'postgresql':
+                placeholders = ','.join(['%s'] * len(referral_ids))
+                cursor.execute(f"""
+                    UPDATE referrals
+                    SET paid_at = NOW(),
+                        status = 'paid',
+                        paid_batch_id = %s
+                    WHERE id IN ({placeholders})
+                    AND status != 'paid'
+                """, [transaction_id] + referral_ids)
+            else:
+                placeholders = ','.join(['?'] * len(referral_ids))
+                cursor.execute(f"""
+                    UPDATE referrals
+                    SET paid_at = CURRENT_TIMESTAMP,
+                        status = 'paid',
+                        paid_batch_id = ?
+                    WHERE id IN ({placeholders})
+                    AND status != 'paid'
+                """, [transaction_id] + referral_ids)
+            
+            # Create broker_payment record linking to batch
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    INSERT INTO broker_payments 
+                    (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, 
+                     notes, status, payment_date, paid_at, paid_referral_ids)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'completed', NOW(), NOW(), %s)
+                """, (broker_id, broker_name, broker_email, total_amount, payment_method,
+                      transaction_id, notes, referral_ids_json))
+            else:
+                cursor.execute("""
+                    INSERT INTO broker_payments 
+                    (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, 
+                     notes, status, payment_date, paid_at, paid_referral_ids)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)
+                """, (broker_id, broker_name, broker_email, total_amount, payment_method,
+                      transaction_id, notes, referral_ids_json))
+            
+            # Update batch status to completed
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE broker_payout_batches
+                    SET status = 'completed',
+                        paid_at = NOW()
+                    WHERE id = %s
+                """, (batch_id,))
+            else:
+                cursor.execute("""
+                    UPDATE broker_payout_batches
+                    SET status = 'completed',
+                        paid_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                """, (batch_id,))
+            
+            conn.commit()
+            
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "status": "success",
+                    "message": "Payout batch created and referrals marked as paid",
+                    "batch_id": batch_id,
+                    "transaction_id": transaction_id,
+                    "total_amount": float(total_amount),
+                    "referrals_marked": len(referral_ids),
+                    "referral_ids": referral_ids
+                }
+            )
+            
+    except Exception as e:
+        print(f"❌ Create batch error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": f"Failed to create batch: {str(e)}"}
+        )
+
+@app.get("/api/admin/payout-batches/{broker_id}")
+async def get_broker_batches(broker_id: int, username: str = Depends(verify_admin)):
+    """Get all payout batches for a broker"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id, broker_id, broker_name, broker_email, total_amount, currency,
+                           payment_method, transaction_id, notes, status, referral_ids,
+                           created_at, paid_at, created_by_admin
+                    FROM broker_payout_batches
+                    WHERE broker_id = %s
+                    ORDER BY created_at DESC
+                """, (broker_id,))
+            else:
+                cursor.execute("""
+                    SELECT id, broker_id, broker_name, broker_email, total_amount, currency,
+                           payment_method, transaction_id, notes, status, referral_ids,
+                           created_at, paid_at, created_by_admin
+                    FROM broker_payout_batches
+                    WHERE broker_id = ?
+                    ORDER BY created_at DESC
+                """, (broker_id,))
+            
+            batches = cursor.fetchall()
+            
+            result = []
+            for batch in batches:
+                if isinstance(batch, dict):
+                    referral_ids = json.loads(batch.get('referral_ids', '[]'))
+                    result.append({
+                        "id": batch.get('id'),
+                        "broker_id": batch.get('broker_id'),
+                        "broker_name": batch.get('broker_name'),
+                        "broker_email": batch.get('broker_email'),
+                        "total_amount": float(batch.get('total_amount', 0)),
+                        "currency": batch.get('currency', 'USD'),
+                        "payment_method": batch.get('payment_method'),
+                        "transaction_id": batch.get('transaction_id'),
+                        "notes": batch.get('notes'),
+                        "status": batch.get('status'),
+                        "referral_ids": referral_ids,
+                        "referral_count": len(referral_ids),
+                        "created_at": batch.get('created_at').isoformat() if batch.get('created_at') else None,
+                        "paid_at": batch.get('paid_at').isoformat() if batch.get('paid_at') else None,
+                        "created_by_admin": batch.get('created_by_admin')
+                    })
+                else:
+                    referral_ids = json.loads(batch[10] if len(batch) > 10 else '[]')
+                    result.append({
+                        "id": batch[0] if len(batch) > 0 else None,
+                        "broker_id": batch[1] if len(batch) > 1 else None,
+                        "broker_name": batch[2] if len(batch) > 2 else None,
+                        "broker_email": batch[3] if len(batch) > 3 else None,
+                        "total_amount": float(batch[4] if len(batch) > 4 else 0),
+                        "currency": batch[5] if len(batch) > 5 else 'USD',
+                        "payment_method": batch[6] if len(batch) > 6 else None,
+                        "transaction_id": batch[7] if len(batch) > 7 else None,
+                        "notes": batch[8] if len(batch) > 8 else None,
+                        "status": batch[9] if len(batch) > 9 else None,
+                        "referral_ids": referral_ids,
+                        "referral_count": len(referral_ids),
+                        "created_at": batch[11].isoformat() if len(batch) > 11 and batch[11] else None,
+                        "paid_at": batch[12].isoformat() if len(batch) > 12 and batch[12] else None,
+                        "created_by_admin": batch[13] if len(batch) > 13 else None
+                    })
+            
+            return JSONResponse(
+                status_code=200,
+                content={"batches": result}
+            )
+            
+    except Exception as e:
+        print(f"❌ Get batches error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": f"Failed to get batches: {str(e)}"}
+        )
+
+@app.get("/api/admin/payout-batches/export/{batch_id}")
+async def export_batch_csv(batch_id: int, username: str = Depends(verify_admin)):
+    """Export a payout batch as CSV"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get batch info
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id, broker_id, broker_name, broker_email, total_amount, currency,
+                           payment_method, transaction_id, notes, status, referral_ids,
+                           created_at, paid_at
+                    FROM broker_payout_batches
+                    WHERE id = %s
+                """, (batch_id,))
+            else:
+                cursor.execute("""
+                    SELECT id, broker_id, broker_name, broker_email, total_amount, currency,
+                           payment_method, transaction_id, notes, status, referral_ids,
+                           created_at, paid_at
+                    FROM broker_payout_batches
+                    WHERE id = ?
+                """, (batch_id,))
+            
+            batch = cursor.fetchone()
+            if not batch:
+                return JSONResponse(
+                    status_code=404,
+                    content={"status": "error", "message": "Batch not found"}
+                )
+            
+            # Parse batch data
+            if isinstance(batch, dict):
+                referral_ids = json.loads(batch.get('referral_ids', '[]'))
+                broker_name = batch.get('broker_name')
+                broker_email = batch.get('broker_email')
+                total_amount = batch.get('total_amount')
+                transaction_id = batch.get('transaction_id')
+                created_at = batch.get('created_at')
+            else:
+                referral_ids = json.loads(batch[10] if len(batch) > 10 else '[]')
+                broker_name = batch[2] if len(batch) > 2 else None
+                broker_email = batch[3] if len(batch) > 3 else None
+                total_amount = batch[4] if len(batch) > 4 else 0
+                transaction_id = batch[7] if len(batch) > 7 else None
+                created_at = batch[11] if len(batch) > 11 else None
+            
+            # Get referral details
+            if len(referral_ids) > 0:
+                placeholders = ','.join(['%s'] * len(referral_ids)) if DB_TYPE == 'postgresql' else ','.join(['?'] * len(referral_ids))
+                cursor.execute(f"""
+                    SELECT id, customer_email, customer_stripe_id, payout, payout_type, payment_date
+                    FROM referrals
+                    WHERE id IN ({placeholders})
+                    ORDER BY id
+                """, referral_ids)
+                
+                referrals = cursor.fetchall()
+            else:
+                referrals = []
+            
+            # Build CSV
+            import csv
+            import io
+            
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Header
+            writer.writerow(['Batch ID', 'Transaction ID', 'Broker Name', 'Broker Email', 
+                           'Total Amount', 'Currency', 'Payment Method', 'Created At', 'Status'])
+            writer.writerow([batch_id, transaction_id or '', broker_name or '', broker_email or '',
+                           total_amount, 'USD', 'N/A', created_at.isoformat() if created_at else '', 'completed'])
+            
+            writer.writerow([])  # Empty row
+            writer.writerow(['Referral Details'])
+            writer.writerow(['Referral ID', 'Customer Email', 'Customer Stripe ID', 
+                           'Amount', 'Type', 'Payment Date'])
+            
+            # Referral rows
+            for ref in referrals:
+                if isinstance(ref, dict):
+                    writer.writerow([
+                        ref.get('id'),
+                        ref.get('customer_email', ''),
+                        ref.get('customer_stripe_id', ''),
+                        ref.get('payout', 0),
+                        ref.get('payout_type', ''),
+                        ref.get('payment_date', '').isoformat() if ref.get('payment_date') else ''
+                    ])
+                else:
+                    writer.writerow([
+                        ref[0] if len(ref) > 0 else '',
+                        ref[1] if len(ref) > 1 else '',
+                        ref[2] if len(ref) > 2 else '',
+                        ref[3] if len(ref) > 3 else 0,
+                        ref[4] if len(ref) > 4 else '',
+                        ref[5].isoformat() if len(ref) > 5 and ref[5] else ''
+                    ])
+            
+            csv_content = output.getvalue()
+            output.close()
+            
+            return Response(
+                content=csv_content,
+                media_type="text/csv",
+                headers={
+                    "Content-Disposition": f"attachment; filename=batch-{batch_id}-{datetime.now().strftime('%Y-%m-%d')}.csv"
+                }
+            )
+            
+    except Exception as e:
+        print(f"❌ Export batch CSV error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": "Failed to export batch CSV"}
         )
 
 @app.get("/api/admin/broker-ledger/{broker_id}")

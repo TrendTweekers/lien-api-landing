@@ -569,11 +569,32 @@
                     
                     <!-- Batches Tab -->
                     <div id="payout-tab-batches" class="tab-content p-5">
-                        <p style="color: var(--muted);">Batch payment functionality coming soon. For now, process payments individually from the Due to Pay tab.</p>
-                        <div class="mt-4 p-4 rounded-lg" style="background: #dbeafe; border: 1px solid #93c5fd;">
-                            <p class="text-sm" style="color: #1e40af;">
-                                <strong>Note:</strong> Batch payments will allow you to process multiple broker payouts at once. This feature is currently under development.
-                            </p>
+                        <div class="mb-4">
+                            <p class="text-sm" style="color: var(--muted);">View payout batches created for brokers. Use "View Breakdown" in Due to Pay tab to create new batches.</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Batch ID</th>
+                                        <th>Broker</th>
+                                        <th>Total Amount</th>
+                                        <th>Referrals</th>
+                                        <th>Payment Method</th>
+                                        <th>Transaction ID</th>
+                                        <th>Created At</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="v2-batches-list">
+                                    <tr>
+                                        <td colspan="9" class="text-center py-8" style="color: var(--muted);">
+                                            Click "View Breakdown" on a broker in "Due to Pay" tab to create batches
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -775,11 +796,20 @@
             
             <!-- Earning Events -->
             <div class="mb-6">
-                <h3 class="text-lg font-semibold mb-3">Earning Events</h3>
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-lg font-semibold">Earning Events</h3>
+                    <div class="flex items-center gap-2">
+                        <button onclick="selectAllDueEvents()" class="btn btn-outline btn-sm">Select All DUE</button>
+                        <button onclick="clearSelection()" class="btn btn-outline btn-sm">Clear</button>
+                    </div>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="admin-table">
                         <thead>
                             <tr>
+                                <th style="width: 40px;">
+                                    <input type="checkbox" id="select-all-events" onchange="toggleAllEvents(this.checked)">
+                                </th>
                                 <th>Customer</th>
                                 <th>Amount</th>
                                 <th>Payment Date</th>
@@ -793,6 +823,17 @@
                             <!-- Dynamic rows -->
                         </tbody>
                     </table>
+                </div>
+                <div id="batch-selection-summary" class="mt-4 p-3 rounded-lg hidden" style="background: var(--muted-bg);">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="font-semibold" id="selected-count">0</span> events selected
+                            <span class="ml-4">Total: <span class="font-semibold" id="selected-total">$0.00</span></span>
+                        </div>
+                        <button onclick="createBatchFromSelection()" class="btn btn-success btn-sm">
+                            ✓ Create Batch + Mark Paid
+                        </button>
+                    </div>
                 </div>
             </div>
             

@@ -557,9 +557,13 @@ async function viewBrokerLedger(brokerId) {
         
         safe.html('ledger-customer-breakdown', customerRows || '<tr><td colspan="8" class="text-center py-4" style="color: var(--muted);">No customers yet</td></tr>');
         
-        // Earning events
+        // Store ledger data globally for batch creation
+        window.currentLedgerBrokerId = brokerId;
+        window.currentLedgerEvents = ledger.earning_events || [];
+        
+        // Earning events with checkboxes for DUE events
         const events = ledger.earning_events || [];
-        const eventRows = events.map(event => {
+        const eventRows = events.map((event, index) => {
             const statusBadge = {
                 'ACTIVE': event.is_eligible ? '<span class="badge badge-ready">DUE</span>' : '<span class="badge badge-pending">HELD</span>',
                 'CANCELED': '<span class="badge badge-error">CANCELED</span>',
@@ -568,8 +572,14 @@ async function viewBrokerLedger(brokerId) {
                 'PAST_DUE': '<span class="badge badge-warning">PAST_DUE</span>'
             }[event.status] || '<span class="badge badge-pending">UNKNOWN</span>';
             
+            const isSelectable = event.is_eligible && !event.is_paid && event.status === 'ACTIVE';
+            const checkbox = isSelectable 
+                ? `<input type="checkbox" class="event-checkbox" data-referral-id="${event.referral_id}" data-amount="${event.amount_due_now}" onchange="updateBatchSelection()">`
+                : '<input type="checkbox" disabled>';
+            
             return `
-                <tr>
+                <tr class="${isSelectable ? '' : 'opacity-50'}">
+                    <td>${checkbox}</td>
                     <td>${event.customer_email || event.customer_stripe_id || '—'}</td>
                     <td>$${parseFloat(event.amount_earned || 0).toFixed(2)}</td>
                     <td>${new Date(event.payment_date).toLocaleDateString()}</td>
@@ -581,7 +591,11 @@ async function viewBrokerLedger(brokerId) {
             `;
         }).join('');
         
-        safe.html('ledger-events-breakdown', eventRows || '<tr><td colspan="7" class="text-center py-4" style="color: var(--muted);">No earning events yet</td></tr>');
+        safe.html('ledger-events-breakdown', eventRows || '<tr><td colspan="8" class="text-center py-4" style="color: var(--muted);">No earning events yet</td></tr>');
+        
+        // Reset selection summary
+        document.getElementById('batch-selection-summary').classList.add('hidden');
+        document.getElementById('select-all-events').checked = false;
         
         // Show modal
         document.getElementById('ledgerModal').classList.remove('hidden');
@@ -1127,6 +1141,120 @@ window.viewBrokerLedger = viewBrokerLedger;
 window.loadOnHold = loadOnHold;
 window.switchPayoutTab = switchPayoutTab;
 window.exportPaymentHistory = exportPaymentHistory;
+
+// Batch selection functions
+function updateBatchSelection() {
+    const checkboxes = document.querySelectorAll('.event-checkbox:checked');
+    const count = checkboxes.length;
+    let total = 0;
+    
+    checkboxes.forEach(cb => {
+        total += parseFloat(cb.getAttribute('data-amount') || 0);
+    });
+    
+    const summaryDiv = document.getElementById('batch-selection-summary');
+    if (count > 0) {
+        summaryDiv.classList.remove('hidden');
+        safe.text('selected-count', count.toString());
+        safe.text('selected-total', `$${total.toFixed(2)}`);
+    } else {
+        summaryDiv.classList.add('hidden');
+    }
+}
+
+function selectAllDueEvents() {
+    const checkboxes = document.querySelectorAll('.event-checkbox:not(:disabled)');
+    checkboxes.forEach(cb => {
+        cb.checked = true;
+    });
+    document.getElementById('select-all-events').checked = true;
+    updateBatchSelection();
+}
+
+function clearSelection() {
+    const checkboxes = document.querySelectorAll('.event-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+    });
+    document.getElementById('select-all-events').checked = false;
+    updateBatchSelection();
+}
+
+function toggleAllEvents(checked) {
+    const checkboxes = document.querySelectorAll('.event-checkbox:not(:disabled)');
+    checkboxes.forEach(cb => {
+        cb.checked = checked;
+    });
+    updateBatchSelection();
+}
+
+async function createBatchFromSelection() {
+    const checkboxes = document.querySelectorAll('.event-checkbox:checked');
+    const referralIds = Array.from(checkboxes).map(cb => parseInt(cb.getAttribute('data-referral-id')));
+    
+    if (referralIds.length === 0) {
+        alert('Please select at least one DUE earning event');
+        return;
+    }
+    
+    const brokerId = window.currentLedgerBrokerId;
+    if (!brokerId) {
+        alert('Error: Broker ID not found');
+        return;
+    }
+    
+    // Get payment method from broker info (or prompt)
+    const paymentMethod = prompt('Enter payment method (paypal, wise, revolut, sepa, swift, crypto):', 'wise');
+    if (!paymentMethod) {
+        return;
+    }
+    
+    const transactionId = prompt('Enter transaction ID (or leave blank to auto-generate):', '') || '';
+    const notes = prompt('Enter notes (optional):', '') || '';
+    
+    try {
+        const response = await fetch('/api/admin/payout-batches/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            },
+            credentials: "include",
+            body: JSON.stringify({
+                broker_id: brokerId,
+                referral_ids: referralIds,
+                payment_method: paymentMethod,
+                transaction_id: transactionId,
+                notes: notes
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            alert('❌ Error: ' + (error.message || 'Failed to create batch'));
+            return;
+        }
+        
+        const result = await response.json();
+        alert(`✅ Batch created successfully!\n\nBatch ID: ${result.batch_id}\nTransaction ID: ${result.transaction_id}\nTotal: $${result.total_amount.toFixed(2)}\nReferrals marked: ${result.referrals_marked}`);
+        
+        // Close modal and refresh tabs
+        closeModal('ledgerModal');
+        loadReadyToPay();
+        loadOnHold();
+        loadPaymentHistory();
+        
+    } catch (error) {
+        console.error('[Admin V2] Error creating batch:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+window.updateBatchSelection = updateBatchSelection;
+window.selectAllDueEvents = selectAllDueEvents;
+window.clearSelection = clearSelection;
+window.toggleAllEvents = toggleAllEvents;
+window.createBatchFromSelection = createBatchFromSelection;
 window.exportApplications = exportApplications;
 window.approveAllPending = approveAllPending;
 window.payAllReady = payAllReady;
