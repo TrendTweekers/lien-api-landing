@@ -582,7 +582,7 @@ async function loadActiveBrokers() {
         safe.hide('noBrokers');
         safe.show('brokersList');
         
-        // Render brokers
+        // Render brokers as table rows
         const html = brokers.map(broker => {
             const commissionBadge = broker.commission_model === 'bounty' || broker.model === 'bounty'
                 ? '<span class="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">$500 Bounty</span>'
@@ -613,41 +613,44 @@ async function loadActiveBrokers() {
                 paymentBadge = `<span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">${name} ${icon}</span>`;
             }
             
+            // Payment status badge
+            let paymentStatusBadge = '<span class="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">Pending</span>';
+            if (broker.payment_status === 'active') {
+                paymentStatusBadge = '<span class="px-2 py-1 rounded text-xs bg-green-100 text-green-800">Active</span>';
+            } else if (broker.payment_status === 'suspended') {
+                paymentStatusBadge = '<span class="px-2 py-1 rounded text-xs bg-red-100 text-red-800">Suspended</span>';
+            } else if (broker.payment_status === 'pending_first_payment') {
+                paymentStatusBadge = '<span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">First Payment</span>';
+            }
+            
+            // Last payment date
+            const lastPaymentDate = broker.last_payment_date 
+                ? new Date(broker.last_payment_date).toLocaleDateString()
+                : 'Never';
+            
+            // Total paid
+            const totalPaid = broker.total_paid ? `$${parseFloat(broker.total_paid).toFixed(2)}` : '$0.00';
+            
             return `
-                <div class="p-4 hover:bg-gray-50">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3 flex-1">
-                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span class="text-blue-600 font-semibold">${(broker.name || 'B').charAt(0).toUpperCase()}</span>
-                            </div>
-                            <div class="flex-1">
-                                <div class="font-semibold text-gray-900">${broker.name || 'Unknown'}</div>
-                                <div class="text-sm text-gray-600">${broker.email || ''}</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <div class="text-right">
-                                <div class="text-sm text-gray-600 mb-1">${commissionBadge}</div>
-                                <div class="text-xs mb-1">${paymentBadge}</div>
-                                <div class="text-xs text-gray-500">Ref: ${broker.referral_code || 'N/A'}</div>
-                            </div>
-                            <button type="button"
-                                class="view-payment-btn px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
-                                data-broker-id="${broker.id}"
-                                data-broker-name="${(broker.name || 'Unknown').replace(/"/g, '&quot;')}"
-                                data-broker-email="${(broker.email || '').replace(/"/g, '&quot;')}"
-                                title="View Payment Info">
-                                View Payment Info
+                <tr class="hover:bg-gray-50">
+                    <td class="py-3 px-6 text-sm font-medium text-gray-900">${broker.name || 'Unknown'}</td>
+                    <td class="py-3 px-6 text-sm text-gray-600">${broker.email || 'N/A'}</td>
+                    <td class="py-3 px-6 text-sm">${commissionBadge}</td>
+                    <td class="py-3 px-6 text-sm">${paymentBadge}</td>
+                    <td class="py-3 px-6 text-sm">${paymentStatusBadge}</td>
+                    <td class="py-3 px-6 text-sm text-gray-600">${lastPaymentDate}</td>
+                    <td class="py-3 px-6 text-sm font-semibold text-green-600">${totalPaid}</td>
+                    <td class="py-3 px-6 text-sm">
+                        <div class="flex gap-2">
+                            <button onclick="viewBrokerPaymentInfo(${broker.id}, '${(broker.name || 'Unknown').replace(/'/g, "\\'")}', '${(broker.email || '').replace(/'/g, "\\'")}')" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs">
+                                View
                             </button>
-                            <button type="button"
-                                class="delete-broker-btn px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
-                                data-broker-id="${broker.id}"
-                                title="Delete broker">
+                            <button onclick="deleteActiveBroker(${broker.id})" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs">
                                 Delete
                             </button>
                         </div>
-                    </div>
-                </div>
+                    </td>
+                </tr>
             `;
         }).join('');
         

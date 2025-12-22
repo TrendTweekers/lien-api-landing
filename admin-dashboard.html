@@ -190,12 +190,28 @@
                         </div>
                     </div>
 
-                    <div id="brokersList" class="divide-y divide-gray-200">
-                        <!-- Dynamic broker cards will go here -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Commission</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Payment Method</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Payment Status</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Last Payment</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Total Paid</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="brokersList" class="divide-y divide-gray-200">
+                                <!-- Dynamic broker rows will go here -->
+                            </tbody>
+                        </table>
                     </div>
 
                     <!-- Empty State -->
-                    <div id="noBrokers" class="py-12 text-center">
+                    <div id="noBrokers" class="py-12 text-center hidden">
                         <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                             <span class="text-gray-400 text-2xl">👥</span>
                         </div>

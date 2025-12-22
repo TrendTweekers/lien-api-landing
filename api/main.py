@@ -3988,19 +3988,23 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Get brokers with payment method (PostgreSQL compatible)
+            # Get brokers with payment method and payment tracking (PostgreSQL compatible)
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     SELECT id, name, email, referrals, earned, status, payment_method, 
-                           commission_model, referral_code
-                FROM brokers
+                           commission_model, referral_code,
+                           COALESCE(payment_status, 'pending_first_payment') as payment_status,
+                           last_payment_date, total_paid
+                    FROM brokers
                     WHERE status IN ('approved', 'active')
                     ORDER BY created_at DESC NULLS LAST, id DESC
                 """)
             else:
                 cursor.execute("""
                     SELECT id, name, email, referrals, earned, status, payment_method, 
-                           commission_model, referral_code
+                           commission_model, referral_code,
+                           COALESCE(payment_status, 'pending_first_payment') as payment_status,
+                           last_payment_date, total_paid
                     FROM brokers
                     WHERE status IN ('approved', 'active') OR status IS NULL
                     ORDER BY created_at DESC, id DESC
@@ -4020,7 +4024,10 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
                         "status": row.get('status') or 'pending',
                         "payment_method": row.get('payment_method'),
                         "commission_model": row.get('commission_model') or row.get('model'),
-                        "referral_code": row.get('referral_code') or row.get('id')
+                        "referral_code": row.get('referral_code') or row.get('id'),
+                        "payment_status": row.get('payment_status') or 'pending_first_payment',
+                        "last_payment_date": row.get('last_payment_date'),
+                        "total_paid": float(row.get('total_paid') or 0)
                     }
                 else:
                     broker_dict = {
@@ -4032,7 +4039,10 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
                         "status": row[5] if len(row) > 5 else 'pending',
                         "payment_method": row[6] if len(row) > 6 else None,
                         "commission_model": row[7] if len(row) > 7 else None,
-                        "referral_code": row[8] if len(row) > 8 else (row[0] if len(row) > 0 else None)
+                        "referral_code": row[8] if len(row) > 8 else (row[0] if len(row) > 0 else None),
+                        "payment_status": row[9] if len(row) > 9 else 'pending_first_payment',
+                        "last_payment_date": row[10] if len(row) > 10 else None,
+                        "total_paid": float(row[11] if len(row) > 11 else 0)
                     }
                 brokers_list.append(broker_dict)
             
