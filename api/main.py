@@ -4920,9 +4920,9 @@ async def broker_dashboard(request: Request, email: str):
             
             # Verify broker exists AND is approved (accept both 'approved' and 'active' for backward compatibility)
             if DB_TYPE == 'postgresql':
-            cursor.execute("""
+                cursor.execute("""
                     SELECT id, name, referral_code, commission_model, referral_link, short_code, status
-                FROM brokers
+                    FROM brokers
                     WHERE LOWER(email) = LOWER(%s)
                     AND status IN ('approved', 'active')
                 """, (email,))
@@ -4953,13 +4953,13 @@ async def broker_dashboard(request: Request, email: str):
                 short_code = broker.get('short_code', '')
                 status = broker.get('status', 'pending')
             else:
-            broker_id = broker[0]
-                broker_name = broker[1] if len(broker) > 1 else ''
-                referral_code = broker[2] if len(broker) > 2 else ''
-                commission_model = broker[3] if len(broker) > 3 else 'bounty'
-                referral_link = broker[4] if len(broker) > 4 else ''
-                short_code = broker[5] if len(broker) > 5 else ''
-                status = broker[6] if len(broker) > 6 else 'pending'
+                    broker_id = broker[0]
+                    broker_name = broker[1] if len(broker) > 1 else ''
+                    referral_code = broker[2] if len(broker) > 2 else ''
+                    commission_model = broker[3] if len(broker) > 3 else 'bounty'
+                    referral_link = broker[4] if len(broker) > 4 else ''
+                    short_code = broker[5] if len(broker) > 5 else ''
+                    status = broker[6] if len(broker) > 6 else 'pending'
             
             # Check if broker is approved
             if status != 'approved':
