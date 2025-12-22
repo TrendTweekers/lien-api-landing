@@ -2289,40 +2289,89 @@ class ChangePasswordRequest(BaseModel):
 @limiter.limit("5/minute")
 async def login(request: Request, req: LoginRequest):
     """Login endpoint - validates credentials and returns session token"""
-    db = get_db()
+    print(f"🔐 Login attempt for {req.email}")
     
     try:
-        # Get user
-        user = db.execute("SELECT * FROM users WHERE email = ?", (req.email,)).fetchone()
-        
-        if not user:
-            raise HTTPException(status_code=401, detail="Invalid email or password")
-        
-        # Check password
-        if not bcrypt.checkpw(req.password.encode(), user['password_hash'].encode()):
-            raise HTTPException(status_code=401, detail="Invalid email or password")
-        
-        # Check subscription active
-        if user['subscription_status'] not in ['active', 'trialing']:
-            raise HTTPException(status_code=403, detail="Subscription expired or cancelled")
-        
-        # Generate session token
-        token = secrets.token_urlsafe(32)
-        
-        db.execute("""
-            UPDATE users 
-            SET session_token = ?, last_login = ?
-            WHERE email = ?
-        """, (token, datetime.now().isoformat(), req.email))
-        db.commit()
-        
-        return {
-            "success": True,
-            "token": token,
-            "email": req.email
-        }
-    finally:
-        db.close()
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get user by email
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT * FROM users WHERE email = %s", (req.email.lower(),))
+            else:
+                cursor.execute("SELECT * FROM users WHERE email = ?", (req.email.lower(),))
+            
+            user = cursor.fetchone()
+            
+            if not user:
+                print(f"❌ User not found: {req.email}")
+                raise HTTPException(status_code=401, detail="Invalid email or password")
+            
+            print(f"✅ User found: {req.email}")
+            
+            # Extract password_hash - handle both dict-like and tuple results
+            # RealDictCursor (PostgreSQL) and sqlite3.Row both support dict-like access
+            try:
+                password_hash = user['password_hash'] if 'password_hash' in user else user.get('password_hash', '')
+                subscription_status = user['subscription_status'] if 'subscription_status' in user else user.get('subscription_status', '')
+            except (TypeError, KeyError):
+                # Fallback for tuple/list results
+                if isinstance(user, (tuple, list)):
+                    password_hash = user[1] if len(user) > 1 else ''
+                    subscription_status = user[4] if len(user) > 4 else ''
+                else:
+                    password_hash = getattr(user, 'password_hash', '')
+                    subscription_status = getattr(user, 'subscription_status', '')
+            
+            # Check password with bcrypt
+            try:
+                password_match = bcrypt.checkpw(req.password.encode('utf-8'), password_hash.encode('utf-8'))
+                print(f"🔑 Password match: {password_match}")
+            except Exception as pw_error:
+                print(f"❌ Password check error: {repr(pw_error)}")
+                password_match = False
+            
+            if not password_match:
+                raise HTTPException(status_code=401, detail="Invalid email or password")
+            
+            # Check subscription status
+            if subscription_status not in ['active', 'trialing']:
+                print(f"⚠️ Subscription status: {subscription_status} (not active)")
+                raise HTTPException(status_code=403, detail="Subscription expired or cancelled")
+            
+            # Generate session token
+            token = secrets.token_urlsafe(32)
+            
+            # Update user session token and last login
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE users 
+                    SET session_token = %s, last_login_at = NOW()
+                    WHERE email = %s
+                """, (token, req.email.lower()))
+            else:
+                cursor.execute("""
+                    UPDATE users 
+                    SET session_token = ?, last_login_at = CURRENT_TIMESTAMP
+                    WHERE email = ?
+                """, (token, req.email.lower()))
+            
+            conn.commit()
+            
+            print(f"✅ Login successful for {req.email}")
+            
+            return {
+                "success": True,
+                "token": token,
+                "email": req.email.lower()
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Login error: {repr(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Login failed. Please try again.")
 
 @app.get("/api/verify-session")
 async def verify_session(authorization: str = Header(None)):
@@ -2332,23 +2381,44 @@ async def verify_session(authorization: str = Header(None)):
     
     token = authorization.replace('Bearer ', '')
     
-    db = get_db()
     try:
-        user = db.execute("SELECT * FROM users WHERE session_token = ?", (token,)).fetchone()
-        
-        if not user:
-            raise HTTPException(status_code=401, detail="Invalid session")
-        
-        if user['subscription_status'] not in ['active', 'trialing']:
-            raise HTTPException(status_code=403, detail="Subscription expired")
-        
-        return {
-            "valid": True,
-            "email": user['email'],
-            "subscription_status": user['subscription_status']
-        }
-    finally:
-        db.close()
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT * FROM users WHERE session_token = %s", (token,))
+            else:
+                cursor.execute("SELECT * FROM users WHERE session_token = ?", (token,))
+            
+            user = cursor.fetchone()
+            
+            if not user:
+                raise HTTPException(status_code=401, detail="Invalid session")
+            
+            # Extract fields - handle both dict-like and tuple results
+            if isinstance(user, dict):
+                subscription_status = user.get('subscription_status', '')
+                email = user.get('email', '')
+            elif isinstance(user, tuple) or isinstance(user, list):
+                subscription_status = user[4] if len(user) > 4 else ''
+                email = user[1] if len(user) > 1 else ''
+            else:
+                subscription_status = getattr(user, 'subscription_status', '')
+                email = getattr(user, 'email', '')
+            
+            if subscription_status not in ['active', 'trialing']:
+                raise HTTPException(status_code=403, detail="Subscription expired")
+            
+            return {
+                "valid": True,
+                "email": email,
+                "subscription_status": subscription_status
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Session verification error: {repr(e)}")
+        raise HTTPException(status_code=500, detail="Session verification failed")
 
 @app.post("/api/change-password")
 async def change_password(req: ChangePasswordRequest):
