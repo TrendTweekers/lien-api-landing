@@ -1060,6 +1060,8 @@ async function loadPaymentHistory() {
                 ? '<span class="px-2 py-1 rounded text-xs bg-green-100 text-green-800">Completed</span>'
                 : payment.status === 'failed'
                 ? '<span class="px-2 py-1 rounded text-xs bg-red-100 text-red-800">Failed</span>'
+                : payment.status === 'rejected'
+                ? '<span class="px-2 py-1 rounded text-xs bg-red-100 text-red-800">Rejected</span>'
                 : '<span class="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">Pending</span>';
             
             const methodNames = {
@@ -1073,14 +1075,18 @@ async function loadPaymentHistory() {
             };
             const methodName = methodNames[payment.payment_method?.toLowerCase()] || payment.payment_method || 'N/A';
             
+            const notes = payment.notes || '';
+            const notesDisplay = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
+            
             return `
                 <tr class="hover:bg-gray-50">
                     <td class="py-3 px-6 text-sm text-gray-900">${dateStr}</td>
                     <td class="py-3 px-6 text-sm text-gray-900">${payment.broker_name || 'Unknown'}</td>
                     <td class="py-3 px-6 text-sm font-semibold text-gray-900">$${parseFloat(payment.amount || 0).toFixed(2)}</td>
                     <td class="py-3 px-6 text-sm text-gray-600">${methodName}</td>
-                    <td class="py-3 px-6 text-sm text-gray-600 font-mono">${payment.transaction_id || 'N/A'}</td>
+                    <td class="py-3 px-6 text-sm text-gray-600 font-mono text-xs">${payment.transaction_id || 'N/A'}</td>
                     <td class="py-3 px-6">${statusBadge}</td>
+                    <td class="py-3 px-6 text-sm text-gray-500" title="${notes}">${notesDisplay || '—'}</td>
                 </tr>
             `;
         }).join('');
@@ -1313,6 +1319,9 @@ async function loadReadyToPay() {
             countElement.textContent = brokers.length;
         }
         
+        // Update payment analytics
+        updatePaymentAnalytics(brokers, data);
+        
         // Show the section if it was hidden
         const section = document.getElementById('readyToPaySection');
         if (section) {
@@ -1325,6 +1334,70 @@ async function loadReadyToPay() {
         if (container) {
             container.innerHTML = '<p class="text-red-500 py-4">Error loading brokers: ' + error.message + '</p>';
         }
+    }
+}
+
+// Update payment analytics
+function updatePaymentAnalytics(brokers, data) {
+    try {
+        // Calculate total commission owed
+        const totalCommissionOwed = brokers.reduce((sum, broker) => sum + parseFloat(broker.commission_owed || 0), 0);
+        
+        // Count overdue payments
+        const overdueCount = brokers.filter(broker => broker.days_overdue > 0).length;
+        
+        // Update pending payouts
+        const pendingPayoutsElement = document.getElementById('pendingPayouts');
+        if (pendingPayoutsElement) {
+            pendingPayoutsElement.textContent = brokers.length;
+        }
+        
+        // Update overdue payments
+        const overduePaymentsElement = document.getElementById('overduePayments');
+        if (overduePaymentsElement) {
+            overduePaymentsElement.textContent = overdueCount;
+        }
+        
+        // Update total commission owed (if summary exists)
+        if (data.summary) {
+            const totalCommissionElement = document.getElementById('totalCommissionOwed');
+            if (totalCommissionElement) {
+                totalCommissionElement.textContent = `$${parseFloat(data.summary.total_commission_owed || 0).toFixed(2)}`;
+            }
+        }
+    } catch (error) {
+        console.error('[Admin] Error updating payment analytics:', error);
+    }
+}
+
+// Load payment analytics on page load
+async function loadPaymentAnalytics() {
+    try {
+        // Load total paid from payment history
+        const response = await fetch('/api/admin/payment-history?time_filter=all', {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const payments = data.payments || [];
+            
+            // Calculate total paid
+            const totalPaid = payments
+                .filter(p => p.status === 'completed')
+                .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+            
+            // Update total paid stat
+            const totalPaidElement = document.getElementById('totalPaid');
+            if (totalPaidElement) {
+                totalPaidElement.textContent = `$${totalPaid.toFixed(2)}`;
+            }
+        }
+    } catch (error) {
+        console.error('[Admin] Error loading payment analytics:', error);
     }
 }
 
@@ -1343,3 +1416,5 @@ window.loadReadyToPay = loadReadyToPay;
 window.closeModal = closeModal;
 window.handleMarkPaid = handleMarkPaid;
 window.showMarkPaidModal = showMarkPaidModal;
+window.loadPaymentAnalytics = loadPaymentAnalytics;
+window.updatePaymentAnalytics = updatePaymentAnalytics;
