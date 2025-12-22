@@ -307,7 +307,7 @@
                 const result = await response.json();
                 console.log('Response data:', result);
                 
-                if (response.ok && result.status === 'success') {
+                if (response.ok && (result.status === 'success' || result.status === 'pending' || result.status === 'approved')) {
                     // Hide form, show success
                     formCard.classList.add('hidden');
                     successMessage.classList.remove('hidden');
@@ -317,7 +317,14 @@
                         document.getElementById('successTitle').textContent = '✅ Approved! Check email for your link.';
                         document.getElementById('successMessage').innerHTML = `
                             <p class="text-gray-700 mb-4">Your referral link has been sent to your email!</p>
-                            <p class="text-sm text-gray-600">Referral Link: <a href="${result.referral_link}" class="text-blue-600 hover:underline" target="_blank">${result.referral_link}</a></p>
+                            <p class="text-sm text-gray-600 mb-4">Referral Link: <a href="${result.referral_link}" class="text-blue-600 hover:underline font-mono" target="_blank">${result.referral_link}</a></p>
+                            <p class="text-xs text-gray-500">Check your email for login credentials and dashboard access.</p>
+                        `;
+                    } else {
+                        // Manual review message
+                        document.getElementById('successTitle').textContent = 'Application Submitted! 🎉';
+                        document.getElementById('successMessage').innerHTML = `
+                            <p class="text-gray-600">We'll review your application and send you an email within 24 hours with your unique referral link.</p>
                         `;
                     }
                     
