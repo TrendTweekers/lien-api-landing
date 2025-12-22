@@ -282,26 +282,25 @@ def compute_broker_ledger(
                 ORDER BY r.created_at ASC
             """, (broker_referral_code,))
         except Exception:
-            # Fallback: query without payment_date column or broker_code
-            try:
-                cursor.execute("""
-                    SELECT 
-                        r.id,
-                        r.broker_id,
-                        r.customer_email,
-                        r.customer_stripe_id,
-                        r.payout_type,
-                        r.payout,
-                        r.status,
-                        r.hold_until,
-                        r.created_at,
-                        r.paid_at,
-                        NULL as payment_date,
-                        NULL as paid_batch_id
-                    FROM referrals r
-                    WHERE r.broker_id = %s
-                    ORDER BY r.created_at ASC
-                """, (broker_referral_code,))
+            # Fallback: query without payment_date column
+            cursor.execute("""
+                SELECT 
+                    r.id,
+                    r.broker_id,
+                    r.customer_email,
+                    r.customer_stripe_id,
+                    r.payout_type,
+                    r.payout,
+                    r.status,
+                    r.hold_until,
+                    r.created_at,
+                    r.paid_at,
+                    NULL as payment_date,
+                    NULL as paid_batch_id
+                FROM referrals r
+                WHERE r.broker_id = %s
+                ORDER BY r.created_at ASC
+            """, (broker_referral_code,))
     else:
         try:
             cursor.execute("""
