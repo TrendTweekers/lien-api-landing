@@ -2373,6 +2373,18 @@ function displayResults(data) {
         // > 30 days: no badge (hidden)
     }
     
+    // Extract state code for PDF download link
+    let stateCode = 'CA'; // Default fallback
+    if (data.state) {
+        stateCode = data.state.toUpperCase().substring(0, 2);
+    } else {
+        // Try to get from form if not in response
+        const stateSelect = document.getElementById('state');
+        if (stateSelect && stateSelect.value) {
+            stateCode = stateSelect.value.toUpperCase().substring(0, 2);
+        }
+    }
+    
     // Display results with timeline
     const resultsDiv = document.getElementById('calculatorResults');
     resultsDiv.innerHTML = `
@@ -2438,6 +2450,13 @@ function displayResults(data) {
             
             <!-- Urgency Badge -->
             ${urgencyBadge}
+        </div>
+        
+        <!-- PDF Guide Download -->
+        <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p class="text-sm text-gray-700">
+                📄 <a href="/guides/${stateCode}-lien-guide.pdf" class="text-blue-600 hover:text-blue-800 underline font-medium">Download ${stateCode} Lien Guide (PDF)</a>
+            </p>
         </div>
     `;
     
