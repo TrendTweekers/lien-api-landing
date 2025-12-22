@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LienDeadline Security - Learn about our security practices, data protection, and compliance.">
+    <title>Security - LienDeadline</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/lovable-scale.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: 'hsl(40 33% 98%)',
+                        foreground: 'hsl(220 20% 15%)',
+                        accent: 'hsl(16 85% 55%)',
+                        muted: 'hsl(40 20% 92%)',
+                        'muted-foreground': 'hsl(220 10% 45%)',
+                        border: 'hsl(40 20% 88%)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-foreground">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="/" class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span class="font-serif text-lg font-semibold">LienDeadline</span>
+                </a>
+                <nav class="hidden md:flex items-center gap-8">
+                    <a href="/#calculator" class="text-muted-foreground hover:text-foreground">Calculator</a>
+                    <a href="/api.html" class="text-muted-foreground hover:text-foreground">API</a>
+                    <a href="/#pricing" class="text-muted-foreground hover:text-foreground">Pricing</a>
+                    <a href="/partners.html" class="text-muted-foreground hover:text-foreground">Partners</a>
+                    <a href="/#calculator" class="bg-accent text-white px-6 py-2 rounded-lg font-semibold">Start Free Trial</a>
+                </nav>
+                <button id="mobileMenuBtn" class="md:hidden p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="hidden fixed inset-0 z-40 bg-background md:hidden">
+        <div class="flex justify-end p-4">
+            <button id="closeMobileMenu" class="p-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="flex flex-col p-6 gap-6">
+            <a href="/#calculator" class="py-3 border-b border-border text-lg font-medium">Calculator</a>
+            <a href="/api.html" class="py-3 border-b border-border text-lg font-medium">API</a>
+            <a href="/#pricing" class="py-3 border-b border-border text-lg font-medium">Pricing</a>
+            <a href="/partners.html" class="py-3 border-b border-border text-lg font-medium">Partners</a>
+            <a href="/#calculator" class="bg-accent text-white px-6 py-3 rounded-lg text-center font-semibold mt-4">Start Free Trial</a>
+        </div>
+    </div>
+
+    <main class="pt-24 pb-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+            <h1 class="text-4xl sm:text-5xl font-serif font-bold mb-4">Security</h1>
+            <p class="text-lg text-muted-foreground mb-12">How we protect your data and ensure system security</p>
+
+            <!-- Data Encryption -->
+            <section class="mb-12">
+                <div class="bg-white rounded-lg border border-border p-6">
+                    <h2 class="text-2xl font-bold mb-4">Data Encryption</h2>
+                    <ul class="space-y-3 text-muted-foreground">
+                        <li>• <strong>In Transit:</strong> All data transmitted between your browser and our servers uses TLS 1.3 encryption (HTTPS)</li>
+                        <li>• <strong>At Rest:</strong> Sensitive data stored in our database is encrypted using industry-standard encryption algorithms</li>
+                        <li>• <strong>Payment Data:</strong> Credit card information is processed securely by Stripe and never stored on our servers</li>
+                        <li>• <strong>API Keys:</strong> API keys are hashed and stored securely. Never share your API key publicly.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Infrastructure Security -->
+            <section class="mb-12">
+                <div class="bg-white rounded-lg border border-border p-6">
+                    <h2 class="text-2xl font-bold mb-4">Infrastructure Security</h2>
+                    <ul class="space-y-3 text-muted-foreground">
+                        <li>• <strong>Hosting:</strong> Our servers are hosted on Railway.app, which provides enterprise-grade security and compliance</li>
+                        <li>• <strong>Database:</strong> PostgreSQL database with encrypted connections and regular backups</li>
+                        <li>• <strong>Access Control:</strong> Multi-factor authentication for admin accounts and restricted API access</li>
+                        <li>• <strong>Monitoring:</strong> 24/7 monitoring for security threats and system anomalies</li>
+                        <li>• <strong>Updates:</strong> Regular security patches and dependency updates</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Authentication & Authorization -->
+            <section class="mb-12">
+                <div class="bg-white rounded-lg border border-border p-6">
+                    <h2 class="text-2xl font-bold mb-4">Authentication & Authorization</h2>
+                    <ul class="space-y-3 text-muted-foreground">
+                        <li>• <strong>Password Security:</strong> Passwords are hashed using bcrypt before storage</li>
+                        <li>• <strong>Session Management:</strong> Secure session tokens with expiration and rotation</li>
+                        <li>• <strong>API Authentication:</strong> API keys required for all API endpoints</li>
+                        <li>• <strong>Rate Limiting:</strong> Protection against abuse and brute-force attacks</li>
+                        <li>• <strong>IP Tracking:</strong> Calculation limits tracked by IP + user agent hash to prevent abuse</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Data Privacy -->
+            <section class="mb-12">
+                <div class="bg-white rounded-lg border border-border p-6">
+                    <h2 class="text-2xl font-bold mb-4">Data Privacy</h2>
+                    <ul class="space-y-3 text-muted-foreground">
+                        <li>• <strong>Data Minimization:</strong> We only collect data necessary to provide our service</li>
+                        <li>• <strong>No Data Selling:</strong> We never sell your data to third parties</li>
+                        <li>• <strong>Data Retention:</strong> Data is retained only as long as necessary for service provision</li>
+                        <li>• <strong>Right to Deletion:</strong> You can request deletion of your data at any time</li>
+                        <li>• <strong>GDPR Compliance:</strong> We comply with GDPR and other data protection regulations</li>
+                    </ul>
+                    <p class="text-sm text-muted-foreground mt-4">See our <a href="/privacy.html" class="text-accent hover:underline">Privacy Policy</a> for more details.</p>
+                </div>
+            </section>
+
+            <!-- Payment Security -->
+            <section class="mb-12">
+                <div class="bg-white rounded-lg border border-border p-6">
+                    <h2 class="text-2xl font-bold mb-4">Payment Security</h2>
+                    <ul class="space-y-3 text-muted-foreground">
+                        <li>• <strong>PCI Compliance:</strong> All payments processed through Stripe, which is PCI DSS Level 1 compliant</li>
+                        <li>• <strong>No Card Storage:</strong> We never see or store your full credit card number</li>
+                        <li>• <strong>Secure Checkout:</strong> All payment forms use Stripe's secure hosted checkout</li>
+                        <li>• <strong>Fraud Detection:</strong> Stripe's advanced fraud detection protects against unauthorized transactions</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Reporting Security Issues -->
+            <section class="mb-12">
+                <div class="bg-white rounded-lg border border-border p-6">
+                    <h2 class="text-2xl font-bold mb-4">Reporting Security Issues</h2>
+                    <p class="text-muted-foreground mb-4">If you discover a security vulnerability, please report it responsibly:</p>
+                    <ul class="space-y-2 text-muted-foreground">
+                        <li>• Email: <a href="mailto:security@liendeadline.com" class="text-accent hover:underline">security@liendeadline.com</a></li>
+                        <li>• Include details about the vulnerability and steps to reproduce</li>
+                        <li>• We will respond within 48 hours and work with you to resolve the issue</li>
+                        <li>• Please do not publicly disclose vulnerabilities until we've had a chance to fix them</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Compliance -->
+            <section class="mb-12">
+                <div class="bg-white rounded-lg border border-border p-6">
+                    <h2 class="text-2xl font-bold mb-4">Compliance</h2>
+                    <ul class="space-y-3 text-muted-foreground">
+                        <li>• <strong>GDPR:</strong> Compliant with General Data Protection Regulation</li>
+                        <li>• <strong>CCPA:</strong> Compliant with California Consumer Privacy Act</li>
+                        <li>• <strong>SOC 2:</strong> Our hosting provider (Railway) maintains SOC 2 Type II compliance</li>
+                        <li>• <strong>Regular Audits:</strong> We conduct regular security audits and assessments</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-border py-12">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-5 gap-8 mb-8">
+                <div class="md:col-span-1">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <span class="font-serif text-lg font-semibold">LienDeadline</span>
+                    </div>
+                    <p class="text-sm text-muted-foreground">Never miss a mechanics lien deadline again.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#calculator" class="text-muted-foreground hover:text-foreground">Calculator</a></li>
+                        <li><a href="/api.html" class="text-muted-foreground hover:text-foreground">API Docs</a></li>
+                        <li><a href="/#pricing" class="text-muted-foreground hover:text-foreground">Pricing</a></li>
+                        <li><a href="/vs-levelset.html" class="text-muted-foreground hover:text-foreground">Levelset Alternative</a></li>
+                        <li><a href="/changelog.html" class="text-muted-foreground hover:text-foreground">Changelog</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/about.html" class="text-muted-foreground hover:text-foreground">About</a></li>
+                        <li><a href="/contact.html" class="text-muted-foreground hover:text-foreground">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/privacy.html" class="text-muted-foreground hover:text-foreground">Privacy</a></li>
+                        <li><a href="/terms.html" class="text-muted-foreground hover:text-foreground">Terms</a></li>
+                        <li><a href="/security.html" class="text-muted-foreground hover:text-foreground">Security</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/help.html" class="text-muted-foreground hover:text-foreground">Help Center</a></li>
+                        <li><a href="#partners" class="text-muted-foreground hover:text-foreground">Partner Program</a></li>
+                        <li><a href="/state-coverage.html" class="text-muted-foreground hover:text-foreground">State Coverage</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <p class="text-sm text-muted-foreground">© 2025 LienDeadline.com. Not legal advice.</p>
+                </div>
+                <div class="flex justify-center gap-6 text-sm">
+                    <a href="/privacy.html" class="text-muted-foreground hover:text-foreground">Privacy Policy</a>
+                    <a href="/terms.html" class="text-muted-foreground hover:text-foreground">Terms of Service</a>
+                    <a href="/partners.html" class="text-muted-foreground hover:text-foreground">Become a Partner</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
+            document.getElementById('mobileMenu')?.classList.remove('hidden');
+        });
+        document.getElementById('closeMobileMenu')?.addEventListener('click', () => {
+            document.getElementById('mobileMenu')?.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="About LienDeadline - Learn about our mission to help building material suppliers never miss a mechanics lien deadline.">
+    <title>About Us - LienDeadline</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/lovable-scale.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: 'hsl(40 33% 98%)',
+                        foreground: 'hsl(220 20% 15%)',
+                        accent: 'hsl(16 85% 55%)',
+                        muted: 'hsl(40 20% 92%)',
+                        'muted-foreground': 'hsl(220 10% 45%)',
+                        border: 'hsl(40 20% 88%)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-foreground">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="/" class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span class="font-serif text-lg font-semibold">LienDeadline</span>
+                </a>
+                <nav class="hidden md:flex items-center gap-8">
+                    <a href="/#calculator" class="text-muted-foreground hover:text-foreground">Calculator</a>
+                    <a href="/api.html" class="text-muted-foreground hover:text-foreground">API</a>
+                    <a href="/#pricing" class="text-muted-foreground hover:text-foreground">Pricing</a>
+                    <a href="/partners.html" class="text-muted-foreground hover:text-foreground">Partners</a>
+                    <a href="/#calculator" class="bg-accent text-white px-6 py-2 rounded-lg font-semibold">Start Free Trial</a>
+                </nav>
+                <button id="mobileMenuBtn" class="md:hidden p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="hidden fixed inset-0 z-40 bg-background md:hidden">
+        <div class="flex justify-end p-4">
+            <button id="closeMobileMenu" class="p-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="flex flex-col p-6 gap-6">
+            <a href="/#calculator" class="py-3 border-b border-border text-lg font-medium">Calculator</a>
+            <a href="/api.html" class="py-3 border-b border-border text-lg font-medium">API</a>
+            <a href="/#pricing" class="py-3 border-b border-border text-lg font-medium">Pricing</a>
+            <a href="/partners.html" class="py-3 border-b border-border text-lg font-medium">Partners</a>
+            <a href="/#calculator" class="bg-accent text-white px-6 py-3 rounded-lg text-center font-semibold mt-4">Start Free Trial</a>
+        </div>
+    </div>
+
+    <main class="pt-24 pb-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+            <h1 class="text-4xl sm:text-5xl font-serif font-bold mb-4">About LienDeadline</h1>
+            <p class="text-lg text-muted-foreground mb-12">Never miss a mechanics lien deadline again</p>
+
+            <div class="space-y-12">
+                <!-- Mission -->
+                <section>
+                    <h2 class="text-2xl font-bold mb-4">Our Mission</h2>
+                    <p class="text-muted-foreground mb-4">Building material suppliers lose $1.2 billion per year by missing mechanics lien deadlines. LienDeadline exists to eliminate that loss.</p>
+                    <p class="text-muted-foreground">We provide instant, accurate deadline calculations via web calculator and API, helping suppliers protect their right to payment without the complexity and cost of traditional solutions.</p>
+                </section>
+
+                <!-- What We Do -->
+                <section>
+                    <h2 class="text-2xl font-bold mb-4">What We Do</h2>
+                    <ul class="space-y-3 text-muted-foreground">
+                        <li>• <strong>Instant Calculations:</strong> Calculate mechanics lien deadlines in 0.3 seconds</li>
+                        <li>• <strong>API Integration:</strong> Integrate deadline calculations into your ERP/CRM system</li>
+                        <li>• <strong>State Coverage:</strong> Support for 28 states covering 75% of the US construction market</li>
+                        <li>• <strong>Affordable Pricing:</strong> $299/month per branch - 60% cheaper than alternatives</li>
+                        <li>• <strong>Free Trial:</strong> 6 free calculations to get started (no credit card required)</li>
+                    </ul>
+                </section>
+
+                <!-- Why We Exist -->
+                <section>
+                    <h2 class="text-2xl font-bold mb-4">Why We Exist</h2>
+                    <p class="text-muted-foreground mb-4">Traditional lien deadline solutions are expensive, slow, and require manual form filling. Building material suppliers need something faster, cheaper, and designed for high-volume operations.</p>
+                    <p class="text-muted-foreground">LienDeadline was built specifically for material suppliers who process hundreds of invoices per day and can't afford to miss a single deadline.</p>
+                </section>
+
+                <!-- Not Legal Advice -->
+                <section>
+                    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-6">
+                        <h2 class="text-2xl font-bold mb-4">Important Disclaimer</h2>
+                        <p class="text-muted-foreground"><strong>LienDeadline is NOT legal advice.</strong> We provide deadline calculations based on state statutes, but you should always consult a licensed attorney for legal guidance on filing mechanics liens.</p>
+                    </div>
+                </section>
+
+                <!-- Contact -->
+                <section>
+                    <h2 class="text-2xl font-bold mb-4">Get in Touch</h2>
+                    <p class="text-muted-foreground mb-4">Have questions or feedback? We'd love to hear from you:</p>
+                    <ul class="space-y-2 text-muted-foreground">
+                        <li>• <a href="/contact.html" class="text-accent hover:underline">Contact Us</a></li>
+                        <li>• <a href="/help.html" class="text-accent hover:underline">Help Center</a></li>
+                        <li>• <a href="/partners.html" class="text-accent hover:underline">Become a Partner</a></li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-border py-12">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-5 gap-8 mb-8">
+                <div class="md:col-span-1">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <span class="font-serif text-lg font-semibold">LienDeadline</span>
+                    </div>
+                    <p class="text-sm text-muted-foreground">Never miss a mechanics lien deadline again.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#calculator" class="text-muted-foreground hover:text-foreground">Calculator</a></li>
+                        <li><a href="/api.html" class="text-muted-foreground hover:text-foreground">API Docs</a></li>
+                        <li><a href="/#pricing" class="text-muted-foreground hover:text-foreground">Pricing</a></li>
+                        <li><a href="/vs-levelset.html" class="text-muted-foreground hover:text-foreground">Levelset Alternative</a></li>
+                        <li><a href="/changelog.html" class="text-muted-foreground hover:text-foreground">Changelog</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/about.html" class="text-muted-foreground hover:text-foreground">About</a></li>
+                        <li><a href="/contact.html" class="text-muted-foreground hover:text-foreground">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/privacy.html" class="text-muted-foreground hover:text-foreground">Privacy</a></li>
+                        <li><a href="/terms.html" class="text-muted-foreground hover:text-foreground">Terms</a></li>
+                        <li><a href="/security.html" class="text-muted-foreground hover:text-foreground">Security</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/help.html" class="text-muted-foreground hover:text-foreground">Help Center</a></li>
+                        <li><a href="#partners" class="text-muted-foreground hover:text-foreground">Partner Program</a></li>
+                        <li><a href="/state-coverage.html" class="text-muted-foreground hover:text-foreground">State Coverage</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <p class="text-sm text-muted-foreground">© 2025 LienDeadline.com. Not legal advice.</p>
+                </div>
+                <div class="flex justify-center gap-6 text-sm">
+                    <a href="/privacy.html" class="text-muted-foreground hover:text-foreground">Privacy Policy</a>
+                    <a href="/terms.html" class="text-muted-foreground hover:text-foreground">Terms of Service</a>
+                    <a href="/partners.html" class="text-muted-foreground hover:text-foreground">Become a Partner</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
+            document.getElementById('mobileMenu')?.classList.remove('hidden');
+        });
+        document.getElementById('closeMobileMenu')?.addEventListener('click', () => {
+            document.getElementById('mobileMenu')?.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
+

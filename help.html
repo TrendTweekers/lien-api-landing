@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LienDeadline Help Center - Get help with calculations, API integration, broker program, and more.">
+    <title>Help Center - LienDeadline</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/lovable-scale.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: 'hsl(40 33% 98%)',
+                        foreground: 'hsl(220 20% 15%)',
+                        accent: 'hsl(16 85% 55%)',
+                        muted: 'hsl(40 20% 92%)',
+                        'muted-foreground': 'hsl(220 10% 45%)',
+                        border: 'hsl(40 20% 88%)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-foreground">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="/" class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span class="font-serif text-lg font-semibold">LienDeadline</span>
+                </a>
+                <nav class="hidden md:flex items-center gap-8">
+                    <a href="/#calculator" class="text-muted-foreground hover:text-foreground">Calculator</a>
+                    <a href="/api.html" class="text-muted-foreground hover:text-foreground">API</a>
+                    <a href="/#pricing" class="text-muted-foreground hover:text-foreground">Pricing</a>
+                    <a href="/partners.html" class="text-muted-foreground hover:text-foreground">Partners</a>
+                    <a href="/#calculator" class="bg-accent text-white px-6 py-2 rounded-lg font-semibold">Start Free Trial</a>
+                </nav>
+                <button id="mobileMenuBtn" class="md:hidden p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="hidden fixed inset-0 z-40 bg-background md:hidden">
+        <div class="flex justify-end p-4">
+            <button id="closeMobileMenu" class="p-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="flex flex-col p-6 gap-6">
+            <a href="/#calculator" class="py-3 border-b border-border text-lg font-medium">Calculator</a>
+            <a href="/api.html" class="py-3 border-b border-border text-lg font-medium">API</a>
+            <a href="/#pricing" class="py-3 border-b border-border text-lg font-medium">Pricing</a>
+            <a href="/partners.html" class="py-3 border-b border-border text-lg font-medium">Partners</a>
+            <a href="/#calculator" class="bg-accent text-white px-6 py-3 rounded-lg text-center font-semibold mt-4">Start Free Trial</a>
+        </div>
+    </div>
+
+    <main class="pt-24 pb-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+            <h1 class="text-4xl sm:text-5xl font-serif font-bold mb-4">Help Center</h1>
+            <p class="text-lg text-muted-foreground mb-12">Find answers to common questions about LienDeadline</p>
+
+            <!-- Getting Started -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-6">Getting Started</h2>
+                <div class="space-y-6">
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">How do I calculate a lien deadline?</h3>
+                        <p class="text-muted-foreground mb-2">Enter your invoice date, state, and role (supplier, contractor, etc.) in the calculator. You'll get instant results showing:</p>
+                        <ul class="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                            <li>Preliminary notice deadline</li>
+                            <li>Lien filing deadline</li>
+                            <li>Serving requirements</li>
+                            <li>Statute citations</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">How many free calculations do I get?</h3>
+                        <p class="text-muted-foreground">You get 3 calculations without providing an email, then 3 more after entering your email (6 total). After that, subscribe for unlimited calculations at $299/month.</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">What states are supported?</h3>
+                        <p class="text-muted-foreground">We support 28 states covering 75% of the US construction market. See our <a href="/state-coverage.html" class="text-accent hover:underline">State Coverage</a> page for the full list.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- API Integration -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-6">API Integration</h2>
+                <div class="space-y-6">
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">How do I get an API key?</h3>
+                        <p class="text-muted-foreground">After subscribing, log into your dashboard and navigate to the API section. Your API key will be displayed there. Keep it secure and never share it publicly.</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">What's the API rate limit?</h3>
+                        <p class="text-muted-foreground">Subscribed users have unlimited API calls. Free trial users are limited to 6 calculations total (3 without email, 3 with email).</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">Can I integrate with my ERP system?</h3>
+                        <p class="text-muted-foreground">Yes! Our REST API is designed for integration with ERP systems, accounting software, and custom applications. See our <a href="/api.html" class="text-accent hover:underline">API Documentation</a> for examples.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Broker Program -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-6">Broker Program & Payouts</h2>
+                <div class="space-y-6">
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">How do broker commissions work?</h3>
+                        <p class="text-muted-foreground mb-2">You choose one of two commission models:</p>
+                        <ul class="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-2">
+                            <li><strong>$500 one-time</strong> per referred customer (paid once, after the hold period)</li>
+                            <li><strong>$50/month recurring</strong> per active referred customer (paid monthly, after the hold period for each payment)</li>
+                        </ul>
+                        <p class="text-muted-foreground text-sm">The model is set per broker and applies to future referrals unless changed by admin.</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">When do I get paid?</h3>
+                        <p class="text-muted-foreground">Commissions are held for 60 days after the customer's payment date. After the hold period, eligible commissions move into "Due" and can be paid in the next payout batch.</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">What happens if a customer refunds, disputes, or cancels?</h3>
+                        <p class="text-muted-foreground">Refunded/chargebacked payments do not become eligible for payout. If a subscription cancels or becomes past-due, recurring commissions stop for that customer until payments resume.</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">Why is my commission showing "On Hold"?</h3>
+                        <p class="text-muted-foreground">"On Hold" means the 60-day hold window hasn't passed yet. Once it passes, it becomes "Due" automatically.</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">How do payouts get processed?</h3>
+                        <p class="text-muted-foreground">Admin pays brokers in payout batches. Each batch contains one or more eligible (Due) commission events and is marked paid together with a timestamp and optional transaction reference.</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">What payment methods are supported?</h3>
+                        <p class="text-muted-foreground">We support PayPal, Wise (TransferWise), Revolut, SEPA Transfer (Europe), SWIFT/Wire Transfer, and Cryptocurrency (Bitcoin/USDT). Set your preferred method in your broker dashboard.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Billing & Subscriptions -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-6">Billing & Subscriptions</h2>
+                <div class="space-y-6">
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">How do I cancel my subscription?</h3>
+                        <p class="text-muted-foreground">Log into your dashboard and navigate to the billing section. Click "Cancel Subscription" and confirm. You'll continue to have access until the end of your billing period.</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">Do you offer refunds?</h3>
+                        <p class="text-muted-foreground">Yes, we offer pro-rated refunds on request within 7 days of payment. Contact support@liendeadline.com for refund requests.</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-border p-6">
+                        <h3 class="text-xl font-semibold mb-3">What payment methods do you accept?</h3>
+                        <p class="text-muted-foreground">We accept all major credit cards and debit cards through Stripe. Payments are processed securely and we never see your full card number.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Contact Support -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-6">Still Need Help?</h2>
+                <div class="bg-white rounded-lg border border-border p-6">
+                    <p class="text-muted-foreground mb-4">Can't find what you're looking for? Contact our support team:</p>
+                    <ul class="space-y-2 text-muted-foreground">
+                        <li><strong>Email:</strong> <a href="mailto:support@liendeadline.com" class="text-accent hover:underline">support@liendeadline.com</a></li>
+                        <li><strong>Response Time:</strong> Within 24 hours</li>
+                    </ul>
+                    <p class="text-sm text-muted-foreground mt-4">For broker-specific questions, log into your <a href="/broker-dashboard.html" class="text-accent hover:underline">broker dashboard</a> for detailed payout information.</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-border py-12">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-5 gap-8 mb-8">
+                <div class="md:col-span-1">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <span class="font-serif text-lg font-semibold">LienDeadline</span>
+                    </div>
+                    <p class="text-sm text-muted-foreground">Never miss a mechanics lien deadline again.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#calculator" class="text-muted-foreground hover:text-foreground">Calculator</a></li>
+                        <li><a href="/api.html" class="text-muted-foreground hover:text-foreground">API Docs</a></li>
+                        <li><a href="/#pricing" class="text-muted-foreground hover:text-foreground">Pricing</a></li>
+                        <li><a href="/vs-levelset.html" class="text-muted-foreground hover:text-foreground">Levelset Alternative</a></li>
+                        <li><a href="/changelog.html" class="text-muted-foreground hover:text-foreground">Changelog</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/about.html" class="text-muted-foreground hover:text-foreground">About</a></li>
+                        <li><a href="/contact.html" class="text-muted-foreground hover:text-foreground">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/privacy.html" class="text-muted-foreground hover:text-foreground">Privacy</a></li>
+                        <li><a href="/terms.html" class="text-muted-foreground hover:text-foreground">Terms</a></li>
+                        <li><a href="/security.html" class="text-muted-foreground hover:text-foreground">Security</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-foreground mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/help.html" class="text-muted-foreground hover:text-foreground">Help Center</a></li>
+                        <li><a href="#partners" class="text-muted-foreground hover:text-foreground">Partner Program</a></li>
+                        <li><a href="/state-coverage.html" class="text-muted-foreground hover:text-foreground">State Coverage</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <p class="text-sm text-muted-foreground">© 2025 LienDeadline.com. Not legal advice.</p>
+                </div>
+                <div class="flex justify-center gap-6 text-sm">
+                    <a href="/privacy.html" class="text-muted-foreground hover:text-foreground">Privacy Policy</a>
+                    <a href="/terms.html" class="text-muted-foreground hover:text-foreground">Terms of Service</a>
+                    <a href="/partners.html" class="text-muted-foreground hover:text-foreground">Become a Partner</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
+            document.getElementById('mobileMenu')?.classList.remove('hidden');
+        });
+        document.getElementById('closeMobileMenu')?.addEventListener('click', () => {
+            document.getElementById('mobileMenu')?.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
+

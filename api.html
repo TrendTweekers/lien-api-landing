@@ -98,19 +98,81 @@
         <div class="max-w-4xl mx-auto">
             <h2 class="text-3xl font-bold text-center mb-12 text-slate-900 tracking-tight">API Documentation</h2>
             
+            <!-- Authentication -->
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8 mb-8">
+                <h3 class="text-xl font-bold mb-4 text-slate-900">Authentication</h3>
+                <p class="text-slate-700 mb-4">All API requests require an API key. Include it in the request header:</p>
+                <pre class="bg-slate-50 p-4 rounded-lg text-sm overflow-x-auto mb-4"><code>Authorization: Bearer YOUR_API_KEY</code></pre>
+                <p class="text-slate-700 mb-2"><strong>Getting Your API Key:</strong></p>
+                <ol class="list-decimal list-inside text-slate-700 space-y-1 ml-4">
+                    <li>Subscribe to LienDeadline ($299/month)</li>
+                    <li>Log into your dashboard</li>
+                    <li>Navigate to the API section</li>
+                    <li>Copy your API key (keep it secure!)</li>
+                </ol>
+                <p class="text-sm text-slate-600 mt-4"><strong>Note:</strong> API keys are session-based and rotate periodically. Store them securely and never commit them to version control.</p>
+            </div>
+
+            <!-- Endpoint -->
             <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8 mb-8">
                 <h3 class="text-xl font-bold mb-4 text-slate-900">Endpoint</h3>
                 <code class="block bg-slate-50 p-4 rounded-lg text-sm font-mono mb-4">POST /api/v1/calculate-deadline</code>
                 
                 <h3 class="text-xl font-bold mb-4 text-slate-900 mt-6">Request Body</h3>
-                <pre class="bg-slate-50 p-4 rounded-lg text-sm overflow-x-auto"><code>{
+                <pre class="bg-slate-50 p-4 rounded-lg text-sm overflow-x-auto mb-4"><code>{
   "invoice_date": "2025-11-27",
   "state": "TX",
   "role": "supplier"
 }</code></pre>
                 
+                <h3 class="text-xl font-bold mb-4 text-slate-900 mt-6">Request Parameters</h3>
+                <div class="overflow-x-auto mb-4">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-100">
+                            <tr>
+                                <th class="p-3 text-left">Parameter</th>
+                                <th class="p-3 text-left">Type</th>
+                                <th class="p-3 text-left">Required</th>
+                                <th class="p-3 text-left">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            <tr>
+                                <td class="p-3 font-mono">invoice_date</td>
+                                <td class="p-3">string (YYYY-MM-DD)</td>
+                                <td class="p-3">Yes</td>
+                                <td class="p-3">Date of invoice or first delivery</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono">state</td>
+                                <td class="p-3">string (2-letter code)</td>
+                                <td class="p-3">Yes</td>
+                                <td class="p-3">US state code (e.g., "TX", "CA", "FL")</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono">role</td>
+                                <td class="p-3">string</td>
+                                <td class="p-3">Yes</td>
+                                <td class="p-3">One of: "supplier", "contractor", "subcontractor"</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 class="text-xl font-bold mb-4 text-slate-900 mt-6">Valid State Codes</h3>
+                <p class="text-slate-700 mb-2">We support 28 states. Valid codes:</p>
+                <p class="text-sm text-slate-600 mb-4 font-mono">AL, AZ, CA, CO, FL, GA, IL, IN, KY, MD, MA, MI, MN, MO, NV, NJ, NY, NC, OH, OR, PA, SC, TN, TX, UT, VA, WA, WI</p>
+                <p class="text-sm text-slate-600">See <a href="/state-coverage.html" class="text-blue-600 hover:underline">State Coverage</a> for full list.</p>
+
+                <h3 class="text-xl font-bold mb-4 text-slate-900 mt-6">Valid Role Values</h3>
+                <ul class="list-disc list-inside text-slate-700 space-y-1 ml-4 mb-4">
+                    <li><code class="bg-slate-100 px-1 rounded">supplier</code> - Material supplier</li>
+                    <li><code class="bg-slate-100 px-1 rounded">contractor</code> - General contractor</li>
+                    <li><code class="bg-slate-100 px-1 rounded">subcontractor</code> - Subcontractor</li>
+                </ul>
+                
                 <h3 class="text-xl font-bold mb-4 text-slate-900 mt-6">Response</h3>
-                <pre class="bg-slate-50 p-4 rounded-lg text-sm overflow-x-auto"><code>{
+                <pre class="bg-slate-50 p-4 rounded-lg text-sm overflow-x-auto mb-4"><code>{
   "preliminary_notice": {
     "deadline": "2025-12-12",
     "days_from_now": 15
@@ -119,9 +181,149 @@
     "deadline": "2026-02-27",
     "days_from_now": 92
   },
-  "serving_requirements": [...],
-  "statute_citations": [...]
+  "serving_requirements": ["property_owner", "original_contractor"],
+  "statute_citations": [
+    "Texas Property Code § 53.056",
+    "Texas Property Code § 53.052"
+  ]
 }</code></pre>
+            </div>
+
+            <!-- Status Codes -->
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8 mb-8">
+                <h3 class="text-xl font-bold mb-4 text-slate-900">HTTP Status Codes</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-100">
+                            <tr>
+                                <th class="p-3 text-left">Code</th>
+                                <th class="p-3 text-left">Meaning</th>
+                                <th class="p-3 text-left">Example</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            <tr>
+                                <td class="p-3 font-mono">200</td>
+                                <td class="p-3">Success</td>
+                                <td class="p-3">Calculation completed successfully</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono">400</td>
+                                <td class="p-3">Bad Request</td>
+                                <td class="p-3">Invalid parameters or missing required fields</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono">401</td>
+                                <td class="p-3">Unauthorized</td>
+                                <td class="p-3">Missing or invalid API key</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono">403</td>
+                                <td class="p-3">Forbidden</td>
+                                <td class="p-3">Calculation limit exceeded (free trial)</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono">404</td>
+                                <td class="p-3">Not Found</td>
+                                <td class="p-3">State not supported</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono">429</td>
+                                <td class="p-3">Too Many Requests</td>
+                                <td class="p-3">Rate limit exceeded</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono">500</td>
+                                <td class="p-3">Server Error</td>
+                                <td class="p-3">Internal server error</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 class="text-xl font-bold mb-4 text-slate-900 mt-6">Error Response Format</h3>
+                <pre class="bg-slate-50 p-4 rounded-lg text-sm overflow-x-auto"><code>{
+  "error": "Invalid state code",
+  "message": "State 'XX' is not supported. See /state-coverage.html for supported states.",
+  "status_code": 404
+}</code></pre>
+            </div>
+
+            <!-- Rate Limits -->
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8 mb-8">
+                <h3 class="text-xl font-bold mb-4 text-slate-900">Rate Limits & Trial Behavior</h3>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-semibold mb-2">Free Trial Users</h4>
+                        <ul class="list-disc list-inside text-slate-700 space-y-1 ml-4">
+                            <li>3 calculations without providing email</li>
+                            <li>3 additional calculations after email verification (6 total)</li>
+                            <li>After 6 calculations, subscription required</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2">Subscribed Users</h4>
+                        <ul class="list-disc list-inside text-slate-700 space-y-1 ml-4">
+                            <li>Unlimited API calls</li>
+                            <li>No rate limits</li>
+                            <li>All 28 supported states available</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2">Rate Limiting</h4>
+                        <p class="text-slate-700">Free trial users are rate-limited by IP address + user agent hash. Subscribed users have no rate limits.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code Examples -->
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8 mb-8">
+                <h3 class="text-xl font-bold mb-4 text-slate-900">Code Examples</h3>
+                
+                <h4 class="font-semibold mb-2 mt-4">cURL</h4>
+                <pre class="bg-slate-50 p-4 rounded-lg text-sm overflow-x-auto mb-4"><code>curl -X POST "https://liendeadline.com/api/v1/calculate-deadline" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "invoice_date": "2025-11-27",
+    "state": "TX",
+    "role": "supplier"
+  }'</code></pre>
+
+                <h4 class="font-semibold mb-2 mt-4">JavaScript (Fetch)</h4>
+                <pre class="bg-slate-50 p-4 rounded-lg text-sm overflow-x-auto mb-4"><code>const response = await fetch('https://liendeadline.com/api/v1/calculate-deadline', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    invoice_date: '2025-11-27',
+    state: 'TX',
+    role: 'supplier'
+  })
+});
+
+const data = await response.json();
+console.log(data);</code></pre>
+
+                <h4 class="font-semibold mb-2 mt-4">Python (requests)</h4>
+                <pre class="bg-slate-50 p-4 rounded-lg text-sm overflow-x-auto mb-4"><code>import requests
+
+url = 'https://liendeadline.com/api/v1/calculate-deadline'
+headers = {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+}
+data = {
+    'invoice_date': '2025-11-27',
+    'state': 'TX',
+    'role': 'supplier'
+}
+
+response = requests.post(url, headers=headers, json=data)
+result = response.json()
+print(result)</code></pre>
             </div>
             
             <div class="text-center">

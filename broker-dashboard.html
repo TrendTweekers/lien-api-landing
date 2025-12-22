@@ -199,7 +199,7 @@
             </div>
             
             <!-- Referrals Table -->
-            <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="bg-white rounded-lg shadow overflow-hidden mb-8">
                 <div class="p-6 border-b">
                     <h3 class="text-xl font-bold">Your Referrals</h3>
                 </div>
@@ -218,6 +218,119 @@
                             <!-- Populated by JavaScript -->
                         </tbody>
                     </table>
+                </div>
+            </div>
+            
+            <!-- Broker Payouts & Commissions FAQ -->
+            <div class="bg-white rounded-lg shadow overflow-hidden mb-8">
+                <div class="p-6 border-b">
+                    <h3 class="text-xl font-bold">Broker Payouts & Commissions</h3>
+                    <p class="text-sm text-gray-600 mt-2">Common questions about how commissions and payouts work</p>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <!-- FAQ Item 1 -->
+                        <div class="broker-faq-item border border-gray-200 rounded-lg overflow-hidden" data-state="closed">
+                            <button class="broker-faq-trigger w-full px-6 py-4 text-left flex justify-between items-center hover:bg-gray-50 transition-colors" onclick="toggleBrokerFaq(this)">
+                                <span class="font-semibold text-gray-900">How do broker commissions work?</span>
+                                <svg class="w-5 h-5 text-gray-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div class="broker-faq-content hidden px-6 pb-4">
+                                <div class="text-gray-700 space-y-2">
+                                    <p>You choose one of two commission models:</p>
+                                    <ul class="list-disc list-inside space-y-1 ml-4">
+                                        <li><strong>$500 one-time</strong> per referred customer (paid once, after the hold period)</li>
+                                        <li><strong>$50/month recurring</strong> per active referred customer (paid monthly, after the hold period for each payment)</li>
+                                    </ul>
+                                    <p class="text-sm text-gray-600 mt-2">The model is set per broker and applies to future referrals unless changed by admin.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- FAQ Item 2 -->
+                        <div class="broker-faq-item border border-gray-200 rounded-lg overflow-hidden" data-state="closed">
+                            <button class="broker-faq-trigger w-full px-6 py-4 text-left flex justify-between items-center hover:bg-gray-50 transition-colors" onclick="toggleBrokerFaq(this)">
+                                <span class="font-semibold text-gray-900">When do I get paid?</span>
+                                <svg class="w-5 h-5 text-gray-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div class="broker-faq-content hidden px-6 pb-4">
+                                <p class="text-gray-700">Commissions are held for 60 days after the customer's payment date. After the hold period, eligible commissions move into "Due" and can be paid in the next payout batch.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- FAQ Item 3 -->
+                        <div class="broker-faq-item border border-gray-200 rounded-lg overflow-hidden" data-state="closed">
+                            <button class="broker-faq-trigger w-full px-6 py-4 text-left flex justify-between items-center hover:bg-gray-50 transition-colors" onclick="toggleBrokerFaq(this)">
+                                <span class="font-semibold text-gray-900">What happens if a customer refunds, disputes, or cancels?</span>
+                                <svg class="w-5 h-5 text-gray-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div class="broker-faq-content hidden px-6 pb-4">
+                                <p class="text-gray-700">Refunded/chargebacked payments do not become eligible for payout. If a subscription cancels or becomes past-due, recurring commissions stop for that customer until payments resume.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- FAQ Item 4 -->
+                        <div class="broker-faq-item border border-gray-200 rounded-lg overflow-hidden" data-state="closed">
+                            <button class="broker-faq-trigger w-full px-6 py-4 text-left flex justify-between items-center hover:bg-gray-50 transition-colors" onclick="toggleBrokerFaq(this)">
+                                <span class="font-semibold text-gray-900">What can I see in my broker dashboard vs what only admin sees?</span>
+                                <svg class="w-5 h-5 text-gray-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div class="broker-faq-content hidden px-6 pb-4">
+                                <div class="text-gray-700 space-y-3">
+                                    <div>
+                                        <p class="font-semibold mb-1">Brokers see:</p>
+                                        <ul class="list-disc list-inside space-y-1 ml-4 text-sm">
+                                            <li>Their referral list + status (active / pending / etc.)</li>
+                                            <li>Their payout totals (earned / on hold / due / paid) where available</li>
+                                            <li>Their chosen payout method details (e.g., PayPal / bank / Wise)</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold mb-1">Admin-only:</p>
+                                        <ul class="list-disc list-inside space-y-1 ml-4 text-sm">
+                                            <li>Full payout ledger events, batch creation, and internal notes</li>
+                                            <li>Approvals/rejections and payout execution details</li>
+                                            <li>Transaction IDs / accounting exports</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- FAQ Item 5 -->
+                        <div class="broker-faq-item border border-gray-200 rounded-lg overflow-hidden" data-state="closed">
+                            <button class="broker-faq-trigger w-full px-6 py-4 text-left flex justify-between items-center hover:bg-gray-50 transition-colors" onclick="toggleBrokerFaq(this)">
+                                <span class="font-semibold text-gray-900">Why is my commission showing "On Hold"?</span>
+                                <svg class="w-5 h-5 text-gray-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div class="broker-faq-content hidden px-6 pb-4">
+                                <p class="text-gray-700">"On Hold" means the 60-day hold window hasn't passed yet. Once it passes, it becomes "Due" automatically.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- FAQ Item 6 -->
+                        <div class="broker-faq-item border border-gray-200 rounded-lg overflow-hidden" data-state="closed">
+                            <button class="broker-faq-trigger w-full px-6 py-4 text-left flex justify-between items-center hover:bg-gray-50 transition-colors" onclick="toggleBrokerFaq(this)">
+                                <span class="font-semibold text-gray-900">How do payouts get processed?</span>
+                                <svg class="w-5 h-5 text-gray-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div class="broker-faq-content hidden px-6 pb-4">
+                                <p class="text-gray-700">Admin pays brokers in payout batches. Each batch contains one or more eligible (Due) commission events and is marked paid together with a timestamp and optional transaction reference.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -894,6 +1007,28 @@ Try free: ${referralLink}
             // mailto link is already set up in populateMarketingMaterials
             window.location.href = document.getElementById('emailClientLink').href;
         }
+        
+        // FAQ Accordion Toggle
+        function toggleBrokerFaq(button) {
+            const faqItem = button.closest('.broker-faq-item');
+            const content = faqItem.querySelector('.broker-faq-content');
+            const icon = button.querySelector('svg');
+            const isOpen = faqItem.getAttribute('data-state') === 'open';
+            
+            // Close all FAQ items
+            document.querySelectorAll('.broker-faq-item').forEach(item => {
+                item.setAttribute('data-state', 'closed');
+                item.querySelector('.broker-faq-content').classList.add('hidden');
+                item.querySelector('.broker-faq-trigger svg').style.transform = 'rotate(0deg)';
+            });
+            
+            // Open clicked item if it wasn't open
+            if (!isOpen) {
+                faqItem.setAttribute('data-state', 'open');
+                content.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            }
+        }
     </script>
     
     <style>
@@ -904,6 +1039,78 @@ Try free: ${referralLink}
         .hover\:bg-orange-600:hover {
             background-color: #ea580c;
         }
+        
+        /* Broker FAQ Accordion Styles */
+        .broker-faq-item[data-state="open"] {
+            border-color: #f97316;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .broker-faq-trigger svg {
+            transition: transform 0.2s ease;
+        }
+        
+        .broker-faq-content {
+            transition: all 0.2s ease;
+        }
     </style>
+    
+    <!-- FAQ Schema JSON-LD -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "How do broker commissions work?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "You choose one of two commission models: $500 one-time per referred customer (paid once, after the hold period) or $50/month recurring per active referred customer (paid monthly, after the hold period for each payment). The model is set per broker and applies to future referrals unless changed by admin."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "When do I get paid?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Commissions are held for 60 days after the customer's payment date. After the hold period, eligible commissions move into \"Due\" and can be paid in the next payout batch."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What happens if a customer refunds, disputes, or cancels?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Refunded/chargebacked payments do not become eligible for payout. If a subscription cancels or becomes past-due, recurring commissions stop for that customer until payments resume."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What can I see in my broker dashboard vs what only admin sees?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Brokers see: Their referral list + status (active / pending / etc.), their payout totals (earned / on hold / due / paid) where available, and their chosen payout method details (e.g., PayPal / bank / Wise). Admin-only: Full payout ledger events, batch creation, and internal notes; approvals/rejections and payout execution details; transaction IDs / accounting exports."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Why is my commission showing \"On Hold\"?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "\"On Hold\" means the 60-day hold window hasn't passed yet. Once it passes, it becomes \"Due\" automatically."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How do payouts get processed?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Admin pays brokers in payout batches. Each batch contains one or more eligible (Due) commission events and is marked paid together with a timestamp and optional transaction reference."
+                }
+            }
+        ]
+    }
+    </script>
 </body>
 </html>
