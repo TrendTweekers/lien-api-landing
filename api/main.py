@@ -1846,6 +1846,14 @@ async def serve_broker_dashboard_clean():
         raise HTTPException(status_code=404, detail="Broker dashboard not found")
     return FileResponse(file_path)
 
+@app.get("/vs-levelset")
+async def serve_vs_levelset_clean():
+    """Clean URL: /vs-levelset → vs-levelset.html"""
+    file_path = BASE_DIR / "vs-levelset.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Levelset comparison page not found")
+    return FileResponse(file_path, media_type="text/html")
+
 @app.get("/partners")
 async def serve_partners_clean():
     """Clean URL: /partners → partners.html"""
