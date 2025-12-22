@@ -1313,13 +1313,16 @@ async def track_calculation(request: Request, request_data: TrackCalculationRequ
                     )
                 remaining = CALCULATIONS_BEFORE_EMAIL - count
             else:
-                # Email provided
+                # Email provided - brokers get same limits as customers
                 if count >= TOTAL_FREE_CALCULATIONS:
+                    error_msg = "Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
+                    if is_broker:
+                        error_msg += " Note: Brokers have the same calculation limits as customers."
                     return JSONResponse(
                         status_code=403,
                         content={
                             "status": "limit_reached",
-                            "message": "Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month.",
+                            "message": error_msg,
                             "calculation_count": count,
                             "remaining_calculations": 0,
                             "email_required": False,
