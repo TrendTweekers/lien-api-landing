@@ -1291,7 +1291,12 @@ async def track_calculation(request: Request, request_data: TrackCalculationRequ
             CALCULATIONS_BEFORE_EMAIL = 3
             TOTAL_FREE_CALCULATIONS = 6
             
-            # Check if limit exceeded
+            # Check if user is a broker - brokers get same limits as customers (no unlimited access)
+            is_broker = email and is_broker_email(email)
+            if is_broker:
+                print(f"⚠️ Broker attempting calculation: {email} - applying same limits as customers")
+            
+            # Check if limit exceeded (same for brokers and customers)
             if not email:
                 # No email provided yet
                 if count >= CALCULATIONS_BEFORE_EMAIL:
@@ -1744,7 +1749,20 @@ async def serve_terms_html():
     return FileResponse(file_path)
 
 @app.get("/customer-dashboard.html")
-async def serve_customer_dashboard_html():
+async def serve_customer_dashboard_html(request: Request):
+    """
+    Customer dashboard HTML - block brokers from accessing.
+    """
+    # Check if user is a broker (via email in query params)
+    email = request.query_params.get('email', '').strip()
+    
+    # Block brokers from accessing customer dashboard
+    if email and is_broker_email(email):
+        raise HTTPException(
+            status_code=403,
+            detail="Brokers cannot access customer dashboard. Please use /broker-dashboard"
+        )
+    
     file_path = BASE_DIR / "customer-dashboard.html"
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="customer-dashboard.html not found in project root")
