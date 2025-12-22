@@ -1442,12 +1442,27 @@
             if (menu) menu.classList.add('hidden');
         });
         
-        // Close mobile menu when clicking a link
-        document.querySelectorAll('#mobileMenu a').forEach(link => {
-            link.addEventListener('click', () => {
-                document.getElementById('mobileMenu').classList.add('hidden');
+        // Close mobile menu when clicking a link (use event delegation)
+        const mobileMenu = document.getElementById('mobileMenu');
+        if (mobileMenu) {
+            mobileMenu.addEventListener('click', (e) => {
+                // If clicking on a link, close the menu
+                if (e.target.tagName === 'A' || e.target.closest('a')) {
+                    const link = e.target.tagName === 'A' ? e.target : e.target.closest('a');
+                    // Don't prevent default - let links navigate normally
+                    // Only close menu for anchor links (#), external links navigate normally
+                    if (link.getAttribute('href')?.startsWith('#')) {
+                        // Anchor link - smooth scroll will handle it
+                        setTimeout(() => {
+                            mobileMenu.classList.add('hidden');
+                        }, 100);
+                    } else {
+                        // External link - close menu immediately and let navigation proceed
+                        mobileMenu.classList.add('hidden');
+                    }
+                }
             });
-        });
+        }
         
         // Hero email form - capture email and extend calculation limits
         safeAddListener('heroEmailForm', 'submit', async (e) => {
