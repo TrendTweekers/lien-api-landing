@@ -477,6 +477,9 @@
                             <button class="tab-button active" onclick="switchPayoutTab('pending')" id="tab-pending">
                                 ⏰ Due to Pay <span class="badge badge-ready" id="pending-badge">0</span>
                             </button>
+                            <button class="tab-button" onclick="switchPayoutTab('hold')" id="tab-hold">
+                                ⏳ On Hold <span class="badge badge-pending" id="hold-badge">0</span>
+                            </button>
                             <button class="tab-button" onclick="switchPayoutTab('paid')" id="tab-paid">
                                 ✅ Paid <span class="badge badge-paid" id="paid-badge">0</span>
                             </button>
@@ -498,10 +501,34 @@
                                         <th>Payment Method</th>
                                         <th>Next Payment Due</th>
                                         <th>Status</th>
+                                        <th>Summary</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="v2-ready-to-pay-list">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- On Hold Tab -->
+                    <div id="payout-tab-hold" class="tab-content p-5">
+                        <div class="overflow-x-auto">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Broker</th>
+                                        <th>Commission Model</th>
+                                        <th>Amount On Hold</th>
+                                        <th>Payment Method</th>
+                                        <th>Days Until Eligible</th>
+                                        <th>Status</th>
+                                        <th>Summary</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="v2-on-hold-list">
                                     <!-- Dynamic rows -->
                                 </tbody>
                             </table>
@@ -669,6 +696,109 @@
                     <button type="button" onclick="closeModal('markPaidModal')" class="btn btn-outline flex-1">Cancel</button>
                 </div>
             </form>
+        </div>
+    </div>
+    
+    <!-- Broker Ledger Breakdown Modal -->
+    <div id="ledgerModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Broker Payout Ledger</h2>
+                <button onclick="closeModal('ledgerModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            
+            <!-- Broker Info -->
+            <div class="mb-6 p-4 rounded-lg" style="background: var(--muted-bg);">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <div class="text-sm" style="color: var(--muted);">Broker Name</div>
+                        <div class="font-semibold" id="ledger-broker-name">—</div>
+                    </div>
+                    <div>
+                        <div class="text-sm" style="color: var(--muted);">Email</div>
+                        <div class="font-semibold" id="ledger-broker-email">—</div>
+                    </div>
+                    <div>
+                        <div class="text-sm" style="color: var(--muted);">Commission Model</div>
+                        <div class="font-semibold" id="ledger-commission-model">—</div>
+                    </div>
+                    <div>
+                        <div class="text-sm" style="color: var(--muted);">Next Payout Date</div>
+                        <div class="font-semibold" id="ledger-next-payout">—</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Summary Totals -->
+            <div class="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="p-4 rounded-lg border" style="border-color: var(--border);">
+                    <div class="text-sm" style="color: var(--muted);">Total Earned</div>
+                    <div class="text-2xl font-bold" id="ledger-total-earned">$0.00</div>
+                </div>
+                <div class="p-4 rounded-lg border" style="border-color: var(--border);">
+                    <div class="text-sm" style="color: var(--muted);">Total Paid</div>
+                    <div class="text-2xl font-bold" style="color: var(--success);" id="ledger-total-paid">$0.00</div>
+                </div>
+                <div class="p-4 rounded-lg border" style="border-color: var(--border);">
+                    <div class="text-sm" style="color: var(--muted);">Total Due Now</div>
+                    <div class="text-2xl font-bold" style="color: var(--success);" id="ledger-total-due">$0.00</div>
+                </div>
+                <div class="p-4 rounded-lg border" style="border-color: var(--border);">
+                    <div class="text-sm" style="color: var(--muted);">Total On Hold</div>
+                    <div class="text-2xl font-bold" style="color: var(--warning);" id="ledger-total-hold">$0.00</div>
+                </div>
+            </div>
+            
+            <!-- Customer Breakdown -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-3">Per-Customer Breakdown</h3>
+                <div class="overflow-x-auto">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Model</th>
+                                <th>Last Payment</th>
+                                <th>Earned</th>
+                                <th>Paid</th>
+                                <th>Due Now</th>
+                                <th>On Hold</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledger-customer-breakdown">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Earning Events -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-3">Earning Events</h3>
+                <div class="overflow-x-auto">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Payment Date</th>
+                                <th>Eligible At</th>
+                                <th>Paid</th>
+                                <th>Paid Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledger-events-breakdown">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex gap-4">
+                <button onclick="closeModal('ledgerModal')" class="btn btn-outline flex-1">Close</button>
+            </div>
         </div>
     </div>
     

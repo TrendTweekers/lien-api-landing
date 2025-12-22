@@ -94,14 +94,32 @@ This document provides a comprehensive testing checklist to verify that:
 - [ ] Empty state displays correctly
 
 ### Broker Payouts Section
-- [ ] Tabs (Due to Pay / Paid / Batches) switch correctly
-- [ ] "Due to Pay" tab shows brokers ready for payment
-- [ ] "Paid" tab shows payment history
+- [ ] Tabs (Due to Pay / On Hold / Paid / Batches) switch correctly
+- [ ] "Due to Pay" tab shows brokers with `total_due_now > 0` (from ledger)
+- [ ] "On Hold" tab shows brokers with `total_on_hold > 0` (from ledger)
+- [ ] "Paid" tab shows payment history from `/api/admin/payment-history`
 - [ ] "Batches" tab shows placeholder message
 - [ ] Badge counts update correctly
-- [ ] "Mark Paid" button works correctly
-- [ ] "View Info" button works correctly
+- [ ] "View Breakdown" button opens ledger modal with per-customer and per-event details
+- [ ] "Mark Paid" button works correctly and shows referrals marked count
 - [ ] Export buttons work correctly
+
+### Payout Ledger Integration
+- [ ] `/api/admin/brokers-ready-to-pay` endpoint returns ledger data with `brokers` array
+- [ ] `/api/admin/broker-ledger/{broker_id}` endpoint returns full ledger breakdown
+- [ ] `/api/admin/mark-paid` marks referral IDs and returns `paid_referral_ids` and `referrals_marked`
+- [ ] Ledger modal shows accurate totals (earned, paid, due, hold)
+- [ ] Ledger modal shows per-customer breakdown with status badges
+- [ ] Ledger modal shows earning events with status (HELD / DUE / PAID / REFUNDED / CHARGEBACK / PAST_DUE / CANCELED)
+- [ ] Missing fields render "—" instead of crashing
+- [ ] Empty states show friendly messages
+
+### Ledger Flow Testing
+- [ ] **New Payment**: Broker appears in "On Hold" immediately after customer payment
+- [ ] **60-Day Hold**: After 60 days, broker moves from "On Hold" to "Due to Pay"
+  - *Note: To test quickly, manually adjust `payment_date` in DB or use dev override*
+- [ ] **Mark Paid**: After marking paid, broker disappears from "Due to Pay" and appears in "Paid" history
+- [ ] **Breakdown Modal**: Shows accurate per-customer totals and individual earning events
 
 ### Active Brokers Table
 - [ ] Table loads and displays brokers correctly

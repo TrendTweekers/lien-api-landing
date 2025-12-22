@@ -48,6 +48,24 @@ from api.admin import router as admin_router
 # Import short link generator
 from api.short_link_system import ShortLinkGenerator
 
+# Import payout ledger service
+try:
+    from api.services.payout_ledger import (
+        compute_broker_ledger,
+        compute_all_brokers_ledgers,
+        BrokerPayoutLedger,
+        STATUS_ACTIVE,
+        STATUS_CANCELED,
+        STATUS_REFUNDED,
+        STATUS_CHARGEBACK,
+        MODEL_BOUNTY,
+        MODEL_RECURRING
+    )
+    PAYOUT_LEDGER_AVAILABLE = True
+except ImportError as e:
+    PAYOUT_LEDGER_AVAILABLE = False
+    print(f"⚠️ Warning: Payout ledger service not available: {e}")
+
 # Import email anti-abuse system
 from api.email_abuse import (
     is_disposable_email,
@@ -3278,13 +3296,25 @@ async def stripe_webhook(request: Request):
                         else:
                             status = 'on_hold'  # Normal referral, 60-day hold
                         
-                        # Store referral with fraud data
+                        # For one-time bounty: only create if this is the first payment for this customer
+                        if payout_type == 'bounty':
+                            existing_ref = db.execute("""
+                                SELECT id FROM referrals 
+                                WHERE broker_id = ? AND customer_email = ? AND payout_type = 'bounty'
+                            """, (broker['referral_code'], email)).fetchone()
+                            
+                            if existing_ref:
+                                print(f"⚠️ One-time bounty already exists for {email}, skipping duplicate")
+                                db.commit()
+                                return {"status": "skipped", "reason": "One-time bounty already paid for this customer"}
+                        
+                        # Store referral with fraud data and payment_date (when payment succeeded)
                         db.execute("""
                             INSERT INTO referrals 
                             (broker_id, broker_email, customer_email, customer_stripe_id,
                              amount, payout, payout_type, status, fraud_flags, 
-                             hold_until, clawback_until, created_at)
-                            VALUES (?, ?, ?, ?, 299.00, ?, ?, ?, ?, ?, ?, datetime('now'))
+                             hold_until, clawback_until, created_at, payment_date)
+                            VALUES (?, ?, ?, ?, 299.00, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
                         """, (
                             broker['referral_code'],
                             broker['email'],
@@ -3326,6 +3356,86 @@ async def stripe_webhook(request: Request):
                 """, (subscription_id, email))
                 db.commit()
         
+        # Recurring payment succeeded (for recurring commission model)
+        elif event['type'] == 'invoice.payment_succeeded':
+            invoice = event['data']['object']
+            customer_id = invoice.get('customer')
+            subscription_id = invoice.get('subscription')
+            amount_paid = invoice.get('amount_paid', 0) / 100.0  # Convert from cents
+            
+            if not customer_id:
+                return {"status": "skipped", "reason": "No customer ID"}
+            
+            # Find customer email
+            customer_row = db.execute("""
+                SELECT email FROM customers WHERE stripe_customer_id = ?
+            """, (customer_id,)).fetchone()
+            
+            if not customer_row:
+                print(f"⚠️ Customer {customer_id} not found for invoice payment")
+                return {"status": "skipped", "reason": "Customer not found"}
+            
+            customer_email = customer_row[0] if isinstance(customer_row, (list, tuple)) else customer_row.get('email')
+            
+            # Find referral that created this customer (to get broker info)
+            referral_row = db.execute("""
+                SELECT broker_id, broker_email, payout_type, commission_model
+                FROM referrals
+                WHERE customer_stripe_id = ? OR customer_email = ?
+                ORDER BY created_at ASC
+                LIMIT 1
+            """, (customer_id, customer_email)).fetchone()
+            
+            if not referral_row:
+                print(f"⚠️ No referral found for customer {customer_email}")
+                return {"status": "skipped", "reason": "No referral found"}
+            
+            if isinstance(referral_row, dict):
+                broker_ref_code = referral_row.get('broker_id')
+                broker_email = referral_row.get('broker_email', '')
+                payout_type = referral_row.get('payout_type', 'bounty')
+                commission_model = referral_row.get('commission_model', 'bounty')
+            else:
+                broker_ref_code = referral_row[0] if len(referral_row) > 0 else None
+                broker_email = referral_row[1] if len(referral_row) > 1 else ''
+                payout_type = referral_row[2] if len(referral_row) > 2 else 'bounty'
+                commission_model = referral_row[3] if len(referral_row) > 3 else 'bounty'
+            
+            # Only create earning event if broker has recurring commission model
+            if commission_model == 'recurring' or payout_type == 'recurring':
+                # Get broker info
+                broker = db.execute("""
+                    SELECT * FROM brokers WHERE referral_code = ?
+                """, (broker_ref_code,)).fetchone()
+                
+                if broker:
+                    # Create new earning event for this monthly payment
+                    payout_amount = 50.00  # $50/month recurring
+                    hold_until = datetime.now() + timedelta(days=60)
+                    clawback_until = datetime.now() + timedelta(days=90)
+                    
+                    db.execute("""
+                        INSERT INTO referrals 
+                        (broker_id, broker_email, customer_email, customer_stripe_id,
+                         amount, payout, payout_type, status, 
+                         hold_until, clawback_until, created_at, payment_date)
+                        VALUES (?, ?, ?, ?, ?, ?, 'recurring', 'on_hold', ?, ?, datetime('now'), datetime('now'))
+                    """, (
+                        broker_ref_code,
+                        broker_email,
+                        customer_email,
+                        customer_id,
+                        amount_paid,
+                        payout_amount,
+                        hold_until,
+                        clawback_until
+                    ))
+                    
+                    db.commit()
+                    print(f"✓ Recurring payment earning event created: {customer_email} → {broker_email} (${payout_amount})")
+            
+            return {"status": "processed", "event_type": "invoice.payment_succeeded"}
+        
         # Subscription cancelled
         elif event['type'] == 'customer.subscription.deleted':
             subscription = event['data']['object']
@@ -3340,31 +3450,54 @@ async def stripe_webhook(request: Request):
             # Check if this was a referral that should be clawed back
             cursor = db.cursor()
             
-            # Find referral
+            # Update all referrals for this customer to CANCELED status
             cursor.execute("""
-                SELECT id, payout, status, created_at
+                UPDATE referrals
+                SET status = 'CANCELED'
+                WHERE customer_stripe_id = ? OR customer_email = (
+                    SELECT email FROM customers WHERE stripe_customer_id = ?
+                )
+            """, (customer_id, customer_id))
+            
+            updated_count = cursor.rowcount
+            if updated_count > 0:
+                print(f"✓ Updated {updated_count} referral(s) to CANCELED for customer {customer_id}")
+            
+            # Check for clawback eligibility (if paid within 90 days)
+            cursor.execute("""
+                SELECT id, payout, status, paid_at, created_at
                 FROM referrals
-                WHERE customer_stripe_id = ?
-                  AND status IN ('on_hold', 'ready', 'paid')
-            """, (customer_id,))
+                WHERE (customer_stripe_id = ? OR customer_email = (
+                    SELECT email FROM customers WHERE stripe_customer_id = ?
+                ))
+                AND status = 'paid'
+                AND paid_at IS NOT NULL
+            """, (customer_id, customer_id))
             
-            referral = cursor.fetchone()
-            
-            if referral:
-                from datetime import datetime
-                created = datetime.fromisoformat(referral[3])
-                days_active = (datetime.now() - created).days
+            paid_referrals = cursor.fetchall()
+            for ref in paid_referrals:
+                ref_id = ref[0] if isinstance(ref, (list, tuple)) else ref.get('id')
+                paid_at = ref[3] if isinstance(ref, (list, tuple)) else ref.get('paid_at')
                 
-                # If cancelled before 90 days, claw back
-                if days_active < 90:
-                    cursor.execute("""
-                        UPDATE referrals
-                        SET status = 'clawed_back',
-                            notes = 'Customer cancelled before 90 days'
-                        WHERE id = ?
-                    """, (referral[0],))
-                    
-                    print(f"🚨 CLAWBACK: Referral {referral[0]} cancelled after {days_active} days")
+                if paid_at:
+                    try:
+                        if isinstance(paid_at, str):
+                            paid_date = datetime.fromisoformat(paid_at.replace('Z', '+00:00'))
+                        else:
+                            paid_date = paid_at
+                        days_since_paid = (datetime.now() - paid_date).days
+                        
+                        # If cancelled within 90 days of payment, mark for clawback
+                        if days_since_paid < 90:
+                            cursor.execute("""
+                                UPDATE referrals
+                                SET status = 'clawed_back',
+                                    notes = 'Customer cancelled within 90 days of payment'
+                                WHERE id = ?
+                            """, (ref_id,))
+                            print(f"🚨 CLAWBACK: Referral {ref_id} cancelled {days_since_paid} days after payment")
+                    except Exception as e:
+                        print(f"⚠️ Error processing clawback for referral {ref_id}: {e}")
             
             db.execute("""
                 UPDATE customers 
@@ -3385,7 +3518,32 @@ async def stripe_webhook(request: Request):
                 WHERE stripe_customer_id = ?
             """, (customer_id,))
             
+            # Update referrals to PAST_DUE status
+            db.execute("""
+                UPDATE referrals
+                SET status = 'PAST_DUE'
+                WHERE customer_stripe_id = ? AND status = 'on_hold'
+            """, (customer_id,))
+            
             db.commit()
+        
+        # Chargeback/dispute
+        elif event['type'] in ['charge.dispute.created', 'charge.refunded']:
+            charge = event['data']['object']
+            customer_id = charge.get('customer')
+            
+            if customer_id:
+                # Update referrals to REFUNDED or CHARGEBACK status
+                status_to_set = 'REFUNDED' if event['type'] == 'charge.refunded' else 'CHARGEBACK'
+                
+                db.execute("""
+                    UPDATE referrals
+                    SET status = ?
+                    WHERE customer_stripe_id = ? AND status IN ('on_hold', 'ready_to_pay', 'paid')
+                """, (status_to_set, customer_id))
+                
+                db.commit()
+                print(f"✓ Updated referrals to {status_to_set} for customer {customer_id}")
         
         return {"status": "success"}
     finally:
@@ -5794,6 +5952,111 @@ async def get_broker_payment_info(request: Request, email: str):
             content={"status": "error", "message": "Failed to retrieve payment information"}
         )
 
+@app.get("/api/admin/migrate-payout-ledger")
+async def migrate_payout_ledger(username: str = Depends(verify_admin)):
+    """
+    Migration endpoint to add payout ledger columns to referrals table.
+    Safe and idempotent - can be run multiple times.
+    """
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                # Add payment_date column if it doesn't exist
+                cursor.execute("""
+                    DO $$ 
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_name = 'referrals' 
+                            AND column_name = 'payment_date'
+                        ) THEN
+                            ALTER TABLE referrals ADD COLUMN payment_date TIMESTAMP;
+                            RAISE NOTICE 'Added payment_date column';
+                        END IF;
+                        
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_name = 'referrals' 
+                            AND column_name = 'paid_batch_id'
+                        ) THEN
+                            ALTER TABLE referrals ADD COLUMN paid_batch_id VARCHAR(255);
+                            RAISE NOTICE 'Added paid_batch_id column';
+                        END IF;
+                    END $$;
+                """)
+                
+                # Update existing referrals: set payment_date = created_at if null
+                cursor.execute("""
+                    UPDATE referrals 
+                    SET payment_date = created_at 
+                    WHERE payment_date IS NULL
+                """)
+                
+                # Add paid_batch_id column to broker_payments if it doesn't exist
+                cursor.execute("""
+                    DO $$ 
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_name = 'broker_payments' 
+                            AND column_name = 'paid_referral_ids'
+                        ) THEN
+                            ALTER TABLE broker_payments ADD COLUMN paid_referral_ids TEXT;
+                            RAISE NOTICE 'Added paid_referral_ids column';
+                        END IF;
+                    END $$;
+                """)
+            else:
+                # SQLite: Add columns if they don't exist
+                try:
+                    cursor.execute("ALTER TABLE referrals ADD COLUMN payment_date TIMESTAMP")
+                except Exception:
+                    pass  # Column already exists
+                
+                try:
+                    cursor.execute("ALTER TABLE referrals ADD COLUMN paid_batch_id TEXT")
+                except Exception:
+                    pass  # Column already exists
+                
+                try:
+                    cursor.execute("ALTER TABLE broker_payments ADD COLUMN paid_referral_ids TEXT")
+                except Exception:
+                    pass  # Column already exists
+                
+                # Update existing referrals: set payment_date = created_at if null
+                cursor.execute("""
+                    UPDATE referrals 
+                    SET payment_date = created_at 
+                    WHERE payment_date IS NULL
+                """)
+            
+            conn.commit()
+            
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "status": "success",
+                    "message": "Payout ledger migration completed successfully",
+                    "database_type": DB_TYPE
+                }
+            )
+            
+    except Exception as e:
+        print(f"❌ Migration error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": f"Migration failed: {str(e)}",
+                "database_type": DB_TYPE,
+                "traceback": traceback.format_exc()
+            }
+        )
+
 @app.get("/api/admin/migrate-payment-tracking")
 async def migrate_payment_tracking(username: str = Depends(verify_admin)):
     """Migration endpoint to add payment tracking columns to brokers table"""
@@ -6336,19 +6599,69 @@ async def mark_payment_paid(request: Request, username: str = Depends(verify_adm
                         WHERE id = ?
                     """, (amount, broker_id))
             
+            # Mark specific referral IDs as paid (using ledger if available)
+            paid_referral_ids = []
+            remaining_amount = float(amount)
+            
+            if PAYOUT_LEDGER_AVAILABLE:
+                try:
+                    # Get ledger to find eligible unpaid referrals
+                    ledger = compute_broker_ledger(cursor, broker_id, DB_TYPE)
+                    
+                    # Find eligible unpaid earning events, sorted by eligible_at (oldest first)
+                    eligible_events = [
+                        event for event in ledger.earning_events
+                        if event.amount_due_now > 0 and not event.is_paid
+                    ]
+                    eligible_events.sort(key=lambda e: e.eligible_at)
+                    
+                    # Mark referrals as paid up to the amount
+                    for event in eligible_events:
+                        if remaining_amount <= 0:
+                            break
+                        
+                        amount_to_pay = min(float(event.amount_due_now), remaining_amount)
+                        
+                        # Update referral as paid
+                        if DB_TYPE == 'postgresql':
+                            cursor.execute("""
+                                UPDATE referrals
+                                SET paid_at = NOW(),
+                                    status = 'paid',
+                                    paid_batch_id = %s
+                                WHERE id = %s
+                            """, (transaction_id, event.referral_id))
+                        else:
+                            cursor.execute("""
+                                UPDATE referrals
+                                SET paid_at = CURRENT_TIMESTAMP,
+                                    status = 'paid',
+                                    paid_batch_id = ?
+                                WHERE id = ?
+                            """, (transaction_id, event.referral_id))
+                        
+                        paid_referral_ids.append(event.referral_id)
+                        remaining_amount -= amount_to_pay
+                        
+                except Exception as ledger_error:
+                    print(f"⚠️ Error using ledger for mark-paid, continuing without referral linking: {ledger_error}")
+                    # Continue without linking referrals
+            
             # Insert payment record
+            paid_referral_ids_json = json.dumps(paid_referral_ids) if paid_referral_ids else None
+            
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     INSERT INTO broker_payments 
-                    (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes, status, payment_date, paid_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'completed', NOW(), NOW())
-                """, (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes))
+                    (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes, status, payment_date, paid_at, paid_referral_ids)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'completed', NOW(), NOW(), %s)
+                """, (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes, paid_referral_ids_json))
             else:
                 cursor.execute("""
                     INSERT INTO broker_payments 
-                    (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes, status, payment_date, paid_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                """, (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes))
+                    (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes, status, payment_date, paid_at, paid_referral_ids)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)
+                """, (broker_id, broker_name, broker_email, amount, payment_method, transaction_id, notes, paid_referral_ids_json))
             
             conn.commit()
             
@@ -6357,7 +6670,9 @@ async def mark_payment_paid(request: Request, username: str = Depends(verify_adm
                 "message": "Payment marked as paid",
                 "payment_id": cursor.lastrowid if hasattr(cursor, 'lastrowid') else None,
                 "is_first_payment": first_payment_date is None,
-                "next_payment_due": next_payment_due.isoformat()
+                "next_payment_due": next_payment_due.isoformat(),
+                "paid_referral_ids": paid_referral_ids,
+                "referrals_marked": len(paid_referral_ids)
             }
             
     except Exception as e:
@@ -6484,15 +6799,148 @@ async def export_payment_history_csv(time_filter: str = "all", username: str = D
             content={"status": "error", "message": "Failed to export payment history"}
         )
 
+@app.get("/api/admin/broker-ledger/{broker_id}")
+async def get_broker_ledger(broker_id: int, username: str = Depends(verify_admin)):
+    """Get full payout ledger for a specific broker"""
+    try:
+        if not PAYOUT_LEDGER_AVAILABLE:
+            return JSONResponse(
+                status_code=503,
+                content={"status": "error", "message": "Payout ledger service not available"}
+            )
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            ledger = compute_broker_ledger(cursor, broker_id, DB_TYPE)
+            return JSONResponse(
+                status_code=200,
+                content=ledger.to_dict()
+            )
+    except Exception as e:
+        print(f"❌ Broker ledger error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": f"Failed to compute ledger: {str(e)}"}
+        )
+
 @app.get("/api/admin/brokers-ready-to-pay")
 async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
-    """Get list of brokers who are ready to be paid"""
+    """Get list of brokers who are ready to be paid - Uses canonical payout ledger"""
     try:
         today = datetime.now()
         brokers_ready = []
         
         with get_db() as conn:
             cursor = get_db_cursor(conn)
+            
+            # Use payout ledger if available
+            if PAYOUT_LEDGER_AVAILABLE:
+                try:
+                    ledgers = compute_all_brokers_ledgers(cursor, DB_TYPE)
+                    
+                    for ledger in ledgers:
+                        # Only include brokers with amount due now > 0
+                        if ledger.total_due_now > 0:
+                            # Get broker payment info
+                            if DB_TYPE == 'postgresql':
+                                cursor.execute("""
+                                    SELECT payment_method, payment_email, iban, crypto_wallet
+                                    FROM brokers WHERE id = %s
+                                """, (ledger.broker_id,))
+                            else:
+                                cursor.execute("""
+                                    SELECT payment_method, payment_email, iban, crypto_wallet
+                                    FROM brokers WHERE id = ?
+                                """, (ledger.broker_id,))
+                            
+                            payment_info = cursor.fetchone()
+                            payment_method = ''
+                            payment_email = ''
+                            iban = ''
+                            crypto_wallet = ''
+                            
+                            if payment_info:
+                                if isinstance(payment_info, dict):
+                                    payment_method = payment_info.get('payment_method', '')
+                                    payment_email = payment_info.get('payment_email', '')
+                                    iban = payment_info.get('iban', '')
+                                    crypto_wallet = payment_info.get('crypto_wallet', '')
+                                else:
+                                    payment_method = payment_info[0] if len(payment_info) > 0 else ''
+                                    payment_email = payment_info[1] if len(payment_info) > 1 else ''
+                                    iban = payment_info[2] if len(payment_info) > 2 else ''
+                                    crypto_wallet = payment_info[3] if len(payment_info) > 3 else ''
+                            
+                            # Get payment address
+                            payment_address = ''
+                            if payment_method in ['paypal', 'wise', 'revolut']:
+                                payment_address = payment_email or ''
+                            elif payment_method in ['sepa', 'swift']:
+                                payment_address = iban or ''
+                            elif payment_method == 'crypto':
+                                payment_address = crypto_wallet or ''
+                            
+                            # Calculate days overdue
+                            days_overdue = 0
+                            if ledger.next_payout_date:
+                                days_overdue = max(0, (today - ledger.next_payout_date).days)
+                            
+                            brokers_ready.append({
+                                'id': ledger.broker_id,
+                                'name': ledger.broker_name,
+                                'email': ledger.broker_email,
+                                'commission_owed': float(ledger.total_due_now),
+                                'commission_model': ledger.commission_model,
+                                'payment_method': payment_method or 'Not Set',
+                                'payment_address': payment_address or 'N/A',
+                                'next_payment_due': ledger.next_payout_date.isoformat() if ledger.next_payout_date else None,
+                                'days_overdue': days_overdue,
+                                'is_first_payment': ledger.total_paid == 0,
+                                'total_earned': float(ledger.total_earned),
+                                'total_paid': float(ledger.total_paid),
+                                'total_on_hold': float(ledger.total_on_hold),
+                                'payment_setup_complete': bool(payment_method),
+                                'needs_setup': ledger.total_due_now > 0 and not payment_method
+                            })
+                    
+                    # Sort by needs_setup first, then days_overdue, then commission_owed
+                    brokers_ready.sort(key=lambda x: (
+                        not x.get('needs_setup', False),  # needs_setup first
+                        -x.get('days_overdue', 0),  # most overdue first
+                        -x.get('commission_owed', 0)  # highest commission first
+                    ))
+                    
+                    # Calculate summary statistics
+                    total_commission_owed = sum(b['commission_owed'] for b in brokers_ready)
+                    brokers_needing_setup = sum(1 for b in brokers_ready if b.get('needs_setup', False))
+                    brokers_overdue = sum(1 for b in brokers_ready if b.get('days_overdue', 0) > 0)
+                    
+                    return JSONResponse(
+                        status_code=200,
+                        content={
+                            "brokers": brokers_ready,
+                            "summary": {
+                                "total_commission_owed": total_commission_owed,
+                                "brokers_needing_setup": brokers_needing_setup,
+                                "brokers_overdue": brokers_overdue,
+                                "brokers_ready_to_pay": len(brokers_ready)
+                            }
+                        }
+                    )
+                except Exception as ledger_error:
+                    print(f"⚠️ Ledger computation error, falling back to legacy method: {ledger_error}")
+                    import traceback
+                    traceback.print_exc()
+                    # Fall through to legacy method
+            
+            # Legacy method (fallback if ledger not available or fails)
+            today = datetime.now()
+            brokers_ready = []
+            
+            with get_db() as conn:
+                cursor = get_db_cursor(conn)
             
             # Check what columns actually exist in brokers table
             has_payment_columns = False

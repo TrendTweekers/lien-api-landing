@@ -60,6 +60,15 @@ function switchPayoutTab(tab) {
     const tabButton = document.getElementById(`tab-${tab}`);
     if (tabContent) tabContent.classList.add('active');
     if (tabButton) tabButton.classList.add('active');
+    
+    // Load data for the selected tab
+    if (tab === 'pending') {
+        loadReadyToPay();
+    } else if (tab === 'hold') {
+        loadOnHold();
+    } else if (tab === 'paid') {
+        loadPaymentHistory();
+    }
 }
 
 // Load partner applications (reuses V1 API)
@@ -274,17 +283,21 @@ async function loadReadyToPay() {
         });
         
         if (!response.ok) {
-            safe.html('v2-ready-to-pay-list', '<tr><td colspan="7" class="text-center py-8 text-red-500">Error loading brokers ready to pay</td></tr>');
+            safe.html('v2-ready-to-pay-list', '<tr><td colspan="8" class="text-center py-8 text-red-500">Error loading brokers ready to pay</td></tr>');
             return;
         }
         
         const data = await response.json();
-        const brokers = data.brokers || [];
+        // Handle both new ledger format (with brokers array) and legacy format
+        const brokers = data.brokers || data || [];
         
-        if (brokers.length === 0) {
+        // Filter brokers with total_due_now > 0 (from ledger)
+        const brokersWithDue = brokers.filter(b => parseFloat(b.total_due_now || b.commission_owed || 0) > 0);
+        
+        if (brokersWithDue.length === 0) {
             safe.html('v2-ready-to-pay-list', `
                 <tr>
-                    <td colspan="7" class="text-center py-12">
+                    <td colspan="8" class="text-center py-12">
                         <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-3xl">
                             ✅
                         </div>
@@ -297,10 +310,16 @@ async function loadReadyToPay() {
             return;
         }
         
-        brokers.sort((a, b) => (b.days_overdue || 0) - (a.days_overdue || 0));
+        brokersWithDue.sort((a, b) => {
+            // Sort by needs_setup first, then days_overdue, then commission_owed
+            if (a.needs_setup && !b.needs_setup) return -1;
+            if (!a.needs_setup && b.needs_setup) return 1;
+            return (b.days_overdue || 0) - (a.days_overdue || 0) || 
+                   parseFloat(b.total_due_now || b.commission_owed || 0) - parseFloat(a.total_due_now || a.commission_owed || 0);
+        });
         
-        const html = brokers.map(broker => {
-            const isOverdue = broker.days_overdue > 0;
+        const html = brokersWithDue.map(broker => {
+            const isOverdue = (broker.days_overdue || 0) > 0;
             const overdueBadge = isOverdue 
                 ? `<span class="badge badge-overdue">${broker.days_overdue} days overdue</span>`
                 : '<span class="badge badge-ready">Ready</span>';
@@ -315,34 +334,42 @@ async function loadReadyToPay() {
             };
             const paymentMethod = methodNames[broker.payment_method?.toLowerCase()] || broker.payment_method || 'Not Set';
             
-            const commissionBadge = broker.commission_model === 'bounty'
+            const commissionBadge = broker.commission_model === 'bounty' || broker.commission_model === 'MODEL_BOUNTY'
                 ? '<span class="badge badge-bounty">$500 Bounty</span>'
                 : '<span class="badge badge-monthly">$50/month</span>';
             
+            const dueAmount = parseFloat(broker.total_due_now || broker.commission_owed || 0);
+            const earnedTotal = parseFloat(broker.total_earned || 0);
+            const paidTotal = parseFloat(broker.total_paid || 0);
+            
             return `
-                <tr class="hover:bg-gray-50 ${isOverdue ? 'bg-red-50' : ''}">
+                <tr class="hover:bg-gray-50 ${isOverdue ? 'bg-red-50' : ''} ${broker.needs_setup ? 'bg-yellow-50' : ''}">
                     <td>
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                <span class="text-blue-600 font-semibold">${(broker.name || 'U').charAt(0).toUpperCase()}</span>
+                                <span class="text-blue-600 font-semibold">${(broker.name || broker.broker_name || 'U').charAt(0).toUpperCase()}</span>
                             </div>
                             <div>
-                                <div class="font-semibold">${broker.name || 'Unknown'}</div>
-                                <div class="text-sm" style="color: var(--muted);">${broker.email || 'N/A'}</div>
+                                <div class="font-semibold">${broker.name || broker.broker_name || 'Unknown'}</div>
+                                <div class="text-sm" style="color: var(--muted);">${broker.email || broker.broker_email || 'N/A'}</div>
                             </div>
                         </div>
                     </td>
                     <td>${commissionBadge}</td>
-                    <td class="font-semibold" style="color: var(--success);">$${parseFloat(broker.commission_owed || 0).toFixed(2)}</td>
+                    <td class="font-semibold" style="color: var(--success);">$${dueAmount.toFixed(2)}</td>
                     <td style="color: var(--muted);">${paymentMethod}</td>
-                    <td style="color: var(--muted);">${broker.next_payment_due ? new Date(broker.next_payment_due).toLocaleDateString() : 'N/A'}</td>
+                    <td style="color: var(--muted);">${broker.next_payment_due || broker.next_payout_date ? new Date(broker.next_payment_due || broker.next_payout_date).toLocaleDateString() : '—'}</td>
                     <td>${overdueBadge}</td>
+                    <td style="color: var(--muted); font-size: 0.875rem;">
+                        Earned: $${earnedTotal.toFixed(2)}<br>
+                        Paid: $${paidTotal.toFixed(2)}
+                    </td>
                     <td>
-                        <div class="flex gap-2">
-                            <button onclick="viewBrokerPaymentInfo(${broker.id}, '${(broker.name || '').replace(/'/g, "\\'")}', '${(broker.email || '').replace(/'/g, "\\'")}')" class="btn btn-outline btn-sm">
-                                👁️ View
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="viewBrokerLedger(${broker.id})" class="btn btn-outline btn-sm">
+                                📊 Breakdown
                             </button>
-                            <button onclick="showMarkPaidModal(${broker.id}, ${parseFloat(broker.commission_owed || 0).toFixed(2)})" class="btn btn-success btn-sm">
+                            <button onclick="showMarkPaidModal(${broker.id}, ${dueAmount.toFixed(2)})" class="btn btn-success btn-sm">
                                 ✓ Mark Paid
                             </button>
                         </div>
@@ -352,16 +379,216 @@ async function loadReadyToPay() {
         }).join('');
         
         safe.html('v2-ready-to-pay-list', html);
-        safe.text('pending-badge', brokers.length.toString());
-        safe.text('v2-pendingPayouts', brokers.length.toString());
+        safe.text('pending-badge', brokersWithDue.length.toString());
+        safe.text('v2-pendingPayouts', brokersWithDue.length.toString());
         
         // Update overdue count
-        const overdueCount = brokers.filter(b => b.days_overdue > 0).length;
+        const overdueCount = brokersWithDue.filter(b => (b.days_overdue || 0) > 0).length;
         safe.text('v2-overduePayments', overdueCount.toString());
+        
+        // Update summary stats if available
+        if (data.summary) {
+            safe.text('v2-totalCommissionOwed', `$${parseFloat(data.summary.total_commission_owed || 0).toFixed(2)}`);
+        }
         
     } catch (error) {
         console.error('[Admin V2] Error loading ready to pay:', error);
-        safe.html('v2-ready-to-pay-list', '<tr><td colspan="7" class="text-center py-8 text-red-500">Error: ' + error.message + '</td></tr>');
+        safe.html('v2-ready-to-pay-list', '<tr><td colspan="8" class="text-center py-8 text-red-500">Error: ' + error.message + '</td></tr>');
+    }
+}
+
+// Load brokers on hold (total_on_hold > 0)
+async function loadOnHold() {
+    try {
+        const response = await fetch('/api/admin/brokers-ready-to-pay', {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            safe.html('v2-on-hold-list', '<tr><td colspan="8" class="text-center py-8 text-red-500">Error loading brokers on hold</td></tr>');
+            return;
+        }
+        
+        const data = await response.json();
+        const brokers = data.brokers || data || [];
+        
+        // Filter brokers with total_on_hold > 0
+        const brokersOnHold = brokers.filter(b => parseFloat(b.total_on_hold || 0) > 0);
+        
+        if (brokersOnHold.length === 0) {
+            safe.html('v2-on-hold-list', `
+                <tr>
+                    <td colspan="8" class="text-center py-12">
+                        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-3xl">
+                            ⏳
+                        </div>
+                        <p style="color: var(--muted);">No brokers on hold</p>
+                    </td>
+                </tr>
+            `);
+            safe.text('hold-badge', '0');
+            return;
+        }
+        
+        brokersOnHold.sort((a, b) => parseFloat(b.total_on_hold || 0) - parseFloat(a.total_on_hold || 0));
+        
+        const html = brokersOnHold.map(broker => {
+            const methodNames = {
+                'paypal': 'PayPal',
+                'wise': 'Wise',
+                'revolut': 'Revolut',
+                'sepa': 'SEPA',
+                'swift': 'SWIFT',
+                'crypto': 'Crypto'
+            };
+            const paymentMethod = methodNames[broker.payment_method?.toLowerCase()] || broker.payment_method || 'Not Set';
+            
+            const commissionBadge = broker.commission_model === 'bounty' || broker.commission_model === 'MODEL_BOUNTY'
+                ? '<span class="badge badge-bounty">$500 Bounty</span>'
+                : '<span class="badge badge-monthly">$50/month</span>';
+            
+            const holdAmount = parseFloat(broker.total_on_hold || 0);
+            const earnedTotal = parseFloat(broker.total_earned || 0);
+            const paidTotal = parseFloat(broker.total_paid || 0);
+            
+            // Calculate days until eligible (if next_payout_date exists)
+            let daysUntilEligible = '—';
+            if (broker.next_payout_date) {
+                const nextDate = new Date(broker.next_payout_date);
+                const today = new Date();
+                const days = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
+                daysUntilEligible = days > 0 ? `${days} days` : 'Eligible now';
+            }
+            
+            return `
+                <tr class="hover:bg-gray-50">
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
+                                <span class="text-yellow-600 font-semibold">${(broker.name || broker.broker_name || 'U').charAt(0).toUpperCase()}</span>
+                            </div>
+                            <div>
+                                <div class="font-semibold">${broker.name || broker.broker_name || 'Unknown'}</div>
+                                <div class="text-sm" style="color: var(--muted);">${broker.email || broker.broker_email || 'N/A'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${commissionBadge}</td>
+                    <td class="font-semibold" style="color: var(--warning);">$${holdAmount.toFixed(2)}</td>
+                    <td style="color: var(--muted);">${paymentMethod}</td>
+                    <td style="color: var(--muted);">${daysUntilEligible}</td>
+                    <td><span class="badge badge-pending">On Hold</span></td>
+                    <td style="color: var(--muted); font-size: 0.875rem;">
+                        Earned: $${earnedTotal.toFixed(2)}<br>
+                        Paid: $${paidTotal.toFixed(2)}
+                    </td>
+                    <td>
+                        <button onclick="viewBrokerLedger(${broker.id})" class="btn btn-outline btn-sm">
+                            📊 Breakdown
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        safe.html('v2-on-hold-list', html);
+        safe.text('hold-badge', brokersOnHold.length.toString());
+        
+    } catch (error) {
+        console.error('[Admin V2] Error loading on hold:', error);
+        safe.html('v2-on-hold-list', '<tr><td colspan="8" class="text-center py-8 text-red-500">Error: ' + error.message + '</td></tr>');
+    }
+}
+
+// View broker ledger breakdown
+async function viewBrokerLedger(brokerId) {
+    try {
+        const response = await fetch(`/api/admin/broker-ledger/${brokerId}`, {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            alert('❌ Error loading broker ledger: ' + response.status);
+            return;
+        }
+        
+        const ledger = await response.json();
+        
+        // Populate modal
+        safe.text('ledger-broker-name', ledger.broker_name || 'Unknown');
+        safe.text('ledger-broker-email', ledger.broker_email || '—');
+        safe.text('ledger-commission-model', ledger.commission_model === 'bounty' || ledger.commission_model === 'MODEL_BOUNTY' ? '$500 One-Time' : '$50/month Recurring');
+        safe.text('ledger-total-earned', `$${parseFloat(ledger.total_earned || 0).toFixed(2)}`);
+        safe.text('ledger-total-paid', `$${parseFloat(ledger.total_paid || 0).toFixed(2)}`);
+        safe.text('ledger-total-due', `$${parseFloat(ledger.total_due_now || 0).toFixed(2)}`);
+        safe.text('ledger-total-hold', `$${parseFloat(ledger.total_on_hold || 0).toFixed(2)}`);
+        safe.text('ledger-next-payout', ledger.next_payout_date ? new Date(ledger.next_payout_date).toLocaleDateString() : '—');
+        
+        // Customer breakdown
+        const customerBreakdown = ledger.customer_breakdown || {};
+        const customerRows = Object.values(customerBreakdown).map(customer => {
+            const statusBadge = {
+                'ACTIVE': '<span class="badge badge-success">Active</span>',
+                'CANCELED': '<span class="badge badge-error">Canceled</span>',
+                'REFUNDED': '<span class="badge badge-error">Refunded</span>',
+                'CHARGEBACK': '<span class="badge badge-error">Chargeback</span>',
+                'PAST_DUE': '<span class="badge badge-warning">Past Due</span>'
+            }[customer.status] || '<span class="badge badge-pending">Unknown</span>';
+            
+            return `
+                <tr>
+                    <td>${customer.customer_email || customer.customer_stripe_id || '—'}</td>
+                    <td>${customer.commission_model === 'bounty' ? '$500' : '$50/month'}</td>
+                    <td>${new Date(customer.last_payment_date).toLocaleDateString()}</td>
+                    <td>$${parseFloat(customer.amount_earned || 0).toFixed(2)}</td>
+                    <td>$${parseFloat(customer.amount_paid || 0).toFixed(2)}</td>
+                    <td>$${parseFloat(customer.amount_due_now || 0).toFixed(2)}</td>
+                    <td>$${parseFloat(customer.amount_on_hold || 0).toFixed(2)}</td>
+                    <td>${statusBadge}</td>
+                </tr>
+            `;
+        }).join('');
+        
+        safe.html('ledger-customer-breakdown', customerRows || '<tr><td colspan="8" class="text-center py-4" style="color: var(--muted);">No customers yet</td></tr>');
+        
+        // Earning events
+        const events = ledger.earning_events || [];
+        const eventRows = events.map(event => {
+            const statusBadge = {
+                'ACTIVE': event.is_eligible ? '<span class="badge badge-ready">DUE</span>' : '<span class="badge badge-pending">HELD</span>',
+                'CANCELED': '<span class="badge badge-error">CANCELED</span>',
+                'REFUNDED': '<span class="badge badge-error">REFUNDED</span>',
+                'CHARGEBACK': '<span class="badge badge-error">CHARGEBACK</span>',
+                'PAST_DUE': '<span class="badge badge-warning">PAST_DUE</span>'
+            }[event.status] || '<span class="badge badge-pending">UNKNOWN</span>';
+            
+            return `
+                <tr>
+                    <td>${event.customer_email || event.customer_stripe_id || '—'}</td>
+                    <td>$${parseFloat(event.amount_earned || 0).toFixed(2)}</td>
+                    <td>${new Date(event.payment_date).toLocaleDateString()}</td>
+                    <td>${new Date(event.eligible_at).toLocaleDateString()}</td>
+                    <td>${event.is_paid ? 'Yes' : 'No'}</td>
+                    <td>${event.paid_at ? new Date(event.paid_at).toLocaleDateString() : '—'}</td>
+                    <td>${statusBadge}</td>
+                </tr>
+            `;
+        }).join('');
+        
+        safe.html('ledger-events-breakdown', eventRows || '<tr><td colspan="7" class="text-center py-4" style="color: var(--muted);">No earning events yet</td></tr>');
+        
+        // Show modal
+        document.getElementById('ledgerModal').classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('[Admin V2] Error loading broker ledger:', error);
+        alert('❌ Error: ' + error.message);
     }
 }
 
@@ -783,10 +1010,15 @@ async function handleMarkPaid(e) {
             return;
         }
         
-        alert('✅ Payment marked as paid successfully');
+        const result = await response.json();
+        const referralsMarked = result.referrals_marked || 0;
+        const paidReferralIds = result.paid_referral_ids || [];
+        
+        alert(`✅ Payment marked as paid successfully\n${referralsMarked} referral(s) marked as paid`);
         closeModal('markPaidModal');
         loadPaymentHistory();
         loadReadyToPay();
+        loadOnHold(); // Refresh on hold tab
         document.getElementById('mark-paid-form').reset();
         
     } catch (error) {
@@ -861,6 +1093,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPartnerApplications();
     loadActiveBrokers();
     loadReadyToPay();
+    loadOnHold();
     loadPaymentHistory();
     loadComprehensiveAnalytics();
     updateAllStats();
@@ -871,6 +1104,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadPartnerApplications();
         loadActiveBrokers();
         loadReadyToPay();
+        loadOnHold();
         loadPaymentHistory();
         updateAllStats();
         updateLiveAnalytics();
@@ -889,6 +1123,9 @@ window.viewBrokerPaymentInfo = viewBrokerPaymentInfo;
 window.closeModal = closeModal;
 window.handleMarkPaid = handleMarkPaid;
 window.showMarkPaidModal = showMarkPaidModal;
+window.viewBrokerLedger = viewBrokerLedger;
+window.loadOnHold = loadOnHold;
+window.switchPayoutTab = switchPayoutTab;
 window.exportPaymentHistory = exportPaymentHistory;
 window.exportApplications = exportApplications;
 window.approveAllPending = approveAllPending;
