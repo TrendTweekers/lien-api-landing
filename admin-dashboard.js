@@ -535,6 +535,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadActiveBrokers();
         loadReadyToPay();
         loadPaymentHistory();
+        loadPaymentAnalytics();
         updateAllStats();
         updateLiveAnalytics();
         updateEmailConversion();
