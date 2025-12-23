@@ -783,6 +783,15 @@ print(f"🖼️ images_dir={images_dir} exists={images_dir.exists()}")
 if images_dir.exists():
     app.mount("/images", StaticFiles(directory=str(images_dir), html=False), name="images")
 
+# Redirect www to non-www
+@app.middleware("http")
+async def redirect_www(request: Request, call_next):
+    host = request.headers.get("host", "")
+    if host.startswith("www."):
+        url = request.url.replace(netloc=host[4:])
+        return RedirectResponse(url=str(url), status_code=301)
+    return await call_next(request)
+
 # HTTP Basic Auth for admin routes
 security = HTTPBasic()
 
