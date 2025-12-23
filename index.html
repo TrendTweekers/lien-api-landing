@@ -2470,53 +2470,6 @@ function displayResults(data) {
             </div>
         </div>
         
-        <!-- Timeline Component -->
-        <div id="deadlineTimeline" class="mt-6 p-6 bg-white rounded-xl border border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Timeline</h3>
-            
-            <!-- Timeline Container -->
-            <div class="relative pl-10 md:pl-0 md:pt-12">
-                <!-- Timeline Line -->
-                <!-- Mobile: Vertical line on left -->
-                <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-300 md:hidden"></div>
-                <!-- Desktop: Horizontal line - positioned below markers -->
-                <div class="hidden md:block absolute top-12 left-0 right-0 h-0.5 bg-gray-300"></div>
-                
-                <!-- Timeline Points -->
-                <div class="flex flex-col md:flex-row md:justify-between md:items-start relative">
-                    <!-- Today Point -->
-                    <div class="flex flex-col items-start md:items-center relative z-10 mb-6 md:mb-0" style="width: fit-content;">
-                        <div id="today-marker" class="w-4 h-4 rounded-full border-2 border-white shadow-md mb-2 absolute -left-6 top-1 md:absolute md:top-8 md:left-1/2 md:-translate-x-1/2" style="background: #f97316;"></div>
-                        <div class="md:text-center md:pt-6">
-                            <p class="text-xs font-semibold text-gray-900 mb-1 whitespace-nowrap">Today</p>
-                            <p class="text-xs text-gray-600 whitespace-nowrap">${todayFormatted}</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Pre-Notice Point -->
-                    <div class="flex flex-col items-start md:items-center relative z-10 mb-6 md:mb-0" style="width: fit-content;">
-                        <div id="notice-marker" class="w-4 h-4 rounded-full border-2 border-white shadow-md mb-2 absolute -left-6 top-1 md:absolute md:top-8 md:left-1/2 md:-translate-x-1/2" style="background: #f59e0b;"></div>
-                        <div class="md:text-center md:pt-6">
-                            <p class="text-xs font-semibold text-gray-900 mb-1 whitespace-nowrap">Pre-Notice</p>
-                            <p class="text-xs text-gray-600 whitespace-nowrap">${prelimFormatted}</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Lien Deadline Point -->
-                    <div class="flex flex-col items-start md:items-center relative z-10 mb-6 md:mb-0" style="width: fit-content;">
-                        <div id="lien-marker" class="w-4 h-4 rounded-full border-2 border-white shadow-md mb-2 absolute -left-6 top-1 md:absolute md:top-8 md:left-1/2 md:-translate-x-1/2" style="background: #dc2626;"></div>
-                        <div class="md:text-center md:pt-6">
-                            <p class="text-xs font-semibold text-gray-900 mb-1 whitespace-nowrap">Lien Deadline</p>
-                            <p class="text-xs text-gray-600 whitespace-nowrap">${lienFormatted}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Urgency Badge -->
-            ${urgencyBadge}
-        </div>
-        
         <!-- PDF Guide Download -->
         <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <p class="text-sm font-semibold text-gray-900 mb-2">📄 Download Free Guide</p>
@@ -2543,32 +2496,6 @@ function displayResults(data) {
     
     // Show results container
     resultsDiv.classList.remove('hidden');
-    
-    // Show timeline with color coding
-    showTimeline(prelimNotice, lienFiling, stateCode);
-}
-
-// Timeline color coding function
-function showTimeline(preliminaryNotice, lienDeadline, state) {
-    const timeline = document.getElementById('deadlineTimeline');
-    if (timeline) {
-        timeline.classList.remove('hidden');
-        
-        // Color coding markers
-        const todayMarker = document.getElementById('today-marker');
-        const noticeMarker = document.getElementById('notice-marker');
-        const lienMarker = document.getElementById('lien-marker');
-        
-        if (todayMarker) {
-            todayMarker.style.background = '#f97316'; // Coral
-        }
-        if (noticeMarker) {
-            noticeMarker.style.background = '#f59e0b'; // Orange
-        }
-        if (lienMarker) {
-            lienMarker.style.background = '#dc2626'; // Red
-        }
-    }
 }
 
 // ==========================================
