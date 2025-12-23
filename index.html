@@ -2709,8 +2709,12 @@ function handleCalculation() {
     const emailGiven = localStorage.getItem('emailGiven');
     const hasEmail = !!(userEmail || emailGiven);
     
-    // Check for upgrade gate BEFORE incrementing
-    if (calculationCount >= TOTAL_FREE_CALCULATIONS) {
+    // Admin/dev user bypass (unlimited calculations)
+    const DEV_EMAIL = "kartaginy1@gmail.com";
+    const isDevUser = userEmail && userEmail.toLowerCase() === DEV_EMAIL.toLowerCase();
+    
+    // Check for upgrade gate BEFORE incrementing (skip for admin/dev user)
+    if (!isDevUser && calculationCount >= TOTAL_FREE_CALCULATIONS) {
         console.log(`💰 Upgrade modal at calculation ${calculationCount} (blocking before increment)`);
         showUpgradeModal();
         return calculationCount; // Return without incrementing
