@@ -1209,6 +1209,7 @@ class TrackCalculationRequest(BaseModel):
     state: str = None
     notice_date: str = None
     last_work_date: str = None
+    email: str = None  # Allow email to be sent from frontend for admin check
 
 class CalculateDeadlineRequest(BaseModel):
     invoice_date: str
