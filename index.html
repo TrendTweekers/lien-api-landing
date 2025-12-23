@@ -1064,7 +1064,7 @@
                                 <span>Monthly law updates</span>
                             </li>
                         </ul>
-                        <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" class="block w-full h-14 px-6 rounded-lg bg-accent text-white font-semibold text-lg hover:bg-accent/90 transition-colors text-center leading-[3.5rem]">
+                        <a href="https://buy.stripe.com/3cInSgBL8pr6MVg7p9FW00" id="professional-upgrade-btn" class="block w-full h-14 px-6 rounded-lg bg-accent text-white font-semibold text-lg hover:bg-accent/90 transition-colors text-center leading-[3.5rem]">
                             Upgrade to Professional →
                         </a>
                     </div>
@@ -3021,6 +3021,82 @@ window.addEventListener('DOMContentLoaded', function() {
         document.addEventListener('DOMContentLoaded', attachStripeTracking);
     } else {
         attachStripeTracking();
+    }
+})();
+
+// Professional plan Stripe payment link tracking
+(function() {
+    const PROFESSIONAL_STRIPE_URL = 'https://buy.stripe.com/3cInSgBL8pr6MVg7p9FW00';
+    
+    // Track purchase_click on Professional upgrade button
+    function attachProfessionalTracking() {
+        const professionalBtn = document.getElementById('professional-upgrade-btn');
+        if (!professionalBtn) return;
+        
+        // Skip if already tracked
+        if (professionalBtn.dataset.tracked === '1') return;
+        professionalBtn.dataset.tracked = '1';
+        
+        professionalBtn.addEventListener('click', function(e) {
+            // Fire Umami purchase_click event
+            if (typeof umami !== 'undefined' && umami.track) {
+                umami.track('purchase_click', {
+                    plan: 'professional',
+                    price: 299,
+                    currency: 'USD'
+                });
+            }
+            
+            // Let the link navigate normally (no preventDefault)
+            // The link will redirect to Stripe in the same tab
+        });
+    }
+    
+    // Check for Stripe return (success indicators in URL)
+    function checkStripeReturn() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        
+        // Check for common Stripe success indicators
+        const hasSessionId = urlParams.has('session_id') || hashParams.has('session_id');
+        const hasSuccess = urlParams.has('success') || hashParams.has('success');
+        const hasCheckout = urlParams.has('checkout') || hashParams.has('checkout');
+        const isStripeReturn = window.location.href.includes('stripe.com') || 
+                               window.location.href.includes('checkout.stripe.com');
+        
+        // Check referrer (user came from Stripe)
+        const referrerFromStripe = document.referrer && (
+            document.referrer.includes('stripe.com') || 
+            document.referrer.includes('checkout.stripe.com')
+        );
+        
+        // Check if we've already tracked this return
+        const returnTracked = sessionStorage.getItem('stripe_return_tracked');
+        
+        if ((hasSessionId || hasSuccess || hasCheckout || isStripeReturn || referrerFromStripe) && !returnTracked) {
+            // Fire Umami purchase_completed event
+            if (typeof umami !== 'undefined' && umami.track) {
+                umami.track('purchase_completed', {
+                    plan: 'professional',
+                    price: 299,
+                    currency: 'USD'
+                });
+            }
+            
+            // Mark as tracked to prevent duplicate events
+            sessionStorage.setItem('stripe_return_tracked', '1');
+        }
+    }
+    
+    // Attach tracking on DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            attachProfessionalTracking();
+            checkStripeReturn();
+        });
+    } else {
+        attachProfessionalTracking();
+        checkStripeReturn();
     }
 })();
 </script>
