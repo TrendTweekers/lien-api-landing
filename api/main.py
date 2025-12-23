@@ -41,6 +41,9 @@ except ImportError:
 # Import database functions FIRST (before other local imports to avoid circular dependencies)
 from api.database import get_db, get_db_cursor, DB_TYPE, execute_query, BASE_DIR
 
+# Define project root (parent of api/ directory)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
 # THEN import routers (after database is defined)
 from api.analytics import router as analytics_router
 from api.admin import router as admin_router
@@ -775,7 +778,8 @@ except Exception as e:
     print(f"Warning: Could not mount static files: {e}")
 
 # Serve images from public/images directory
-images_dir = BASE_DIR / "public" / "images"
+images_dir = PROJECT_ROOT / "public" / "images"
+print(f"🖼️ images_dir={images_dir} exists={images_dir.exists()}")
 if images_dir.exists():
     app.mount("/images", StaticFiles(directory=str(images_dir), html=False), name="images")
 
