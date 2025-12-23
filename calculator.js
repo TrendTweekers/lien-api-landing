@@ -173,8 +173,14 @@ if (calculatorForm) {
             }
             
             // STEP 1: Check limits server-side BEFORE calculation (skip in dashboard mode)
+            // Admin/dev user bypass - check BEFORE API call
+            const DEV_EMAIL = "kartaginy1@gmail.com";
+            const userEmail = localStorage.getItem('userEmail') || '';
+            const isDevUser = userEmail && userEmail.toLowerCase() === DEV_EMAIL.toLowerCase();
+            
             let trackData = { status: 'allowed', quota: { unlimited: false } };
-            if (!isDashboardMode()) {
+            if (!isDashboardMode() && !isDevUser) {
+                // Only check limits if not admin user
                 const trackResponse = await fetch('/api/v1/track-calculation', {
                     method: 'POST',
                     headers: {
@@ -182,17 +188,14 @@ if (calculatorForm) {
                     },
                     body: JSON.stringify({
                         state: state,
-                        notice_date: invoiceDate
+                        notice_date: invoiceDate,
+                        email: userEmail || null  // Send email so backend can check admin status
                     })
                 });
                 trackData = await trackResponse.json();
                 
-                // Handle limit reached (skip for admin/dev user)
-                const DEV_EMAIL = "kartaginy1@gmail.com";
-                const userEmail = localStorage.getItem('userEmail') || '';
-                const isDevUser = userEmail && userEmail.toLowerCase() === DEV_EMAIL.toLowerCase();
-                
-                if (trackData.status === 'limit_reached' && !isDevUser) {
+                // Handle limit reached
+                if (trackData.status === 'limit_reached') {
                     submitButton.disabled = false;
                     submitButton.innerHTML = originalText;
                     
@@ -206,6 +209,10 @@ if (calculatorForm) {
                         return;
                     }
                 }
+            } else if (isDevUser) {
+                // Admin user - skip limit check, allow calculation
+                console.log('✅ Admin user detected - skipping limit checks');
+                trackData = { status: 'allowed', quota: { unlimited: true } };
             }
             
             // STEP 2: Proceed with calculation

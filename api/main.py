@@ -1282,6 +1282,26 @@ async def track_calculation(request: Request, request_data: TrackCalculationRequ
         # Create composite key: IP + user agent hash (handles shared IPs better)
         tracking_key = f"{client_ip}:{user_agent_hash}"
         
+        # Get email from request first (for admin check before DB lookup)
+        request_email = None
+        if request_data and request_data.email:
+            request_email = request_data.email.strip().lower()
+        
+        # Admin/dev user bypass (check BEFORE database lookup)
+        DEV_EMAIL = "kartaginy1@gmail.com"
+        if request_email and request_email == DEV_EMAIL.lower():
+            print(f"✅ Admin/dev user detected from request: {request_email} - allowing unlimited calculations")
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "status": "allowed",
+                    "calculation_count": 0,
+                    "remaining_calculations": 999999,
+                    "email_provided": True,
+                    "quota": {"unlimited": True}
+                }
+            )
+        
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
@@ -1354,20 +1374,23 @@ async def track_calculation(request: Request, request_data: TrackCalculationRequ
             if tracking:
                 if isinstance(tracking, dict):
                     count = tracking.get('calculation_count', 0)
-                    email = tracking.get('email')
+                    db_email = tracking.get('email')
                     email_captured_at = tracking.get('email_captured_at')
                 elif hasattr(tracking, 'keys'):
                     count = tracking['calculation_count'] if 'calculation_count' in tracking.keys() else tracking[0]
-                    email = tracking['email'] if 'email' in tracking.keys() else (tracking[1] if len(tracking) > 1 else None)
+                    db_email = tracking['email'] if 'email' in tracking.keys() else (tracking[1] if len(tracking) > 1 else None)
                     email_captured_at = tracking['email_captured_at'] if 'email_captured_at' in tracking.keys() else (tracking[2] if len(tracking) > 2 else None)
                 else:
                     count = tracking[0] if tracking else 0
-                    email = tracking[1] if tracking and len(tracking) > 1 else None
+                    db_email = tracking[1] if tracking and len(tracking) > 1 else None
                     email_captured_at = tracking[2] if tracking and len(tracking) > 2 else None
             else:
                 count = 0
-                email = None
+                db_email = None
                 email_captured_at = None
+            
+            # Use email from request if provided, otherwise use DB email
+            email = request_email or (db_email.lower() if db_email else None)
             
             # Determine limits
             CALCULATIONS_BEFORE_EMAIL = 3
