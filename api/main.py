@@ -774,6 +774,14 @@ try:
 except Exception as e:
     print(f"Warning: Could not mount static files: {e}")
 
+# Serve images directory
+try:
+    images_dir = BASE_DIR / "images"
+    if images_dir.exists():
+        app.mount("/images", StaticFiles(directory=str(images_dir)), name="images")
+except Exception as e:
+    print(f"Warning: Could not mount images directory: {e}")
+
 # HTTP Basic Auth for admin routes
 security = HTTPBasic()
 
