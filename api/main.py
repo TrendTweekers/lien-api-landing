@@ -2013,10 +2013,9 @@ async def serve_calculator_embed():
 
 @app.get("/dashboard.html")
 async def serve_dashboard():
-    file_path = BASE_DIR / "dashboard.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
-    return FileResponse(file_path)
+    """Redirect old dashboard to new customer dashboard"""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/customer-dashboard.html", status_code=301)
 
 @app.get("/index.html")
 async def serve_index():
@@ -2141,23 +2140,10 @@ async def serve_calculator_clean():
 @app.get("/dashboard")
 async def serve_dashboard_clean(request: Request):
     """
-    Customer dashboard - block brokers from accessing.
-    Clean URL: /dashboard → dashboard.html
+    Clean URL: /dashboard → redirects to /customer-dashboard
     """
-    # Check if user is a broker (via email in query params or session)
-    email = request.query_params.get('email', '').strip()
-    
-    # Block brokers from accessing customer dashboard
-    if email and is_broker_email(email):
-        raise HTTPException(
-            status_code=403,
-            detail="Brokers cannot access customer dashboard. Please use /broker-dashboard"
-        )
-    
-    file_path = BASE_DIR / "dashboard.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="Dashboard not found")
-    return FileResponse(file_path)
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/customer-dashboard", status_code=301)
 
 @app.get("/admin-dashboard-v2")
 async def serve_admin_dashboard_v2(username: str = Depends(verify_admin)):
