@@ -295,6 +295,14 @@ if (calculatorForm) {
                 window.displayResults(data);
             }
             
+            // Track calculator usage event
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'calculator_used', {
+                    event_category: 'engagement',
+                    event_label: 'lien_calculator'
+                });
+            }
+            
             // Track calculator submission
             if (typeof gtag !== 'undefined') {
                 gtag('event', 'calculator_submit', {
