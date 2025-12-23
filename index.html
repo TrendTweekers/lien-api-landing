@@ -1745,6 +1745,14 @@
                 // Display results using displayResults function (includes timeline)
                 displayResults(data);
                 
+                // Track calculator usage event
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', 'calculator_used', {
+                        event_category: 'engagement',
+                        event_label: 'lien_calculator'
+                    });
+                }
+                
                 // Update counter display from server response
                 if (trackData && trackData.calculation_count !== undefined) {
                     const countElement = document.getElementById('calculationCount');
