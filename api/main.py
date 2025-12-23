@@ -3606,6 +3606,45 @@ async def stripe_webhook(request: Request):
                 
                 db.commit()
                 
+                # Track revenue in Umami
+                try:
+                    amount_total = session.get('amount_total')  # Amount in cents
+                    currency = session.get('currency', 'usd').upper()
+                    
+                    if amount_total:
+                        # Convert cents to dollars for Umami
+                        value = amount_total / 100.0
+                        
+                        # Send revenue event to Umami API (server-side)
+                        import urllib.request
+                        
+                        umami_payload = {
+                            'website': '02250d35-ee17-41be-845d-2fe0f7f15e63',
+                            'hostname': 'liendeadline.com',
+                            'name': 'revenue',
+                            'data': {
+                                'value': value,
+                                'currency': currency,
+                                'plan': 'professional'
+                            }
+                        }
+                        
+                        json_data = json.dumps(umami_payload).encode('utf-8')
+                        req = urllib.request.Request(
+                            'https://cloud.umami.is/api/send',
+                            data=json_data,
+                            headers={'Content-Type': 'application/json'}
+                        )
+                        
+                        try:
+                            with urllib.request.urlopen(req, timeout=5) as response:
+                                print(f"✅ Umami revenue tracked: ${value} {currency}")
+                        except Exception as umami_error:
+                            print(f"⚠️ Umami revenue tracking failed: {umami_error}")
+                except Exception as e:
+                    print(f"⚠️ Error tracking revenue in Umami: {e}")
+                    # Don't fail webhook if Umami tracking fails
+                
                 # CRITICAL: Send welcome email and track failures
                 email_sent = send_welcome_email(email, temp_password)
                 
