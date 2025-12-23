@@ -187,8 +187,12 @@ if (calculatorForm) {
                 });
                 trackData = await trackResponse.json();
                 
-                // Handle limit reached
-                if (trackData.status === 'limit_reached') {
+                // Handle limit reached (skip for admin/dev user)
+                const DEV_EMAIL = "kartaginy1@gmail.com";
+                const userEmail = localStorage.getItem('userEmail') || '';
+                const isDevUser = userEmail && userEmail.toLowerCase() === DEV_EMAIL.toLowerCase();
+                
+                if (trackData.status === 'limit_reached' && !isDevUser) {
                     submitButton.disabled = false;
                     submitButton.innerHTML = originalText;
                     

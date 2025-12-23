@@ -1378,8 +1378,15 @@ async def track_calculation(request: Request, request_data: TrackCalculationRequ
             if is_broker:
                 print(f"⚠️ Broker attempting calculation: {email} - applying same limits as customers")
             
+            # Admin/dev user bypass (unlimited calculations)
+            DEV_EMAIL = "kartaginy1@gmail.com"
+            is_dev_user = email and email.lower() == DEV_EMAIL.lower()
+            
+            if is_dev_user:
+                print(f"✅ Admin/dev user detected: {email} - allowing unlimited calculations")
+                remaining = 999999  # Effectively unlimited
             # Check if limit exceeded (same for brokers and customers)
-            if not email:
+            elif not email:
                 # No email provided yet
                 if count >= CALCULATIONS_BEFORE_EMAIL:
                     return JSONResponse(

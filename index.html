@@ -2720,18 +2720,18 @@ function handleCalculation() {
     // Counter increment is handled by the form submit handlers
     // This function only checks gates and returns the current count
     
-    // Check for email gate
+    // Check for email gate (skip for admin/dev user)
     // After calc 1: count = 1, check >= 3? No, proceed
     // After calc 2: count = 2, check >= 3? No, proceed
     // After calc 3: count = 3, check >= 3? Yes, block (this is the 4th attempt)
-    if (!hasEmail && calculationCount >= CALCULATIONS_BEFORE_EMAIL) {
+    if (!isDevUser && !hasEmail && calculationCount >= CALCULATIONS_BEFORE_EMAIL) {
         console.log('🎯🎯🎯 EMAIL MODAL TRIGGERED AFTER 3 CALCULATIONS (4th attempt)!');
         console.log('🎯 Calling showEmailCaptureModal()...');
         showEmailCaptureModal();
     }
     
-    // Check for upgrade gate
-    if (calculationCount >= TOTAL_FREE_CALCULATIONS) {
+    // Check for upgrade gate (skip for admin/dev user)
+    if (!isDevUser && calculationCount >= TOTAL_FREE_CALCULATIONS) {
         console.log(`💰 Upgrade modal triggered at calculation ${calculationCount}`);
         showUpgradeModal();
     }
