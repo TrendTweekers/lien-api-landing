@@ -466,6 +466,92 @@
       window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
       plausible.init()
     </script>
+    
+    <!-- Stripe checkout tracking helper -->
+    <script>
+    (function() {
+        const STRIPE_URL = 'https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00';
+        
+        function trackStripeCheckout(source) {
+            // Fire Umami event
+            if (typeof umami !== 'undefined' && umami.track) {
+                umami.track('checkout_click', {
+                    plan: 'unlimited',
+                    price: 299,
+                    currency: 'USD',
+                    source: source
+                });
+            }
+            
+            // Fire GA4 event
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'begin_checkout', {
+                    currency: 'USD',
+                    value: 299,
+                    items: [{
+                        item_name: 'Unlimited',
+                        price: 299,
+                        quantity: 1
+                    }]
+                });
+            }
+        }
+        
+        function getSourceFromLink(link) {
+            // Determine source from context
+            if (link.id === 'upgrade-btn-inline') return 'inline_upgrade';
+            if (link.closest('#upgradePrompt')) return 'upgrade_prompt';
+            if (link.closest('#upgradeModal')) return 'upgrade_modal';
+            if (link.id) return link.id;
+            return 'calculator';
+        }
+        
+        function attachStripeTracking() {
+            const stripeLinks = document.querySelectorAll('a[href="' + STRIPE_URL + '"]');
+            
+            stripeLinks.forEach(function(link) {
+                // Skip if already tracked
+                if (link.dataset.tracked === '1') return;
+                
+                link.dataset.tracked = '1';
+                const source = getSourceFromLink(link);
+                
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    trackStripeCheckout(source);
+                    
+                    // Redirect after 150ms
+                    setTimeout(function() {
+                        window.location.href = STRIPE_URL;
+                    }, 150);
+                });
+            });
+        }
+        
+        // Use event delegation for dynamically created links
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a[href="' + STRIPE_URL + '"]');
+            if (link && link.dataset.tracked !== '1') {
+                e.preventDefault();
+                link.dataset.tracked = '1';
+                const source = getSourceFromLink(link);
+                trackStripeCheckout(source);
+                
+                // Redirect after 150ms
+                setTimeout(function() {
+                    window.location.href = STRIPE_URL;
+                }, 150);
+            }
+        });
+        
+        // Attach on DOM ready for existing links
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', attachStripeTracking);
+        } else {
+            attachStripeTracking();
+        }
+    })();
+    </script>
 </body>
 </html>
 
