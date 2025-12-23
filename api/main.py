@@ -774,14 +774,10 @@ try:
 except Exception as e:
     print(f"Warning: Could not mount static files: {e}")
 
-# Serve public directory at root path (for images and other static assets)
-# Files in public/images/ will be accessible at /images/*
-try:
-    public_dir = BASE_DIR / "public"
-    if public_dir.exists():
-        app.mount("/", StaticFiles(directory=str(public_dir), html=False), name="public")
-except Exception as e:
-    print(f"Warning: Could not mount public directory: {e}")
+# Serve images from public/images directory
+images_dir = BASE_DIR / "public" / "images"
+if images_dir.exists():
+    app.mount("/images", StaticFiles(directory=str(images_dir), html=False), name="images")
 
 # HTTP Basic Auth for admin routes
 security = HTTPBasic()
