@@ -3574,6 +3574,7 @@ async def stripe_webhook(request: Request):
         # New subscription
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
+            print(f"✅ Received checkout.session.completed webhook - Event ID: {event['id']}, Session ID: {session.get('id')}")
             
             email = session.get('customer_details', {}).get('email')
             customer_id = session.get('customer')
