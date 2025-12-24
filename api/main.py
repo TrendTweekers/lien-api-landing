@@ -1066,8 +1066,50 @@ async def referral_redirect(short_code: str, request: Request):
 
 @app.get("/v1/states")
 def get_states():
-    """Get list of supported states - returns all 51 states from VALID_STATES"""
-    return VALID_STATES
+    """Get list of supported states - returns all 51 states with code and name"""
+    try:
+        # Try to get states from database with names
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT state_code, state_name 
+                    FROM lien_deadlines 
+                    ORDER BY state_code
+                """)
+            else:
+                cursor.execute("""
+                    SELECT state_code, state_name 
+                    FROM lien_deadlines 
+                    ORDER BY state_code
+                """)
+            states = cursor.fetchall()
+            
+            if states:
+                result = []
+                for row in states:
+                    if isinstance(row, dict):
+                        result.append({
+                            "code": row.get("state_code"),
+                            "name": row.get("state_name")
+                        })
+                    else:
+                        result.append({
+                            "code": row[0],
+                            "name": row[1]
+                        })
+                return {
+                    "states": result,
+                    "count": len(result)
+                }
+    except Exception as e:
+        print(f"⚠️ Error querying database for states: {e}")
+    
+    # Fallback: return state codes only if database query fails
+    return {
+        "states": [{"code": code, "name": code} for code in VALID_STATES],
+        "count": len(VALID_STATES)
+    }
 
 @app.get("/api/v1/guide/{state_code}/pdf")
 async def generate_state_guide_pdf(state_code: str):
