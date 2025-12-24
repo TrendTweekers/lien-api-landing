@@ -8024,6 +8024,122 @@ async def get_broker_ledger(broker_id: int, username: str = Depends(verify_admin
             content={"status": "error", "message": f"Failed to compute ledger: {str(e)}"}
         )
 
+@app.get("/api/admin/test-set-broker-ready/{broker_id}")
+async def test_set_broker_ready(broker_id: int, username: str = Depends(verify_admin)):
+    """TEST ONLY: Simulate broker ready for payment"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get broker
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id, name, email, referral_code, commission_model FROM brokers WHERE id = %s", (broker_id,))
+            else:
+                cursor.execute("SELECT id, name, email, referral_code, commission_model FROM brokers WHERE id = ?", (broker_id,))
+            
+            broker_row = cursor.fetchone()
+            if not broker_row:
+                raise HTTPException(status_code=404, detail=f"Broker {broker_id} not found")
+            
+            # Parse broker data
+            if isinstance(broker_row, dict):
+                broker_name = broker_row.get('name', '')
+                broker_email = broker_row.get('email', '')
+                referral_code = broker_row.get('referral_code', '')
+                commission_model = broker_row.get('commission_model', 'bounty')
+            else:
+                broker_name = broker_row[1] if len(broker_row) > 1 else ''
+                broker_email = broker_row[2] if len(broker_row) > 2 else ''
+                referral_code = broker_row[3] if len(broker_row) > 3 else ''
+                commission_model = broker_row[4] if len(broker_row) > 4 else 'bounty'
+            
+            # Calculate commission amount
+            commission = 500.00 if commission_model == 'bounty' else 50.00
+            payout_type = 'bounty' if commission_model == 'bounty' else 'recurring'
+            
+            # Set dates (61 days ago to pass 60-day hold)
+            now = datetime.now()
+            activated_date = now - timedelta(days=61)
+            hold_until = activated_date + timedelta(days=60)  # Already passed
+            clawback_until = activated_date + timedelta(days=90)
+            
+            # Create test customer
+            test_customer_email = f'test_customer_{broker_id}@example.com'
+            test_customer_stripe_id = f'cus_test_{broker_id}'
+            test_subscription_id = f'sub_test_{broker_id}'
+            
+            # Insert test customer
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    INSERT INTO customers (email, stripe_customer_id, subscription_id, status, plan, amount)
+                    VALUES (%s, %s, %s, 'active', 'unlimited', 299.00)
+                    ON CONFLICT (email) DO UPDATE SET
+                        stripe_customer_id = EXCLUDED.stripe_customer_id,
+                        subscription_id = EXCLUDED.subscription_id,
+                        status = 'active'
+                """, (test_customer_email, test_customer_stripe_id, test_subscription_id))
+            else:
+                cursor.execute("""
+                    INSERT INTO customers (email, stripe_customer_id, subscription_id, status, plan, amount)
+                    VALUES (?, ?, ?, 'active', 'unlimited', 299.00)
+                    ON CONFLICT(email) DO UPDATE SET
+                        stripe_customer_id = excluded.stripe_customer_id,
+                        subscription_id = excluded.subscription_id,
+                        status = 'active'
+                """, (test_customer_email, test_customer_stripe_id, test_subscription_id))
+            
+            # Create test referral with ready_to_pay status
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    INSERT INTO referrals (
+                        broker_id, broker_email, customer_email, customer_stripe_id,
+                        amount, payout, payout_type, status,
+                        hold_until, clawback_until, created_at
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'ready_to_pay', %s, %s, %s)
+                """, (
+                    referral_code, broker_email, test_customer_email, test_customer_stripe_id,
+                    commission, commission, payout_type,
+                    hold_until.date(), clawback_until.date(), activated_date
+                ))
+            else:
+                cursor.execute("""
+                    INSERT INTO referrals (
+                        broker_id, broker_email, customer_email, customer_stripe_id,
+                        amount, payout, payout_type, status,
+                        hold_until, clawback_until, created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'ready_to_pay', ?, ?, ?)
+                """, (
+                    referral_code, broker_email, test_customer_email, test_customer_stripe_id,
+                    commission, commission, payout_type,
+                    hold_until.date(), clawback_until.date(), activated_date
+                ))
+            
+            conn.commit()
+            
+            return JSONResponse(
+                status_code=200,
+                content={
+                    'success': True,
+                    'message': f'TEST DATA CREATED: Broker {broker_name} now ready for payment',
+                    'broker_id': broker_id,
+                    'broker_name': broker_name,
+                    'commission_owed': commission,
+                    'commission_model': commission_model,
+                    'test_customer_email': test_customer_email,
+                    'hold_until': hold_until.date().isoformat(),
+                    'status': 'ready_to_pay'
+                }
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error creating test broker ready data: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to create test data: {str(e)}")
+
 @app.get("/api/admin/brokers-ready-to-pay")
 async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
     """Get list of brokers who are ready to be paid - Uses canonical payout ledger"""
