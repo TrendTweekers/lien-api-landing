@@ -79,7 +79,7 @@ def main():
                 if not table_exists:
                     print("   Creating customers table...")
                     if DB_TYPE == 'postgresql':
-                        cursor.execute("""
+                        cursor.execute(text("""
                             CREATE TABLE customers (
                                 id SERIAL PRIMARY KEY,
                                 email VARCHAR(255) UNIQUE NOT NULL,
