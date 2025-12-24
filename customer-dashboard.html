@@ -1126,19 +1126,25 @@
                 
                 doc.setFontSize(12);
                 doc.setTextColor(0, 0, 0);
-                doc.text(`Deadline: ${formatDate(data.lien_filing.deadline)}`, margin + 10, yPos);
+                doc.text(`Deadline: ${data.lien_filing.deadline ? formatDate(data.lien_filing.deadline) : 'N/A'}`, margin + 10, yPos);
                 yPos += 6;
                 
-                doc.setFontSize(10);
-                doc.setTextColor(lienColor.r, lienColor.g, lienColor.b);
-                doc.text(`${data.lien_filing.days_from_now} days from now`, margin + 10, yPos);
-                yPos += 6;
+                if (data.lien_filing.days_from_now !== null && data.lien_filing.days_from_now !== undefined) {
+                    doc.setFontSize(10);
+                    doc.setTextColor(lienColor.r, lienColor.g, lienColor.b);
+                    doc.text(`${data.lien_filing.days_from_now} days from now`, margin + 10, yPos);
+                    yPos += 6;
+                }
                 
-                doc.setFontSize(9);
-                doc.setTextColor(100, 100, 100);
-                const lienDesc = doc.splitTextToSize(data.lien_filing.description || '', pageWidth - margin * 2 - 10);
-                doc.text(lienDesc, margin + 10, yPos);
-                yPos += lienDesc.length * 5 + 8;
+                if (data.lien_filing.description) {
+                    doc.setFontSize(9);
+                    doc.setTextColor(100, 100, 100);
+                    const lienDesc = doc.splitTextToSize(data.lien_filing.description, pageWidth - margin * 2 - 10);
+                    doc.text(lienDesc, margin + 10, yPos);
+                    yPos += lienDesc.length * 5 + 8;
+                } else {
+                    yPos += 8;
+                }
                 
                 // Serving Requirements
                 if (data.serving_requirements && data.serving_requirements.length > 0) {
