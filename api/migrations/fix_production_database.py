@@ -164,7 +164,7 @@ def main():
                 if not table_exists:
                     print("   Creating api_keys table...")
                     if DB_TYPE == 'postgresql':
-                        cursor.execute("""
+                        cursor.execute(text("""
                             CREATE TABLE api_keys (
                                 id SERIAL PRIMARY KEY,
                                 user_id INTEGER,
@@ -222,7 +222,7 @@ def main():
                 if not table_exists:
                     print("   Creating lien_deadlines table...")
                     if DB_TYPE == 'postgresql':
-                        cursor.execute("""
+                        cursor.execute(text("""
                             CREATE TABLE lien_deadlines (
                                 id SERIAL PRIMARY KEY,
                                 state_code VARCHAR(2) UNIQUE NOT NULL,
@@ -402,17 +402,22 @@ def main():
                 
                 # Verify Hawaii specifically
                 if DB_TYPE == 'postgresql':
-                    cursor.execute("SELECT state_code, state_name, lien_filing_days FROM lien_deadlines WHERE state_code = 'HI'")
-                    hawaii = cursor.fetchone()
+                    cursor.execute(text("SELECT state_code, state_name, lien_filing_days FROM lien_deadlines WHERE state_code = 'HI'"))
                 else:
-                    cursor.execute("SELECT state_code, state_name, lien_filing_days FROM lien_deadlines WHERE state_code = 'HI'")
-                    hawaii = cursor.fetchone()
+                    cursor.execute(text("SELECT state_code, state_name, lien_filing_days FROM lien_deadlines WHERE state_code = 'HI'"))
+                hawaii = cursor.fetchone()
                 
                 if hawaii:
-                    if DB_TYPE == 'postgresql':
-                        print(f"   ✅ Hawaii verified: {hawaii['state_name']} - {hawaii['lien_filing_days']} days")
+                    if isinstance(hawaii, dict):
+                        state_name = hawaii.get('state_name')
+                        lien_days = hawaii.get('lien_filing_days')
+                    elif isinstance(hawaii, (tuple, list)):
+                        state_name = hawaii[1] if len(hawaii) > 1 else None
+                        lien_days = hawaii[2] if len(hawaii) > 2 else None
                     else:
-                        print(f"   ✅ Hawaii verified: {hawaii[1]} - {hawaii[2]} days")
+                        state_name = None
+                        lien_days = None
+                    print(f"   ✅ Hawaii verified: {state_name} - {lien_days} days")
                 else:
                     print("   ❌ Hawaii not found!")
                 
