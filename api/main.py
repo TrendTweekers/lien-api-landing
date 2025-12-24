@@ -2327,13 +2327,18 @@ async def serve_customer_dashboard_html(request: Request):
         raise HTTPException(status_code=404, detail="customer-dashboard.html not found in project root")
     return FileResponse(file_path)
 
+@app.get("/comparison.html")
+async def serve_comparison_html():
+    """Serve comparison page"""
+    file_path = BASE_DIR / "comparison.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="comparison.html not found in project root")
+    return FileResponse(file_path, media_type="text/html")
+
 @app.get("/vs-levelset.html")
 async def serve_vs_levelset_html():
-    """Serve Levelset comparison page"""
-    file_path = BASE_DIR / "vs-levelset.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="vs-levelset.html not found in project root")
-    return FileResponse(file_path, media_type="text/html")
+    """Redirect old vs-levelset.html to comparison.html"""
+    return RedirectResponse(url="/comparison.html", status_code=301)
 
 @app.get("/contact.html")
 async def serve_contact_html():
@@ -2465,12 +2470,18 @@ async def serve_broker_dashboard_clean():
         raise HTTPException(status_code=404, detail="Broker dashboard not found")
     return FileResponse(file_path)
 
+@app.get("/comparison")
+async def serve_comparison_clean():
+    """Clean URL: /comparison → comparison.html"""
+    file_path = BASE_DIR / "comparison.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Comparison page not found")
+    return FileResponse(file_path, media_type="text/html")
+
 @app.get("/vs-levelset")
 async def serve_vs_levelset_clean():
-    """Clean URL: /vs-levelset → vs-levelset.html"""
-    file_path = BASE_DIR / "vs-levelset.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="Levelset comparison page not found")
+    """Redirect old /vs-levelset to /comparison"""
+    return RedirectResponse(url="/comparison", status_code=301)
     return FileResponse(file_path, media_type="text/html")
 
 @app.get("/partners")
