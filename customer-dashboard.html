@@ -1105,13 +1105,7 @@
                 }
                 
                 // Lien Filing
-                function getUrgencyForPDF(daysFromNow) {
-                    if (daysFromNow === null || daysFromNow === undefined) return 'normal';
-                    if (daysFromNow <= 7) return 'critical';
-                    if (daysFromNow <= 30) return 'warning';
-                    return 'normal';
-                }
-                
+                // Reuse urgency calculation function (already defined above)
                 const lienUrgency = data.lien_filing.urgency || 
                     getUrgencyForPDF(data.lien_filing.days_from_now);
                 
