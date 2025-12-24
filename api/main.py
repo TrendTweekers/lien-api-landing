@@ -722,6 +722,46 @@ def init_db():
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_contact_email ON contact_messages(email)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_contact_created ON contact_messages(created_at)")
             
+            # Create api_key_requests table if it doesn't exist
+            if 'api_key_requests' not in existing_tables:
+                print("Creating api_key_requests table...")
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        CREATE TABLE api_key_requests (
+                            id SERIAL PRIMARY KEY,
+                            company VARCHAR NOT NULL,
+                            email VARCHAR NOT NULL,
+                            phone VARCHAR,
+                            volume VARCHAR NOT NULL,
+                            use_case TEXT,
+                            status VARCHAR DEFAULT 'pending',
+                            ip_address VARCHAR,
+                            created_at TIMESTAMP DEFAULT NOW()
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_req_email ON api_key_requests(email)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_req_status ON api_key_requests(status)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_req_created ON api_key_requests(created_at)")
+                    print("✅ Created api_key_requests table")
+                else:
+                    cursor.execute("""
+                        CREATE TABLE api_key_requests (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            company TEXT NOT NULL,
+                            email TEXT NOT NULL,
+                            phone TEXT,
+                            volume TEXT NOT NULL,
+                            use_case TEXT,
+                            status TEXT DEFAULT 'pending',
+                            ip_address TEXT,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_req_email ON api_key_requests(email)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_req_status ON api_key_requests(status)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_req_created ON api_key_requests(created_at)")
+                    print("✅ Created api_key_requests table")
+            
             # Create lien_deadlines table if it doesn't exist
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
@@ -1344,6 +1384,13 @@ class ContactRequest(BaseModel):
     company: str | None = None
     topic: str
     message: str
+
+class APIKeyRequest(BaseModel):
+    company: str
+    email: EmailStr
+    phone: str | None = None
+    volume: str
+    use_case: str | None = None
 
 class TrackCalculationRequest(BaseModel):
     """Request model for tracking calculation attempts"""
