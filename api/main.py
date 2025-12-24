@@ -2139,6 +2139,188 @@ async def calculate_deadline(
     
     return response
 
+@app.post("/api/v1/request-api-key")
+@limiter.limit("3/minute")
+async def request_api_key(request: Request, api_request: APIKeyRequest):
+    """
+    Handle API key request submissions.
+    Stores in database and sends notification emails.
+    """
+    from api.admin import send_email_sync
+    
+    try:
+        # Get client IP
+        client_ip = get_client_ip(request)
+        
+        # Server-side validation
+        if not api_request.company or len(api_request.company.strip()) < 2:
+            raise HTTPException(status_code=400, detail="Company name must be at least 2 characters")
+        
+        valid_volumes = ["<100", "100-500", "500-1000", ">1000"]
+        if api_request.volume not in valid_volumes:
+            raise HTTPException(status_code=400, detail=f"Volume must be one of: {', '.join(valid_volumes)}")
+        
+        # Store in database
+        try:
+            with get_db() as conn:
+                cursor = get_db_cursor(conn)
+                
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        INSERT INTO api_key_requests (company, email, phone, volume, use_case, ip_address, status)
+                        VALUES (%s, %s, %s, %s, %s, %s, 'pending')
+                    """, (
+                        api_request.company.strip(),
+                        api_request.email.strip(),
+                        api_request.phone.strip() if api_request.phone else None,
+                        api_request.volume,
+                        api_request.use_case.strip() if api_request.use_case else None,
+                        client_ip
+                    ))
+                else:
+                    cursor.execute("""
+                        INSERT INTO api_key_requests (company, email, phone, volume, use_case, ip_address, status)
+                        VALUES (?, ?, ?, ?, ?, ?, 'pending')
+                    """, (
+                        api_request.company.strip(),
+                        api_request.email.strip(),
+                        api_request.phone.strip() if api_request.phone else None,
+                        api_request.volume,
+                        api_request.use_case.strip() if api_request.use_case else None,
+                        client_ip
+                    ))
+                
+                conn.commit()
+                print(f"✅ API key request saved: {api_request.email} - {api_request.company}")
+        except Exception as db_error:
+            print(f"⚠️ Failed to save API key request to database: {db_error}")
+            import traceback
+            traceback.print_exc()
+            # Continue even if DB save fails - still send email
+        
+        # Create email subject
+        subject = f"[API Key Request] {api_request.company} – {api_request.email}"
+        
+        # Create email body (HTML)
+        import html
+        
+        company_escaped = html.escape(api_request.company)
+        email_escaped = html.escape(api_request.email)
+        phone_escaped = html.escape(api_request.phone) if api_request.phone else "Not provided"
+        volume_escaped = html.escape(api_request.volume)
+        use_case_escaped = html.escape(api_request.use_case).replace('\n', '<br>') if api_request.use_case else "Not provided"
+        ip_escaped = html.escape(client_ip)
+        
+        body_html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #f9fafb; border-radius: 8px; padding: 24px; border: 1px solid #e5e7eb;">
+        <h2 style="color: #1f2937; margin-top: 0; font-size: 24px;">New API Key Request</h2>
+        
+        <div style="background-color: white; border-radius: 6px; padding: 20px; margin-top: 16px;">
+            <p><strong>Company:</strong> {company_escaped}</p>
+            <p><strong>Email:</strong> <a href="mailto:{email_escaped}">{email_escaped}</a></p>
+            <p><strong>Phone:</strong> {phone_escaped}</p>
+            <p><strong>Monthly Project Volume:</strong> {volume_escaped}</p>
+            <p><strong>IP Address:</strong> {ip_escaped}</p>
+        </div>
+        
+        <div style="background-color: white; border-radius: 6px; padding: 20px; margin-top: 16px;">
+            <h3 style="color: #1f2937; margin-top: 0;">Use Case:</h3>
+            <div style="white-space: pre-wrap; color: #4b5563; line-height: 1.8;">{use_case_escaped}</div>
+        </div>
+        
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                Review this request in the admin dashboard and approve to send API key.
+            </p>
+        </div>
+    </div>
+</body>
+</html>"""
+        
+        # Send notification email to admin
+        admin_email = "support@liendeadline.com"
+        try:
+            send_email_sync(
+                to_email=admin_email,
+                subject=subject,
+                body_html=body_html
+            )
+            print(f"✅ Notification email sent to {admin_email}")
+        except Exception as email_error:
+            print(f"⚠️ Failed to send notification email: {email_error}")
+            import traceback
+            traceback.print_exc()
+        
+        # Send confirmation email to requester
+        confirmation_subject = "API Key Request Received - LienDeadline"
+        confirmation_body_html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #f9fafb; border-radius: 8px; padding: 24px; border: 1px solid #e5e7eb;">
+        <h2 style="color: #1f2937; margin-top: 0; font-size: 24px;">Thank You for Your API Key Request</h2>
+        
+        <p>Hi {company_escaped},</p>
+        
+        <p>We've received your request for API access. Our team will review your application and send your API key within 24 hours.</p>
+        
+        <div style="background-color: white; border-radius: 6px; padding: 20px; margin: 20px 0;">
+            <h3 style="color: #1f2937; margin-top: 0;">Request Details:</h3>
+            <p><strong>Company:</strong> {company_escaped}</p>
+            <p><strong>Monthly Project Volume:</strong> {volume_escaped}</p>
+        </div>
+        
+        <p>In the meantime, you can:</p>
+        <ul>
+            <li>Try our <a href="https://liendeadline.com/test-api" style="color: #2563eb;">API tester</a> to see how it works</li>
+            <li>Review our <a href="https://liendeadline.com/api.html#technical-docs" style="color: #2563eb;">technical documentation</a></li>
+            <li>Check out our <a href="https://liendeadline.com/comparison.html" style="color: #2563eb;">comparison page</a> to see how we stack up</li>
+        </ul>
+        
+        <p>If you have any questions, feel free to reply to this email.</p>
+        
+        <p style="margin-top: 24px; color: #6b7280; font-size: 14px;">
+            Best regards,<br>
+            The LienDeadline Team
+        </p>
+    </div>
+</body>
+</html>"""
+        
+        try:
+            send_email_sync(
+                to_email=api_request.email.strip(),
+                subject=confirmation_subject,
+                body_html=confirmation_body_html
+            )
+            print(f"✅ Confirmation email sent to {api_request.email}")
+        except Exception as email_error:
+            print(f"⚠️ Failed to send confirmation email: {email_error}")
+            import traceback
+            traceback.print_exc()
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "API key request received. We'll review and send your API key within 24 hours."
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error processing API key request: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error. Please try again later.")
+
 @app.post("/api/contact")
 @limiter.limit("5/minute")
 async def submit_contact_form(request: Request, contact_data: ContactRequest):
