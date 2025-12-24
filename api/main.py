@@ -763,6 +763,70 @@ def init_db():
                     cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_req_created ON api_key_requests(created_at)")
                     print("✅ Created api_key_requests table")
             
+            # Create customers table if it doesn't exist
+            if 'customers' not in existing_tables:
+                print("Creating customers table...")
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        CREATE TABLE customers (
+                            id SERIAL PRIMARY KEY,
+                            email VARCHAR(255) UNIQUE NOT NULL,
+                            stripe_customer_id VARCHAR(255),
+                            subscription_id VARCHAR(255),
+                            status VARCHAR(50) DEFAULT 'active',
+                            plan VARCHAR(50) DEFAULT 'unlimited',
+                            amount REAL DEFAULT 299.00,
+                            calls_used INTEGER DEFAULT 0,
+                            api_key VARCHAR(255) UNIQUE,
+                            created_at TIMESTAMP DEFAULT NOW()
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_stripe ON customers(stripe_customer_id)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_api_key ON customers(api_key)")
+                    print("✅ Created customers table")
+                else:
+                    cursor.execute("""
+                        CREATE TABLE customers (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            email TEXT UNIQUE NOT NULL,
+                            stripe_customer_id TEXT,
+                            subscription_id TEXT,
+                            status TEXT DEFAULT 'active',
+                            plan TEXT DEFAULT 'unlimited',
+                            amount REAL DEFAULT 299.00,
+                            calls_used INTEGER DEFAULT 0,
+                            api_key TEXT UNIQUE,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_stripe ON customers(stripe_customer_id)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_api_key ON customers(api_key)")
+                    print("✅ Created customers table")
+            else:
+                # Customers table exists, check if api_key column exists
+                try:
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute("""
+                            SELECT column_name 
+                            FROM information_schema.columns 
+                            WHERE table_name='customers' AND column_name='api_key'
+                        """)
+                        if not cursor.fetchone():
+                            cursor.execute("ALTER TABLE customers ADD COLUMN api_key VARCHAR(255) UNIQUE")
+                            cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_api_key ON customers(api_key)")
+                            print("✅ Added api_key column to customers table")
+                    else:
+                        cursor.execute("PRAGMA table_info(customers)")
+                        columns = [row[1] for row in cursor.fetchall()]
+                        if 'api_key' not in columns:
+                            cursor.execute("ALTER TABLE customers ADD COLUMN api_key TEXT UNIQUE")
+                            cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_api_key ON customers(api_key)")
+                            print("✅ Added api_key column to customers table")
+                except Exception as e:
+                    print(f"⚠️ Could not add api_key column (may already exist): {e}")
+            
             # Create api_keys table if it doesn't exist
             if 'api_keys' not in existing_tables:
                 print("Creating api_keys table...")
@@ -802,28 +866,6 @@ def init_db():
                     cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_email ON api_keys(customer_email)")
                     cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys(is_active)")
                     print("✅ Created api_keys table")
-            
-            # Add api_key column to customers table if it doesn't exist
-            try:
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        SELECT column_name 
-                        FROM information_schema.columns 
-                        WHERE table_name='customers' AND column_name='api_key'
-                    """)
-                    if not cursor.fetchone():
-                        cursor.execute("ALTER TABLE customers ADD COLUMN api_key VARCHAR UNIQUE")
-                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_api_key ON customers(api_key)")
-                        print("✅ Added api_key column to customers table")
-                else:
-                    cursor.execute("PRAGMA table_info(customers)")
-                    columns = [row[1] for row in cursor.fetchall()]
-                    if 'api_key' not in columns:
-                        cursor.execute("ALTER TABLE customers ADD COLUMN api_key TEXT UNIQUE")
-                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_api_key ON customers(api_key)")
-                        print("✅ Added api_key column to customers table")
-            except Exception as e:
-                print(f"⚠️ Could not add api_key column (may already exist): {e}")
             
             # Create lien_deadlines table if it doesn't exist
             if DB_TYPE == 'postgresql':
