@@ -1062,15 +1062,16 @@
                 }
                 yPos += 4;
                 
+                // Helper function for urgency calculation (used for both prelim and lien)
+                function getUrgencyForPDF(daysFromNow) {
+                    if (daysFromNow === null || daysFromNow === undefined) return 'normal';
+                    if (daysFromNow <= 7) return 'critical';
+                    if (daysFromNow <= 30) return 'warning';
+                    return 'normal';
+                }
+                
                 // Preliminary Notice (if required)
                 if (data.preliminary_notice && data.preliminary_notice.required) {
-                    function getUrgencyForPDF(daysFromNow) {
-                        if (daysFromNow === null || daysFromNow === undefined) return 'normal';
-                        if (daysFromNow <= 7) return 'critical';
-                        if (daysFromNow <= 30) return 'warning';
-                        return 'normal';
-                    }
-                    
                     const prelimUrgency = data.preliminary_notice.urgency || 
                         getUrgencyForPDF(data.preliminary_notice.days_from_now);
                     
