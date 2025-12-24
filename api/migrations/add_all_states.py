@@ -1,11 +1,29 @@
 """
 Migration script to add all 50 US states + DC to lien_deadlines table
 Run this script to populate the database with complete state data
+
+Usage:
+    From project root:
+        python api/migrations/add_all_states.py
+    
+    Or from api/ directory:
+        python migrations/add_all_states.py
+    
+    Or from api/migrations/ directory:
+        python add_all_states.py
 """
 import json
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
+
+# Add parent directory to path so we can import from api module
+# This allows the script to be run from any directory
+script_dir = Path(__file__).resolve().parent
+api_dir = script_dir.parent
+project_root = api_dir.parent
+sys.path.insert(0, str(project_root))
 
 # Import database functions
 from api.database import get_db, get_db_cursor, DB_TYPE, execute_query
