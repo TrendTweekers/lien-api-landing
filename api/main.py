@@ -717,6 +717,72 @@ def init_db():
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_contact_email ON contact_messages(email)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_contact_created ON contact_messages(created_at)")
             
+            # Create lien_deadlines table if it doesn't exist
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_name = 'lien_deadlines'
+                    )
+                """)
+                table_exists = cursor.fetchone()[0]
+            else:
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='lien_deadlines'")
+                table_exists = cursor.fetchone() is not None
+            
+            if not table_exists:
+                print("📋 Creating lien_deadlines table...")
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        CREATE TABLE lien_deadlines (
+                            id SERIAL PRIMARY KEY,
+                            state_code VARCHAR(2) UNIQUE NOT NULL,
+                            state_name VARCHAR(50) NOT NULL,
+                            preliminary_notice_required BOOLEAN DEFAULT FALSE,
+                            preliminary_notice_days INTEGER,
+                            preliminary_notice_formula TEXT,
+                            preliminary_notice_deadline_description TEXT,
+                            preliminary_notice_statute TEXT,
+                            lien_filing_days INTEGER,
+                            lien_filing_formula TEXT,
+                            lien_filing_deadline_description TEXT,
+                            lien_filing_statute TEXT,
+                            weekend_extension BOOLEAN DEFAULT FALSE,
+                            holiday_extension BOOLEAN DEFAULT FALSE,
+                            residential_vs_commercial BOOLEAN DEFAULT FALSE,
+                            notice_of_completion_trigger BOOLEAN DEFAULT FALSE,
+                            notes TEXT,
+                            last_updated TIMESTAMP DEFAULT NOW()
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_lien_deadlines_state_code ON lien_deadlines(state_code)")
+                else:
+                    cursor.execute("""
+                        CREATE TABLE lien_deadlines (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            state_code TEXT UNIQUE NOT NULL,
+                            state_name TEXT NOT NULL,
+                            preliminary_notice_required INTEGER DEFAULT 0,
+                            preliminary_notice_days INTEGER,
+                            preliminary_notice_formula TEXT,
+                            preliminary_notice_deadline_description TEXT,
+                            preliminary_notice_statute TEXT,
+                            lien_filing_days INTEGER,
+                            lien_filing_formula TEXT,
+                            lien_filing_deadline_description TEXT,
+                            lien_filing_statute TEXT,
+                            weekend_extension INTEGER DEFAULT 0,
+                            holiday_extension INTEGER DEFAULT 0,
+                            residential_vs_commercial INTEGER DEFAULT 0,
+                            notice_of_completion_trigger INTEGER DEFAULT 0,
+                            notes TEXT,
+                            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_lien_deadlines_state_code ON lien_deadlines(state_code)")
+                conn.commit()
+                print("✅ lien_deadlines table created")
+            
             # Commit is handled automatically by context manager
             print("✅ Database initialized")
     except Exception as e:
@@ -808,7 +874,16 @@ def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
         )
     return credentials.username
 
-# Load state rules
+# Valid state codes (all 50 US states + DC)
+VALID_STATES = [
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL",
+    "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "ME",
+    "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
+    "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI",
+    "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+]
+
+# Load state rules (fallback to JSON if database not available)
 try:
     with open(BASE_DIR / "state_rules.json", 'r') as f:
         STATE_RULES = json.load(f)
@@ -991,7 +1066,8 @@ async def referral_redirect(short_code: str, request: Request):
 
 @app.get("/v1/states")
 def get_states():
-    return list(STATE_RULES.keys())
+    """Get list of supported states - returns all 51 states from VALID_STATES"""
+    return VALID_STATES
 
 @app.get("/api/v1/guide/{state_code}/pdf")
 async def generate_state_guide_pdf(state_code: str):
@@ -1663,12 +1739,67 @@ async def calculate_deadline(
             print(f"⚠️ Error checking limits in calculate_deadline: {e}")
             # Continue with calculation if limit check fails (fail open for UX)
     
-    # Validate state
-    if state_code not in STATE_RULES:
+    # Validate state (check against VALID_STATES list)
+    if state_code not in VALID_STATES:
         return {
             "error": f"State {state_code} not supported",
-            "available_states": list(STATE_RULES.keys()),
-            "message": "Need this state? Contact us to add it!"
+            "available_states": VALID_STATES,
+            "message": "Please select a valid US state or DC"
+        }
+    
+    # Try to get rules from database first, fallback to JSON
+    rules = None
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT * FROM lien_deadlines WHERE state_code = %s
+                """, (state_code,))
+            else:
+                cursor.execute("""
+                    SELECT * FROM lien_deadlines WHERE state_code = ?
+                """, (state_code,))
+            db_state = cursor.fetchone()
+            
+            if db_state:
+                # Convert database row to rules format
+                if isinstance(db_state, dict):
+                    rules = {
+                        "state_name": db_state.get("state_name"),
+                        "preliminary_notice": {
+                            "required": db_state.get("preliminary_notice_required", False),
+                            "days": db_state.get("preliminary_notice_days"),
+                            "formula": db_state.get("preliminary_notice_formula"),
+                            "description": db_state.get("preliminary_notice_deadline_description"),
+                            "statute": db_state.get("preliminary_notice_statute")
+                        },
+                        "lien_filing": {
+                            "days": db_state.get("lien_filing_days"),
+                            "formula": db_state.get("lien_filing_formula"),
+                            "description": db_state.get("lien_filing_deadline_description"),
+                            "statute": db_state.get("lien_filing_statute")
+                        },
+                        "special_rules": {
+                            "weekend_extension": db_state.get("weekend_extension", False),
+                            "holiday_extension": db_state.get("holiday_extension", False),
+                            "residential_vs_commercial": db_state.get("residential_vs_commercial", False),
+                            "notice_of_completion_trigger": db_state.get("notice_of_completion_trigger", False),
+                            "notes": db_state.get("notes", "")
+                        }
+                    }
+    except Exception as e:
+        print(f"⚠️ Error querying database for state {state_code}: {e}")
+    
+    # Fallback to JSON if database query failed
+    if not rules and state_code in STATE_RULES:
+        rules = STATE_RULES[state_code]
+    
+    if not rules:
+        return {
+            "error": f"State {state_code} data not available",
+            "available_states": VALID_STATES,
+            "message": "State is supported but data is not loaded. Please contact support."
         }
     
     rules = STATE_RULES[state_code]
