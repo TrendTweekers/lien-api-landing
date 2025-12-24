@@ -27,7 +27,6 @@ sys.path.insert(0, str(project_root))
 
 # Import database functions
 from api.database import get_db, get_db_cursor, DB_TYPE
-from sqlalchemy import text
 
 def safe_fetch_value(cursor_result, index=0):
     """Safely extract value from cursor result (handles both dict and tuple)"""
@@ -64,12 +63,12 @@ def main():
             print("1️⃣ Checking customers table...")
             try:
                 if DB_TYPE == 'postgresql':
-                    cursor.execute(text("""
+                    cursor.execute("""
                         SELECT EXISTS (
                             SELECT FROM information_schema.tables 
                             WHERE table_name = 'customers'
                         )
-                    """))
+                    """)
                     result = cursor.fetchone()
                     table_exists = safe_fetch_value(result, 0) if result else False
                 else:
@@ -79,7 +78,7 @@ def main():
                 if not table_exists:
                     print("   Creating customers table...")
                     if DB_TYPE == 'postgresql':
-                        cursor.execute(text("""
+                        cursor.execute("""
                             CREATE TABLE customers (
                                 id SERIAL PRIMARY KEY,
                                 email VARCHAR(255) UNIQUE NOT NULL,
@@ -92,11 +91,11 @@ def main():
                                 api_key VARCHAR(255) UNIQUE,
                                 created_at TIMESTAMP DEFAULT NOW()
                             )
-                        """))
-                        cursor.execute(text("CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email)"))
-                        cursor.execute(text("CREATE INDEX IF NOT EXISTS idx_customers_stripe ON customers(stripe_customer_id)"))
+                        """)
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email)")
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_stripe ON customers(stripe_customer_id)")
                     else:
-                        cursor.execute(text("""
+                        cursor.execute("""
                             CREATE TABLE customers (
                                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 email TEXT UNIQUE NOT NULL,
@@ -109,9 +108,9 @@ def main():
                                 api_key TEXT UNIQUE,
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                             )
-                        """))
-                        cursor.execute(text("CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email)"))
-                        cursor.execute(text("CREATE INDEX IF NOT EXISTS idx_customers_stripe ON customers(stripe_customer_id)"))
+                        """)
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email)")
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_stripe ON customers(stripe_customer_id)")
                     conn.commit()
                     print("   ✅ Customers table created")
                 else:
@@ -119,26 +118,26 @@ def main():
                     
                     # Check if api_key column exists
                     if DB_TYPE == 'postgresql':
-                        cursor.execute(text("""
+                        cursor.execute("""
                             SELECT column_name 
                             FROM information_schema.columns 
                             WHERE table_name='customers' AND column_name='api_key'
-                        """))
+                        """)
                         if not cursor.fetchone():
-                            cursor.execute(text("ALTER TABLE customers ADD COLUMN api_key VARCHAR(255) UNIQUE"))
-                            cursor.execute(text("CREATE INDEX IF NOT EXISTS idx_customers_api_key ON customers(api_key)"))
+                            cursor.execute("ALTER TABLE customers ADD COLUMN api_key VARCHAR(255) UNIQUE")
+                            cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_api_key ON customers(api_key)")
                             conn.commit()
                             print("   ✅ Added api_key column to customers table")
                     else:
-                        cursor.execute(text("PRAGMA table_info(customers)"))
+                        cursor.execute("PRAGMA table_info(customers)")
                         columns = []
                         for row in cursor.fetchall():
                             col_name = row.get('name') if isinstance(row, dict) else (row[1] if isinstance(row, (tuple, list)) and len(row) > 1 else None)
                             if col_name:
                                 columns.append(col_name)
                         if 'api_key' not in columns:
-                            cursor.execute(text("ALTER TABLE customers ADD COLUMN api_key TEXT UNIQUE"))
-                            cursor.execute(text("CREATE INDEX IF NOT EXISTS idx_customers_api_key ON customers(api_key)"))
+                            cursor.execute("ALTER TABLE customers ADD COLUMN api_key TEXT UNIQUE")
+                            cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_api_key ON customers(api_key)")
                             conn.commit()
                             print("   ✅ Added api_key column to customers table")
             except Exception as e:
@@ -149,12 +148,12 @@ def main():
             print("\n2️⃣ Checking api_keys table...")
             try:
                 if DB_TYPE == 'postgresql':
-                    cursor.execute(text("""
+                    cursor.execute("""
                         SELECT EXISTS (
                             SELECT FROM information_schema.tables 
                             WHERE table_name = 'api_keys'
                         )
-                    """))
+                    """)
                     result = cursor.fetchone()
                     table_exists = safe_fetch_value(result, 0) if result else False
                 else:
@@ -164,7 +163,7 @@ def main():
                 if not table_exists:
                     print("   Creating api_keys table...")
                     if DB_TYPE == 'postgresql':
-                        cursor.execute(text("""
+                        cursor.execute("""
                             CREATE TABLE api_keys (
                                 id SERIAL PRIMARY KEY,
                                 user_id INTEGER,
@@ -175,12 +174,12 @@ def main():
                                 is_active BOOLEAN DEFAULT TRUE,
                                 calls_count INTEGER DEFAULT 0
                             )
-                        """))
-                        cursor.execute(text("CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(api_key)"))
-                        cursor.execute(text("CREATE INDEX IF NOT EXISTS idx_api_keys_email ON api_keys(customer_email)"))
-                        cursor.execute(text("CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys(is_active)"))
+                        """)
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(api_key)")
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_email ON api_keys(customer_email)")
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys(is_active)")
                     else:
-                        cursor.execute(text("""
+                        cursor.execute("""
                             CREATE TABLE api_keys (
                                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 user_id INTEGER,
@@ -191,10 +190,10 @@ def main():
                                 is_active INTEGER DEFAULT 1,
                                 calls_count INTEGER DEFAULT 0
                             )
-                        """))
-                        cursor.execute(text("CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(api_key)"))
-                        cursor.execute(text("CREATE INDEX IF NOT EXISTS idx_api_keys_email ON api_keys(customer_email)"))
-                        cursor.execute(text("CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys(is_active)"))
+                        """)
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(api_key)")
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_email ON api_keys(customer_email)")
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys(is_active)")
                     conn.commit()
                     print("   ✅ API keys table created")
                 else:
@@ -207,12 +206,12 @@ def main():
             print("\n3️⃣ Checking lien_deadlines table...")
             try:
                 if DB_TYPE == 'postgresql':
-                    cursor.execute(text("""
+                    cursor.execute("""
                         SELECT EXISTS (
                             SELECT FROM information_schema.tables 
                             WHERE table_name = 'lien_deadlines'
                         )
-                    """))
+                    """)
                     result = cursor.fetchone()
                     table_exists = safe_fetch_value(result, 0) if result else False
                 else:
@@ -222,7 +221,7 @@ def main():
                 if not table_exists:
                     print("   Creating lien_deadlines table...")
                     if DB_TYPE == 'postgresql':
-                        cursor.execute(text("""
+                        cursor.execute("""
                             CREATE TABLE lien_deadlines (
                                 id SERIAL PRIMARY KEY,
                                 state_code VARCHAR(2) UNIQUE NOT NULL,
@@ -243,10 +242,10 @@ def main():
                                 notes TEXT,
                                 last_updated TIMESTAMP DEFAULT NOW()
                             )
-                        """))
-                        cursor.execute(text("CREATE INDEX IF NOT EXISTS idx_lien_deadlines_state_code ON lien_deadlines(state_code)"))
+                        """)
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_lien_deadlines_state_code ON lien_deadlines(state_code)")
                     else:
-                        cursor.execute(text("""
+                        cursor.execute("""
                             CREATE TABLE lien_deadlines (
                                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 state_code TEXT UNIQUE NOT NULL,
@@ -267,18 +266,18 @@ def main():
                                 notes TEXT,
                                 last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                             )
-                        """))
-                        cursor.execute(text("CREATE INDEX IF NOT EXISTS idx_lien_deadlines_state_code ON lien_deadlines(state_code)"))
+                        """)
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_lien_deadlines_state_code ON lien_deadlines(state_code)")
                     conn.commit()
                     print("   ✅ lien_deadlines table created")
                 
                 # Check current state count
                 if DB_TYPE == 'postgresql':
-                    cursor.execute(text("SELECT COUNT(*) FROM lien_deadlines"))
+                    cursor.execute("SELECT COUNT(*) FROM lien_deadlines")
                     result = cursor.fetchone()
                     current_count = safe_fetch_value(result, 0) if result else 0
                 else:
-                    cursor.execute(text("SELECT COUNT(*) FROM lien_deadlines"))
+                    cursor.execute("SELECT COUNT(*) FROM lien_deadlines")
                     result = cursor.fetchone()
                     current_count = safe_fetch_value(result, 0) if result else 0
                 
@@ -292,7 +291,7 @@ def main():
                 print("\n4️⃣ Repopulating all 51 states...")
                 
                 # Clear existing states
-                cursor.execute(text("DELETE FROM lien_deadlines"))
+                cursor.execute("DELETE FROM lien_deadlines")
                 conn.commit()
                 print("   🗑️ Cleared existing states")
                 
@@ -306,7 +305,7 @@ def main():
                     special = state_info.get("special_rules", {})
                     
                     if DB_TYPE == 'postgresql':
-                        cursor.execute(text("""
+                        cursor.execute("""
                             INSERT INTO lien_deadlines (
                                 state_code, state_name,
                                 preliminary_notice_required,
@@ -326,7 +325,7 @@ def main():
                             ) VALUES (
                                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                             )
-                        """), (
+                        """, (
                             state_info["state_code"],
                             state_info["state_name"],
                             prelim.get("required", False),
@@ -345,7 +344,7 @@ def main():
                             special.get("notes", "")
                         ))
                     else:
-                        cursor.execute(text("""
+                        cursor.execute("""
                             INSERT INTO lien_deadlines (
                                 state_code, state_name,
                                 preliminary_notice_required,
@@ -365,7 +364,7 @@ def main():
                             ) VALUES (
                                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                             )
-                        """), (
+                        """, (
                             state_info["state_code"],
                             state_info["state_name"],
                             1 if prelim.get("required", False) else 0,
@@ -390,11 +389,11 @@ def main():
                 
                 # Verify count
                 if DB_TYPE == 'postgresql':
-                    cursor.execute(text("SELECT COUNT(*) FROM lien_deadlines"))
+                    cursor.execute("SELECT COUNT(*) FROM lien_deadlines")
                     result = cursor.fetchone()
                     final_count = safe_fetch_value(result, 0) if result else 0
                 else:
-                    cursor.execute(text("SELECT COUNT(*) FROM lien_deadlines"))
+                    cursor.execute("SELECT COUNT(*) FROM lien_deadlines")
                     result = cursor.fetchone()
                     final_count = safe_fetch_value(result, 0) if result else 0
                 
@@ -402,9 +401,9 @@ def main():
                 
                 # Verify Hawaii specifically
                 if DB_TYPE == 'postgresql':
-                    cursor.execute(text("SELECT state_code, state_name, lien_filing_days FROM lien_deadlines WHERE state_code = 'HI'"))
+                    cursor.execute("SELECT state_code, state_name, lien_filing_days FROM lien_deadlines WHERE state_code = 'HI'")
                 else:
-                    cursor.execute(text("SELECT state_code, state_name, lien_filing_days FROM lien_deadlines WHERE state_code = 'HI'"))
+                    cursor.execute("SELECT state_code, state_name, lien_filing_days FROM lien_deadlines WHERE state_code = 'HI'")
                 hawaii = cursor.fetchone()
                 
                 if hawaii:
