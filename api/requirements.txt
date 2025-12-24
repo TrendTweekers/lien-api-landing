@@ -4,4 +4,6 @@ pydantic==2.5.0
 stripe==7.0.0
 email-validator>=2.0.0
 reportlab==4.0.7
+python-dateutil>=2.8.2
+holidays>=0.34
 

@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, timedelta, date
 from pathlib import Path
+from typing import Optional
 from starlette.middleware.base import BaseHTTPMiddleware
 import json
 import secrets
@@ -23,6 +24,10 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from api.rate_limiter import limiter
 from io import BytesIO
+from api.calculators import (
+    calculate_texas, calculate_washington, calculate_california,
+    calculate_ohio, calculate_oregon, calculate_hawaii, calculate_default
+)
 
 # Optional ReportLab imports (for PDF generation)
 try:
@@ -1352,6 +1357,8 @@ class CalculateDeadlineRequest(BaseModel):
     state: str
     role: str = "supplier"
     project_type: str = "commercial"
+    notice_of_completion_date: Optional[str] = None
+    notice_of_commencement_filed: Optional[bool] = False
 
 def get_client_ip(request: Request) -> str:
     """Get real client IP from headers (works with Railway/Cloudflare)"""
@@ -1844,8 +1851,6 @@ async def calculate_deadline(
             "message": "State is supported but data is not loaded. Please contact support."
         }
     
-    rules = STATE_RULES[state_code]
-    
     # Parse date - handle both MM/DD/YYYY and YYYY-MM-DD formats
     delivery_date = None
     try:
@@ -1862,29 +1867,55 @@ async def calculate_deadline(
             except ValueError:
                 return {"error": "Invalid date format. Use MM/DD/YYYY or YYYY-MM-DD"}
     
-    # Get deadline days
-    prelim_notice = rules["preliminary_notice"]
-    lien_filing = rules["lien_filing"]
+    # State-specific calculation logic
+    result = None
+    state_name = rules.get("state_name", state_code)
+    special_rules = rules.get("special_rules", {})
     
-    # Calculate days (simple approach)
     if state_code == "TX":
-        prelim_days = prelim_notice.get("commercial_days", 75)
-        lien_days = lien_filing.get("commercial_days", 105)
+        result = calculate_texas(delivery_date, project_type=project_type)
+    elif state_code == "WA":
+        result = calculate_washington(delivery_date, role=role)
     elif state_code == "CA":
-        prelim_days = prelim_notice.get("days", 20)
-        lien_days = lien_filing.get("standard_days", 90)
-    else:  # FL
-        prelim_days = prelim_notice.get("days", 45)
-        lien_days = lien_filing.get("days", 90)
+        result = calculate_california(
+            delivery_date,
+            notice_of_completion_date=request_data.notice_of_completion_date,
+            role=role
+        )
+    elif state_code == "OH":
+        result = calculate_ohio(
+            delivery_date,
+            project_type=project_type,
+            notice_of_commencement_filed=request_data.notice_of_commencement_filed or False
+        )
+    elif state_code == "OR":
+        result = calculate_oregon(delivery_date)
+    elif state_code == "HI":
+        result = calculate_hawaii(delivery_date)
+    else:
+        # Default calculation for simple states
+        result = calculate_default(
+            delivery_date,
+            {
+                "preliminary_notice_required": rules.get("preliminary_notice", {}).get("required", False),
+                "preliminary_notice_days": rules.get("preliminary_notice", {}).get("days"),
+                "lien_filing_days": rules.get("lien_filing", {}).get("days"),
+                "notes": special_rules.get("notes", "")
+            },
+            weekend_extension=special_rules.get("weekend_extension", False),
+            holiday_extension=special_rules.get("holiday_extension", False)
+        )
     
-    # Calculate deadlines
-    prelim_deadline = delivery_date + timedelta(days=prelim_days)
-    lien_deadline = delivery_date + timedelta(days=lien_days)
+    # Extract deadlines from result
+    prelim_deadline = result.get("preliminary_deadline")
+    lien_deadline = result.get("lien_deadline")
+    warnings = result.get("warnings", [])
+    prelim_required = result.get("preliminary_required", rules.get("preliminary_notice", {}).get("required", False))
     
     # Calculate days from now
     today = datetime.now()
-    days_to_prelim = (prelim_deadline - today).days
-    days_to_lien = (lien_deadline - today).days
+    days_to_prelim = (prelim_deadline - today).days if prelim_deadline else None
+    days_to_lien = (lien_deadline - today).days if lien_deadline else None
     
     # Track page view and calculation (non-blocking, PostgreSQL compatible)
     try:
@@ -1893,8 +1924,8 @@ async def calculate_deadline(
             
             # Format dates for database
             today_str = date.today().isoformat()
-            prelim_date_str = prelim_deadline.date().isoformat()
-            lien_date_str = lien_deadline.date().isoformat()
+            prelim_date_str = prelim_deadline.date().isoformat() if prelim_deadline else None
+            lien_date_str = lien_deadline.date().isoformat() if lien_deadline else None
             notice_date_str = delivery_date.date().isoformat()
             
             # Create tables if they don't exist
@@ -1945,8 +1976,8 @@ async def calculate_deadline(
                     state_code,
                     notice_date_str,
                     today_str,
-                    prelim_date_str,
-                    lien_date_str
+                    prelim_date_str if prelim_date_str else None,
+                    lien_date_str if lien_date_str else None
                 ))
                 
                 print(f"✅ Calculation saved to PostgreSQL: {state_code} - Notice: {notice_date_str}, Prelim: {prelim_date_str}, Lien: {lien_date_str}")
@@ -1997,8 +2028,8 @@ async def calculate_deadline(
                     state_code,
                     notice_date_str,
                     today_str,
-                    prelim_date_str,
-                    lien_date_str
+                    prelim_date_str if prelim_date_str else None,
+                    lien_date_str if lien_date_str else None
                 ))
                 
                 print(f"✅ Calculation saved to SQLite: {state_code} - Notice: {notice_date_str}, Prelim: {prelim_date_str}, Lien: {lien_date_str}")
@@ -2020,35 +2051,46 @@ async def calculate_deadline(
         else:
             return "normal"
     
-    return {
-        "state": rules["state_name"],
+    # Get statute citations from rules
+    prelim_notice = rules.get("preliminary_notice", {})
+    lien_filing = rules.get("lien_filing", {})
+    statute_citations = []
+    if prelim_notice.get("statute"):
+        statute_citations.append(prelim_notice["statute"])
+    if lien_filing.get("statute"):
+        statute_citations.append(lien_filing["statute"])
+    
+    # Build response
+    response = {
+        "state": state_name,
         "state_code": state_code,
         "invoice_date": invoice_date,
         "role": role,
         "project_type": project_type,
         "preliminary_notice": {
-            "name": prelim_notice.get("name", "Preliminary Notice"),
-            "deadline": prelim_deadline.strftime('%Y-%m-%d'),
+            "required": prelim_required,
+            "deadline": prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None,
             "days_from_now": days_to_prelim,
-            "urgency": get_urgency(days_to_prelim),
-            "description": prelim_notice.get("description", "")
+            "urgency": get_urgency(days_to_prelim) if days_to_prelim else None,
+            "description": prelim_notice.get("description", prelim_notice.get("deadline_description", ""))
         },
         "lien_filing": {
-            "name": lien_filing.get("name", "Lien Filing"),
-            "deadline": lien_deadline.strftime('%Y-%m-%d'),
+            "deadline": lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None,
             "days_from_now": days_to_lien,
-            "urgency": get_urgency(days_to_lien),
-            "description": lien_filing.get("description", "")
+            "urgency": get_urgency(days_to_lien) if days_to_lien else None,
+            "description": lien_filing.get("description", lien_filing.get("deadline_description", ""))
         },
         "serving_requirements": rules.get("serving_requirements", []),
-        "statute_citations": rules.get("statute_citations", []),
-        "critical_warnings": rules.get("critical_warnings", []),
-        "notes": rules.get("notes", ""),
+        "statute_citations": statute_citations,
+        "warnings": warnings,
+        "critical_warnings": warnings,  # Keep for backward compatibility
+        "notes": special_rules.get("notes", ""),
         "disclaimer": "⚠️ This is general information only, NOT legal advice.",
         "response_time_ms": 45,
-        "quota": quota,
-        "state": state_code
+        "quota": quota
     }
+    
+    return response
 
 @app.post("/api/contact")
 @limiter.limit("5/minute")
