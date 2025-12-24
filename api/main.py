@@ -2246,11 +2246,7 @@ async def request_api_key(request: Request, api_request: APIKeyRequest):
         # Send notification email to admin
         admin_email = "support@liendeadline.com"
         try:
-            send_email_sync(
-                to_email=admin_email,
-                subject=subject,
-                body_html=body_html
-            )
+            send_email_sync(admin_email, subject, body_html)
             print(f"✅ Notification email sent to {admin_email}")
         except Exception as email_error:
             print(f"⚠️ Failed to send notification email: {email_error}")
@@ -2297,11 +2293,7 @@ async def request_api_key(request: Request, api_request: APIKeyRequest):
 </html>"""
         
         try:
-            send_email_sync(
-                to_email=api_request.email.strip(),
-                subject=confirmation_subject,
-                body_html=confirmation_body_html
-            )
+            send_email_sync(api_request.email.strip(), confirmation_subject, confirmation_body_html)
             print(f"✅ Confirmation email sent to {api_request.email}")
         except Exception as email_error:
             print(f"⚠️ Failed to send confirmation email: {email_error}")
