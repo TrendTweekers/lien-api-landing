@@ -911,6 +911,49 @@ app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
 async def startup():
     init_db()
     
+    # Run database migration on startup
+    print("\n" + "="*60)
+    print("🚀 RUNNING STARTUP MIGRATION")
+    print("="*60)
+    
+    try:
+        # Get the path to the migration script
+        migration_script = Path(__file__).parent / "migrations" / "fix_production_database.py"
+        
+        if migration_script.exists():
+            print(f"📂 Found migration script: {migration_script}")
+            
+            # Run the migration
+            result = subprocess.run(
+                ["python", str(migration_script)],
+                capture_output=True,
+                text=True,
+                timeout=120,
+                cwd=Path(__file__).parent.parent  # Run from project root
+            )
+            
+            # Print output
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr:
+                print("⚠️ Migration stderr:", result.stderr)
+            
+            if result.returncode == 0:
+                print("✅ Migration completed successfully")
+            else:
+                print(f"⚠️ Migration exited with code {result.returncode}")
+        else:
+            print(f"⚠️ Migration script not found at {migration_script}")
+            
+    except subprocess.TimeoutExpired:
+        print("❌ Migration timed out after 120 seconds")
+    except Exception as e:
+        print(f"❌ Migration error: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    print("="*60 + "\n")
+    
     # Ensure users table exists
     try:
         from api.admin import ensure_users_table
