@@ -777,6 +777,83 @@
                     </div>
                 </div>
             </section>
+            
+            <!-- API Keys & Customers Section -->
+            <section>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <div>
+                        <h2 class="text-xl font-semibold flex items-center gap-2">
+                            <span style="color: var(--primary);">🔑</span>
+                            API Keys & Customers
+                        </h2>
+                        <p class="text-sm" style="color: var(--muted);">Manage customer API keys, usage, and access</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="loadApiUsageStats()" class="btn btn-outline btn-sm">
+                            📊 Usage Stats
+                        </button>
+                        <button onclick="loadCustomers()" class="btn btn-outline btn-sm">
+                            🔄 Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- API Usage Analytics -->
+                <div class="dashboard-card p-5 mb-6">
+                    <h3 class="text-lg font-semibold mb-4">API Usage Analytics</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                            <div class="text-sm" style="color: var(--muted);">Today</div>
+                            <div class="text-2xl font-bold" id="api-calls-today">0</div>
+                        </div>
+                        <div>
+                            <div class="text-sm" style="color: var(--muted);">This Week</div>
+                            <div class="text-2xl font-bold" id="api-calls-week">0</div>
+                        </div>
+                        <div>
+                            <div class="text-sm" style="color: var(--muted);">This Month</div>
+                            <div class="text-2xl font-bold" id="api-calls-month">0</div>
+                        </div>
+                        <div>
+                            <div class="text-sm" style="color: var(--muted);">Error Rate</div>
+                            <div class="text-2xl font-bold" id="api-error-rate">0%</div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="text-sm font-semibold mb-2">Most Used States</div>
+                        <div id="api-most-used-states" class="flex flex-wrap gap-2">
+                            <!-- Dynamic badges -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Customers Table -->
+                <div class="dashboard-card overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>Plan</th>
+                                    <th>API Key</th>
+                                    <th>API Calls (30d)</th>
+                                    <th>Last Used</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="api-customers-list">
+                                <tr>
+                                    <td colspan="8" class="text-center py-8" style="color: var(--muted);">
+                                        Loading customers...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
     
@@ -959,6 +1036,53 @@
             
             <div class="mt-6 flex gap-4">
                 <button onclick="closeModal('ledgerModal')" class="btn btn-outline flex-1">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- API Key Modals -->
+    <div id="viewApiKeyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">API Key Details</h2>
+                <button onclick="closeModal('viewApiKeyModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div id="api-key-content" class="space-y-4">
+                <!-- Content loaded dynamically -->
+            </div>
+            <div class="mt-6 flex gap-4">
+                <button onclick="copyApiKey()" class="btn btn-primary flex-1">📋 Copy API Key</button>
+                <button onclick="closeModal('viewApiKeyModal')" class="btn btn-outline flex-1">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="regenerateApiKeyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Regenerate API Key</h2>
+                <button onclick="closeModal('regenerateApiKeyModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <p class="mb-4">Are you sure you want to regenerate the API key for <strong id="regenerate-customer-email"></strong>?</p>
+            <p class="text-sm text-red-600 mb-6">⚠️ The old API key will be invalidated immediately. The customer will receive an email with the new key.</p>
+            <div class="flex gap-4">
+                <button onclick="confirmRegenerateApiKey()" class="btn btn-warning flex-1">Yes, Regenerate</button>
+                <button onclick="closeModal('regenerateApiKeyModal')" class="btn btn-outline flex-1">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="revokeApiKeyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Revoke API Access</h2>
+                <button onclick="closeModal('revokeApiKeyModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <p class="mb-4">Are you sure you want to revoke API access for <strong id="revoke-customer-email"></strong>?</p>
+            <p class="text-sm text-red-600 mb-6">⚠️ All API keys will be deactivated. The customer will receive an email notification.</p>
+            <div class="flex gap-4">
+                <button onclick="confirmRevokeApiKey()" class="btn btn-error flex-1">Yes, Revoke</button>
+                <button onclick="closeModal('revokeApiKeyModal')" class="btn btn-outline flex-1">Cancel</button>
             </div>
         </div>
     </div>

@@ -3145,6 +3145,503 @@ def get_payout_history(user: str = Depends(verify_admin)):
         if con:
             con.close()
 
+# ==========================================
+# API KEY MANAGEMENT ENDPOINTS
+# ==========================================
+
+def generate_api_key() -> str:
+    """Generate a secure API key"""
+    import secrets
+    return f"sk_live_{secrets.token_urlsafe(32)}"
+
+@router.get("/customers")
+def get_customers_with_api_keys(user: str = Depends(verify_admin)):
+    """List all customers with API keys and usage stats"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT 
+                        c.id,
+                        c.email,
+                        c.plan,
+                        c.status,
+                        c.created_at,
+                        c.api_key,
+                        COALESCE(ak.calls_count, 0) as api_calls_30d,
+                        ak.last_used_at,
+                        ak.is_active
+                    FROM customers c
+                    LEFT JOIN api_keys ak ON c.email = ak.customer_email AND ak.is_active = TRUE
+                    WHERE c.status = 'active'
+                    ORDER BY c.created_at DESC
+                """)
+            else:
+                cursor.execute("""
+                    SELECT 
+                        c.id,
+                        c.email,
+                        c.plan,
+                        c.status,
+                        c.created_at,
+                        c.api_key,
+                        COALESCE(ak.calls_count, 0) as api_calls_30d,
+                        ak.last_used_at,
+                        ak.is_active
+                    FROM customers c
+                    LEFT JOIN api_keys ak ON c.email = ak.customer_email AND ak.is_active = 1
+                    WHERE c.status = 'active'
+                    ORDER BY c.created_at DESC
+                """)
+            
+            rows = cursor.fetchall()
+            customers = []
+            for row in rows:
+                api_key_masked = None
+                if row[5]:  # api_key column
+                    api_key_masked = f"{row[5][:12]}...{row[5][-4:]}" if len(row[5]) > 16 else "***"
+                
+                customers.append({
+                    "id": row[0],
+                    "email": row[1],
+                    "plan": row[2] or "$299/month",
+                    "status": row[3] or "active",
+                    "created_at": row[4].isoformat() if row[4] else None,
+                    "api_key_masked": api_key_masked,
+                    "api_calls_30d": row[6] or 0,
+                    "last_used_at": row[7].isoformat() if row[7] else None,
+                    "is_active": row[8] if row[8] is not None else True
+                })
+            
+            return {"success": True, "customers": customers, "count": len(customers)}
+    except Exception as e:
+        logger.error(f"Error fetching customers: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/customer/{customer_id}/api-key")
+def get_customer_api_key(customer_id: int, user: str = Depends(verify_admin)):
+    """Get full API key for a customer"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get customer email
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT email FROM customers WHERE id = %s", (customer_id,))
+            else:
+                cursor.execute("SELECT email FROM customers WHERE id = ?", (customer_id,))
+            
+            customer_row = cursor.fetchone()
+            if not customer_row:
+                raise HTTPException(status_code=404, detail="Customer not found")
+            
+            customer_email = customer_row[0]
+            
+            # Get API key from api_keys table
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT api_key, calls_count, last_used_at, created_at
+                    FROM api_keys
+                    WHERE customer_email = %s AND is_active = TRUE
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                """, (customer_email,))
+            else:
+                cursor.execute("""
+                    SELECT api_key, calls_count, last_used_at, created_at
+                    FROM api_keys
+                    WHERE customer_email = ? AND is_active = 1
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                """, (customer_email,))
+            
+            api_key_row = cursor.fetchone()
+            if not api_key_row:
+                raise HTTPException(status_code=404, detail="No active API key found for this customer")
+            
+            return {
+                "success": True,
+                "api_key": api_key_row[0],
+                "calls_count": api_key_row[1] or 0,
+                "last_used_at": api_key_row[2].isoformat() if api_key_row[2] else None,
+                "created_at": api_key_row[3].isoformat() if api_key_row[3] else None
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching API key: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/customer/{customer_id}/regenerate-key")
+def regenerate_api_key(customer_id: int, user: str = Depends(verify_admin)):
+    """Regenerate API key for a customer"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get customer email
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT email FROM customers WHERE id = %s", (customer_id,))
+            else:
+                cursor.execute("SELECT email FROM customers WHERE id = ?", (customer_id,))
+            
+            customer_row = cursor.fetchone()
+            if not customer_row:
+                raise HTTPException(status_code=404, detail="Customer not found")
+            
+            customer_email = customer_row[0]
+            
+            # Deactivate old API keys
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE api_keys 
+                    SET is_active = FALSE 
+                    WHERE customer_email = %s AND is_active = TRUE
+                """, (customer_email,))
+            else:
+                cursor.execute("""
+                    UPDATE api_keys 
+                    SET is_active = 0 
+                    WHERE customer_email = ? AND is_active = 1
+                """, (customer_email,))
+            
+            # Generate new API key
+            new_api_key = generate_api_key()
+            
+            # Insert new API key
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    INSERT INTO api_keys (customer_email, api_key, is_active, created_at)
+                    VALUES (%s, %s, TRUE, NOW())
+                """, (customer_email, new_api_key))
+                
+                # Update customers table
+                cursor.execute("""
+                    UPDATE customers 
+                    SET api_key = %s 
+                    WHERE id = %s
+                """, (new_api_key, customer_id))
+            else:
+                cursor.execute("""
+                    INSERT INTO api_keys (customer_email, api_key, is_active, created_at)
+                    VALUES (?, ?, 1, CURRENT_TIMESTAMP)
+                """, (customer_email, new_api_key))
+                
+                # Update customers table
+                cursor.execute("""
+                    UPDATE customers 
+                    SET api_key = ? 
+                    WHERE id = ?
+                """, (new_api_key, customer_id))
+            
+            conn.commit()
+            
+            # Send email notification
+            try:
+                send_api_key_regenerated_email(customer_email, new_api_key)
+            except Exception as email_error:
+                logger.error(f"Failed to send email: {email_error}")
+            
+            return {
+                "success": True,
+                "message": "API key regenerated successfully",
+                "api_key": new_api_key
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error regenerating API key: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/customer/{customer_id}/revoke-key")
+def revoke_api_key(customer_id: int, user: str = Depends(verify_admin)):
+    """Revoke API access for a customer"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Get customer email
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT email FROM customers WHERE id = %s", (customer_id,))
+            else:
+                cursor.execute("SELECT email FROM customers WHERE id = ?", (customer_id,))
+            
+            customer_row = cursor.fetchone()
+            if not customer_row:
+                raise HTTPException(status_code=404, detail="Customer not found")
+            
+            customer_email = customer_row[0]
+            
+            # Deactivate all API keys
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE api_keys 
+                    SET is_active = FALSE 
+                    WHERE customer_email = %s AND is_active = TRUE
+                """, (customer_email,))
+                
+                # Clear API key from customers table
+                cursor.execute("""
+                    UPDATE customers 
+                    SET api_key = NULL 
+                    WHERE id = %s
+                """, (customer_id,))
+            else:
+                cursor.execute("""
+                    UPDATE api_keys 
+                    SET is_active = 0 
+                    WHERE customer_email = ? AND is_active = 1
+                """, (customer_email,))
+                
+                # Clear API key from customers table
+                cursor.execute("""
+                    UPDATE customers 
+                    SET api_key = NULL 
+                    WHERE id = ?
+                """, (customer_id,))
+            
+            conn.commit()
+            
+            # Send email notification
+            try:
+                send_api_key_revoked_email(customer_email)
+            except Exception as email_error:
+                logger.error(f"Failed to send email: {email_error}")
+            
+            return {
+                "success": True,
+                "message": "API access revoked successfully"
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error revoking API key: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api-usage-stats")
+def get_api_usage_stats(user: str = Depends(verify_admin)):
+    """Get API usage analytics"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Check if api_logs table exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_name = 'api_logs'
+                    )
+                """)
+                table_exists = cursor.fetchone()[0]
+            else:
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='api_logs'")
+                table_exists = cursor.fetchone() is not None
+            
+            if not table_exists:
+                return {
+                    "success": True,
+                    "stats": {
+                        "total_calls_today": 0,
+                        "total_calls_week": 0,
+                        "total_calls_month": 0,
+                        "most_used_states": [],
+                        "average_response_time": 0,
+                        "error_rate": 0
+                    }
+                }
+            
+            # Get stats
+            if DB_TYPE == 'postgresql':
+                # Today's calls
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM api_logs 
+                    WHERE DATE(created_at) = CURRENT_DATE
+                """)
+                calls_today = cursor.fetchone()[0] or 0
+                
+                # Week's calls
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM api_logs 
+                    WHERE created_at >= NOW() - INTERVAL '7 days'
+                """)
+                calls_week = cursor.fetchone()[0] or 0
+                
+                # Month's calls
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM api_logs 
+                    WHERE created_at >= NOW() - INTERVAL '30 days'
+                """)
+                calls_month = cursor.fetchone()[0] or 0
+                
+                # Most used states
+                cursor.execute("""
+                    SELECT state, COUNT(*) as count
+                    FROM api_logs
+                    WHERE state IS NOT NULL
+                    GROUP BY state
+                    ORDER BY count DESC
+                    LIMIT 10
+                """)
+                most_used_states = [{"state": row[0], "count": row[1]} for row in cursor.fetchall()]
+                
+                # Error rate
+                cursor.execute("""
+                    SELECT 
+                        COUNT(*) FILTER (WHERE response_code >= 400) * 100.0 / NULLIF(COUNT(*), 0) as error_rate
+                    FROM api_logs
+                    WHERE created_at >= NOW() - INTERVAL '30 days'
+                """)
+                error_rate = cursor.fetchone()[0] or 0
+            else:
+                # Today's calls
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM api_logs 
+                    WHERE DATE(created_at) = DATE('now')
+                """)
+                calls_today = cursor.fetchone()[0] or 0
+                
+                # Week's calls
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM api_logs 
+                    WHERE created_at >= datetime('now', '-7 days')
+                """)
+                calls_week = cursor.fetchone()[0] or 0
+                
+                # Month's calls
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM api_logs 
+                    WHERE created_at >= datetime('now', '-30 days')
+                """)
+                calls_month = cursor.fetchone()[0] or 0
+                
+                # Most used states
+                cursor.execute("""
+                    SELECT state, COUNT(*) as count
+                    FROM api_logs
+                    WHERE state IS NOT NULL
+                    GROUP BY state
+                    ORDER BY count DESC
+                    LIMIT 10
+                """)
+                most_used_states = [{"state": row[0], "count": row[1]} for row in cursor.fetchall()]
+                
+                # Error rate
+                cursor.execute("""
+                    SELECT 
+                        CAST(SUM(CASE WHEN response_code >= 400 THEN 1 ELSE 0 END) AS FLOAT) * 100.0 / NULLIF(COUNT(*), 0) as error_rate
+                    FROM api_logs
+                    WHERE created_at >= datetime('now', '-30 days')
+                """)
+                error_rate = cursor.fetchone()[0] or 0
+            
+            return {
+                "success": True,
+                "stats": {
+                    "total_calls_today": calls_today,
+                    "total_calls_week": calls_week,
+                    "total_calls_month": calls_month,
+                    "most_used_states": most_used_states,
+                    "average_response_time": 0.3,  # Placeholder - would need response_time column
+                    "error_rate": round(error_rate, 2)
+                }
+            }
+    except Exception as e:
+        logger.error(f"Error fetching API usage stats: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+def send_api_key_regenerated_email(email: str, new_api_key: str):
+    """Send email notification when API key is regenerated"""
+    resend_key = os.environ.get("RESEND_API_KEY")
+    if not resend_key:
+        logger.warning("RESEND_API_KEY not set - skipping email")
+        return False
+    
+    try:
+        resend.api_key = resend_key
+        from_email = os.getenv("SMTP_FROM_EMAIL", "onboarding@resend.dev")
+        
+        html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #1f2937;">Your API Key Has Been Regenerated</h2>
+            <p>Your LienDeadline API key has been regenerated. Please update your integration with the new key below:</p>
+            <div style="background-color: #f3f4f6; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                <code style="font-size: 14px; word-break: break-all;">{new_api_key}</code>
+            </div>
+            <p><strong>Important:</strong> Your old API key is no longer valid. Update your integration immediately to avoid service interruption.</p>
+            <p>If you did not request this change, please contact support immediately.</p>
+        </body>
+        </html>
+        """
+        
+        params = {
+            "from": from_email,
+            "to": [email],
+            "subject": "LienDeadline API Key Regenerated",
+            "html": html
+        }
+        
+        resend.Emails.send(params)
+        logger.info(f"✅ API key regeneration email sent to {email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send API key regeneration email: {e}")
+        return False
+
+def send_api_key_revoked_email(email: str):
+    """Send email notification when API key is revoked"""
+    resend_key = os.environ.get("RESEND_API_KEY")
+    if not resend_key:
+        logger.warning("RESEND_API_KEY not set - skipping email")
+        return False
+    
+    try:
+        resend.api_key = resend_key
+        from_email = os.getenv("SMTP_FROM_EMAIL", "onboarding@resend.dev")
+        
+        html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #dc2626;">API Access Revoked</h2>
+            <p>Your LienDeadline API access has been revoked. All API keys associated with your account have been deactivated.</p>
+            <p>If you believe this is an error or need to restore access, please contact support at support@liendeadline.com.</p>
+        </body>
+        </html>
+        """
+        
+        params = {
+            "from": from_email,
+            "to": [email],
+            "subject": "LienDeadline API Access Revoked",
+            "html": html
+        }
+        
+        resend.Emails.send(params)
+        logger.info(f"✅ API key revocation email sent to {email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send API key revocation email: {e}")
+        return False
+
 @router.get("/payouts/recent")
 def get_recent_payouts(user: str = Depends(verify_admin)):
     """Get recent payouts (alias for history)"""

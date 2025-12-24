@@ -762,6 +762,68 @@ def init_db():
                     cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_req_created ON api_key_requests(created_at)")
                     print("✅ Created api_key_requests table")
             
+            # Create api_keys table if it doesn't exist
+            if 'api_keys' not in existing_tables:
+                print("Creating api_keys table...")
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        CREATE TABLE api_keys (
+                            id SERIAL PRIMARY KEY,
+                            user_id INTEGER,
+                            customer_email VARCHAR NOT NULL,
+                            api_key VARCHAR UNIQUE NOT NULL,
+                            created_at TIMESTAMP DEFAULT NOW(),
+                            last_used_at TIMESTAMP,
+                            is_active BOOLEAN DEFAULT TRUE,
+                            calls_count INTEGER DEFAULT 0,
+                            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(api_key)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_email ON api_keys(customer_email)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys(is_active)")
+                    print("✅ Created api_keys table")
+                else:
+                    cursor.execute("""
+                        CREATE TABLE api_keys (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            user_id INTEGER,
+                            customer_email TEXT NOT NULL,
+                            api_key TEXT UNIQUE NOT NULL,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            last_used_at TIMESTAMP,
+                            is_active INTEGER DEFAULT 1,
+                            calls_count INTEGER DEFAULT 0,
+                            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(api_key)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_email ON api_keys(customer_email)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys(is_active)")
+                    print("✅ Created api_keys table")
+            
+            # Add api_key column to customers table if it doesn't exist
+            try:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name='customers' AND column_name='api_key'
+                    """)
+                    if not cursor.fetchone():
+                        cursor.execute("ALTER TABLE customers ADD COLUMN api_key VARCHAR UNIQUE")
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_api_key ON customers(api_key)")
+                        print("✅ Added api_key column to customers table")
+                else:
+                    cursor.execute("PRAGMA table_info(customers)")
+                    columns = [row[1] for row in cursor.fetchall()]
+                    if 'api_key' not in columns:
+                        cursor.execute("ALTER TABLE customers ADD COLUMN api_key TEXT UNIQUE")
+                        cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_api_key ON customers(api_key)")
+                        print("✅ Added api_key column to customers table")
+            except Exception as e:
+                print(f"⚠️ Could not add api_key column (may already exist): {e}")
+            
             # Create lien_deadlines table if it doesn't exist
             if DB_TYPE == 'postgresql':
                 cursor.execute("""

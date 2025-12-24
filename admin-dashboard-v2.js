@@ -1099,6 +1099,233 @@ function logout() {
     }
 }
 
+// ==================== API KEY MANAGEMENT ====================
+
+let currentCustomerId = null;
+
+async function loadCustomers() {
+    try {
+        const response = await fetch('/api/admin/customers', {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const customers = data.customers || [];
+        
+        const tbody = document.getElementById('api-customers-list');
+        if (!tbody) return;
+        
+        if (customers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8" style="color: var(--muted);">No customers found</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = customers.map(customer => {
+            const createdDate = customer.created_at ? new Date(customer.created_at).toLocaleDateString() : '—';
+            const lastUsed = customer.last_used_at ? new Date(customer.last_used_at).toLocaleDateString() : 'Never';
+            const statusBadge = customer.is_active 
+                ? '<span class="badge badge-ready">Active</span>'
+                : '<span class="badge badge-pending">Revoked</span>';
+            
+            return `
+                <tr>
+                    <td>${customer.email}</td>
+                    <td>${customer.plan || '$299/month'}</td>
+                    <td><code class="text-xs">${customer.api_key_masked || 'No key'}</code></td>
+                    <td>${customer.api_calls_30d || 0}</td>
+                    <td>${lastUsed}</td>
+                    <td>${statusBadge}</td>
+                    <td>${createdDate}</td>
+                    <td>
+                        <div class="flex gap-2">
+                            ${customer.api_key_masked ? `<button onclick="viewApiKey(${customer.id})" class="btn btn-outline btn-xs">View</button>` : ''}
+                            ${customer.is_active ? `
+                                <button onclick="showRegenerateModal(${customer.id}, '${customer.email}')" class="btn btn-warning btn-xs">Regenerate</button>
+                                <button onclick="showRevokeModal(${customer.id}, '${customer.email}')" class="btn btn-error btn-xs">Revoke</button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('[Admin V2] Error loading customers:', error);
+        const tbody = document.getElementById('api-customers-list');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-red-600">Error loading customers</td></tr>';
+        }
+    }
+}
+
+async function loadApiUsageStats() {
+    try {
+        const response = await fetch('/api/admin/api-usage-stats', {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const stats = data.stats || {};
+        
+        safe.text('api-calls-today', stats.total_calls_today || 0);
+        safe.text('api-calls-week', stats.total_calls_week || 0);
+        safe.text('api-calls-month', stats.total_calls_month || 0);
+        safe.text('api-error-rate', `${stats.error_rate || 0}%`);
+        
+        // Most used states
+        const statesContainer = document.getElementById('api-most-used-states');
+        if (statesContainer && stats.most_used_states) {
+            statesContainer.innerHTML = stats.most_used_states.map(state => 
+                `<span class="badge badge-ready">${state.state}: ${state.count}</span>`
+            ).join('');
+        }
+    } catch (error) {
+        console.error('[Admin V2] Error loading API usage stats:', error);
+    }
+}
+
+async function viewApiKey(customerId) {
+    try {
+        const response = await fetch(`/api/admin/customer/${customerId}/api-key`, {
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        const content = document.getElementById('api-key-content');
+        if (content) {
+            content.innerHTML = `
+                <div>
+                    <label class="block text-sm font-medium mb-2">API Key</label>
+                    <div class="bg-gray-100 p-3 rounded-lg">
+                        <code id="full-api-key" class="text-sm break-all">${data.api_key}</code>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Total Calls</label>
+                        <div class="text-lg font-semibold">${data.calls_count || 0}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Last Used</label>
+                        <div class="text-sm">${data.last_used_at ? new Date(data.last_used_at).toLocaleString() : 'Never'}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Created</label>
+                        <div class="text-sm">${data.created_at ? new Date(data.created_at).toLocaleString() : '—'}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        currentCustomerId = customerId;
+        document.getElementById('viewApiKeyModal').classList.remove('hidden');
+    } catch (error) {
+        console.error('[Admin V2] Error viewing API key:', error);
+        alert('Error loading API key: ' + error.message);
+    }
+}
+
+function copyApiKey() {
+    const apiKeyEl = document.getElementById('full-api-key');
+    if (apiKeyEl) {
+        navigator.clipboard.writeText(apiKeyEl.textContent).then(() => {
+            alert('✅ API key copied to clipboard');
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            alert('Failed to copy API key');
+        });
+    }
+}
+
+function showRegenerateModal(customerId, email) {
+    currentCustomerId = customerId;
+    document.getElementById('regenerate-customer-email').textContent = email;
+    document.getElementById('regenerateApiKeyModal').classList.remove('hidden');
+}
+
+function showRevokeModal(customerId, email) {
+    currentCustomerId = customerId;
+    document.getElementById('revoke-customer-email').textContent = email;
+    document.getElementById('revokeApiKeyModal').classList.remove('hidden');
+}
+
+async function confirmRegenerateApiKey() {
+    if (!currentCustomerId) return;
+    
+    try {
+        const response = await fetch(`/api/admin/customer/${currentCustomerId}/regenerate-key`, {
+            method: 'POST',
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        alert('✅ API key regenerated successfully. Customer has been notified via email.');
+        closeModal('regenerateApiKeyModal');
+        loadCustomers();
+    } catch (error) {
+        console.error('[Admin V2] Error regenerating API key:', error);
+        alert('Error regenerating API key: ' + error.message);
+    }
+}
+
+async function confirmRevokeApiKey() {
+    if (!currentCustomerId) return;
+    
+    try {
+        const response = await fetch(`/api/admin/customer/${currentCustomerId}/revoke-key`, {
+            method: 'POST',
+            credentials: "include",
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        alert('✅ API access revoked successfully. Customer has been notified via email.');
+        closeModal('revokeApiKeyModal');
+        loadCustomers();
+    } catch (error) {
+        console.error('[Admin V2] Error revoking API key:', error);
+        alert('Error revoking API key: ' + error.message);
+    }
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+    currentCustomerId = null;
+}
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Initializing Admin Dashboard V2...');
@@ -1112,6 +1339,8 @@ document.addEventListener('DOMContentLoaded', function() {
     loadComprehensiveAnalytics();
     updateAllStats();
     updateLiveAnalytics();
+    loadCustomers();
+    loadApiUsageStats();
     
     // Auto-refresh every 60 seconds
     setInterval(() => {
@@ -1122,6 +1351,8 @@ document.addEventListener('DOMContentLoaded', function() {
         loadPaymentHistory();
         updateAllStats();
         updateLiveAnalytics();
+        loadCustomers();
+        loadApiUsageStats();
     }, 60000);
     
     console.log('✅ Admin Dashboard V2 ready');
