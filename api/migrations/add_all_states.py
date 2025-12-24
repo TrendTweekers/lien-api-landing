@@ -1441,7 +1441,7 @@ def migrate_states():
                                 lien_filing_days, lien_filing_formula, lien_filing_deadline_description, lien_filing_statute,
                                 weekend_extension, holiday_extension, residential_vs_commercial,
                                 notice_of_completion_trigger, notes
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """, (
                             state_code, state_name,
                             prelim_required, prelim_days, prelim_formula, prelim_desc, prelim_statute,
@@ -1457,7 +1457,7 @@ def migrate_states():
                                 lien_filing_days, lien_filing_formula, lien_filing_deadline_description, lien_filing_statute,
                                 weekend_extension, holiday_extension, residential_vs_commercial,
                                 notice_of_completion_trigger, notes
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """, (
                             state_code, state_name,
                             prelim_required, prelim_days, prelim_formula, prelim_desc, prelim_statute,
