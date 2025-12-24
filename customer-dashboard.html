@@ -690,12 +690,15 @@
                     }
                     
                     // Build request body with conditional fields
+                    // API defaults: role="supplier", project_type="commercial"
                     const formData = {
                         invoice_date: invoiceDate,
-                        state: state
+                        state: state,
+                        role: 'supplier', // Default
+                        project_type: 'commercial' // Default
                     };
                     
-                    // Add role for Washington
+                    // Override role for Washington (required)
                     if (state === 'WA') {
                         const role = document.getElementById('dashRole').value;
                         if (role) {
@@ -703,7 +706,7 @@
                         }
                     }
                     
-                    // Add project type for Texas, Ohio
+                    // Override project type for Texas, Ohio (required)
                     if (state === 'TX' || state === 'OH') {
                         const projectType = document.getElementById('dashProjectType').value;
                         if (projectType) {
@@ -711,7 +714,7 @@
                         }
                     }
                     
-                    // Add notice of completion date for California
+                    // Add notice of completion date for California (optional)
                     if (state === 'CA') {
                         const nocDate = document.getElementById('dashNOCDate').value;
                         if (nocDate) {
