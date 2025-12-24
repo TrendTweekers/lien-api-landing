@@ -8024,6 +8024,60 @@ async def get_broker_ledger(broker_id: int, username: str = Depends(verify_admin
             content={"status": "error", "message": f"Failed to compute ledger: {str(e)}"}
         )
 
+@app.get("/api/admin/list-broker-ids")
+async def list_broker_ids(username: str = Depends(verify_admin)):
+    """List all broker IDs for testing"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Query brokers - check what columns exist
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id, name, email, commission_model, approved_at
+                    FROM brokers
+                    ORDER BY id
+                """)
+            else:
+                cursor.execute("""
+                    SELECT id, name, email, commission_model, approved_at
+                    FROM brokers
+                    ORDER BY id
+                """)
+            
+            brokers = []
+            for row in cursor.fetchall():
+                if isinstance(row, dict):
+                    brokers.append({
+                        "id": row.get('id'),
+                        "name": row.get('name', ''),
+                        "email": row.get('email', ''),
+                        "commission_model": row.get('commission_model', 'bounty'),
+                        "approved_at": row.get('approved_at').isoformat() if row.get('approved_at') else None
+                    })
+                else:
+                    brokers.append({
+                        "id": row[0] if len(row) > 0 else None,
+                        "name": row[1] if len(row) > 1 else '',
+                        "email": row[2] if len(row) > 2 else '',
+                        "commission_model": row[3] if len(row) > 3 else 'bounty',
+                        "approved_at": row[4].isoformat() if len(row) > 4 and row[4] else None
+                    })
+            
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True,
+                    "brokers": brokers,
+                    "count": len(brokers)
+                }
+            )
+    except Exception as e:
+        print(f"❌ Error listing broker IDs: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/admin/test-set-broker-ready/{broker_id}")
 async def test_set_broker_ready(broker_id: int, username: str = Depends(verify_admin)):
     """TEST ONLY: Simulate broker ready for payment"""
