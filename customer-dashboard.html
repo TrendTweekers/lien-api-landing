@@ -771,23 +771,81 @@
             });
 
             function displayDashboardResults(data) {
+                // Calculate urgency based on days remaining
+                function getUrgency(daysFromNow) {
+                    if (daysFromNow === null || daysFromNow === undefined) return 'normal';
+                    if (daysFromNow <= 7) return 'critical';
+                    if (daysFromNow <= 30) return 'warning';
+                    return 'normal';
+                }
+                
+                // Get urgency from API response or calculate it
+                const prelimUrgency = data.preliminary_notice.urgency || 
+                    getUrgency(data.preliminary_notice.days_from_now);
+                const lienUrgency = data.lien_filing.urgency || 
+                    getUrgency(data.lien_filing.days_from_now);
+                
                 document.getElementById('dashResults').classList.remove('hidden');
                 
-                // Preliminary Notice
-                const prelimCard = document.getElementById('dashPrelimCard');
-                prelimCard.className = `bg-white shadow-lg rounded-lg p-6 border-l-4 ${getUrgencyColor(data.preliminary_notice.urgency)}`;
-                document.getElementById('dashPrelimTitle').textContent = data.preliminary_notice.name;
-                document.getElementById('dashPrelimDate').textContent = formatDate(data.preliminary_notice.deadline);
-                document.getElementById('dashPrelimDays').textContent = `${data.preliminary_notice.days_from_now} days`;
-                document.getElementById('dashPrelimDays').className = `text-2xl font-bold ${getUrgencyTextColor(data.preliminary_notice.urgency)}`;
+                // Preliminary Notice (only show if required)
+                if (data.preliminary_notice.required) {
+                    const prelimCard = document.getElementById('dashPrelimCard');
+                    prelimCard.className = `bg-white shadow-lg rounded-lg p-6 border-l-4 ${getUrgencyColor(prelimUrgency)}`;
+                    document.getElementById('dashPrelimTitle').textContent = 
+                        data.preliminary_notice.name || 'Preliminary Notice Deadline';
+                    document.getElementById('dashPrelimDate').textContent = 
+                        data.preliminary_notice.deadline ? formatDate(data.preliminary_notice.deadline) : 'Not Required';
+                    
+                    const prelimDaysEl = document.getElementById('dashPrelimDays');
+                    if (data.preliminary_notice.days_from_now !== null && data.preliminary_notice.days_from_now !== undefined) {
+                        prelimDaysEl.textContent = `${data.preliminary_notice.days_from_now} days`;
+                        prelimDaysEl.className = `text-2xl font-bold ${getUrgencyTextColor(prelimUrgency)}`;
+                    } else {
+                        prelimDaysEl.textContent = 'N/A';
+                        prelimDaysEl.className = 'text-2xl font-bold text-gray-500';
+                    }
+                    prelimCard.style.display = 'block';
+                } else {
+                    // Hide preliminary notice card if not required
+                    document.getElementById('dashPrelimCard').style.display = 'none';
+                }
                 
                 // Lien Filing
                 const lienCard = document.getElementById('dashLienCard');
-                lienCard.className = `bg-white shadow-lg rounded-lg p-6 border-l-4 ${getUrgencyColor(data.lien_filing.urgency)}`;
-                document.getElementById('dashLienTitle').textContent = data.lien_filing.name;
-                document.getElementById('dashLienDate').textContent = formatDate(data.lien_filing.deadline);
-                document.getElementById('dashLienDays').textContent = `${data.lien_filing.days_from_now} days`;
-                document.getElementById('dashLienDays').className = `text-2xl font-bold ${getUrgencyTextColor(data.lien_filing.urgency)}`;
+                lienCard.className = `bg-white shadow-lg rounded-lg p-6 border-l-4 ${getUrgencyColor(lienUrgency)}`;
+                document.getElementById('dashLienTitle').textContent = 
+                    data.lien_filing.name || 'Lien Filing Deadline';
+                document.getElementById('dashLienDate').textContent = 
+                    data.lien_filing.deadline ? formatDate(data.lien_filing.deadline) : 'N/A';
+                
+                const lienDaysEl = document.getElementById('dashLienDays');
+                if (data.lien_filing.days_from_now !== null && data.lien_filing.days_from_now !== undefined) {
+                    lienDaysEl.textContent = `${data.lien_filing.days_from_now} days`;
+                    lienDaysEl.className = `text-2xl font-bold ${getUrgencyTextColor(lienUrgency)}`;
+                } else {
+                    lienDaysEl.textContent = 'N/A';
+                    lienDaysEl.className = 'text-2xl font-bold text-gray-500';
+                }
+                lienCard.style.display = 'block';
+                
+                // Show warnings if any
+                if (data.warnings && data.warnings.length > 0) {
+                    let warningsHtml = '<div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg mt-4"><h4 class="font-semibold text-yellow-800 mb-2">⚠️ Important Notes:</h4><ul class="list-disc list-inside text-yellow-700 space-y-1">';
+                    data.warnings.forEach(warning => {
+                        warningsHtml += `<li>${warning}</li>`;
+                    });
+                    warningsHtml += '</ul></div>';
+                    
+                    // Add warnings after results
+                    const dashResults = document.getElementById('dashResults');
+                    let warningsDiv = document.getElementById('dashWarnings');
+                    if (!warningsDiv) {
+                        warningsDiv = document.createElement('div');
+                        warningsDiv.id = 'dashWarnings';
+                        dashResults.appendChild(warningsDiv);
+                    }
+                    warningsDiv.innerHTML = warningsHtml;
+                }
             }
 
             function saveCalculation(data) {
@@ -799,10 +857,13 @@
                     id: Date.now(),
                     timestamp: new Date().toISOString(),
                     invoice_date: data.invoice_date,
-                    state: data.state_code,
-                    state_name: data.state,
-                    prelim_deadline: data.preliminary_notice.deadline,
-                    lien_deadline: data.lien_filing.deadline,
+                    state: data.state_code || data.state,
+                    state_name: data.state_name || data.state,
+                    prelim_deadline: data.preliminary_notice?.deadline || null,
+                    lien_deadline: data.lien_filing?.deadline || null,
+                    prelim_days: data.preliminary_notice?.days_from_now || null,
+                    lien_days: data.lien_filing?.days_from_now || null,
+                    warnings: data.warnings || [],
                     data: data // Store full data for PDF generation
                 };
                 
@@ -1001,39 +1062,65 @@
                 }
                 yPos += 4;
                 
-                // Preliminary Notice
-                doc.setFontSize(14);
-                doc.setTextColor(0, 0, 0);
-                doc.text(data.preliminary_notice.name, margin, yPos);
-                yPos += 7;
-                
-                const prelimColor = getUrgencyPDFColor(data.preliminary_notice.urgency);
-                doc.setFillColor(prelimColor.r, prelimColor.g, prelimColor.b);
-                doc.rect(margin, yPos - 5, 5, 5, 'F');
-                
-                doc.setFontSize(12);
-                doc.setTextColor(0, 0, 0);
-                doc.text(`Deadline: ${formatDate(data.preliminary_notice.deadline)}`, margin + 10, yPos);
-                yPos += 6;
-                
-                doc.setFontSize(10);
-                doc.setTextColor(prelimColor.r, prelimColor.g, prelimColor.b);
-                doc.text(`${data.preliminary_notice.days_from_now} days from now`, margin + 10, yPos);
-                yPos += 6;
-                
-                doc.setFontSize(9);
-                doc.setTextColor(100, 100, 100);
-                const prelimDesc = doc.splitTextToSize(data.preliminary_notice.description || '', pageWidth - margin * 2 - 10);
-                doc.text(prelimDesc, margin + 10, yPos);
-                yPos += prelimDesc.length * 5 + 5;
+                // Preliminary Notice (if required)
+                if (data.preliminary_notice && data.preliminary_notice.required) {
+                    function getUrgencyForPDF(daysFromNow) {
+                        if (daysFromNow === null || daysFromNow === undefined) return 'normal';
+                        if (daysFromNow <= 7) return 'critical';
+                        if (daysFromNow <= 30) return 'warning';
+                        return 'normal';
+                    }
+                    
+                    const prelimUrgency = data.preliminary_notice.urgency || 
+                        getUrgencyForPDF(data.preliminary_notice.days_from_now);
+                    
+                    doc.setFontSize(14);
+                    doc.setTextColor(0, 0, 0);
+                    doc.text(data.preliminary_notice.name || 'Preliminary Notice Deadline', margin, yPos);
+                    yPos += 7;
+                    
+                    const prelimColor = getUrgencyPDFColor(prelimUrgency);
+                    doc.setFillColor(prelimColor.r, prelimColor.g, prelimColor.b);
+                    doc.rect(margin, yPos - 5, 5, 5, 'F');
+                    
+                    doc.setFontSize(12);
+                    doc.setTextColor(0, 0, 0);
+                    doc.text(`Deadline: ${data.preliminary_notice.deadline ? formatDate(data.preliminary_notice.deadline) : 'Not Required'}`, margin + 10, yPos);
+                    yPos += 6;
+                    
+                    if (data.preliminary_notice.days_from_now !== null && data.preliminary_notice.days_from_now !== undefined) {
+                        doc.setFontSize(10);
+                        doc.setTextColor(prelimColor.r, prelimColor.g, prelimColor.b);
+                        doc.text(`${data.preliminary_notice.days_from_now} days from now`, margin + 10, yPos);
+                        yPos += 6;
+                    }
+                    
+                    if (data.preliminary_notice.description) {
+                        doc.setFontSize(9);
+                        doc.setTextColor(100, 100, 100);
+                        const prelimDesc = doc.splitTextToSize(data.preliminary_notice.description, pageWidth - margin * 2 - 10);
+                        doc.text(prelimDesc, margin + 10, yPos);
+                        yPos += prelimDesc.length * 5 + 5;
+                    }
+                }
                 
                 // Lien Filing
+                function getUrgencyForPDF(daysFromNow) {
+                    if (daysFromNow === null || daysFromNow === undefined) return 'normal';
+                    if (daysFromNow <= 7) return 'critical';
+                    if (daysFromNow <= 30) return 'warning';
+                    return 'normal';
+                }
+                
+                const lienUrgency = data.lien_filing.urgency || 
+                    getUrgencyForPDF(data.lien_filing.days_from_now);
+                
                 doc.setFontSize(14);
                 doc.setTextColor(0, 0, 0);
-                doc.text(data.lien_filing.name, margin, yPos);
+                doc.text(data.lien_filing.name || 'Lien Filing Deadline', margin, yPos);
                 yPos += 7;
                 
-                const lienColor = getUrgencyPDFColor(data.lien_filing.urgency);
+                const lienColor = getUrgencyPDFColor(lienUrgency);
                 doc.setFillColor(lienColor.r, lienColor.g, lienColor.b);
                 doc.rect(margin, yPos - 5, 5, 5, 'F');
                 
