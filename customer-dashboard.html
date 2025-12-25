@@ -1474,6 +1474,195 @@
                 window.location.href = 'index.html';
             }
         }
+
+        // QuickBooks Integration Functions
+        async function connectQuickBooks() {
+            const token = localStorage.getItem('session_token');
+            if (!token) {
+                alert('Please log in first');
+                window.location.href = '/dashboard';
+                return;
+            }
+            
+            try {
+                window.location.href = '/api/quickbooks/connect';
+            } catch (error) {
+                console.error('Error connecting to QuickBooks:', error);
+                alert('Failed to connect to QuickBooks. Please try again.');
+            }
+        }
+
+        async function checkQuickBooksStatus() {
+            const token = localStorage.getItem('session_token');
+            if (!token) return;
+
+            try {
+                const response = await fetch('/api/quickbooks/status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const statusEl = document.getElementById('qb-status');
+                    const connectBtn = document.getElementById('qb-connect-btn');
+                    
+                    if (data.connected) {
+                        if (statusEl) {
+                            statusEl.textContent = 'Connected';
+                            statusEl.className = 'text-sm text-green-600 font-medium';
+                        }
+                        if (connectBtn) {
+                            connectBtn.textContent = 'Reconnect';
+                        }
+                        loadQuickBooksInvoices();
+                    } else {
+                        if (statusEl) {
+                            statusEl.textContent = 'Not connected';
+                            statusEl.className = 'text-sm text-gray-600';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking QuickBooks status:', error);
+            }
+        }
+
+        async function loadQuickBooksInvoices() {
+            const token = localStorage.getItem('session_token');
+            if (!token) return;
+
+            try {
+                const response = await fetch('/api/quickbooks/invoices', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        // Not connected
+                        return;
+                    }
+                    throw new Error('Failed to load invoices');
+                }
+                
+                const data = await response.json();
+                displayQuickBooksInvoices(data.invoices || []);
+            } catch (error) {
+                console.error('Error loading QuickBooks invoices:', error);
+            }
+        }
+
+        function displayQuickBooksInvoices(invoices) {
+            const container = document.getElementById('qb-invoices');
+            if (!container) return;
+            
+            if (!invoices || invoices.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+            
+            container.classList.remove('hidden');
+            
+            let html = '<h4 class="font-semibold text-lg mb-4 text-gray-900">Recent Invoices from QuickBooks</h4>';
+            html += '<div class="space-y-3 max-h-96 overflow-y-auto">';
+            
+            invoices.forEach(inv => {
+                const date = inv.date || 'N/A';
+                const amount = inv.amount ? `$${inv.amount.toFixed(2)}` : '$0.00';
+                const state = inv.state || '';
+                const customer = escapeHtml(inv.customer || 'Unknown');
+                
+                html += `
+                    <div class="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition">
+                        <div class="flex justify-between items-center flex-wrap gap-4">
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-900">${customer}</p>
+                                <p class="text-sm text-gray-600">Date: ${date} | Amount: ${amount}</p>
+                                ${state ? `<p class="text-xs text-gray-500 mt-1">State: ${state}</p>` : ''}
+                            </div>
+                            <button 
+                                onclick="calculateForInvoice('${date}', '${state}')"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap"
+                            >
+                                Calculate Deadline
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function calculateForInvoice(invoiceDate, state) {
+            // Auto-fill calculator with invoice data
+            const dateInput = document.getElementById('dashInvoiceDate');
+            const stateSelect = document.getElementById('dashState');
+            
+            if (dateInput && invoiceDate) {
+                dateInput.value = invoiceDate;
+            }
+            
+            if (stateSelect && state && state.length === 2) {
+                stateSelect.value = state;
+            }
+            
+            // Scroll to calculator section
+            const calculatorSection = document.getElementById('calculator');
+            if (calculatorSection) {
+                calculatorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            
+            // Highlight the form
+            if (dateInput) {
+                dateInput.focus();
+                setTimeout(() => {
+                    dateInput.blur();
+                }, 1000);
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showNotification(message, type = 'info') {
+            // Simple notification function
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white ${
+                type === 'success' ? 'bg-green-500' : 'bg-blue-500'
+            } shadow-lg z-50 transition-all`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Check if just connected from OAuth callback
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('qb_connected') === 'true') {
+            setTimeout(() => {
+                showNotification('QuickBooks connected successfully!', 'success');
+                checkQuickBooksStatus();
+            }, 500);
+        }
+
+        // Check QuickBooks status on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkQuickBooksStatus();
+        });
     </script>
 </body>
 </html>
