@@ -385,19 +385,33 @@ def main():
                         pass  # Continue with migration
                 
                 # Step 5: Repopulate all 51 states with full data
-                if current_count < 51:
-                    print("\n5️⃣ Repopulating all 51 states with full data...")
+                # Check current count again (might have changed after Step 4)
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) FROM lien_deadlines")
+                    result = cursor.fetchone()
+                    final_count = safe_fetch_value(result, 0) if result else 0
+                else:
+                    cursor.execute("SELECT COUNT(*) FROM lien_deadlines")
+                    result = cursor.fetchone()
+                    final_count = safe_fetch_value(result, 0) if result else 0
+                
+                if final_count >= 51:
+                    print("\n5️⃣ State data already complete, skipping repopulation")
+                    print(f"   ✅ All 51 states present with data")
+                else:
+                    print(f"\n5️⃣ Repopulating all 51 states with full data...")
+                    print(f"   📊 Current count: {final_count}, repopulating...")
                     
                     # Clear existing states
                     cursor.execute("DELETE FROM lien_deadlines")
                     conn.commit()
                     print("   🗑️ Cleared existing states")
-                
-                # Import state data from add_all_states.py
-                from api.migrations.add_all_states import STATE_DATA
-                
-                states_inserted = 0
-                for state_info in STATE_DATA["states"]:
+                    
+                    # Import state data from add_all_states.py
+                    from api.migrations.add_all_states import STATE_DATA
+                    
+                    states_inserted = 0
+                    for state_info in STATE_DATA["states"]:
                     prelim = state_info.get("preliminary_notice", {})
                     lien = state_info.get("lien_filing", {})
                     special = state_info.get("special_rules", {})
@@ -480,22 +494,22 @@ def main():
                             1 if special.get("notice_of_completion_trigger", False) else 0,
                             special.get("notes", "")
                         ))
-                    states_inserted += 1
-                
-                conn.commit()
-                print(f"   ✅ Inserted {states_inserted} states")
-                
-                # Verify count
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("SELECT COUNT(*) FROM lien_deadlines")
-                    result = cursor.fetchone()
-                    final_count = safe_fetch_value(result, 0) if result else 0
-                else:
-                    cursor.execute("SELECT COUNT(*) FROM lien_deadlines")
-                    result = cursor.fetchone()
-                    final_count = safe_fetch_value(result, 0) if result else 0
-                
-                print(f"   📊 Final state count: {final_count}")
+                        states_inserted += 1
+                    
+                    conn.commit()
+                    print(f"   ✅ Inserted {states_inserted} states")
+                    
+                    # Verify count
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute("SELECT COUNT(*) FROM lien_deadlines")
+                        result = cursor.fetchone()
+                        verify_count = safe_fetch_value(result, 0) if result else 0
+                    else:
+                        cursor.execute("SELECT COUNT(*) FROM lien_deadlines")
+                        result = cursor.fetchone()
+                        verify_count = safe_fetch_value(result, 0) if result else 0
+                    
+                    print(f"   📊 Final state count: {verify_count}")
                 
                 # Verify Hawaii specifically
                 if DB_TYPE == 'postgresql':
