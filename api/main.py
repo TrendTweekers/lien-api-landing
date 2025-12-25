@@ -1453,26 +1453,135 @@ async def generate_state_guide_pdf(state_code: str, request: Request):
     
     state_code = state_code.upper()
     
-    # Validate state code
-    if state_code not in STATE_RULES:
-        raise HTTPException(
-            status_code=404,
-            detail=f"State '{state_code}' not found. Available states: {', '.join(STATE_RULES.keys())}"
-        )
-    
-    state_data = STATE_RULES[state_code]
+    # Query database for state data
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Try state code first
+            state_upper = state_code.upper()
+            if DB_TYPE == 'postgresql':
+                cursor.execute(
+                    "SELECT * FROM lien_deadlines WHERE UPPER(state_code) = %s LIMIT 1",
+                    (state_upper,)
+                )
+            else:
+                cursor.execute(
+                    "SELECT * FROM lien_deadlines WHERE UPPER(state_code) = ? LIMIT 1",
+                    (state_upper,)
+                )
+            db_state = cursor.fetchone()
+            
+            # If not found by code, try by state name
+            if not db_state and state_upper in STATE_CODE_TO_NAME:
+                full_name = STATE_CODE_TO_NAME[state_upper]
+                if DB_TYPE == 'postgresql':
+                    cursor.execute(
+                        "SELECT * FROM lien_deadlines WHERE UPPER(state_name) = %s LIMIT 1",
+                        (full_name.upper(),)
+                    )
+                else:
+                    cursor.execute(
+                        "SELECT * FROM lien_deadlines WHERE UPPER(state_name) = ? LIMIT 1",
+                        (full_name.upper(),)
+                    )
+                db_state = cursor.fetchone()
+            
+            if not db_state:
+                # Get available states from database
+                cursor.execute("SELECT state_code FROM lien_deadlines ORDER BY state_code")
+                available_states = []
+                for row in cursor.fetchall():
+                    if isinstance(row, dict):
+                        available_states.append(row.get('state_code'))
+                    elif isinstance(row, (tuple, list)):
+                        available_states.append(row[0] if len(row) > 0 else None)
+                    else:
+                        available_states.append(str(row))
+                available_states = [s for s in available_states if s]
+                
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"State '{state_code}' not found. Available states: {', '.join(available_states[:20])}" + (f" and {len(available_states) - 20} more" if len(available_states) > 20 else "")
+                )
+            
+            # Convert database row to dict format
+            if isinstance(db_state, dict):
+                state_data = {
+                    'state_code': db_state.get('state_code'),
+                    'state_name': db_state.get('state_name'),
+                    'preliminary_notice': {
+                        'required': db_state.get('preliminary_notice_required', False),
+                        'days': db_state.get('preliminary_notice_days'),
+                        'formula': db_state.get('preliminary_notice_formula'),
+                        'description': db_state.get('preliminary_notice_deadline_description'),
+                        'statute': db_state.get('preliminary_notice_statute')
+                    },
+                    'lien_filing': {
+                        'days': db_state.get('lien_filing_days'),
+                        'formula': db_state.get('lien_filing_formula'),
+                        'description': db_state.get('lien_filing_deadline_description'),
+                        'statute': db_state.get('lien_filing_statute')
+                    },
+                    'special_rules': {
+                        'weekend_extension': db_state.get('weekend_extension', False),
+                        'holiday_extension': db_state.get('holiday_extension', False),
+                        'residential_vs_commercial': db_state.get('residential_vs_commercial', False),
+                        'notice_of_completion_trigger': db_state.get('notice_of_completion_trigger', False),
+                        'notes': db_state.get('notes', '')
+                    }
+                }
+            else:
+                # Handle tuple/list result - need to map by column order
+                # Assuming standard column order from CREATE TABLE
+                state_data = {
+                    'state_code': db_state[1] if len(db_state) > 1 else state_code,
+                    'state_name': db_state[2] if len(db_state) > 2 else STATE_CODE_TO_NAME.get(state_upper, state_code.title()),
+                    'preliminary_notice': {
+                        'required': bool(db_state[3]) if len(db_state) > 3 else False,
+                        'days': db_state[4] if len(db_state) > 4 else None,
+                        'formula': db_state[5] if len(db_state) > 5 else None,
+                        'description': db_state[6] if len(db_state) > 6 else None,
+                        'statute': db_state[7] if len(db_state) > 7 else None
+                    },
+                    'lien_filing': {
+                        'days': db_state[8] if len(db_state) > 8 else None,
+                        'formula': db_state[9] if len(db_state) > 9 else None,
+                        'description': db_state[10] if len(db_state) > 10 else None,
+                        'statute': db_state[11] if len(db_state) > 11 else None
+                    },
+                    'special_rules': {
+                        'weekend_extension': bool(db_state[12]) if len(db_state) > 12 else False,
+                        'holiday_extension': bool(db_state[13]) if len(db_state) > 13 else False,
+                        'residential_vs_commercial': bool(db_state[14]) if len(db_state) > 14 else False,
+                        'notice_of_completion_trigger': bool(db_state[15]) if len(db_state) > 15 else False,
+                        'notes': db_state[16] if len(db_state) > 16 else ''
+                    }
+                }
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Fallback to STATE_RULES if database query fails
+        print(f"⚠️ Database query failed for PDF generation: {e}")
+        if state_code in STATE_RULES:
+            state_data = STATE_RULES[state_code]
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Unable to retrieve state data. Error: {str(e)[:100]}"
+            )
     
     # Get state name - priority order:
     # 1. state_name query parameter (from frontend)
-    # 2. state_data from database/STATE_RULES
+    # 2. state_data from database
     # 3. Convert state code to full name
     state_name_param = request.query_params.get('state_name', '')
     
     if state_name_param:
         # Frontend sent the full state name
         state_name = state_name_param
-    elif state_data:
-        # Get from database/STATE_RULES
+    elif state_data and state_data.get('state_name'):
+        # Get from database
         state_name = state_data.get('state_name', '')
     else:
         # Fallback: convert state code to full name
