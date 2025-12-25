@@ -957,6 +957,35 @@ app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
 # Initialize database on startup
 @app.on_event("startup")
 async def startup():
+    # Verify all dependencies are installed
+    print("\n" + "="*60)
+    print("🔍 VERIFYING DEPENDENCIES")
+    print("="*60)
+    try:
+        import subprocess
+        from pathlib import Path
+        
+        verify_script = Path(__file__).parent / "verify_imports.py"
+        if verify_script.exists():
+            result = subprocess.run(
+                ["python", str(verify_script)],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                cwd=Path(__file__).parent.parent
+            )
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr:
+                print("⚠️ Verification stderr:", result.stderr)
+            if result.returncode != 0:
+                print("⚠️ WARNING: Some dependencies missing!")
+        else:
+            print("⚠️ verify_imports.py not found, skipping verification")
+    except Exception as e:
+        print(f"⚠️ Could not verify dependencies: {e}")
+    print("="*60 + "\n")
+    
     init_db()
     
     # Run database migration on startup (import and run directly)
