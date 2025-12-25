@@ -28,6 +28,57 @@ sys.path.insert(0, str(project_root))
 # Import database functions
 from api.database import get_db, get_db_cursor, DB_TYPE
 
+def populate_all_states(cursor):
+    """Add all 51 states to lien_deadlines table if they don't exist"""
+    
+    # All 51 states with their codes
+    all_states = [
+        ('AL', 'Alabama'), ('AK', 'Alaska'), ('AZ', 'Arizona'), ('AR', 'Arkansas'),
+        ('CA', 'California'), ('CO', 'Colorado'), ('CT', 'Connecticut'), ('DE', 'Delaware'),
+        ('DC', 'District of Columbia'), ('FL', 'Florida'), ('GA', 'Georgia'), ('HI', 'Hawaii'),
+        ('ID', 'Idaho'), ('IL', 'Illinois'), ('IN', 'Indiana'), ('IA', 'Iowa'),
+        ('KS', 'Kansas'), ('KY', 'Kentucky'), ('LA', 'Louisiana'), ('ME', 'Maine'),
+        ('MD', 'Maryland'), ('MA', 'Massachusetts'), ('MI', 'Michigan'), ('MN', 'Minnesota'),
+        ('MS', 'Mississippi'), ('MO', 'Missouri'), ('MT', 'Montana'), ('NE', 'Nebraska'),
+        ('NV', 'Nevada'), ('NH', 'New Hampshire'), ('NJ', 'New Jersey'), ('NM', 'New Mexico'),
+        ('NY', 'New York'), ('NC', 'North Carolina'), ('ND', 'North Dakota'), ('OH', 'Ohio'),
+        ('OK', 'Oklahoma'), ('OR', 'Oregon'), ('PA', 'Pennsylvania'), ('RI', 'Rhode Island'),
+        ('SC', 'South Carolina'), ('SD', 'South Dakota'), ('TN', 'Tennessee'), ('TX', 'Texas'),
+        ('UT', 'Utah'), ('VT', 'Vermont'), ('VA', 'Virginia'), ('WA', 'Washington'),
+        ('WV', 'West Virginia'), ('WI', 'Wisconsin'), ('WY', 'Wyoming')
+    ]
+    
+    states_added = 0
+    for state_code, state_name in all_states:
+        # Check if state exists
+        if DB_TYPE == 'postgresql':
+            cursor.execute("SELECT state_code FROM lien_deadlines WHERE state_code = %s", (state_code,))
+        else:
+            cursor.execute("SELECT state_code FROM lien_deadlines WHERE state_code = ?", (state_code,))
+        
+        if not cursor.fetchone():
+            # Add state with default values (120 days for lien, no prelim for most states)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    INSERT INTO lien_deadlines 
+                    (state_code, state_name, preliminary_notice_required, preliminary_notice_days, lien_filing_days)
+                    VALUES (%s, %s, false, NULL, 120)
+                    ON CONFLICT (state_code) DO NOTHING
+                """, (state_code, state_name))
+            else:
+                cursor.execute("""
+                    INSERT INTO lien_deadlines 
+                    (state_code, state_name, preliminary_notice_required, preliminary_notice_days, lien_filing_days)
+                    VALUES (?, ?, 0, NULL, 120)
+                """, (state_code, state_name))
+            print(f"   ✅ Added {state_name} ({state_code})")
+            states_added += 1
+    
+    if states_added > 0:
+        print(f"   📊 Added {states_added} new states")
+    else:
+        print("   ✅ All 51 states already present")
+
 def safe_fetch_value(cursor_result, index=0):
     """Safely extract value from cursor result (handles both dict and tuple)"""
     if cursor_result is None:
