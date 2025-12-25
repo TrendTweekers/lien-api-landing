@@ -302,6 +302,28 @@
                 transform: translateX(0);
             }
         }
+
+        @keyframes slideInToast {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutToast {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
     </style>
     <script>
         // Check authentication on page load
@@ -600,6 +622,96 @@
             </div>
         </div>
 
+        <!-- Save Project Form (hidden by default) -->
+        <div id="save-project-form" style="display:none; background:#f8f9fa; padding:25px; margin-top:20px; border-radius:8px; border:2px solid #f97316;">
+            <h3 style="color:#1e3a8a; margin-bottom:5px;">💾 Save This Calculation</h3>
+            <p style="color:#666; margin-bottom:20px;">Add project details so you remember what this deadline is for</p>
+            
+            <form id="project-form">
+                <!-- Required Fields -->
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:5px;">
+                        Project Name <span style="color:red;">*</span>
+                    </label>
+                    <input type="text" 
+                           id="project-name" 
+                           placeholder="e.g., Downtown Office Building" 
+                           required
+                           style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; font-size:14px;">
+                    <small style="color:#666;">Give this project a memorable name</small>
+                </div>
+
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:5px;">
+                        Client/Customer Name <span style="color:red;">*</span>
+                    </label>
+                    <input type="text" 
+                           id="client-name" 
+                           placeholder="e.g., ABC Construction" 
+                           required
+                           style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; font-size:14px;">
+                </div>
+
+                <!-- Optional Fields -->
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; font-weight:600; margin-bottom:5px;">
+                        Invoice Amount (Optional)
+                    </label>
+                    <input type="number" 
+                           id="invoice-amount" 
+                           placeholder="75000" 
+                           step="0.01" 
+                           min="0"
+                           style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; font-size:14px;">
+                    <small style="color:#666;">Helps you prioritize high-value projects</small>
+                </div>
+
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; font-weight:600; margin-bottom:5px;">
+                        Notes (Optional)
+                    </label>
+                    <textarea id="project-notes" 
+                              rows="3" 
+                              placeholder="e.g., Electrical work on floors 3-5, contact: John Smith"
+                              style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; font-size:14px; resize:vertical;"></textarea>
+                </div>
+
+                <!-- Email Reminders Section -->
+                <div style="background:white; padding:15px; border-radius:5px; margin-bottom:20px; border:1px solid #e0e0e0;">
+                    <h4 style="margin:0 0 15px 0; color:#1e3a8a;">📧 Email Reminders</h4>
+                    
+                    <div id="prelim-reminders" style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid #eee;">
+                        <p style="margin:0 0 10px 0; font-weight:600;">Preliminary Notice Deadline:</p>
+                        <label style="display:block; margin-bottom:8px; cursor:pointer;">
+                            <input type="checkbox" id="prelim-reminder-7" checked>
+                            <span style="margin-left:8px;">7 days before (<span id="prelim-7-date"></span>)</span>
+                        </label>
+                        <label style="display:block; cursor:pointer;">
+                            <input type="checkbox" id="prelim-reminder-1">
+                            <span style="margin-left:8px;">1 day before (<span id="prelim-1-date"></span>)</span>
+                        </label>
+                    </div>
+                    
+                    <div id="lien-reminders">
+                        <p style="margin:0 0 10px 0; font-weight:600;">Lien Filing Deadline:</p>
+                        <label style="display:block; margin-bottom:8px; cursor:pointer;">
+                            <input type="checkbox" id="lien-reminder-7" checked>
+                            <span style="margin-left:8px;">7 days before (<span id="lien-7-date"></span>)</span>
+                        </label>
+                        <label style="display:block; cursor:pointer;">
+                            <input type="checkbox" id="lien-reminder-1">
+                            <span style="margin-left:8px;">1 day before (<span id="lien-1-date"></span>)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" 
+                        style="background:#f97316; color:white; padding:12px 30px; border:none; border-radius:5px; cursor:pointer; font-size:16px; font-weight:600; width:100%;">
+                    💾 Save Project & Set Reminders
+                </button>
+            </form>
+        </div>
+
         <!-- Calculation History -->
         <div class="bg-white shadow-lg rounded-lg p-8">
             <div class="flex justify-between items-center mb-6">
@@ -633,6 +745,9 @@
         </div>
 
         <script>
+            // Store current calculation data
+            let currentCalculation = null;
+
             // Helper function to get state name from code
             function getStateNameFromCode(stateCode) {
                 const stateMap = {
@@ -651,6 +766,86 @@
                     'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
                 };
                 return stateMap[stateCode] || stateCode;
+            }
+
+            // Populate reminder dates
+            function populateReminderDates() {
+                if (!currentCalculation) return;
+                
+                const prelimDeadline = currentCalculation.prelimDeadline;
+                const lienDeadline = currentCalculation.lienDeadline;
+                
+                // Only show prelim reminders if preliminary notice is required
+                const prelimRemindersDiv = document.getElementById('prelim-reminders');
+                if (prelimRemindersDiv && prelimDeadline) {
+                    const prelim = new Date(prelimDeadline);
+                    
+                    // Calculate reminder dates
+                    const prelim7 = new Date(prelim);
+                    prelim7.setDate(prelim7.getDate() - 7);
+                    
+                    const prelim1 = new Date(prelim);
+                    prelim1.setDate(prelim1.getDate() - 1);
+                    
+                    // Format and display
+                    document.getElementById('prelim-7-date').textContent = formatReminderDate(prelim7);
+                    document.getElementById('prelim-1-date').textContent = formatReminderDate(prelim1);
+                    prelimRemindersDiv.style.display = 'block';
+                } else {
+                    prelimRemindersDiv.style.display = 'none';
+                }
+                
+                // Always show lien reminders
+                if (lienDeadline) {
+                    const lien = new Date(lienDeadline);
+                    
+                    // Calculate reminder dates
+                    const lien7 = new Date(lien);
+                    lien7.setDate(lien7.getDate() - 7);
+                    
+                    const lien1 = new Date(lien);
+                    lien1.setDate(lien1.getDate() - 1);
+                    
+                    // Format and display
+                    document.getElementById('lien-7-date').textContent = formatReminderDate(lien7);
+                    document.getElementById('lien-1-date').textContent = formatReminderDate(lien1);
+                }
+            }
+
+            // Helper function to format dates for reminders (short format)
+            function formatReminderDate(date) {
+                return date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+            }
+
+            // Helper function to show toast notifications
+            function showToast(message, type = 'info') {
+                // Create toast element
+                const toast = document.createElement('div');
+                toast.textContent = message;
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: ${type === 'success' ? '#16a34a' : type === 'error' ? '#dc2626' : '#3b82f6'};
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 5px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    z-index: 10000;
+                    animation: slideInToast 0.3s ease-out;
+                `;
+                
+                document.body.appendChild(toast);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    toast.style.animation = 'slideOutToast 0.3s ease-out';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
             }
 
             // Ported from dashboard.js with Authorization Bearer token support
@@ -798,6 +993,27 @@
                     
                     // Display results
                     displayDashboardResults(data);
+                    
+                    // Store calculation data for project form
+                    const stateCode = state;
+                    const stateName = getStateNameFromCode(stateCode);
+                    currentCalculation = {
+                        state: stateName,
+                        stateCode: stateCode,
+                        stateName: stateName,
+                        invoiceDate: invoiceDate,
+                        prelimDeadline: data.preliminary_notice?.deadline || null,
+                        prelimDeadlineDays: data.preliminary_notice?.days_from_now || null,
+                        lienDeadline: data.lien_filing?.deadline || null,
+                        lienDeadlineDays: data.lien_filing?.days_from_now || null
+                    };
+                    
+                    // Show the save form
+                    const saveForm = document.getElementById('save-project-form');
+                    if (saveForm) {
+                        saveForm.style.display = 'block';
+                        populateReminderDates();
+                    }
                     
                     // Save to history
                     saveCalculation(data);
@@ -1063,6 +1279,100 @@
                     day: 'numeric' 
                 });
             }
+
+            // Handle project form submission
+            document.getElementById('project-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                if (!currentCalculation) {
+                    showToast('❌ No calculation data available. Please calculate a deadline first.', 'error');
+                    return;
+                }
+                
+                const projectData = {
+                    // Project details
+                    projectName: document.getElementById('project-name').value,
+                    clientName: document.getElementById('client-name').value,
+                    invoiceAmount: document.getElementById('invoice-amount').value || null,
+                    notes: document.getElementById('project-notes').value || null,
+                    
+                    // Calculation data
+                    state: currentCalculation.stateName,
+                    stateCode: currentCalculation.stateCode,
+                    invoiceDate: currentCalculation.invoiceDate,
+                    prelimDeadline: currentCalculation.prelimDeadline,
+                    prelimDeadlineDays: currentCalculation.prelimDeadlineDays,
+                    lienDeadline: currentCalculation.lienDeadline,
+                    lienDeadlineDays: currentCalculation.lienDeadlineDays,
+                    
+                    // Reminder preferences
+                    reminders: {
+                        prelim7: document.getElementById('prelim-reminder-7').checked,
+                        prelim1: document.getElementById('prelim-reminder-1').checked,
+                        lien7: document.getElementById('lien-reminder-7').checked,
+                        lien1: document.getElementById('lien-reminder-1').checked
+                    }
+                };
+                
+                // Show loading state
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Saving...';
+                
+                try {
+                    const token = getSessionToken();
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    if (token) {
+                        headers['Authorization'] = 'Bearer ' + token;
+                    }
+                    
+                    const response = await fetch('/api/calculations/save', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify(projectData)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success || response.ok) {
+                        // Show success message
+                        showToast('✅ Project saved with reminders!', 'success');
+                        
+                        // Reset form
+                        document.getElementById('project-form').reset();
+                        document.getElementById('save-project-form').style.display = 'none';
+                        
+                        // Refresh calculation history
+                        loadHistory();
+                        
+                        // Reset current calculation
+                        currentCalculation = null;
+                    } else {
+                        showToast('❌ Error saving project: ' + (result.error || 'Unknown error'), 'error');
+                    }
+                } catch (error) {
+                    console.error('Save error:', error);
+                    // For now, save to localStorage as fallback
+                    let savedProjects = JSON.parse(localStorage.getItem('savedProjects') || '[]');
+                    projectData.id = Date.now();
+                    projectData.timestamp = new Date().toISOString();
+                    savedProjects.push(projectData);
+                    localStorage.setItem('savedProjects', JSON.stringify(savedProjects));
+                    
+                    showToast('✅ Project saved locally! (API endpoint not yet implemented)', 'success');
+                    
+                    // Reset form
+                    document.getElementById('project-form').reset();
+                    document.getElementById('save-project-form').style.display = 'none';
+                    currentCalculation = null;
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
+            });
         </script>
 
         <!-- API Key Section -->
