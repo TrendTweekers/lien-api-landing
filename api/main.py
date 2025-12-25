@@ -2949,6 +2949,46 @@ async def serve_comparison_clean():
         raise HTTPException(status_code=404, detail="Comparison page not found")
     return FileResponse(file_path, media_type="text/html")
 
+@app.get("/privacy")
+async def serve_privacy_clean():
+    """Clean URL: /privacy → privacy.html"""
+    file_path = BASE_DIR / "privacy.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Privacy page not found")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/help")
+async def serve_help_clean():
+    """Clean URL: /help → help.html"""
+    file_path = BASE_DIR / "help.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Help page not found")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/about")
+async def serve_about_clean():
+    """Clean URL: /about → about.html"""
+    file_path = BASE_DIR / "about.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="About page not found")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/security")
+async def serve_security_clean():
+    """Clean URL: /security → security.html"""
+    file_path = BASE_DIR / "security.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Security page not found")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/cookies")
+async def serve_cookies_clean():
+    """Clean URL: /cookies → cookies.html"""
+    file_path = BASE_DIR / "cookies.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Cookies page not found")
+    return FileResponse(file_path, media_type="text/html")
+
 @app.get("/vs-levelset")
 async def serve_vs_levelset_clean():
     """Redirect old /vs-levelset to /comparison"""
