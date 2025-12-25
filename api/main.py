@@ -1252,6 +1252,54 @@ async def startup():
         traceback.print_exc()
         # Don't fail startup if migration fails
     
+    # Run calculations tables migration
+    try:
+        print("\n" + "="*60)
+        print("🚀 RUNNING CALCULATIONS TABLES MIGRATION")
+        print("="*60)
+        
+        migration_script = Path(__file__).parent / "migrations" / "add_calculations_tables.py"
+        
+        if migration_script.exists():
+            print(f"📂 Found migration script: {migration_script}")
+            
+            try:
+                from api.migrations.add_calculations_tables import run_migration as run_calc_migration
+                success = run_calc_migration()
+                if success:
+                    print("✅ Calculations tables migration completed successfully")
+                else:
+                    print("⚠️ Calculations tables migration completed with warnings")
+            except ImportError as e:
+                print(f"⚠️ Could not import calculations migration script: {e}")
+                # Fallback: try subprocess
+                try:
+                    result = subprocess.run(
+                        ["python", str(migration_script)],
+                        capture_output=True,
+                        text=True,
+                        timeout=60,
+                        cwd=Path(__file__).parent.parent
+                    )
+                    if result.stdout:
+                        print(result.stdout)
+                    if result.stderr:
+                        print("⚠️ Migration stderr:", result.stderr)
+                    if result.returncode == 0:
+                        print("✅ Calculations tables migration completed successfully (via subprocess)")
+                    else:
+                        print(f"⚠️ Calculations tables migration exited with code {result.returncode}")
+                except subprocess.TimeoutExpired:
+                    print("❌ Calculations tables migration timed out after 60 seconds")
+        else:
+            print(f"⚠️ Calculations tables migration script not found at {migration_script}")
+            
+    except Exception as e:
+        print(f"❌ Calculations tables migration error: {e}")
+        import traceback
+        traceback.print_exc()
+        # Don't fail startup if migration fails
+    
     print("="*60 + "\n")
     
     # Ensure users table exists
