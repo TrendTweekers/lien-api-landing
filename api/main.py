@@ -2225,15 +2225,44 @@ async def calculate_deadline(
     try:
         with get_db() as conn:
             cursor = get_db_cursor(conn)
+            db_state = None
+            
+            # Try querying by state code first (most common case)
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
-                    SELECT * FROM lien_deadlines WHERE state_code = %s
-                """, (state_code,))
+                    SELECT * FROM lien_deadlines WHERE UPPER(state_code) = %s
+                """, (state_code.upper(),))
             else:
                 cursor.execute("""
-                    SELECT * FROM lien_deadlines WHERE state_code = ?
-                """, (state_code,))
+                    SELECT * FROM lien_deadlines WHERE UPPER(state_code) = ?
+                """, (state_code.upper(),))
             db_state = cursor.fetchone()
+            
+            # If not found by state code, try converting code to name and search by state_name
+            if not db_state and state_code.upper() in STATE_CODE_TO_NAME:
+                full_name = STATE_CODE_TO_NAME[state_code.upper()]
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT * FROM lien_deadlines WHERE UPPER(state_name) = %s
+                    """, (full_name.upper(),))
+                else:
+                    cursor.execute("""
+                        SELECT * FROM lien_deadlines WHERE UPPER(state_name) = ?
+                    """, (full_name.upper(),))
+                db_state = cursor.fetchone()
+            
+            # If still not found and input might be a full name, try searching by state_name directly
+            if not db_state and len(state_code) > 2:
+                # Input might be a full state name, try searching by state_name
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT * FROM lien_deadlines WHERE UPPER(state_name) = %s
+                    """, (state_code.upper(),))
+                else:
+                    cursor.execute("""
+                        SELECT * FROM lien_deadlines WHERE UPPER(state_name) = ?
+                    """, (state_code.upper(),))
+                db_state = cursor.fetchone()
             
             if db_state:
                 # Convert database row to rules format
