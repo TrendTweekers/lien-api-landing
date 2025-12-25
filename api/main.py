@@ -2797,6 +2797,46 @@ async def serve_contact_clean():
         raise HTTPException(status_code=404, detail="Contact page not found")
     return FileResponse(file_path, media_type="text/html")
 
+@app.get("/privacy.html")
+async def serve_privacy_html():
+    """Serve privacy policy page"""
+    file_path = BASE_DIR / "privacy.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="privacy.html not found in project root")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/help.html")
+async def serve_help_html():
+    """Serve help center page"""
+    file_path = BASE_DIR / "help.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="help.html not found in project root")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/about.html")
+async def serve_about_html():
+    """Serve about us page"""
+    file_path = BASE_DIR / "about.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="about.html not found in project root")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/security.html")
+async def serve_security_html():
+    """Serve security page"""
+    file_path = BASE_DIR / "security.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="security.html not found in project root")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/cookies.html")
+async def serve_cookies_html():
+    """Serve cookie policy page"""
+    file_path = BASE_DIR / "cookies.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="cookies.html not found in project root")
+    return FileResponse(file_path, media_type="text/html")
+
 # Clean URLs (without .html extension)
 @app.get("/calculator")
 async def serve_calculator_clean():
