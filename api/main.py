@@ -1907,117 +1907,149 @@ async def generate_state_guide_pdf(state_code: str, request: Request):
         else:
             return HexColor('#16a34a')  # Green - safe
     
-    # Create summary table with calculated dates if available
-    if has_invoice_date and prelim_deadline_str and lien_deadline_str:
-        summary_data = [
-            ['Deadline Summary', ''],
+    # Create summary table - always show calculated dates if invoice_date provided, plus general rules
+    summary_data = [
+        ['Deadline Summary', ''],
+    ]
+    
+    # Track row indices for styling
+    current_row = 1
+    
+    # Add invoice date if provided
+    if has_invoice_date and invoice_dt_str:
+        summary_data.extend([
             ['', ''],
             ['Invoice/Delivery Date:', invoice_dt_str],
             ['', ''],
-        ]
-        
-        # Add preliminary notice section
-        if prelim_required and prelim_deadline_str:
-            prelim_color = get_urgency_color(prelim_days_remaining)
+        ])
+        invoice_date_row = current_row + 1  # Row 2 (0-indexed)
+        current_row += 3
+    
+    # Add preliminary notice section
+    prelim_deadline_row = None
+    prelim_subtext_row = None
+    if prelim_required:
+        if has_invoice_date and prelim_deadline_str:
+            # Show calculated deadline with general rule
+            prelim_days_display = prelim_days if prelim_days else 'N/A'
+            prelim_days_remaining_str = f'{prelim_days_remaining} days remaining' if prelim_days_remaining is not None else ''
             summary_data.extend([
                 ['Preliminary Notice Deadline:', prelim_deadline_str],
-                [f'  (Within {prelim_days} days of delivery)', f'{prelim_days_remaining} days remaining'],
+                [f'  (Within {prelim_days_display} days of delivery)', prelim_days_remaining_str],
                 ['', '']
             ])
+            prelim_deadline_row = current_row
+            prelim_subtext_row = current_row + 1
+            current_row += 3
         else:
+            # Show general rule only
+            prelim_days_display = f'{prelim_days} days' if prelim_days and prelim_days != 'N/A' else 'Not required'
+            summary_data.extend([
+                ['Preliminary Notice Deadline:', prelim_days_display],
+            ])
+            prelim_deadline_row = current_row
+            current_row += 1
+    else:
+        if has_invoice_date:
+            # Show "Not Required" with calculated context
             summary_data.extend([
                 ['Preliminary Notice Deadline:', 'Not Required'],
                 ['  (None required for suppliers)', ''],
                 ['', '']
             ])
-        
-        # Add lien filing section
-        lien_color = get_urgency_color(lien_days_remaining)
+            prelim_deadline_row = current_row
+            current_row += 3
+        else:
+            # Show general rule only
+            summary_data.extend([
+                ['Preliminary Notice Deadline:', 'Not Required'],
+            ])
+            prelim_deadline_row = current_row
+            current_row += 1
+    
+    # Add lien filing section
+    lien_deadline_row = None
+    lien_subtext_row = None
+    if has_invoice_date and lien_deadline_str:
+        # Show calculated deadline with general rule
+        lien_days_display = lien_days if lien_days else 120
+        lien_days_remaining_str = f'{lien_days_remaining} days remaining' if lien_days_remaining is not None else ''
         summary_data.extend([
             ['Lien Filing Deadline:', lien_deadline_str],
-            [f'  (Within {lien_days} days of last furnishing)', f'{lien_days_remaining} days remaining']
+            [f'  (Within {lien_days_display} days of last furnishing)', lien_days_remaining_str]
         ])
-        
-        # Calculate row indices for styling
-        prelim_deadline_row = 4 if prelim_required else 4
-        prelim_subtext_row = 5 if prelim_required else 5
-        lien_deadline_row = prelim_subtext_row + 2 if prelim_required else 4
-        lien_subtext_row = lien_deadline_row + 1
-        
-        summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
-        table_style = [
-            ('BACKGROUND', (0, 0), (-1, 0), navy),
-            ('TEXTCOLOR', (0, 0), (-1, 0), HexColor('#ffffff')),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 13),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 14),
-            ('TOPPADDING', (0, 0), (-1, 0), 14),
-            ('BACKGROUND', (0, 1), (-1, -1), HexColor('#f9fafb')),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 11),
-            ('GRID', (0, 0), (-1, -1), 1, HexColor('#e5e7eb')),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('LEFTPADDING', (0, 0), (-1, -1), 10),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-            ('TOPPADDING', (0, 1), (-1, -1), 8),
-            ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
-            # Invoice date row - bold
-            ('FONTNAME', (0, 2), (-1, 2), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 2), (-1, 2), 11),
-            # Main deadline rows - bold
-            ('FONTNAME', (0, prelim_deadline_row), (0, prelim_deadline_row), 'Helvetica-Bold'),
-            ('FONTNAME', (0, lien_deadline_row), (0, lien_deadline_row), 'Helvetica-Bold'),
-            # Sub-text rows - italic, smaller
-            ('FONTNAME', (0, prelim_subtext_row), (-1, prelim_subtext_row), 'Helvetica-Oblique'),
-            ('FONTSIZE', (0, prelim_subtext_row), (-1, prelim_subtext_row), 9),
-            ('FONTNAME', (0, lien_subtext_row), (-1, lien_subtext_row), 'Helvetica-Oblique'),
-            ('FONTSIZE', (0, lien_subtext_row), (-1, lien_subtext_row), 9),
-            # Text colors
-            ('TEXTCOLOR', (0, 1), (0, -1), HexColor('#374151')),
-            ('TEXTCOLOR', (1, 1), (1, -1), HexColor('#1f2937')),
-        ]
-        
-        # Add urgency colors for days remaining
-        if prelim_required and prelim_days_remaining is not None:
-            prelim_color = get_urgency_color(prelim_days_remaining)
-            table_style.append(('TEXTCOLOR', (1, prelim_subtext_row), (1, prelim_subtext_row), prelim_color))
-        
-        if lien_days_remaining is not None:
-            lien_color = get_urgency_color(lien_days_remaining)
-            table_style.append(('TEXTCOLOR', (1, lien_subtext_row), (1, lien_subtext_row), lien_color))
-        
-        summary_table.setStyle(TableStyle(table_style))
+        lien_deadline_row = current_row
+        lien_subtext_row = current_row + 1
     else:
-        # Fallback: show general rules only (no calculated dates)
-        summary_data = [
-            ['Deadline Summary', ''],
-            ['Preliminary Notice Deadline:', f'{prelim_days} days' if prelim_days and prelim_days != 'N/A' else 'Not required'],
-            ['Lien Filing Deadline:', f'{lien_days} days' if lien_days and lien_days != 'N/A' else 'N/A'],
-        ]
+        # Show general rule only
+        lien_days_display = f'{lien_days} days' if lien_days and lien_days != 'N/A' else 'N/A'
+        summary_data.extend([
+            ['Lien Filing Deadline:', lien_days_display],
+        ])
+        lien_deadline_row = current_row
+    
+    # Build table style
+    table_style = [
+        ('BACKGROUND', (0, 0), (-1, 0), navy),
+        ('TEXTCOLOR', (0, 0), (-1, 0), HexColor('#ffffff')),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 13),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 14),
+        ('TOPPADDING', (0, 0), (-1, 0), 14),
+        ('BACKGROUND', (0, 1), (-1, -1), HexColor('#f9fafb')),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 11),
+        ('GRID', (0, 0), (-1, -1), 1, HexColor('#e5e7eb')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 1), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+        # Text colors
+        ('TEXTCOLOR', (0, 1), (0, -1), HexColor('#374151')),
+        ('TEXTCOLOR', (1, 1), (1, -1), HexColor('#1f2937')),
+    ]
+    
+    # Add invoice date row styling if present
+    if has_invoice_date and invoice_dt_str:
+        table_style.extend([
+            ('FONTNAME', (0, invoice_date_row), (-1, invoice_date_row), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, invoice_date_row), (-1, invoice_date_row), 11),
+        ])
+    
+    # Add preliminary notice deadline row styling
+    if prelim_deadline_row is not None:
+        table_style.append(('FONTNAME', (0, prelim_deadline_row), (0, prelim_deadline_row), 'Helvetica-Bold'))
         
-        summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
-        summary_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), navy),
-            ('TEXTCOLOR', (0, 0), (-1, 0), HexColor('#ffffff')),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 13),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 14),
-            ('TOPPADDING', (0, 0), (-1, 0), 14),
-            ('BACKGROUND', (0, 1), (-1, -1), HexColor('#f9fafb')),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 11),
-            ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
-            ('TEXTCOLOR', (0, 1), (0, -1), HexColor('#374151')),
-            ('TEXTCOLOR', (1, 1), (1, -1), HexColor('#1f2937')),
-            ('GRID', (0, 0), (-1, -1), 1, HexColor('#e5e7eb')),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('LEFTPADDING', (0, 0), (-1, -1), 10),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-            ('TOPPADDING', (0, 1), (-1, -1), 8),
-            ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
-        ]))
+        # Add subtext styling if present
+        if prelim_subtext_row is not None:
+            table_style.extend([
+                ('FONTNAME', (0, prelim_subtext_row), (-1, prelim_subtext_row), 'Helvetica-Oblique'),
+                ('FONTSIZE', (0, prelim_subtext_row), (-1, prelim_subtext_row), 9),
+            ])
+            # Add urgency color for days remaining
+            if prelim_days_remaining is not None:
+                prelim_color = get_urgency_color(prelim_days_remaining)
+                table_style.append(('TEXTCOLOR', (1, prelim_subtext_row), (1, prelim_subtext_row), prelim_color))
+    
+    # Add lien filing deadline row styling
+    if lien_deadline_row is not None:
+        table_style.append(('FONTNAME', (0, lien_deadline_row), (0, lien_deadline_row), 'Helvetica-Bold'))
+        
+        # Add subtext styling if present
+        if lien_subtext_row is not None:
+            table_style.extend([
+                ('FONTNAME', (0, lien_subtext_row), (-1, lien_subtext_row), 'Helvetica-Oblique'),
+                ('FONTSIZE', (0, lien_subtext_row), (-1, lien_subtext_row), 9),
+            ])
+            # Add urgency color for days remaining
+            if lien_days_remaining is not None:
+                lien_color = get_urgency_color(lien_days_remaining)
+                table_style.append(('TEXTCOLOR', (1, lien_subtext_row), (1, lien_subtext_row), lien_color))
+    
+    summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
+    summary_table.setStyle(TableStyle(table_style))
     
     story.append(summary_table)
     story.append(Spacer(1, 0.3*inch))
