@@ -632,9 +632,6 @@
             </div>
         </div>
 
-        <!-- jsPDF library for PDF generation -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-        
         <script>
             // Helper function to get state name from code
             function getStateNameFromCode(stateCode) {
@@ -982,19 +979,28 @@
                 const history = JSON.parse(localStorage.getItem('calculationHistory') || '[]');
                 const calc = history.find(c => c.id === id);
                 
-                if (calc && calc.data) {
-                    generatePDF(calc.data);
-                    
-                    // Track GA4 event
-                    if (typeof gtag !== 'undefined') {
-                        gtag('event', 'pdf_download', {
-                            'event_category': 'PDF',
-                            'event_label': calc.state,
-                            'value': 1
-                        });
-                    }
-                } else {
+                if (!calc) {
                     alert('Unable to generate PDF. Please recalculate.');
+                    return;
+                }
+                
+                // Extract state code and name from calculation
+                const stateCode = calc.state || calc.data?.state_code || calc.data?.state || 'UNKNOWN';
+                const stateName = calc.state_name || (calc.data?.state_name || getStateNameFromCode(stateCode));
+                
+                // Use the SAME endpoint as homepage
+                const url = `/api/v1/guide/${stateCode}/pdf?state_name=${encodeURIComponent(stateName)}`;
+                
+                // Open PDF in new tab
+                window.open(url, '_blank');
+                
+                // Track GA4 event
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', 'pdf_download', {
+                        'event_category': 'PDF',
+                        'event_label': stateCode,
+                        'value': 1
+                    });
                 }
             }
 
