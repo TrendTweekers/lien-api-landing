@@ -1816,38 +1816,208 @@ async def generate_state_guide_pdf(state_code: str, request: Request):
     prelim_notice = state_data.get('preliminary_notice', {})
     lien_filing = state_data.get('lien_filing', {})
     
-    prelim_days = prelim_notice.get('days', prelim_notice.get('commercial_days', prelim_notice.get('standard_days', 'N/A')))
-    lien_days = lien_filing.get('days', lien_filing.get('commercial_days', lien_filing.get('standard_days', 'N/A')))
+    prelim_days = prelim_notice.get('days', prelim_notice.get('commercial_days', prelim_notice.get('standard_days', None)))
+    lien_days = lien_filing.get('days', lien_filing.get('commercial_days', lien_filing.get('standard_days', 120)))
+    prelim_required = state_data.get('preliminary_notice_required', False)
     
-    # Create summary table
-    summary_data = [
-        ['Deadline Summary', ''],
-        ['Preliminary Notice Deadline:', f'{prelim_days} days' if prelim_days != 'N/A' else 'Not required'],
-        ['Lien Filing Deadline:', f'{lien_days} days' if lien_days != 'N/A' else 'N/A'],
-    ]
+    # Get invoice_date from query parameters (optional)
+    invoice_date_str = request.query_params.get('invoice_date', '')
+    has_invoice_date = bool(invoice_date_str)
     
-    summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
-    summary_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), navy),
-        ('TEXTCOLOR', (0, 0), (-1, 0), HexColor('#ffffff')),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 13),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 14),
-        ('TOPPADDING', (0, 0), (-1, 0), 14),
-        ('BACKGROUND', (0, 1), (-1, -1), HexColor('#f9fafb')),
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 11),
-        ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
-        ('TEXTCOLOR', (0, 1), (0, -1), HexColor('#374151')),
-        ('TEXTCOLOR', (1, 1), (1, -1), HexColor('#1f2937')),
-        ('GRID', (0, 0), (-1, -1), 1, HexColor('#e5e7eb')),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 10),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-        ('TOPPADDING', (0, 1), (-1, -1), 8),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
-    ]))
+    # Calculate actual deadline dates if invoice_date is provided
+    prelim_deadline_str = None
+    lien_deadline_str = None
+    prelim_days_remaining = None
+    lien_days_remaining = None
+    invoice_dt_str = None
+    
+    if invoice_date_str:
+        try:
+            from datetime import datetime, timedelta
+            from api.calculators import calculate_default, calculate_texas, calculate_washington, calculate_california, calculate_ohio, calculate_oregon, calculate_hawaii
+            
+            # Parse invoice date - handle both MM/DD/YYYY and YYYY-MM-DD formats
+            try:
+                invoice_dt = datetime.strptime(invoice_date_str, "%m/%d/%Y")
+            except ValueError:
+                try:
+                    invoice_dt = datetime.strptime(invoice_date_str, "%Y-%m-%d")
+                except ValueError:
+                    invoice_dt = datetime.fromisoformat(invoice_date_str.replace('Z', '+00:00'))
+            
+            invoice_dt_str = invoice_dt.strftime('%B %d, %Y')
+            
+            # Use state-specific calculation logic (same as calculate_deadline endpoint)
+            special_rules = state_data.get('special_rules', {})
+            result = None
+            
+            if state_code == "TX":
+                result = calculate_texas(invoice_dt, project_type="commercial")
+            elif state_code == "WA":
+                result = calculate_washington(invoice_dt, role="supplier")
+            elif state_code == "CA":
+                result = calculate_california(invoice_dt, notice_of_completion_date=None, role="supplier")
+            elif state_code == "OH":
+                result = calculate_ohio(invoice_dt, project_type="commercial", notice_of_commencement_filed=False)
+            elif state_code == "OR":
+                result = calculate_oregon(invoice_dt)
+            elif state_code == "HI":
+                result = calculate_hawaii(invoice_dt)
+            else:
+                # Default calculation for simple states
+                result = calculate_default(
+                    invoice_dt,
+                    {
+                        "preliminary_notice_required": prelim_required,
+                        "preliminary_notice_days": prelim_days,
+                        "lien_filing_days": lien_days if lien_days else 120,
+                        "notes": special_rules.get("notes", "")
+                    },
+                    weekend_extension=special_rules.get("weekend_extension", False),
+                    holiday_extension=special_rules.get("holiday_extension", False)
+                )
+            
+            # Extract deadlines from result
+            prelim_deadline = result.get("preliminary_deadline")
+            lien_deadline = result.get("lien_deadline")
+            
+            if prelim_deadline:
+                prelim_deadline_str = prelim_deadline.strftime('%B %d, %Y')
+                prelim_days_remaining = (prelim_deadline - datetime.now()).days
+            
+            if lien_deadline:
+                lien_deadline_str = lien_deadline.strftime('%B %d, %Y')
+                lien_days_remaining = (lien_deadline - datetime.now()).days
+                
+        except Exception as e:
+            print(f"⚠️ Error calculating deadlines for PDF: {e}")
+            # Fall back to showing general rules only
+            has_invoice_date = False
+    
+    # Determine urgency colors
+    def get_urgency_color(days_remaining):
+        if days_remaining is None:
+            return HexColor('#1f2937')  # Default gray
+        if days_remaining < 0:
+            return HexColor('#dc2626')  # Red - overdue
+        elif days_remaining < 7:
+            return HexColor('#ea580c')  # Orange - urgent
+        elif days_remaining < 30:
+            return HexColor('#f59e0b')  # Yellow - soon
+        else:
+            return HexColor('#16a34a')  # Green - safe
+    
+    # Create summary table with calculated dates if available
+    if has_invoice_date and prelim_deadline_str and lien_deadline_str:
+        summary_data = [
+            ['Deadline Summary', ''],
+            ['', ''],
+            ['Invoice/Delivery Date:', invoice_dt_str],
+            ['', ''],
+        ]
+        
+        # Add preliminary notice section
+        if prelim_required and prelim_deadline_str:
+            prelim_color = get_urgency_color(prelim_days_remaining)
+            summary_data.extend([
+                ['Preliminary Notice Deadline:', prelim_deadline_str],
+                [f'  (Within {prelim_days} days of delivery)', f'{prelim_days_remaining} days remaining'],
+                ['', '']
+            ])
+        else:
+            summary_data.extend([
+                ['Preliminary Notice Deadline:', 'Not Required'],
+                ['  (None required for suppliers)', ''],
+                ['', '']
+            ])
+        
+        # Add lien filing section
+        lien_color = get_urgency_color(lien_days_remaining)
+        summary_data.extend([
+            ['Lien Filing Deadline:', lien_deadline_str],
+            [f'  (Within {lien_days} days of last furnishing)', f'{lien_days_remaining} days remaining']
+        ])
+        
+        # Calculate row indices for styling
+        prelim_deadline_row = 4 if prelim_required else 4
+        prelim_subtext_row = 5 if prelim_required else 5
+        lien_deadline_row = prelim_subtext_row + 2 if prelim_required else 4
+        lien_subtext_row = lien_deadline_row + 1
+        
+        summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
+        table_style = [
+            ('BACKGROUND', (0, 0), (-1, 0), navy),
+            ('TEXTCOLOR', (0, 0), (-1, 0), HexColor('#ffffff')),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 13),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 14),
+            ('TOPPADDING', (0, 0), (-1, 0), 14),
+            ('BACKGROUND', (0, 1), (-1, -1), HexColor('#f9fafb')),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 11),
+            ('GRID', (0, 0), (-1, -1), 1, HexColor('#e5e7eb')),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 1), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+            # Invoice date row - bold
+            ('FONTNAME', (0, 2), (-1, 2), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 2), (-1, 2), 11),
+            # Main deadline rows - bold
+            ('FONTNAME', (0, prelim_deadline_row), (0, prelim_deadline_row), 'Helvetica-Bold'),
+            ('FONTNAME', (0, lien_deadline_row), (0, lien_deadline_row), 'Helvetica-Bold'),
+            # Sub-text rows - italic, smaller
+            ('FONTNAME', (0, prelim_subtext_row), (-1, prelim_subtext_row), 'Helvetica-Oblique'),
+            ('FONTSIZE', (0, prelim_subtext_row), (-1, prelim_subtext_row), 9),
+            ('FONTNAME', (0, lien_subtext_row), (-1, lien_subtext_row), 'Helvetica-Oblique'),
+            ('FONTSIZE', (0, lien_subtext_row), (-1, lien_subtext_row), 9),
+            # Text colors
+            ('TEXTCOLOR', (0, 1), (0, -1), HexColor('#374151')),
+            ('TEXTCOLOR', (1, 1), (1, -1), HexColor('#1f2937')),
+        ]
+        
+        # Add urgency colors for days remaining
+        if prelim_required and prelim_days_remaining is not None:
+            prelim_color = get_urgency_color(prelim_days_remaining)
+            table_style.append(('TEXTCOLOR', (1, prelim_subtext_row), (1, prelim_subtext_row), prelim_color))
+        
+        if lien_days_remaining is not None:
+            lien_color = get_urgency_color(lien_days_remaining)
+            table_style.append(('TEXTCOLOR', (1, lien_subtext_row), (1, lien_subtext_row), lien_color))
+        
+        summary_table.setStyle(TableStyle(table_style))
+    else:
+        # Fallback: show general rules only (no calculated dates)
+        summary_data = [
+            ['Deadline Summary', ''],
+            ['Preliminary Notice Deadline:', f'{prelim_days} days' if prelim_days and prelim_days != 'N/A' else 'Not required'],
+            ['Lien Filing Deadline:', f'{lien_days} days' if lien_days and lien_days != 'N/A' else 'N/A'],
+        ]
+        
+        summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), navy),
+            ('TEXTCOLOR', (0, 0), (-1, 0), HexColor('#ffffff')),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 13),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 14),
+            ('TOPPADDING', (0, 0), (-1, 0), 14),
+            ('BACKGROUND', (0, 1), (-1, -1), HexColor('#f9fafb')),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 11),
+            ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+            ('TEXTCOLOR', (0, 1), (0, -1), HexColor('#374151')),
+            ('TEXTCOLOR', (1, 1), (1, -1), HexColor('#1f2937')),
+            ('GRID', (0, 0), (-1, -1), 1, HexColor('#e5e7eb')),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 1), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+        ]))
     
     story.append(summary_table)
     story.append(Spacer(1, 0.3*inch))
