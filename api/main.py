@@ -2202,7 +2202,7 @@ async def calculate_deadline(
                 # Convert database row to rules format
                 if isinstance(db_state, dict):
                     rules = {
-                        "state_name": db_state.get("state_name"),
+                        "state_name": db_state.get("state_name") or state_code,  # Ensure state_name is never None
                         "preliminary_notice": {
                             "required": db_state.get("preliminary_notice_required", False),
                             "days": db_state.get("preliminary_notice_days"),

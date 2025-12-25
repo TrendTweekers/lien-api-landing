@@ -1082,7 +1082,9 @@
                 
                 doc.setFontSize(10);
                 doc.setTextColor(60, 60, 60);
-                doc.text(`State: ${data.state}`, margin + 5, yPos);
+                // Use state_name if available, otherwise use state_code, fallback to state
+                const displayState = data.state_name || (data.state_code ? getStateNameFromCode(data.state_code) : data.state) || 'Unknown';
+                doc.text(`State: ${displayState}`, margin + 5, yPos);
                 yPos += 6;
                 doc.text(`Invoice Date: ${formatDate(data.invoice_date)}`, margin + 5, yPos);
                 yPos += 6;
@@ -1267,7 +1269,9 @@
                     );
                 }
                 
-                const filename = `Lien-Deadline-Report-${data.state_code}-${data.invoice_date}.pdf`;
+                // Use state_code for filename, fallback to state if code not available
+                const stateCode = data.state_code || data.state || 'UNKNOWN';
+                const filename = `Lien-Deadline-Report-${stateCode}-${data.invoice_date}.pdf`;
                 doc.save(filename);
             }
 

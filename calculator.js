@@ -724,7 +724,9 @@ function generatePDF(data) {
     
     doc.setFontSize(10);
     doc.setTextColor(60, 60, 60);
-    doc.text(`State: ${data.state}`, margin + 5, yPos);
+    // Use state_name from API response, or convert state_code to name, fallback to state
+    const displayState = data.state_name || (data.state_code ? getStateNameFromCode(data.state_code) : data.state) || 'Unknown';
+    doc.text(`State: ${displayState}`, margin + 5, yPos);
     yPos += 6;
     doc.text(`Invoice Date: ${formatDate(data.invoice_date)}`, margin + 5, yPos);
     yPos += 6;
