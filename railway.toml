@@ -1,0 +1,23 @@
+# Railway Configuration File
+# This file configures Railway deployment settings
+
+# Cron Jobs Configuration
+# Note: Railway cron jobs are typically configured through the web interface.
+# To set up the email reminder cron job:
+# 1. Go to Railway dashboard → Your Project → Service Settings
+# 2. Navigate to "Cron" section
+# 3. Add a new cron job with:
+#    - Schedule: "0 9 * * *" (9:00 AM daily in UTC)
+#    - Command: "python api/cron_send_reminders.py"
+
+[cron]
+# Daily email reminder cron job
+# Runs every day at 9:00 AM UTC
+schedule = "0 9 * * *"
+command = "python api/cron_send_reminders.py"
+
+# Alternative schedule examples:
+# "0 9 * * *" - Every day at 9:00 AM UTC
+# "0 14 * * *" - Every day at 2:00 PM UTC (9:00 AM EST)
+# "*/5 * * * *" - Every 5 minutes (for testing)
+
