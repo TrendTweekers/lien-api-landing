@@ -59,6 +59,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 # THEN import routers (after database is defined)
 from api.analytics import router as analytics_router
 from api.admin import router as admin_router
+from api.quickbooks import router as quickbooks_router
 
 # Import short link generator
 from api.short_link_system import ShortLinkGenerator
@@ -943,6 +944,72 @@ def init_db():
                 conn.commit()
                 print("✅ lien_deadlines table created")
             
+            # Create QuickBooks tokens table
+            if 'quickbooks_tokens' not in existing_tables:
+                print("Creating quickbooks_tokens table...")
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        CREATE TABLE quickbooks_tokens (
+                            id SERIAL PRIMARY KEY,
+                            user_id INTEGER NOT NULL,
+                            realm_id VARCHAR(255) NOT NULL,
+                            access_token TEXT NOT NULL,
+                            refresh_token TEXT NOT NULL,
+                            expires_at TIMESTAMP NOT NULL,
+                            created_at TIMESTAMP DEFAULT NOW(),
+                            updated_at TIMESTAMP DEFAULT NOW()
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_tokens_user_id ON quickbooks_tokens(user_id)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_tokens_realm_id ON quickbooks_tokens(realm_id)")
+                else:
+                    cursor.execute("""
+                        CREATE TABLE quickbooks_tokens (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            user_id INTEGER NOT NULL,
+                            realm_id TEXT NOT NULL,
+                            access_token TEXT NOT NULL,
+                            refresh_token TEXT NOT NULL,
+                            expires_at TIMESTAMP NOT NULL,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_tokens_user_id ON quickbooks_tokens(user_id)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_tokens_realm_id ON quickbooks_tokens(realm_id)")
+                conn.commit()
+                print("✅ quickbooks_tokens table created")
+            
+            # Create QuickBooks OAuth states table
+            if 'quickbooks_oauth_states' not in existing_tables:
+                print("Creating quickbooks_oauth_states table...")
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        CREATE TABLE quickbooks_oauth_states (
+                            id SERIAL PRIMARY KEY,
+                            user_id INTEGER NOT NULL,
+                            state VARCHAR(255) UNIQUE NOT NULL,
+                            expires_at TIMESTAMP NOT NULL,
+                            created_at TIMESTAMP DEFAULT NOW()
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_states_state ON quickbooks_oauth_states(state)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_states_user_id ON quickbooks_oauth_states(user_id)")
+                else:
+                    cursor.execute("""
+                        CREATE TABLE quickbooks_oauth_states (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            user_id INTEGER NOT NULL,
+                            state TEXT UNIQUE NOT NULL,
+                            expires_at TIMESTAMP NOT NULL,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_states_state ON quickbooks_oauth_states(state)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_states_user_id ON quickbooks_oauth_states(user_id)")
+                conn.commit()
+                print("✅ quickbooks_oauth_states table created")
+            
             # Commit is handled automatically by context manager
             print("✅ Database initialized")
     except Exception as e:
@@ -963,6 +1030,7 @@ STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 # Include routers with full paths to match frontend calls
 app.include_router(analytics_router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
+app.include_router(quickbooks_router, tags=["quickbooks"])
 
 # Initialize database on startup
 @app.on_event("startup")

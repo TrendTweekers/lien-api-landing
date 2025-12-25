@@ -385,6 +385,36 @@
     </nav>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- QuickBooks Integration Section -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8" id="quickbooks-section">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div class="flex items-center gap-4">
+                    <svg class="w-12 h-12 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">QuickBooks Integration</h3>
+                        <p class="text-sm text-gray-600">Import invoices and auto-calculate lien deadlines</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span id="qb-status" class="text-sm text-gray-600"></span>
+                    <button 
+                        onclick="connectQuickBooks()"
+                        id="qb-connect-btn"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
+                    >
+                        Connect QuickBooks
+                    </button>
+                </div>
+            </div>
+            
+            <div id="qb-invoices" class="mt-6 hidden">
+                <!-- Invoice list will appear here after connection -->
+            </div>
+        </div>
+
         <!-- Account Overview -->
         <div class="bg-white rounded-lg shadow p-6 mb-8">
             <h2 class="text-2xl font-bold mb-4">Account Overview</h2>
