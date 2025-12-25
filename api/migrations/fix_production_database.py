@@ -56,23 +56,35 @@ def populate_all_states(cursor):
         else:
             cursor.execute("SELECT state_code FROM lien_deadlines WHERE state_code = ?", (state_code,))
         
-        if not cursor.fetchone():
+        existing = cursor.fetchone()
+        if not existing:
             # Add state with default values (120 days for lien, no prelim for most states)
-            if DB_TYPE == 'postgresql':
-                cursor.execute("""
-                    INSERT INTO lien_deadlines 
-                    (state_code, state_name, preliminary_notice_required, preliminary_notice_days, lien_filing_days)
-                    VALUES (%s, %s, false, NULL, 120)
-                    ON CONFLICT (state_code) DO NOTHING
-                """, (state_code, state_name))
-            else:
-                cursor.execute("""
-                    INSERT INTO lien_deadlines 
-                    (state_code, state_name, preliminary_notice_required, preliminary_notice_days, lien_filing_days)
-                    VALUES (?, ?, 0, NULL, 120)
-                """, (state_code, state_name))
-            print(f"   ✅ Added {state_name} ({state_code})")
-            states_added += 1
+            try:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        INSERT INTO lien_deadlines 
+                        (state_code, state_name, preliminary_notice_required, preliminary_notice_days, lien_filing_days)
+                        VALUES (%s, %s, false, NULL, 120)
+                        ON CONFLICT (state_code) DO NOTHING
+                    """, (state_code, state_name))
+                else:
+                    # SQLite doesn't support ON CONFLICT DO NOTHING in older versions, so check again
+                    cursor.execute("""
+                        INSERT INTO lien_deadlines 
+                        (state_code, state_name, preliminary_notice_required, preliminary_notice_days, lien_filing_days)
+                        VALUES (?, ?, 0, NULL, 120)
+                    """, (state_code, state_name))
+                print(f"   ✅ Added {state_name} ({state_code})")
+                states_added += 1
+            except Exception as e:
+                # State might have been added by another process, skip it
+                error_msg = str(e)[:50] if e else "Unknown"
+                if "duplicate" in error_msg.lower() or "unique" in error_msg.lower():
+                    # Expected error, state already exists
+                    pass
+                else:
+                    # Unexpected error, log it but continue
+                    print(f"   ⚠️ Error adding {state_code}: {error_msg}")
     
     if states_added > 0:
         print(f"   📊 Added {states_added} new states")
