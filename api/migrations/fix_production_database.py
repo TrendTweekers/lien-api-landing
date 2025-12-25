@@ -334,17 +334,19 @@ def main():
                 
                 print(f"   📊 Current states in database: {current_count}")
                 
-                if current_count >= 51:
-                    print("   ✅ All states already present")
-                    return
-                
-                # Step 4: Repopulate all 51 states
-                print("\n4️⃣ Repopulating all 51 states...")
-                
-                # Clear existing states
-                cursor.execute("DELETE FROM lien_deadlines")
+                # Step 4: Ensure all 51 states exist (add missing ones)
+                print("\n4️⃣ Ensuring all 51 states exist...")
+                populate_all_states(cursor)
                 conn.commit()
-                print("   🗑️ Cleared existing states")
+                
+                # Step 5: Repopulate all 51 states with full data
+                if current_count < 51:
+                    print("\n5️⃣ Repopulating all 51 states with full data...")
+                    
+                    # Clear existing states
+                    cursor.execute("DELETE FROM lien_deadlines")
+                    conn.commit()
+                    print("   🗑️ Cleared existing states")
                 
                 # Import state data from add_all_states.py
                 from api.migrations.add_all_states import STATE_DATA
