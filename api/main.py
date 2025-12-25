@@ -1580,15 +1580,23 @@ async def generate_state_guide_pdf(state_code: str, request: Request):
     if state_name_param:
         # Frontend sent the full state name
         state_name = state_name_param
-    elif state_data and state_data.get('state_name'):
-        # Get from database
-        state_name = state_data.get('state_name', '')
+    elif state_data:
+        # Try state_name column first, then state column
+        state_name = state_data.get('state_name') or state_data.get('state', '')
+        
+        # If it's a 2-letter code, convert to full name
+        if state_name and len(state_name) == 2:
+            state_name = STATE_CODE_TO_NAME.get(state_name.upper(), state_name)
     else:
         # Fallback: convert state code to full name
         state_upper = state_code.upper()
         state_name = STATE_CODE_TO_NAME.get(state_upper, state_code.title())
     
-    # Additional safety check
+    # Final safety check - always convert codes to full names
+    if state_name and len(state_name) == 2:
+        state_name = STATE_CODE_TO_NAME.get(state_name.upper(), state_name)
+    
+    # Additional safety check - ensure we have a name
     if not state_name:
         state_name = STATE_CODE_TO_NAME.get(state_code.upper(), state_code.title())
     
