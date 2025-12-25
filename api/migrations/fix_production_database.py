@@ -336,8 +336,41 @@ def main():
                 
                 # Step 4: Ensure all 51 states exist (add missing ones)
                 print("\n4️⃣ Ensuring all 51 states exist...")
-                populate_all_states(cursor)
-                conn.commit()
+                
+                # Check current count first
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) FROM lien_deadlines")
+                    result = cursor.fetchone()
+                    check_count = safe_fetch_value(result, 0) if result else 0
+                else:
+                    cursor.execute("SELECT COUNT(*) FROM lien_deadlines")
+                    result = cursor.fetchone()
+                    check_count = safe_fetch_value(result, 0) if result else 0
+                
+                if check_count >= 51:
+                    print(f"   ✅ All 51 states already present ({check_count} states found)")
+                else:
+                    print(f"   📊 Found {check_count} states, adding missing ones...")
+                    try:
+                        populate_all_states(cursor)
+                        conn.commit()
+                        
+                        # Verify new count
+                        if DB_TYPE == 'postgresql':
+                            cursor.execute("SELECT COUNT(*) FROM lien_deadlines")
+                            result = cursor.fetchone()
+                            new_count = safe_fetch_value(result, 0) if result else 0
+                        else:
+                            cursor.execute("SELECT COUNT(*) FROM lien_deadlines")
+                            result = cursor.fetchone()
+                            new_count = safe_fetch_value(result, 0) if result else 0
+                        print(f"   ✅ Now have {new_count} states")
+                    except Exception as e:
+                        # States likely already exist, this is fine
+                        error_msg = str(e)[:100] if e else "Unknown error"
+                        print(f"   ⚠️ Error adding states (might already exist): {error_msg}")
+                        conn.rollback()
+                        pass  # Continue with migration
                 
                 # Step 5: Repopulate all 51 states with full data
                 if current_count < 51:
