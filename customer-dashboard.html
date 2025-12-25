@@ -713,34 +713,43 @@
         </div>
 
         <!-- Calculation History -->
-        <div class="bg-white shadow-lg rounded-lg p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">Your Calculation History</h2>
-                <button id="exportCSV" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                    📊 Export to CSV
-                </button>
-            </div>
-            
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prelim Deadline</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lien Deadline</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTableBody" class="bg-white divide-y divide-gray-200">
-                        <!-- Will be populated by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-            
-            <div id="noHistory" class="text-center py-8 text-gray-500">
-                No calculations yet. Calculate your first deadline above!
+        <div class="calculation-history-section" style="margin-top:40px;">
+            <div class="bg-white shadow-lg rounded-lg p-8">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h2 class="text-2xl font-bold">Your Projects</h2>
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="loadCalculationHistory()" style="background:#3b82f6; color:white; padding:8px 16px; border:none; border-radius:5px; cursor:pointer;">
+                            🔄 Refresh
+                        </button>
+                        <button id="exportCSV" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                            📊 Export to CSV
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table id="calculation-history" style="width:100%; border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#1e3a8a; color:white;">
+                                <th style="padding:12px; text-align:left;">Project</th>
+                                <th style="padding:12px; text-align:left;">Client</th>
+                                <th style="padding:12px; text-align:right;">Amount</th>
+                                <th style="padding:12px; text-align:center;">State</th>
+                                <th style="padding:12px; text-align:center;">Prelim Deadline</th>
+                                <th style="padding:12px; text-align:center;">Lien Deadline</th>
+                                <th style="padding:12px; text-align:center;">Reminders</th>
+                                <th style="padding:12px; text-align:center;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-tbody">
+                            <tr>
+                                <td colspan="8" style="text-align:center; padding:40px; color:#666;">
+                                    Loading projects...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -1140,46 +1149,166 @@
                 localStorage.setItem('calculationHistory', JSON.stringify(history));
             }
 
-            function loadHistory() {
-                const history = JSON.parse(localStorage.getItem('calculationHistory') || '[]');
-                const tbody = document.getElementById('historyTableBody');
-                const noHistory = document.getElementById('noHistory');
+            // Load calculation history from API
+            async function loadCalculationHistory() {
+                try {
+                    const token = getSessionToken();
+                    const headers = {};
+                    if (token) {
+                        headers['Authorization'] = 'Bearer ' + token;
+                    }
+                    
+                    const response = await fetch('/api/calculations/history', {
+                        headers: headers
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    const tbody = document.getElementById('history-tbody');
+                    
+                    if (!data.success || !data.calculations || data.calculations.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="8" style="text-align:center; padding:40px; color:#666;">
+                                    No projects yet. Calculate a deadline above to get started!
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    tbody.innerHTML = data.calculations.map(calc => {
+                        const amount = calc.invoiceAmount ? `$${calc.invoiceAmount.toLocaleString()}` : '-';
+                        const prelimDate = calc.prelimDeadline ? formatDeadlineDate(calc.prelimDeadline) : 'Not Required';
+                        const lienDate = formatDeadlineDate(calc.lienDeadline);
+                        
+                        return `
+                            <tr style="border-bottom:1px solid #eee;">
+                                <td style="padding:12px;">
+                                    <strong>${escapeHtml(calc.projectName)}</strong>
+                                    ${calc.notes ? `<br><small style="color:#666;">${escapeHtml(calc.notes).substring(0, 50)}...</small>` : ''}
+                                </td>
+                                <td style="padding:12px;">${escapeHtml(calc.clientName)}</td>
+                                <td style="padding:12px; text-align:right;">${amount}</td>
+                                <td style="padding:12px; text-align:center;">
+                                    <span style="background:#e0e7ff; color:#3730a3; padding:4px 8px; border-radius:3px; font-size:12px;">
+                                        ${calc.state}
+                                    </span>
+                                </td>
+                                <td style="padding:12px; text-align:center;">${prelimDate}</td>
+                                <td style="padding:12px; text-align:center;">${lienDate}</td>
+                                <td style="padding:12px; text-align:center;">
+                                    ${calc.activeReminders > 0 ? 
+                                        `<span style="background:#dcfce7; color:#166534; padding:4px 8px; border-radius:3px; font-size:12px;">
+                                            📧 ${calc.activeReminders} active
+                                        </span>` : 
+                                        `<span style="color:#999;">None</span>`
+                                    }
+                                </td>
+                                <td style="padding:12px; text-align:center;">
+                                    <button onclick="downloadProjectPDF('${calc.id}')" 
+                                            style="background:#f97316; color:white; padding:6px 12px; border:none; border-radius:3px; cursor:pointer; margin-right:5px;">
+                                        PDF
+                                    </button>
+                                    <button onclick="viewProject('${calc.id}')" 
+                                            style="background:#3b82f6; color:white; padding:6px 12px; border:none; border-radius:3px; cursor:pointer;">
+                                        View
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                    
+                } catch (error) {
+                    console.error('Error loading calculation history:', error);
+                    const tbody = document.getElementById('history-tbody');
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" style="text-align:center; padding:40px; color:#dc2626;">
+                                Error loading projects. Please refresh the page.
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+
+            function formatDeadlineDate(dateStr) {
+                if (!dateStr) return 'N/A';
                 
-                if (history.length === 0) {
-                    tbody.innerHTML = '';
-                    noHistory.classList.remove('hidden');
-                    return;
+                const date = new Date(dateStr);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                date.setHours(0, 0, 0, 0);
+                
+                const daysUntil = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
+                
+                const formatted = date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+                
+                let color = '#16a34a'; // green
+                if (daysUntil < 0) color = '#dc2626'; // red - overdue
+                else if (daysUntil < 7) color = '#ea580c'; // orange - urgent
+                else if (daysUntil < 30) color = '#f59e0b'; // yellow - soon
+                
+                return `
+                    <div>${formatted}</div>
+                    <small style="color:${color}; font-weight:600;">
+                        ${daysUntil < 0 ? 'OVERDUE' : `${daysUntil} days`}
+                    </small>
+                `;
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            async function downloadProjectPDF(calculationId) {
+                // TODO: Implement PDF download for specific project
+                // For now, redirect to state guide PDF
+                const token = getSessionToken();
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = 'Bearer ' + token;
                 }
                 
-                noHistory.classList.add('hidden');
-                
-                tbody.innerHTML = history.map(calc => `
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${new Date(calc.timestamp).toLocaleDateString()}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${calc.invoice_date}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${calc.state}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${calc.prelim_deadline}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${calc.lien_deadline}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <button onclick="downloadHistoryPDF(${calc.id})" class="text-blue-600 hover:text-blue-900 mr-3">
-                                📄 PDF
-                            </button>
-                            <button onclick="deleteCalculation(${calc.id})" class="text-red-600 hover:text-red-900">
-                                🗑️ Delete
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
+                try {
+                    const response = await fetch(`/api/calculations/history`, {
+                        headers: headers
+                    });
+                    const data = await response.json();
+                    const calc = data.calculations?.find(c => c.id == calculationId);
+                    
+                    if (calc) {
+                        const stateCode = calc.stateCode || calc.state;
+                        const stateName = calc.state || getStateNameFromCode(stateCode);
+                        const url = `/api/v1/guide/${stateCode}/pdf?state_name=${encodeURIComponent(stateName)}&invoice_date=${encodeURIComponent(calc.invoiceDate)}`;
+                        window.open(url, '_blank');
+                    } else {
+                        alert('Unable to generate PDF. Project not found.');
+                    }
+                } catch (error) {
+                    console.error('Error downloading PDF:', error);
+                    alert('Error generating PDF. Please try again.');
+                }
+            }
+
+            function viewProject(calculationId) {
+                // TODO: Show project details modal
+                alert('View project details - coming soon!');
+            }
+
+            // Legacy function for backward compatibility
+            function loadHistory() {
+                loadCalculationHistory();
             }
 
             function deleteCalculation(id) {
@@ -1221,37 +1350,59 @@
             }
 
             // Export to CSV
-            document.getElementById('exportCSV').addEventListener('click', () => {
-                const history = JSON.parse(localStorage.getItem('calculationHistory') || '[]');
-                
-                if (history.length === 0) {
-                    alert('No calculations to export');
-                    return;
+            document.getElementById('exportCSV').addEventListener('click', async () => {
+                try {
+                    const token = getSessionToken();
+                    const headers = {};
+                    if (token) {
+                        headers['Authorization'] = 'Bearer ' + token;
+                    }
+                    
+                    const response = await fetch('/api/calculations/history', {
+                        headers: headers
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (!data.success || !data.calculations || data.calculations.length === 0) {
+                        alert('No projects to export');
+                        return;
+                    }
+                    
+                    // Create CSV content
+                    const csvHeaders = ['Project Name', 'Client', 'Amount', 'State', 'Invoice Date', 'Prelim Deadline', 'Lien Deadline', 'Active Reminders'];
+                    const rows = data.calculations.map(calc => [
+                        calc.projectName || '',
+                        calc.clientName || '',
+                        calc.invoiceAmount ? `$${calc.invoiceAmount.toFixed(2)}` : '',
+                        calc.state || '',
+                        calc.invoiceDate || '',
+                        calc.prelimDeadline || 'Not Required',
+                        calc.lienDeadline || '',
+                        calc.activeReminders || 0
+                    ]);
+                    
+                    const csvContent = [
+                        csvHeaders.join(','),
+                        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+                    ].join('\n');
+                    
+                    // Download CSV
+                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `lien-projects-${new Date().toISOString().split('T')[0]}.csv`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error('Error exporting CSV:', error);
+                    alert('Error exporting projects. Please try again.');
                 }
-                
-                // Create CSV content
-                const headers = ['Date', 'Invoice Date', 'State', 'Prelim Deadline', 'Lien Deadline'];
-                const rows = history.map(calc => [
-                    new Date(calc.timestamp).toLocaleDateString(),
-                    calc.invoice_date,
-                    calc.state,
-                    calc.prelim_deadline,
-                    calc.lien_deadline
-                ]);
-                
-                const csvContent = [
-                    headers.join(','),
-                    ...rows.map(row => row.join(','))
-                ].join('\n');
-                
-                // Download CSV
-                const blob = new Blob([csvContent], { type: 'text/csv' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `lien-calculations-${new Date().toISOString().split('T')[0]}.csv`;
-                a.click();
-                window.URL.revokeObjectURL(url);
             });
 
             // Utility functions
