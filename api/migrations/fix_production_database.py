@@ -412,88 +412,88 @@ def main():
                     
                     states_inserted = 0
                     for state_info in STATE_DATA["states"]:
-                    prelim = state_info.get("preliminary_notice", {})
-                    lien = state_info.get("lien_filing", {})
-                    special = state_info.get("special_rules", {})
+                        prelim = state_info.get("preliminary_notice", {})
+                        lien = state_info.get("lien_filing", {})
+                        special = state_info.get("special_rules", {})
                     
-                    if DB_TYPE == 'postgresql':
-                        cursor.execute("""
-                            INSERT INTO lien_deadlines (
-                                state_code, state_name,
-                                preliminary_notice_required,
-                                preliminary_notice_days,
-                                preliminary_notice_formula,
-                                preliminary_notice_deadline_description,
-                                preliminary_notice_statute,
-                                lien_filing_days,
-                                lien_filing_formula,
-                                lien_filing_deadline_description,
-                                lien_filing_statute,
-                                weekend_extension,
-                                holiday_extension,
-                                residential_vs_commercial,
-                                notice_of_completion_trigger,
-                                notes
-                            ) VALUES (
-                                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-                            )
-                        """, (
-                            state_info["state_code"],
-                            state_info["state_name"],
-                            prelim.get("required", False),
-                            prelim.get("deadline_days"),
-                            prelim.get("deadline_formula"),
-                            prelim.get("deadline_description"),
-                            prelim.get("statute"),
-                            lien.get("deadline_days"),
-                            lien.get("deadline_formula"),
-                            lien.get("deadline_description"),
-                            lien.get("statute"),
-                            special.get("weekend_extension", False),
-                            special.get("holiday_extension", False),
-                            special.get("residential_vs_commercial", False),
-                            special.get("notice_of_completion_trigger", False),
-                            special.get("notes", "")
-                        ))
-                    else:
-                        cursor.execute("""
-                            INSERT INTO lien_deadlines (
-                                state_code, state_name,
-                                preliminary_notice_required,
-                                preliminary_notice_days,
-                                preliminary_notice_formula,
-                                preliminary_notice_deadline_description,
-                                preliminary_notice_statute,
-                                lien_filing_days,
-                                lien_filing_formula,
-                                lien_filing_deadline_description,
-                                lien_filing_statute,
-                                weekend_extension,
-                                holiday_extension,
-                                residential_vs_commercial,
-                                notice_of_completion_trigger,
-                                notes
-                            ) VALUES (
-                                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                            )
-                        """, (
-                            state_info["state_code"],
-                            state_info["state_name"],
-                            1 if prelim.get("required", False) else 0,
-                            prelim.get("deadline_days"),
-                            prelim.get("deadline_formula"),
-                            prelim.get("deadline_description"),
-                            prelim.get("statute"),
-                            lien.get("deadline_days"),
-                            lien.get("deadline_formula"),
-                            lien.get("deadline_description"),
-                            lien.get("statute"),
-                            1 if special.get("weekend_extension", False) else 0,
-                            1 if special.get("holiday_extension", False) else 0,
-                            1 if special.get("residential_vs_commercial", False) else 0,
-                            1 if special.get("notice_of_completion_trigger", False) else 0,
-                            special.get("notes", "")
-                        ))
+                        if DB_TYPE == 'postgresql':
+                            cursor.execute("""
+                                INSERT INTO lien_deadlines (
+                                    state_code, state_name,
+                                    preliminary_notice_required,
+                                    preliminary_notice_days,
+                                    preliminary_notice_formula,
+                                    preliminary_notice_deadline_description,
+                                    preliminary_notice_statute,
+                                    lien_filing_days,
+                                    lien_filing_formula,
+                                    lien_filing_deadline_description,
+                                    lien_filing_statute,
+                                    weekend_extension,
+                                    holiday_extension,
+                                    residential_vs_commercial,
+                                    notice_of_completion_trigger,
+                                    notes
+                                ) VALUES (
+                                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                                )
+                            """, (
+                                state_info["state_code"],
+                                state_info["state_name"],
+                                prelim.get("required", False),
+                                prelim.get("deadline_days"),
+                                prelim.get("deadline_formula"),
+                                prelim.get("deadline_description"),
+                                prelim.get("statute"),
+                                lien.get("deadline_days"),
+                                lien.get("deadline_formula"),
+                                lien.get("deadline_description"),
+                                lien.get("statute"),
+                                special.get("weekend_extension", False),
+                                special.get("holiday_extension", False),
+                                special.get("residential_vs_commercial", False),
+                                special.get("notice_of_completion_trigger", False),
+                                special.get("notes", "")
+                            ))
+                        else:
+                            cursor.execute("""
+                                INSERT INTO lien_deadlines (
+                                    state_code, state_name,
+                                    preliminary_notice_required,
+                                    preliminary_notice_days,
+                                    preliminary_notice_formula,
+                                    preliminary_notice_deadline_description,
+                                    preliminary_notice_statute,
+                                    lien_filing_days,
+                                    lien_filing_formula,
+                                    lien_filing_deadline_description,
+                                    lien_filing_statute,
+                                    weekend_extension,
+                                    holiday_extension,
+                                    residential_vs_commercial,
+                                    notice_of_completion_trigger,
+                                    notes
+                                ) VALUES (
+                                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                                )
+                            """, (
+                                state_info["state_code"],
+                                state_info["state_name"],
+                                1 if prelim.get("required", False) else 0,
+                                prelim.get("deadline_days"),
+                                prelim.get("deadline_formula"),
+                                prelim.get("deadline_description"),
+                                prelim.get("statute"),
+                                lien.get("deadline_days"),
+                                lien.get("deadline_formula"),
+                                lien.get("deadline_description"),
+                                lien.get("statute"),
+                                1 if special.get("weekend_extension", False) else 0,
+                                1 if special.get("holiday_extension", False) else 0,
+                                1 if special.get("residential_vs_commercial", False) else 0,
+                                1 if special.get("notice_of_completion_trigger", False) else 0,
+                                special.get("notes", "")
+                            ))
                         states_inserted += 1
                     
                     conn.commit()
