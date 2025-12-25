@@ -2455,7 +2455,9 @@ function displayResults(data) {
     
     // Extract state code for PDF download link (from response or form)
     let stateCode = 'CA'; // Default fallback
-    if (data.state) {
+    if (data.state_code) {
+        stateCode = String(data.state_code).toUpperCase().substring(0, 2);
+    } else if (data.state) {
         stateCode = String(data.state).toUpperCase().substring(0, 2);
     } else {
         // Try to get from form if not in response
@@ -2464,6 +2466,9 @@ function displayResults(data) {
             stateCode = String(stateSelect.value).toUpperCase().substring(0, 2);
         }
     }
+    
+    // Get state name for PDF URL parameter
+    const stateName = data.state_name || (typeof getStateNameFromCode !== 'undefined' ? getStateNameFromCode(stateCode) : stateCode);
     
     // Extract preliminary notice
     if (data.preliminary_notice) {
@@ -2554,8 +2559,8 @@ function displayResults(data) {
             <p class="text-sm text-gray-700 mb-3">
                 Get your complete ${stateCode} mechanics lien deadline guide with step-by-step instructions.
             </p>
-            <a href="/api/v1/guide/${stateCode}/pdf" target="_blank" onclick="if(typeof gtag !== 'undefined') { gtag('event', 'pdf_download', { 'event_category': 'PDF', 'event_label': '${stateCode}', 'value': 1 }); }" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded text-sm transition-colors">
-                Download ${stateCode} Lien Guide (PDF)
+            <a href="/api/v1/guide/${stateCode}/pdf?state_name=${encodeURIComponent(stateName)}" target="_blank" onclick="if(typeof gtag !== 'undefined') { gtag('event', 'pdf_download', { 'event_category': 'PDF', 'event_label': '${stateCode}', 'value': 1 }); }" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded text-sm transition-colors">
+                Download ${stateName} Lien Guide (PDF)
             </a>
             <p class="text-xs text-gray-500 mt-2">⭐ Trusted by 500+ material suppliers</p>
         </div>
