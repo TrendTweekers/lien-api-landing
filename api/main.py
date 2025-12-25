@@ -93,6 +93,23 @@ from api.email_abuse import (
 
 app = FastAPI(title="Lien Deadline API")
 
+# State code to full name mapping
+STATE_CODE_TO_NAME = {
+    'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
+    'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware',
+    'DC': 'District of Columbia', 'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii',
+    'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa',
+    'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine',
+    'MD': 'Maryland', 'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota',
+    'MS': 'Mississippi', 'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska',
+    'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico',
+    'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio',
+    'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island',
+    'SC': 'South Carolina', 'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas',
+    'UT': 'Utah', 'VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington',
+    'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
+}
+
 # Rate limiting setup
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -1425,7 +1442,7 @@ def get_states():
     }
 
 @app.get("/api/v1/guide/{state_code}/pdf")
-async def generate_state_guide_pdf(state_code: str):
+async def generate_state_guide_pdf(state_code: str, request: Request):
     """Generate PDF guide for a specific state"""
     # Check if ReportLab is available
     if not REPORTLAB_AVAILABLE:
@@ -1444,7 +1461,27 @@ async def generate_state_guide_pdf(state_code: str):
         )
     
     state_data = STATE_RULES[state_code]
-    state_name = state_data.get('state_name', state_code)
+    
+    # Get state name - priority order:
+    # 1. state_name query parameter (from frontend)
+    # 2. state_data from database/STATE_RULES
+    # 3. Convert state code to full name
+    state_name_param = request.query_params.get('state_name', '')
+    
+    if state_name_param:
+        # Frontend sent the full state name
+        state_name = state_name_param
+    elif state_data:
+        # Get from database/STATE_RULES
+        state_name = state_data.get('state_name', '')
+    else:
+        # Fallback: convert state code to full name
+        state_upper = state_code.upper()
+        state_name = STATE_CODE_TO_NAME.get(state_upper, state_code.title())
+    
+    # Additional safety check
+    if not state_name:
+        state_name = STATE_CODE_TO_NAME.get(state_code.upper(), state_code.title())
     
     # Create PDF in memory
     buffer = BytesIO()
