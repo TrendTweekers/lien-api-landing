@@ -47,82 +47,78 @@ def safe_fetch_value(cursor_result, index=0):
         except (KeyError, TypeError):
             return cursor_result
 
-def main():
-    print("=" * 60)
-    print("🔧 FIXING STATE NAMES IN DATABASE")
-    print("=" * 60)
-    print(f"Database Type: {DB_TYPE}\n")
+def fix_state_names():
+    """Fix state names in database - returns dict with results"""
+    result = {
+        "updates_count": 0,
+        "updated_states": [],
+        "oklahoma_status": None,
+        "errors": []
+    }
     
     try:
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            updates_count = 0
-            
-            print("Checking and fixing state names...\n")
-            
             for code, expected_name in STATE_CODE_TO_NAME.items():
-                # Check current state_name value
-                if DB_TYPE == 'postgresql':
-                    cursor.execute(
-                        "SELECT state_code, state_name FROM lien_deadlines WHERE state_code = %s",
-                        (code,)
-                    )
-                else:
-                    cursor.execute(
-                        "SELECT state_code, state_name FROM lien_deadlines WHERE state_code = ?",
-                        (code,)
-                    )
-                
-                row = cursor.fetchone()
-                
-                if row:
-                    if isinstance(row, dict):
-                        current_name = row.get('state_name')
-                    elif isinstance(row, (tuple, list)):
-                        current_name = row[1] if len(row) > 1 else None
+                try:
+                    # Check current state_name value
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute(
+                            "SELECT state_code, state_name FROM lien_deadlines WHERE state_code = %s",
+                            (code,)
+                        )
                     else:
-                        current_name = safe_fetch_value(row, 1)
+                        cursor.execute(
+                            "SELECT state_code, state_name FROM lien_deadlines WHERE state_code = ?",
+                            (code,)
+                        )
                     
-                    # Check if state_name needs fixing
-                    # Fix if: it's the code itself, or None, or empty, or not the expected name
-                    needs_fix = (
-                        current_name is None or
-                        current_name == '' or
-                        current_name == code or
-                        current_name.upper() == code or
-                        current_name != expected_name
-                    )
+                    row = cursor.fetchone()
                     
-                    if needs_fix:
-                        # Update to correct name
-                        if DB_TYPE == 'postgresql':
-                            cursor.execute("""
-                                UPDATE lien_deadlines 
-                                SET state_name = %s 
-                                WHERE state_code = %s
-                            """, (expected_name, code))
+                    if row:
+                        if isinstance(row, dict):
+                            current_name = row.get('state_name')
+                        elif isinstance(row, (tuple, list)):
+                            current_name = row[1] if len(row) > 1 else None
                         else:
-                            cursor.execute("""
-                                UPDATE lien_deadlines 
-                                SET state_name = ? 
-                                WHERE state_code = ?
-                            """, (expected_name, code))
+                            current_name = safe_fetch_value(row, 1)
                         
-                        if cursor.rowcount > 0:
-                            print(f"✅ Updated {code}: '{current_name}' → '{expected_name}'")
-                            updates_count += 1
-                    else:
-                        # Already correct
-                        pass
-                else:
-                    print(f"⚠️ State {code} not found in database")
+                        # Check if state_name needs fixing
+                        needs_fix = (
+                            current_name is None or
+                            current_name == '' or
+                            current_name == code or
+                            current_name.upper() == code or
+                            current_name != expected_name
+                        )
+                        
+                        if needs_fix:
+                            # Update to correct name
+                            if DB_TYPE == 'postgresql':
+                                cursor.execute("""
+                                    UPDATE lien_deadlines 
+                                    SET state_name = %s 
+                                    WHERE state_code = %s
+                                """, (expected_name, code))
+                            else:
+                                cursor.execute("""
+                                    UPDATE lien_deadlines 
+                                    SET state_name = ? 
+                                    WHERE state_code = ?
+                                """, (expected_name, code))
+                            
+                            if cursor.rowcount > 0:
+                                result["updates_count"] += 1
+                                result["updated_states"].append({
+                                    "code": code,
+                                    "old_name": current_name or "NULL",
+                                    "new_name": expected_name
+                                })
+                except Exception as e:
+                    result["errors"].append(f"Error updating {code}: {str(e)}")
             
             conn.commit()
-            
-            print(f"\n{'=' * 60}")
-            print(f"✅ Fixed {updates_count} state names")
-            print(f"{'=' * 60}\n")
             
             # Verify Oklahoma specifically
             if DB_TYPE == 'postgresql':
@@ -143,18 +139,56 @@ def main():
                 else:
                     ok_name = safe_fetch_value(ok_row, 1)
                 
-                print(f"✅ Oklahoma verification: state_code='OK', state_name='{ok_name}'")
-                if ok_name == 'Oklahoma':
-                    print("   ✅ Oklahoma name is correct!")
-                else:
-                    print(f"   ⚠️ Oklahoma name is still '{ok_name}', expected 'Oklahoma'")
-            else:
-                print("❌ Oklahoma not found in database!")
+                result["oklahoma_status"] = {
+                    "state_code": "OK",
+                    "state_name": ok_name,
+                    "is_correct": ok_name == 'Oklahoma'
+                }
+        
+        return result
         
     except Exception as e:
-        print(f"\n❌ ERROR: {e}")
+        result["errors"].append(f"Fatal error: {str(e)}")
         import traceback
-        traceback.print_exc()
+        result["traceback"] = traceback.format_exc()
+        return result
+
+def main():
+    """Main function for command-line execution"""
+    print("=" * 60)
+    print("🔧 FIXING STATE NAMES IN DATABASE")
+    print("=" * 60)
+    print(f"Database Type: {DB_TYPE}\n")
+    
+    result = fix_state_names()
+    
+    if result["updated_states"]:
+        print("Checking and fixing state names...\n")
+        for update in result["updated_states"]:
+            print(f"✅ Updated {update['code']}: '{update['old_name']}' → '{update['new_name']}'")
+    
+    print(f"\n{'=' * 60}")
+    print(f"✅ Fixed {result['updates_count']} state names")
+    print(f"{'=' * 60}\n")
+    
+    if result["oklahoma_status"]:
+        ok_status = result["oklahoma_status"]
+        print(f"✅ Oklahoma verification: state_code='{ok_status['state_code']}', state_name='{ok_status['state_name']}'")
+        if ok_status['is_correct']:
+            print("   ✅ Oklahoma name is correct!")
+        else:
+            print(f"   ⚠️ Oklahoma name is still '{ok_status['state_name']}', expected 'Oklahoma'")
+    else:
+        print("❌ Oklahoma not found in database!")
+    
+    if result["errors"]:
+        print("\n⚠️ Errors encountered:")
+        for error in result["errors"]:
+            print(f"   {error}")
+    
+    if result.get("traceback"):
+        print("\n❌ Traceback:")
+        print(result["traceback"])
         sys.exit(1)
 
 if __name__ == "__main__":

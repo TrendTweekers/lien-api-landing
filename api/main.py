@@ -1049,6 +1049,31 @@ app.include_router(analytics_router, prefix="/api/analytics", tags=["analytics"]
 app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
 app.include_router(quickbooks_router, tags=["quickbooks"])
 
+# Temporary endpoint to fix state names
+@app.get("/api/admin/fix-state-names-now")
+async def fix_state_names_endpoint(current_user: dict = Depends(verify_admin)):
+    """Temporary endpoint to fix state names in database"""
+    try:
+        from api.migrations.fix_state_names import fix_state_names
+        
+        result = fix_state_names()
+        
+        return {
+            "success": True,
+            "message": "State names fixed successfully",
+            "updates_count": result.get("updates_count", 0),
+            "updated_states": result.get("updated_states", []),
+            "oklahoma_status": result.get("oklahoma_status"),
+            "errors": result.get("errors", [])
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 # Initialize database on startup
 @app.on_event("startup")
 async def startup():
