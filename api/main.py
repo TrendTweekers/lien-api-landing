@@ -2761,6 +2761,16 @@ async def serve_vs_levelset_html():
     """Redirect old vs-levelset.html to comparison.html"""
     return RedirectResponse(url="/comparison.html", status_code=301)
 
+@app.get("/state-coverage.html")
+async def serve_state_coverage_html():
+    """Redirect state-coverage.html to homepage"""
+    return RedirectResponse(url="/", status_code=301)
+
+@app.get("/state-coverage")
+async def serve_state_coverage_clean():
+    """Redirect /state-coverage to homepage"""
+    return RedirectResponse(url="/", status_code=301)
+
 @app.get("/contact.html")
 async def serve_contact_html():
     """
