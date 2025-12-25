@@ -1051,7 +1051,7 @@ app.include_router(quickbooks_router, tags=["quickbooks"])
 
 # Temporary endpoint to fix state names
 @app.get("/api/admin/fix-state-names-now")
-async def fix_state_names_endpoint(current_user: dict = Depends(verify_admin)):
+async def fix_state_names_endpoint():
     """Temporary endpoint to fix state names in database"""
     try:
         from api.migrations.fix_state_names import fix_state_names
