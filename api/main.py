@@ -1694,7 +1694,7 @@ async def generate_state_guide_pdf(state_code: str, request: Request):
     
     # Create summary table
     summary_data = [
-        ['<b>Deadline Summary</b>', ''],
+        ['Deadline Summary', ''],
         ['Preliminary Notice Deadline:', f'{prelim_days} days' if prelim_days != 'N/A' else 'Not required'],
         ['Lien Filing Deadline:', f'{lien_days} days' if lien_days != 'N/A' else 'N/A'],
     ]
