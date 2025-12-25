@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="LienDeadline Security practices. Learn about our data encryption, secure API, compliance, and how we protect your construction lien deadline data.">
-    <meta name="keywords" content="lien deadline security, data encryption, secure API, construction data protection, mechanics lien security">
-    <title>Security & Data Protection | LienDeadline</title>
+    <meta name="description" content="Learn how LienDeadline protects your data with enterprise-grade security, encryption, and compliance measures for API users.">
+    <meta name="keywords" content="API security, data protection, encryption, SOC 2, PCI compliance, lien deadline security">
+    <title>Security & Data Protection | LienDeadline API</title>
     
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="Security & Data Protection | LienDeadline">
-    <meta property="og:description" content="LienDeadline Security practices. Learn about our data encryption, secure API, compliance, and how we protect your construction lien deadline data.">
+    <meta property="og:title" content="Security & Data Protection | LienDeadline API">
+    <meta property="og:description" content="Learn how LienDeadline protects your data with enterprise-grade security, encryption, and compliance measures for API users.">
     <meta property="og:image" content="https://liendeadline.com/images/lien-deadline-preview.jpg">
     <meta property="og:url" content="https://liendeadline.com/security.html">
     <meta property="og:type" content="website">
     
     <!-- Twitter Card Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Security & Data Protection | LienDeadline">
-    <meta name="twitter:description" content="LienDeadline Security practices. Learn about our data encryption, secure API, and compliance.">
+    <meta name="twitter:title" content="Security & Data Protection | LienDeadline API">
+    <meta name="twitter:description" content="Learn how LienDeadline protects your data with enterprise-grade security, encryption, and compliance measures.">
     <meta name="twitter:image" content="https://liendeadline.com/images/lien-deadline-preview.jpg">
     
     <!-- Canonical URL -->
@@ -101,176 +101,200 @@
         </div>
     </div>
 
+    <!-- Main Content -->
     <main class="pt-24 pb-16">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <h1 class="text-4xl sm:text-5xl font-serif font-bold mb-4">Security</h1>
-            <p class="text-lg text-muted-foreground mb-12">How we protect your data and ensure system security</p>
+            <h1 class="text-4xl md:text-5xl font-serif font-bold mb-4">Security & Data Protection</h1>
+            <p class="text-muted-foreground mb-8">Enterprise-grade security measures to protect your data and API access</p>
+            
+            <div class="prose prose-lg max-w-none">
+                <!-- API Security -->
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">API Security</h2>
+                    
+                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
+                        <h3 class="text-xl font-semibold mb-3">🔐 HTTPS Encryption</h3>
+                        <p class="text-muted-foreground">All API requests and responses are encrypted using TLS 1.2+ (HTTPS). This ensures that data transmitted between your application and our servers cannot be intercepted or modified.</p>
+                    </div>
 
-            <!-- Data Encryption -->
-            <section class="mb-12">
-                <div class="bg-white rounded-lg border border-border p-6">
-                    <h2 class="text-2xl font-bold mb-4">Data Encryption</h2>
-                    <ul class="space-y-3 text-muted-foreground">
-                        <li>• <strong>In Transit:</strong> All data transmitted between your browser and our servers uses TLS 1.3 encryption (HTTPS)</li>
-                        <li>• <strong>At Rest:</strong> Sensitive data stored in our database is encrypted using industry-standard encryption algorithms</li>
-                        <li>• <strong>Payment Data:</strong> Credit card information is processed securely by Stripe and never stored on our servers</li>
-                        <li>• <strong>API Keys:</strong> API keys are hashed and stored securely. Never share your API key publicly.</li>
+                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
+                        <h3 class="text-xl font-semibold mb-3">🔑 API Key Authentication</h3>
+                        <p class="text-muted-foreground mb-3">Every API request requires a valid API key in the Authorization header:</p>
+                        <code class="block bg-gray-100 p-3 rounded-lg text-sm mb-3">Authorization: Bearer YOUR_API_KEY</code>
+                        <p class="text-muted-foreground">API keys are cryptographically secure, unique per customer, and can be regenerated or revoked at any time through your dashboard.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
+                        <h3 class="text-xl font-semibold mb-3">⚡ Rate Limiting</h3>
+                        <p class="text-muted-foreground">API requests are rate-limited to prevent abuse and ensure fair usage. Limits are generous for paid plans and can be adjusted for enterprise customers.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
+                        <h3 class="text-xl font-semibold mb-3">🚫 No PII Storage</h3>
+                        <p class="text-muted-foreground">We don't store personally identifiable information (PII) in calculation requests. Only invoice dates, states, and calculation results are stored—no names, addresses, or project details.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-border">
+                        <h3 class="text-xl font-semibold mb-3">📊 Request Logging</h3>
+                        <p class="text-muted-foreground">API requests are logged for security monitoring and debugging. Logs include timestamps, API keys (masked), endpoints accessed, and response codes. Logs are retained for 90 days.</p>
+                    </div>
+                </section>
+
+                <!-- Data Protection -->
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">Data Protection</h2>
+                    
+                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
+                        <h3 class="text-xl font-semibold mb-3">💾 Encrypted Database</h3>
+                        <p class="text-muted-foreground">All data is stored in a PostgreSQL database hosted on Railway with encryption at rest. Database access is restricted to authorized personnel only.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
+                        <h3 class="text-xl font-semibold mb-3">🔒 Password Security</h3>
+                        <p class="text-muted-foreground">User passwords are hashed using bcrypt before storage. We never store passwords in plain text and cannot retrieve your password if forgotten (password reset required).</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
+                        <h3 class="text-xl font-semibold mb-3">💿 Regular Backups</h3>
+                        <p class="text-muted-foreground">Automated daily backups with 30-day retention. Backups are encrypted and stored separately from production data. We can restore data to any point within the retention period.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-border">
+                        <h3 class="text-xl font-semibold mb-3">🏗️ Infrastructure Security</h3>
+                        <p class="text-muted-foreground mb-3">Our infrastructure is hosted on Railway, which provides:</p>
+                        <ul class="list-disc ml-6 space-y-2 text-muted-foreground">
+                            <li>DDoS protection and mitigation</li>
+                            <li>Automatic security updates</li>
+                            <li>Network isolation and firewalls</li>
+                            <li>24/7 monitoring and incident response</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Payment Security -->
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">Payment Security</h2>
+                    
+                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
+                        <h3 class="text-xl font-semibold mb-3">💳 Stripe PCI Compliance</h3>
+                        <p class="text-muted-foreground">All payments are processed through Stripe, which is PCI DSS Level 1 compliant (the highest level of payment security). We never see, store, or process your credit card information directly.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-border">
+                        <h3 class="text-xl font-semibold mb-3">🚫 No Credit Card Storage</h3>
+                        <p class="text-muted-foreground">We do not store credit card numbers, CVV codes, or billing addresses. All payment data is handled securely by Stripe's infrastructure.</p>
+                    </div>
+                </section>
+
+                <!-- Compliance -->
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">Compliance & Certifications</h2>
+                    
+                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
+                        <h3 class="text-xl font-semibold mb-3">📋 SOC 2 Compliance</h3>
+                        <p class="text-muted-foreground">We are working toward SOC 2 Type II certification. Our security practices align with SOC 2 requirements for security, availability, and confidentiality.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
+                        <h3 class="text-xl font-semibold mb-3">🌍 GDPR & CCPA Compliance</h3>
+                        <p class="text-muted-foreground">We comply with GDPR (EU) and CCPA (California) privacy regulations. Users can request access, deletion, or export of their data. See our <a href="/privacy.html" class="text-accent hover:underline">Privacy Policy</a> for details.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-border">
+                        <h3 class="text-xl font-semibold mb-3">🔍 Security Audits</h3>
+                        <p class="text-muted-foreground">We conduct regular security audits and vulnerability assessments. Third-party security reviews are performed annually.</p>
+                    </div>
+                </section>
+
+                <!-- Incident Response -->
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">Incident Response</h2>
+                    
+                    <div class="bg-white p-6 rounded-xl border border-border">
+                        <p class="text-muted-foreground mb-4">In the event of a security incident:</p>
+                        <ul class="list-disc ml-6 space-y-2 text-muted-foreground">
+                            <li>We will notify affected users within 72 hours</li>
+                            <li>We will provide details about what data was affected</li>
+                            <li>We will take immediate steps to contain and remediate the issue</li>
+                            <li>We will conduct a post-incident review and implement improvements</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Security Contact -->
+                <section class="mb-12 bg-accent/10 p-8 rounded-xl border border-accent/20">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">Security Contact</h2>
+                    <p class="text-muted-foreground mb-4">If you discover a security vulnerability or have security concerns:</p>
+                    <ul class="list-none ml-0 space-y-2">
+                        <li><strong>Email:</strong> <a href="mailto:security@liendeadline.com" class="text-accent hover:underline">security@liendeadline.com</a></li>
+                        <li><strong>Response Time:</strong> We aim to respond to security reports within 24 hours</li>
                     </ul>
-                </div>
-            </section>
+                    <p class="text-muted-foreground mt-4 text-sm">Please do not publicly disclose vulnerabilities until we've had a chance to address them.</p>
+                </section>
 
-            <!-- Infrastructure Security -->
-            <section class="mb-12">
-                <div class="bg-white rounded-lg border border-border p-6">
-                    <h2 class="text-2xl font-bold mb-4">Infrastructure Security</h2>
-                    <ul class="space-y-3 text-muted-foreground">
-                        <li>• <strong>Hosting:</strong> Our servers are hosted on Railway.app, which provides enterprise-grade security and compliance</li>
-                        <li>• <strong>Database:</strong> PostgreSQL database with encrypted connections and regular backups</li>
-                        <li>• <strong>Access Control:</strong> Multi-factor authentication for admin accounts and restricted API access</li>
-                        <li>• <strong>Monitoring:</strong> 24/7 monitoring for security threats and system anomalies</li>
-                        <li>• <strong>Updates:</strong> Regular security patches and dependency updates</li>
-                    </ul>
-                </div>
-            </section>
-
-            <!-- Authentication & Authorization -->
-            <section class="mb-12">
-                <div class="bg-white rounded-lg border border-border p-6">
-                    <h2 class="text-2xl font-bold mb-4">Authentication & Authorization</h2>
-                    <ul class="space-y-3 text-muted-foreground">
-                        <li>• <strong>Password Security:</strong> Passwords are hashed using bcrypt before storage</li>
-                        <li>• <strong>Session Management:</strong> Secure session tokens with expiration and rotation</li>
-                        <li>• <strong>API Authentication:</strong> API keys required for all API endpoints</li>
-                        <li>• <strong>Rate Limiting:</strong> Protection against abuse and brute-force attacks</li>
-                        <li>• <strong>IP Tracking:</strong> Calculation limits tracked by IP + user agent hash to prevent abuse</li>
-                    </ul>
-                </div>
-            </section>
-
-            <!-- Data Privacy -->
-            <section class="mb-12">
-                <div class="bg-white rounded-lg border border-border p-6">
-                    <h2 class="text-2xl font-bold mb-4">Data Privacy</h2>
-                    <ul class="space-y-3 text-muted-foreground">
-                        <li>• <strong>Data Minimization:</strong> We only collect data necessary to provide our service</li>
-                        <li>• <strong>No Data Selling:</strong> We never sell your data to third parties</li>
-                        <li>• <strong>Data Retention:</strong> Data is retained only as long as necessary for service provision</li>
-                        <li>• <strong>Right to Deletion:</strong> You can request deletion of your data at any time</li>
-                        <li>• <strong>Privacy Rights:</strong> We support privacy rights requests and aim to comply with applicable privacy laws, including GDPR and CCPA</li>
-                    </ul>
-                    <p class="text-sm text-muted-foreground mt-4">See our <a href="/privacy.html" class="text-accent hover:underline">Privacy Policy</a> for more details.</p>
-                </div>
-            </section>
-
-            <!-- Payment Security -->
-            <section class="mb-12">
-                <div class="bg-white rounded-lg border border-border p-6">
-                    <h2 class="text-2xl font-bold mb-4">Payment Security</h2>
-                    <ul class="space-y-3 text-muted-foreground">
-                        <li>• <strong>PCI Compliance:</strong> All payments processed through Stripe, which is PCI DSS Level 1 compliant</li>
-                        <li>• <strong>No Card Storage:</strong> We never see or store your full credit card number</li>
-                        <li>• <strong>Secure Checkout:</strong> All payment forms use Stripe's secure hosted checkout</li>
-                        <li>• <strong>Fraud Detection:</strong> Stripe's advanced fraud detection protects against unauthorized transactions</li>
-                    </ul>
-                </div>
-            </section>
-
-            <!-- Reporting Security Issues -->
-            <section class="mb-12">
-                <div class="bg-white rounded-lg border border-border p-6">
-                    <h2 class="text-2xl font-bold mb-4">Reporting Security Issues</h2>
-                    <p class="text-muted-foreground mb-4">If you discover a security vulnerability, please report it responsibly:</p>
-                    <ul class="space-y-2 text-muted-foreground">
-                        <li>• Email: <a href="mailto:security@liendeadline.com" class="text-accent hover:underline">security@liendeadline.com</a></li>
-                        <li>• Include details about the vulnerability and steps to reproduce</li>
-                        <li>• We will respond within 48 hours and work with you to resolve the issue</li>
-                        <li>• Please do not publicly disclose vulnerabilities until we've had a chance to fix them</li>
-                    </ul>
-                </div>
-            </section>
-
-            <!-- Compliance -->
-            <section class="mb-12">
-                <div class="bg-white rounded-lg border border-border p-6">
-                    <h2 class="text-2xl font-bold mb-4">Compliance</h2>
-                    <ul class="space-y-3 text-muted-foreground">
-                        <li>• <strong>Privacy Laws:</strong> We support privacy rights requests and aim to comply with applicable privacy laws, including GDPR and CCPA</li>
-                        <li>• <strong>Infrastructure:</strong> Our hosting provider (Railway) follows SOC 2-aligned best practices</li>
-                        <li>• <strong>Regular Audits:</strong> We conduct regular security audits and assessments</li>
-                    </ul>
-                </div>
-            </section>
-
-            <!-- Last Updated -->
-            <div class="text-center text-sm text-muted-foreground mb-8">
-                <p>Last updated: January 15, 2025</p>
+                <!-- Best Practices -->
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">Security Best Practices for API Users</h2>
+                    <div class="bg-white p-6 rounded-xl border border-border">
+                        <ul class="list-disc ml-6 space-y-2 text-muted-foreground">
+                            <li><strong>Protect Your API Key:</strong> Never commit API keys to version control or share them publicly</li>
+                            <li><strong>Use HTTPS:</strong> Always make API requests over HTTPS (never HTTP)</li>
+                            <li><strong>Rotate Keys Regularly:</strong> Regenerate API keys periodically or if compromised</li>
+                            <li><strong>Monitor Usage:</strong> Review API usage logs regularly for suspicious activity</li>
+                            <li><strong>Implement Rate Limiting:</strong> Add client-side rate limiting to prevent accidental abuse</li>
+                            <li><strong>Validate Input:</strong> Validate all input before sending to our API</li>
+                        </ul>
+                    </div>
+                </section>
             </div>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-border py-12">
+    <footer class="bg-gray-900 text-gray-300 py-12">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid md:grid-cols-5 gap-8 mb-8">
-                <div class="md:col-span-1">
-                    <div class="flex items-center gap-2 mb-4">
-                        <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                            </svg>
-                        </div>
-                        <span class="font-serif text-lg font-semibold">LienDeadline</span>
-                    </div>
-                    <p class="text-sm text-muted-foreground">Never miss a mechanics lien deadline again.</p>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="font-serif text-lg font-semibold text-white mb-4">LienDeadline</h3>
+                    <p class="text-sm">Calculate mechanics lien deadlines across all 50 states + DC. Fast, accurate, affordable.</p>
                 </div>
                 <div>
-                    <h4 class="font-semibold text-foreground mb-4">Product</h4>
+                    <h4 class="font-semibold text-white mb-4">Product</h4>
                     <ul class="space-y-2 text-sm">
-                        <li><a href="#calculator" class="text-muted-foreground hover:text-foreground">Calculator</a></li>
-                        <li><a href="/api.html" class="text-muted-foreground hover:text-foreground">API Docs</a></li>
-                        <li><a href="/#pricing" class="text-muted-foreground hover:text-foreground">Pricing</a></li>
-                        <li><a href="/vs-levelset.html" class="text-muted-foreground hover:text-foreground">Levelset Alternative</a></li>
-                        <li><a href="/changelog.html" class="text-muted-foreground hover:text-foreground">Changelog</a></li>
+                        <li><a href="/#calculator" class="hover:text-white">Calculator</a></li>
+                        <li><a href="/api.html" class="hover:text-white">API</a></li>
+                        <li><a href="/#pricing" class="hover:text-white">Pricing</a></li>
+                        <li><a href="/comparison.html" class="hover:text-white">Comparison</a></li>
                     </ul>
                 </div>
                 <div>
-                    <h4 class="font-semibold text-foreground mb-4">Company</h4>
+                    <h4 class="font-semibold text-white mb-4">Company</h4>
                     <ul class="space-y-2 text-sm">
-                        <li><a href="/about.html" class="text-muted-foreground hover:text-foreground">About</a></li>
-                        <li><a href="/contact.html" class="text-muted-foreground hover:text-foreground">Contact</a></li>
+                        <li><a href="/about.html" class="hover:text-white">About</a></li>
+                        <li><a href="/help.html" class="hover:text-white">Help</a></li>
+                        <li><a href="/contact.html" class="hover:text-white">Contact</a></li>
+                        <li><a href="/partners.html" class="hover:text-white">Partners</a></li>
                     </ul>
                 </div>
                 <div>
-                    <h4 class="font-semibold text-foreground mb-4">Legal</h4>
+                    <h4 class="font-semibold text-white mb-4">Legal</h4>
                     <ul class="space-y-2 text-sm">
-                        <li><a href="/privacy.html" class="text-muted-foreground hover:text-foreground">Privacy</a></li>
-                        <li><a href="/terms.html" class="text-muted-foreground hover:text-foreground">Terms</a></li>
-                        <li><a href="/security.html" class="text-muted-foreground hover:text-foreground">Security</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-foreground mb-4">Resources</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="/help.html" class="text-muted-foreground hover:text-foreground">Help Center</a></li>
-                        <li><a href="#partners" class="text-muted-foreground hover:text-foreground">Partner Program</a></li>
-                        <li><a href="/state-coverage.html" class="text-muted-foreground hover:text-foreground">State Coverage</a></li>
+                        <li><a href="/privacy.html" class="hover:text-white">Privacy</a></li>
+                        <li><a href="/terms.html" class="hover:text-white">Terms</a></li>
+                        <li><a href="/security.html" class="hover:text-white">Security</a></li>
+                        <li><a href="/cookies.html" class="hover:text-white">Cookies</a></li>
                     </ul>
                 </div>
             </div>
-            <div class="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div>
-                    <p class="text-sm text-muted-foreground">© 2025 LienDeadline.com. Not legal advice.</p>
-                </div>
-                <div class="flex justify-center gap-6 text-sm">
-                    <a href="/privacy.html" class="text-muted-foreground hover:text-foreground">Privacy Policy</a>
-                    <a href="/terms.html" class="text-muted-foreground hover:text-foreground">Terms of Service</a>
-                    <a href="/partners.html" class="text-muted-foreground hover:text-foreground">Become a Partner</a>
-                </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
+                <p>Serving all 50 US states + DC • Updated December 2025</p>
+                <p class="mt-2">© 2025 LienDeadline. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
     <script>
+        // Mobile menu toggle
         document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
             document.getElementById('mobileMenu')?.classList.remove('hidden');
         });
@@ -280,4 +304,3 @@
     </script>
 </body>
 </html>
-

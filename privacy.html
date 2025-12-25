@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="LienDeadline Privacy Policy. Learn how we collect, use, and protect your data. We respect your privacy and never sell your information.">
-    <meta name="keywords" content="privacy policy, data protection, lien deadline privacy, mechanics lien data security">
+    <meta name="description" content="Our privacy policy explains how LienDeadline protects your data. Learn about data collection, usage, and your privacy rights.">
+    <meta name="keywords" content="privacy policy, data protection, GDPR, CCPA, lien deadline privacy">
     <title>Privacy Policy | LienDeadline</title>
     
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="Privacy Policy | LienDeadline">
-    <meta property="og:description" content="LienDeadline Privacy Policy. Learn how we collect, use, and protect your data. We respect your privacy and never sell your information.">
+    <meta property="og:description" content="Our privacy policy explains how LienDeadline protects your data. Learn about data collection, usage, and your privacy rights.">
     <meta property="og:image" content="https://liendeadline.com/images/lien-deadline-preview.jpg">
     <meta property="og:url" content="https://liendeadline.com/privacy.html">
     <meta property="og:type" content="website">
@@ -17,7 +17,7 @@
     <!-- Twitter Card Tags -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Privacy Policy | LienDeadline">
-    <meta name="twitter:description" content="LienDeadline Privacy Policy. Learn how we collect, use, and protect your data.">
+    <meta name="twitter:description" content="Our privacy policy explains how LienDeadline protects your data. Learn about data collection, usage, and your privacy rights.">
     <meta name="twitter:image" content="https://liendeadline.com/images/lien-deadline-preview.jpg">
     
     <!-- Canonical URL -->
@@ -33,62 +33,244 @@
     </script>
     <!-- Umami Analytics -->
     <script defer src="https://cloud.umami.is/script.js" data-website-id="02250d35-ee17-41be-845d-2fe0f7f15e63"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/lovable-scale.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: 'hsl(40 33% 98%)',
+                        foreground: 'hsl(220 20% 15%)',
+                        accent: 'hsl(16 85% 55%)',
+                        muted: 'hsl(40 20% 92%)',
+                        'muted-foreground': 'hsl(220 10% 45%)',
+                        border: 'hsl(40 20% 88%)',
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="bg-gray-50">
-    <div class="max-w-4xl mx-auto px-6 py-12">
-        <h1 class="text-4xl font-bold mb-8">Privacy Policy</h1>
-        <p class="text-sm text-gray-600 mb-8">Last Updated: December 10, 2025</p>
-        
-        <div class="prose prose-lg">
-            <h2 class="text-2xl font-bold mt-8 mb-4">1. Information We Collect</h2>
-            <p>We collect the following information:</p>
-            <ul class="list-disc ml-6 mb-4">
-                <li><strong>Email Address:</strong> When you enter your email to extend your free trial</li>
-                <li><strong>Calculation Data:</strong> State, notice date, and work date you enter</li>
-                <li><strong>IP Address:</strong> To prevent abuse of the free trial system</li>
-                <li><strong>Payment Information:</strong> Processed securely by Stripe (we never see card numbers)</li>
-            </ul>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">2. How We Use Your Information</h2>
-            <ul class="list-disc ml-6 mb-4">
-                <li>To provide lien deadline calculations</li>
-                <li>To manage your free trial limits</li>
-                <li>To process payments and manage subscriptions</li>
-                <li>To send account-related emails (login credentials, receipts)</li>
-                <li>To prevent abuse and fraud</li>
-            </ul>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">3. Data Storage</h2>
-            <p>Your data is stored securely on Railway.app servers in the United States. We use industry-standard encryption and security practices.</p>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">4. Data Sharing</h2>
-            <p>We do NOT sell your data. We only share data with:</p>
-            <ul class="list-disc ml-6 mb-4">
-                <li><strong>Stripe:</strong> For payment processing</li>
-                <li><strong>SendGrid/SMTP providers:</strong> For sending emails</li>
-            </ul>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">5. Your Rights</h2>
-            <p>You have the right to:</p>
-            <ul class="list-disc ml-6 mb-4">
-                <li>Access your data (email us)</li>
-                <li>Delete your data (email us)</li>
-                <li>Opt out of emails (unsubscribe link in emails)</li>
-                <li>Cancel your subscription anytime</li>
-            </ul>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">6. Cookies</h2>
-            <p>We use localStorage (browser storage) to track your calculation count. No third-party tracking cookies are used.</p>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">7. Contact</h2>
-            <p>For privacy questions: support@liendeadline.com</p>
+<body class="bg-background text-foreground">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="/" class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span class="font-serif text-lg font-semibold">LienDeadline</span>
+                </a>
+                <nav class="hidden md:flex items-center gap-8">
+                    <a href="/#calculator" class="text-muted-foreground hover:text-foreground">Calculator</a>
+                    <a href="/api.html" class="text-muted-foreground hover:text-foreground">API</a>
+                    <a href="/#pricing" class="text-muted-foreground hover:text-foreground">Pricing</a>
+                    <a href="/partners.html" class="text-muted-foreground hover:text-foreground">Partners</a>
+                    <a href="/#calculator" class="bg-accent text-white px-6 py-2 rounded-lg font-semibold">Start Free Trial</a>
+                </nav>
+                <button id="mobileMenuBtn" class="md:hidden p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
         </div>
-        
-        <div class="mt-12">
-            <a href="/" class="text-blue-600 hover:underline">← Back to Home</a>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="hidden fixed inset-0 z-40 bg-background md:hidden">
+        <div class="flex justify-end p-4">
+            <button id="closeMobileMenu" class="p-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="flex flex-col p-6 gap-6">
+            <a href="/#calculator" class="py-3 border-b border-border text-lg font-medium">Calculator</a>
+            <a href="/api.html" class="py-3 border-b border-border text-lg font-medium">API</a>
+            <a href="/#pricing" class="py-3 border-b border-border text-lg font-medium">Pricing</a>
+            <a href="/partners.html" class="py-3 border-b border-border text-lg font-medium">Partners</a>
+            <a href="/#calculator" class="bg-accent text-white px-6 py-3 rounded-lg text-center font-semibold mt-4">Start Free Trial</a>
         </div>
     </div>
+
+    <!-- Main Content -->
+    <main class="pt-24 pb-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+            <h1 class="text-4xl md:text-5xl font-serif font-bold mb-4">Privacy Policy</h1>
+            <p class="text-muted-foreground mb-8">Last Updated: January 15, 2025</p>
+            
+            <div class="prose prose-lg max-w-none">
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">1. Introduction</h2>
+                    <p class="mb-4">LienDeadline.com ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mechanics lien deadline calculator and API services.</p>
+                </section>
+
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">2. Information We Collect</h2>
+                    <h3 class="text-xl font-semibold mb-3">2.1 Information You Provide</h3>
+                    <ul class="list-disc ml-6 mb-4 space-y-2">
+                        <li><strong>Account Information:</strong> Email address, password (hashed), subscription status</li>
+                        <li><strong>Calculation Data:</strong> Invoice dates, states, project types, and calculation results</li>
+                        <li><strong>Payment Information:</strong> Processed securely through Stripe (we do not store credit card numbers)</li>
+                        <li><strong>Contact Information:</strong> Name, email, company when you contact support or request API access</li>
+                    </ul>
+                    
+                    <h3 class="text-xl font-semibold mb-3">2.2 Automatically Collected Information</h3>
+                    <ul class="list-disc ml-6 mb-4 space-y-2">
+                        <li><strong>Usage Data:</strong> API call counts, calculation history, feature usage</li>
+                        <li><strong>Technical Data:</strong> IP address, browser type, device information, timestamps</li>
+                        <li><strong>Analytics:</strong> Google Analytics and Umami Analytics (anonymized usage patterns)</li>
+                    </ul>
+                </section>
+
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">3. How We Use Your Information</h2>
+                    <ul class="list-disc ml-6 mb-4 space-y-2">
+                        <li><strong>Service Delivery:</strong> Provide lien deadline calculations, API access, and account management</li>
+                        <li><strong>Communication:</strong> Send welcome emails, password resets, service updates, and support responses</li>
+                        <li><strong>Analytics:</strong> Improve our service, understand usage patterns, and fix bugs</li>
+                        <li><strong>Security:</strong> Detect fraud, prevent abuse, and protect our platform</li>
+                        <li><strong>Legal Compliance:</strong> Comply with legal obligations and respond to legal requests</li>
+                    </ul>
+                </section>
+
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">4. Third-Party Services</h2>
+                    <h3 class="text-xl font-semibold mb-3">4.1 Payment Processing</h3>
+                    <p class="mb-4">We use <strong>Stripe</strong> for payment processing. Stripe handles all credit card data and is PCI DSS compliant. We do not store or have access to your full credit card numbers.</p>
+                    
+                    <h3 class="text-xl font-semibold mb-3">4.2 Email Services</h3>
+                    <p class="mb-4">We use <strong>Resend</strong> to send transactional emails (welcome emails, password resets, notifications). Your email address is shared with Resend solely for email delivery.</p>
+                    
+                    <h3 class="text-xl font-semibold mb-3">4.3 Analytics</h3>
+                    <p class="mb-4">We use <strong>Google Analytics</strong> and <strong>Umami Analytics</strong> to understand how our service is used. These services use cookies and collect anonymized usage data.</p>
+                </section>
+
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">5. Data Storage and Security</h2>
+                    <ul class="list-disc ml-6 mb-4 space-y-2">
+                        <li><strong>Database:</strong> PostgreSQL database hosted on Railway with encryption at rest</li>
+                        <li><strong>Encryption:</strong> All data transmitted over HTTPS (TLS 1.2+)</li>
+                        <li><strong>Passwords:</strong> Hashed using bcrypt before storage</li>
+                        <li><strong>Backups:</strong> Regular automated backups with 30-day retention</li>
+                        <li><strong>Access Control:</strong> Limited access to production data, API keys stored securely</li>
+                    </ul>
+                </section>
+
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">6. Your Privacy Rights</h2>
+                    <p class="mb-4">Depending on your location, you may have the following rights:</p>
+                    <ul class="list-disc ml-6 mb-4 space-y-2">
+                        <li><strong>Access:</strong> Request a copy of your personal data</li>
+                        <li><strong>Deletion:</strong> Request deletion of your account and data</li>
+                        <li><strong>Correction:</strong> Update or correct inaccurate information</li>
+                        <li><strong>Export:</strong> Export your calculation history and account data</li>
+                        <li><strong>Opt-Out:</strong> Unsubscribe from marketing emails (transactional emails will continue)</li>
+                    </ul>
+                    <p class="mb-4">To exercise these rights, contact us at <a href="mailto:privacy@liendeadline.com" class="text-accent hover:underline">privacy@liendeadline.com</a>.</p>
+                </section>
+
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">7. Cookies</h2>
+                    <p class="mb-4">We use cookies for:</p>
+                    <ul class="list-disc ml-6 mb-4 space-y-2">
+                        <li><strong>Essential Cookies:</strong> Session management, authentication, security</li>
+                        <li><strong>Analytics Cookies:</strong> Google Analytics and Umami Analytics (anonymized)</li>
+                    </ul>
+                    <p class="mb-4">We do not use advertising or tracking cookies. For more details, see our <a href="/cookies.html" class="text-accent hover:underline">Cookie Policy</a>.</p>
+                </section>
+
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">8. Data Retention</h2>
+                    <ul class="list-disc ml-6 mb-4 space-y-2">
+                        <li><strong>Active Accounts:</strong> Data retained while your account is active</li>
+                        <li><strong>Deleted Accounts:</strong> Data deleted within 30 days of account deletion request</li>
+                        <li><strong>Calculation History:</strong> Retained for 2 years for your reference</li>
+                        <li><strong>Legal Requirements:</strong> Some data may be retained longer if required by law</li>
+                    </ul>
+                </section>
+
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">9. Children's Privacy</h2>
+                    <p class="mb-4">Our service is not intended for users under 18 years of age. We do not knowingly collect personal information from children.</p>
+                </section>
+
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">10. Changes to This Policy</h2>
+                    <p class="mb-4">We may update this Privacy Policy from time to time. We will notify you of significant changes by email or through our service. The "Last Updated" date at the top indicates when changes were made.</p>
+                </section>
+
+                <section class="mb-12">
+                    <h2 class="text-2xl font-serif font-semibold mb-4">11. Contact Us</h2>
+                    <p class="mb-4">If you have questions about this Privacy Policy or wish to exercise your privacy rights, contact us:</p>
+                    <ul class="list-none ml-0 mb-4 space-y-2">
+                        <li><strong>Email:</strong> <a href="mailto:privacy@liendeadline.com" class="text-accent hover:underline">privacy@liendeadline.com</a></li>
+                        <li><strong>Website:</strong> <a href="/contact.html" class="text-accent hover:underline">Contact Form</a></li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-300 py-12">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="font-serif text-lg font-semibold text-white mb-4">LienDeadline</h3>
+                    <p class="text-sm">Calculate mechanics lien deadlines across all 50 states + DC. Fast, accurate, affordable.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/#calculator" class="hover:text-white">Calculator</a></li>
+                        <li><a href="/api.html" class="hover:text-white">API</a></li>
+                        <li><a href="/#pricing" class="hover:text-white">Pricing</a></li>
+                        <li><a href="/comparison.html" class="hover:text-white">Comparison</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/about.html" class="hover:text-white">About</a></li>
+                        <li><a href="/help.html" class="hover:text-white">Help</a></li>
+                        <li><a href="/contact.html" class="hover:text-white">Contact</a></li>
+                        <li><a href="/partners.html" class="hover:text-white">Partners</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-4">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/privacy.html" class="hover:text-white">Privacy</a></li>
+                        <li><a href="/terms.html" class="hover:text-white">Terms</a></li>
+                        <li><a href="/security.html" class="hover:text-white">Security</a></li>
+                        <li><a href="/cookies.html" class="hover:text-white">Cookies</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
+                <p>Serving all 50 US states + DC • Updated December 2025</p>
+                <p class="mt-2">© 2025 LienDeadline. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
+            document.getElementById('mobileMenu')?.classList.remove('hidden');
+        });
+        document.getElementById('closeMobileMenu')?.addEventListener('click', () => {
+            document.getElementById('mobileMenu')?.classList.add('hidden');
+        });
+    </script>
 </body>
 </html>
-
