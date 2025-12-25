@@ -60,6 +60,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 from api.analytics import router as analytics_router
 from api.admin import router as admin_router
 from api.quickbooks import router as quickbooks_router
+from api.calculations import router as calculations_router
 
 # Import short link generator
 from api.short_link_system import ShortLinkGenerator
@@ -1048,6 +1049,7 @@ STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 app.include_router(analytics_router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
 app.include_router(quickbooks_router, tags=["quickbooks"])
+app.include_router(calculations_router, tags=["calculations"])
 
 # Temporary endpoint to fix state names
 @app.get("/api/admin/fix-state-names-now")
