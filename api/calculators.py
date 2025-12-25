@@ -4,15 +4,21 @@ Handles complex calculation logic for states with special rules
 """
 from datetime import datetime, timedelta
 from typing import Dict, Optional
+
+# Try to import optional dependencies
 try:
     import holidays
+    HOLIDAYS_AVAILABLE = True
 except ImportError:
+    HOLIDAYS_AVAILABLE = False
     holidays = None
     print("⚠️ Warning: holidays package not installed. Holiday checking will be disabled.")
 
 try:
     from dateutil.relativedelta import relativedelta
+    DATEUTIL_AVAILABLE = True
 except ImportError:
+    DATEUTIL_AVAILABLE = False
     relativedelta = None
     print("⚠️ Warning: python-dateutil not installed. Month calculations may fail.")
 
@@ -22,14 +28,14 @@ def is_business_day(date: datetime) -> bool:
     if date.weekday() >= 5:  # Saturday = 5, Sunday = 6
         return False
     
-    if holidays:
+    if HOLIDAYS_AVAILABLE and holidays:
         try:
             us_holidays = holidays.US(years=date.year)
             return date.date() not in us_holidays
         except Exception:
             pass
     
-    return True
+    return True  # If holidays unavailable, assume not a holiday
 
 
 def add_business_days(start_date: datetime, days: int) -> datetime:
@@ -56,19 +62,8 @@ def month_plus_day(start_date: datetime, months: int, day: int,
     Calculate deadline as "Xth day of Yth month after start"
     Example: 15th of 3rd month after Jan 15 = March 15
     """
-    if not relativedelta:
-        # Fallback: approximate with days (less accurate)
-        approx_days = months * 30
-        deadline = start_date + timedelta(days=approx_days)
-        # Try to set day
-        try:
-            deadline = deadline.replace(day=day)
-        except ValueError:
-            # If day doesn't exist in that month, use last day
-            if day > 28:
-                deadline = deadline.replace(day=28)
-    else:
-        # Add months
+    if DATEUTIL_AVAILABLE and relativedelta:
+        # Use dateutil for accurate month calculations
         target = start_date + relativedelta(months=months)
         
         # Set to specified day of that month
@@ -78,6 +73,22 @@ def month_plus_day(start_date: datetime, months: int, day: int,
             # Handle months with fewer days (e.g., Feb 30)
             # Move to last day of month
             deadline = target + relativedelta(day=31)
+    else:
+        # Fallback: approximate month calculation
+        year = start_date.year + (start_date.month + months - 1) // 12
+        month = (start_date.month + months - 1) % 12 + 1
+        target = datetime(year, month, start_date.day)
+        
+        try:
+            deadline = target.replace(day=day)
+        except ValueError:
+            # Handle months with fewer days - use last day of month
+            if DATEUTIL_AVAILABLE and relativedelta:
+                deadline = target + relativedelta(day=31)
+            else:
+                # Last day of month fallback
+                next_month = target.replace(day=28) + timedelta(days=4)
+                deadline = next_month - timedelta(days=next_month.day)
     
     # Apply weekend/holiday extension if required
     if extend_for_weekend:
