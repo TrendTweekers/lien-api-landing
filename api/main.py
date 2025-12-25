@@ -1074,6 +1074,100 @@ async def fix_state_names_endpoint():
             "traceback": traceback.format_exc()
         }
 
+@app.get("/api/admin/debug-pdf-data/{state}")
+async def debug_pdf_data(state: str):
+    """Debug endpoint to see what data PDF generation uses"""
+    try:
+        state_upper = state.upper()
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Query database exactly like PDF endpoint does
+            if DB_TYPE == 'postgresql':
+                cursor.execute(
+                    "SELECT * FROM lien_deadlines WHERE UPPER(state_code) = %s LIMIT 1",
+                    (state_upper,)
+                )
+            else:
+                cursor.execute(
+                    "SELECT * FROM lien_deadlines WHERE UPPER(state_code) = ? LIMIT 1",
+                    (state_upper,)
+                )
+            db_state = cursor.fetchone()
+            
+            # If not found by code, try by state name
+            if not db_state and state_upper in STATE_CODE_TO_NAME:
+                full_name = STATE_CODE_TO_NAME[state_upper]
+                if DB_TYPE == 'postgresql':
+                    cursor.execute(
+                        "SELECT * FROM lien_deadlines WHERE UPPER(state_name) = %s LIMIT 1",
+                        (full_name.upper(),)
+                    )
+                else:
+                    cursor.execute(
+                        "SELECT * FROM lien_deadlines WHERE UPPER(state_name) = ? LIMIT 1",
+                        (full_name.upper(),)
+                    )
+                db_state = cursor.fetchone()
+            
+            if db_state:
+                # Convert to dict for JSON response
+                if isinstance(db_state, dict):
+                    db_dict = dict(db_state)
+                else:
+                    # Get column names and create dict
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute("""
+                            SELECT column_name 
+                            FROM information_schema.columns 
+                            WHERE table_name = 'lien_deadlines'
+                            ORDER BY ordinal_position
+                        """)
+                        columns = [row[0] for row in cursor.fetchall()]
+                    else:
+                        cursor.execute("PRAGMA table_info(lien_deadlines)")
+                        columns = [row[1] for row in cursor.fetchall()]
+                    
+                    db_dict = {}
+                    for i, col in enumerate(columns):
+                        if i < len(db_state):
+                            db_dict[col] = db_state[i]
+                
+                return {
+                    "success": True,
+                    "state_input": state,
+                    "state_upper": state_upper,
+                    "database_row": db_dict,
+                    "state_name_from_db": db_dict.get('state_name') or db_dict.get('state'),
+                    "state_code_from_db": db_dict.get('state_code'),
+                    "state_name_length": len(str(db_dict.get('state_name') or '')),
+                    "is_state_name_code": len(str(db_dict.get('state_name') or '')) == 2 if db_dict.get('state_name') else None
+                }
+            else:
+                # Get available states
+                cursor.execute("SELECT state_code, state_name FROM lien_deadlines ORDER BY state_code LIMIT 10")
+                available = []
+                for row in cursor.fetchall():
+                    if isinstance(row, dict):
+                        available.append(f"{row.get('state_code')} ({row.get('state_name')})")
+                    elif isinstance(row, (tuple, list)):
+                        available.append(f"{row[0]} ({row[1] if len(row) > 1 else 'N/A'})")
+                
+                return {
+                    "success": False,
+                    "error": f"State '{state}' not found in database",
+                    "available_states_sample": available
+                }
+                
+    except Exception as e:
+        import traceback
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 # Initialize database on startup
 @app.on_event("startup")
 async def startup():
