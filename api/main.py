@@ -10063,10 +10063,10 @@ SAGE_CLIENT_SECRET = os.getenv("SAGE_CLIENT_SECRET")
 SAGE_REDIRECT_URI = os.getenv("SAGE_REDIRECT_URI", "https://liendeadline.com/api/sage/callback")
 
 # Sage OAuth URLs
-# Using Sage Business Cloud Accounting OAuth endpoints (US/North America region)
-SAGE_AUTH_URL = "https://www.sageone.com/oauth2/auth/central"
-SAGE_TOKEN_URL = "https://oauth.na.sageone.com/token"  # US/North America specific token endpoint
-SAGE_API_BASE = "https://api.accounting.sage.com/v3.1"
+# Using Sage Operations GraphQL API endpoints (the product we registered in Sage Developer Console)
+SAGE_AUTH_URL = "https://id.sso.sage.com/authorize"
+SAGE_TOKEN_URL = "https://id.sso.sage.com/oauth/token"
+SAGE_API_BASE = "https://api.columbus.sage.com"
 
 # Sage scopes
 SAGE_SCOPES = "full_access"
@@ -10319,9 +10319,7 @@ async def sage_auth(request: Request):
         "scope": SAGE_SCOPES,
         "redirect_uri": SAGE_REDIRECT_URI,
         "response_type": "code",
-        "state": state,
-        "filter": "apiv3.1",  # API version filter
-        "country": "us"  # Force US region to prevent locale-based DNS errors
+        "state": state
     }
     
     auth_url = f"{SAGE_AUTH_URL}?{urlencode(params)}"
