@@ -10106,6 +10106,38 @@ async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
             }
         )
 
+@app.get("/api/admin/test-send-reminders")
+async def test_send_reminders(username: str = Depends(verify_admin)):
+    """Test the reminder system manually (admin only)"""
+    import subprocess
+    import sys
+    
+    try:
+        # Run the cron script as a subprocess
+        result = subprocess.run(
+            [sys.executable, "api/cron_send_reminders.py"],
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+        
+        return {
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "errors": result.stderr if result.stderr else None,
+            "message": "Reminder cron job executed"
+        }
+        
+    except subprocess.TimeoutExpired:
+        return {"success": False, "error": "Timed out after 60 seconds"}
+    except Exception as e:
+        import traceback
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 def send_broker_password_reset_email(email: str, name: str, reset_link: str):
     """Send password reset email to broker"""
     try:
