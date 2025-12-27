@@ -10320,7 +10320,8 @@ async def sage_auth(request: Request):
         "redirect_uri": SAGE_REDIRECT_URI,
         "response_type": "code",
         "state": state,
-        "filter": "apiv3.1"  # API version filter
+        "filter": "apiv3.1",  # API version filter
+        "country": "us"  # Force US region to prevent locale-based DNS errors
     }
     
     auth_url = f"{SAGE_AUTH_URL}?{urlencode(params)}"
