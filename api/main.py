@@ -20,6 +20,9 @@ import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import httpx
+from urllib.parse import urlencode
+import base64
 try:
     import resend
     RESEND_AVAILABLE = True
@@ -1089,6 +1092,16 @@ async def run_state_migration():
             "error": str(e),
             "traceback": traceback.format_exc()
         }
+
+@app.get("/api/admin/run-sage-migration")
+async def run_sage_migration(username: str = Depends(verify_admin)):
+    """Run Sage tokens table migration"""
+    try:
+        from .migrations.add_sage_tokens import run_migration
+        run_migration()
+        return {"success": True, "message": "Sage migration completed"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/admin/debug-pdf-data/{state}")
 async def debug_pdf_data(state: str):
@@ -10039,6 +10052,547 @@ def send_broker_password_reset_email(email: str, name: str, reset_link: str):
         print(f"❌ Password reset email error: {e}")
         import traceback
         traceback.print_exc()
+
+# ==========================================
+# SAGE OAuth Integration
+# ==========================================
+
+# Sage OAuth credentials from environment
+SAGE_CLIENT_ID = os.getenv("SAGE_CLIENT_ID")
+SAGE_CLIENT_SECRET = os.getenv("SAGE_CLIENT_SECRET")
+SAGE_REDIRECT_URI = os.getenv("SAGE_REDIRECT_URI", "https://liendeadline.com/api/sage/callback")
+
+# Sage OAuth URLs
+SAGE_AUTH_URL = "https://www.sageone.com/oauth2/auth/central?filter=apiv3.1"
+SAGE_TOKEN_URL = "https://oauth.accounting.sage.com/token"
+SAGE_API_BASE = "https://api.accounting.sage.com/v3.1"
+
+# Sage scopes
+SAGE_SCOPES = "full_access"
+
+
+def get_sage_basic_auth():
+    """Create Basic Auth header for Sage token exchange"""
+    credentials = f"{SAGE_CLIENT_ID}:{SAGE_CLIENT_SECRET}"
+    return base64.b64encode(credentials.encode()).decode()
+
+
+def get_sage_user_from_session(authorization: str = Header(None)):
+    """Get user email from session token for Sage"""
+    if not authorization or not authorization.startswith('Bearer '):
+        return None
+    
+    token = authorization.replace('Bearer ', '')
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT email, id FROM customers 
+                    WHERE api_key = %s AND status = 'active'
+                """, (token,))
+            else:
+                cursor.execute("""
+                    SELECT email, id FROM customers 
+                    WHERE api_key = ? AND status = 'active'
+                """, (token,))
+            
+            result = cursor.fetchone()
+            if result:
+                if DB_TYPE == 'postgresql':
+                    return {"email": result['email'], "id": result['id']}
+                else:
+                    return {"email": result[0], "id": result[1]}
+    except Exception as e:
+        print(f"Error getting user from session: {e}")
+    
+    return None
+
+
+async def refresh_sage_access_token(user_email: str):
+    """Refresh Sage access token using refresh token"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT refresh_token FROM sage_tokens WHERE user_email = %s
+                """, (user_email,))
+            else:
+                cursor.execute("""
+                    SELECT refresh_token FROM sage_tokens WHERE user_email = ?
+                """, (user_email,))
+            
+            result = cursor.fetchone()
+            if not result:
+                return None
+            
+            refresh_token = result['refresh_token'] if DB_TYPE == 'postgresql' else result[0]
+            
+            if not refresh_token:
+                return None
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    SAGE_TOKEN_URL,
+                    headers={
+                        "Accept": "application/json",
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "Authorization": f"Basic {get_sage_basic_auth()}"
+                    },
+                    data={
+                        "grant_type": "refresh_token",
+                        "refresh_token": refresh_token
+                    }
+                )
+                
+                if response.status_code != 200:
+                    return None
+                
+                tokens = response.json()
+                expires_in = tokens.get('expires_in', 3600)
+                expires_at = datetime.now() + timedelta(seconds=expires_in)
+                
+                # Update tokens
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        UPDATE sage_tokens
+                        SET access_token = %s, refresh_token = %s, expires_at = %s, updated_at = NOW()
+                        WHERE user_email = %s
+                    """, (tokens['access_token'], tokens.get('refresh_token', refresh_token), 
+                          expires_at, user_email))
+                else:
+                    cursor.execute("""
+                        UPDATE sage_tokens
+                        SET access_token = ?, refresh_token = ?, expires_at = ?, updated_at = datetime('now')
+                        WHERE user_email = ?
+                    """, (tokens['access_token'], tokens.get('refresh_token', refresh_token), 
+                          expires_at, user_email))
+                
+                conn.commit()
+                return tokens['access_token']
+    except Exception as e:
+        print(f"Error refreshing Sage token: {e}")
+        return None
+
+
+async def get_valid_sage_access_token(user_email: str):
+    """Get valid Sage access token, refreshing if necessary"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT access_token, expires_at FROM sage_tokens WHERE user_email = %s
+                """, (user_email,))
+            else:
+                cursor.execute("""
+                    SELECT access_token, expires_at FROM sage_tokens WHERE user_email = ?
+                """, (user_email,))
+            
+            result = cursor.fetchone()
+            if not result:
+                return None
+            
+            if DB_TYPE == 'postgresql':
+                access_token = result['access_token']
+                expires_at = result['expires_at']
+            else:
+                access_token = result[0]
+                expires_at = datetime.fromisoformat(result[1]) if isinstance(result[1], str) else result[1]
+            
+            # Check if token is expired (with 5 minute buffer)
+            if expires_at and expires_at < datetime.now() + timedelta(minutes=5):
+                # Refresh token
+                new_token = await refresh_sage_access_token(user_email)
+                return new_token if new_token else access_token
+            
+            return access_token
+    except Exception as e:
+        print(f"Error getting Sage access token: {e}")
+        return None
+
+
+@app.get("/api/sage/auth")
+async def sage_auth(request: Request, authorization: str = Header(None)):
+    """
+    Initiate Sage OAuth flow
+    Redirects user to Sage authorization page
+    """
+    if not SAGE_CLIENT_ID or not SAGE_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="Sage integration not configured")
+    
+    # Get user from session
+    user = get_sage_user_from_session(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    # Generate secure random state and store it with user email
+    state = secrets.token_urlsafe(32)
+    
+    # Store state temporarily (expires in 10 minutes)
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Create oauth_states table if it doesn't exist (for Sage)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS sage_oauth_states (
+                        id SERIAL PRIMARY KEY,
+                        user_email VARCHAR(255) NOT NULL,
+                        state VARCHAR(255) UNIQUE NOT NULL,
+                        expires_at TIMESTAMP NOT NULL
+                    )
+                """)
+                cursor.execute("""
+                    INSERT INTO sage_oauth_states (user_email, state, expires_at)
+                    VALUES (%s, %s, %s)
+                """, (user['email'], state, datetime.now() + timedelta(minutes=10)))
+            else:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS sage_oauth_states (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_email TEXT NOT NULL,
+                        state TEXT UNIQUE NOT NULL,
+                        expires_at TEXT NOT NULL
+                    )
+                """)
+                cursor.execute("""
+                    INSERT INTO sage_oauth_states (user_email, state, expires_at)
+                    VALUES (?, ?, ?)
+                """, (user['email'], state, datetime.now() + timedelta(minutes=10)))
+            
+            conn.commit()
+    except Exception as e:
+        print(f"Error storing Sage OAuth state: {e}")
+    
+    params = {
+        "client_id": SAGE_CLIENT_ID,
+        "scope": SAGE_SCOPES,
+        "redirect_uri": SAGE_REDIRECT_URI,
+        "response_type": "code",
+        "state": state
+    }
+    
+    auth_url = f"{SAGE_AUTH_URL}&{urlencode(params)}"
+    return RedirectResponse(url=auth_url)
+
+
+@app.get("/api/sage/callback")
+async def sage_callback(code: str, state: str):
+    """
+    Handle OAuth callback from Sage
+    Exchange authorization code for access token
+    """
+    if not code or not state:
+        raise HTTPException(status_code=400, detail="Missing required parameters")
+    
+    # Verify state and get user email
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT user_email FROM sage_oauth_states
+                    WHERE state = %s AND expires_at > NOW()
+                """, (state,))
+            else:
+                cursor.execute("""
+                    SELECT user_email FROM sage_oauth_states
+                    WHERE state = ? AND expires_at > datetime('now')
+                """, (state,))
+            
+            result = cursor.fetchone()
+            if not result:
+                raise HTTPException(status_code=400, detail="Invalid or expired state")
+            
+            user_email = result['user_email'] if DB_TYPE == 'postgresql' else result[0]
+            
+            # Delete used state
+            if DB_TYPE == 'postgresql':
+                cursor.execute("DELETE FROM sage_oauth_states WHERE state = %s", (state,))
+            else:
+                cursor.execute("DELETE FROM sage_oauth_states WHERE state = ?", (state,))
+            
+            conn.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error verifying Sage state: {e}")
+        raise HTTPException(status_code=500, detail="Error verifying OAuth state")
+    
+    # Exchange code for tokens
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                SAGE_TOKEN_URL,
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Authorization": f"Basic {get_sage_basic_auth()}"
+                },
+                data={
+                    "grant_type": "authorization_code",
+                    "code": code,
+                    "redirect_uri": SAGE_REDIRECT_URI
+                }
+            )
+            
+            if response.status_code != 200:
+                error_detail = response.text
+                print(f"Sage token exchange failed: {error_detail}")
+                raise HTTPException(status_code=400, detail=f"Failed to get access token: {error_detail}")
+            
+            tokens = response.json()
+            
+            # Calculate expiration time
+            expires_in = tokens.get('expires_in', 3600)  # Default 1 hour
+            expires_at = datetime.now() + timedelta(seconds=expires_in)
+            
+            # Save tokens to database
+            with get_db() as conn:
+                cursor = get_db_cursor(conn)
+                
+                # Check if user already has tokens
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT id FROM sage_tokens WHERE user_email = %s
+                    """, (user_email,))
+                else:
+                    cursor.execute("""
+                        SELECT id FROM sage_tokens WHERE user_email = ?
+                    """, (user_email,))
+                
+                existing = cursor.fetchone()
+                
+                if existing:
+                    # Update existing tokens
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute("""
+                            UPDATE sage_tokens
+                            SET realm_id = %s, access_token = %s, refresh_token = %s,
+                                expires_at = %s, updated_at = NOW()
+                            WHERE user_email = %s
+                        """, (tokens.get('realm_id'), tokens['access_token'], tokens.get('refresh_token', ''), 
+                              expires_at, user_email))
+                    else:
+                        cursor.execute("""
+                            UPDATE sage_tokens
+                            SET realm_id = ?, access_token = ?, refresh_token = ?,
+                                expires_at = ?, updated_at = datetime('now')
+                            WHERE user_email = ?
+                        """, (tokens.get('realm_id'), tokens['access_token'], tokens.get('refresh_token', ''), 
+                              expires_at, user_email))
+                else:
+                    # Insert new tokens
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute("""
+                            INSERT INTO sage_tokens 
+                            (user_email, realm_id, access_token, refresh_token, expires_at)
+                            VALUES (%s, %s, %s, %s, %s)
+                        """, (user_email, tokens.get('realm_id'), tokens['access_token'], 
+                              tokens.get('refresh_token', ''), expires_at))
+                    else:
+                        cursor.execute("""
+                            INSERT INTO sage_tokens 
+                            (user_email, realm_id, access_token, refresh_token, expires_at)
+                            VALUES (?, ?, ?, ?, ?)
+                        """, (user_email, tokens.get('realm_id'), tokens['access_token'], 
+                              tokens.get('refresh_token', ''), expires_at))
+                
+                conn.commit()
+            
+            # Redirect to customer dashboard with success message
+            return RedirectResponse(url="/customer-dashboard.html?sage_connected=true")
+            
+    except httpx.HTTPError as e:
+        print(f"HTTP error during Sage token exchange: {e}")
+        raise HTTPException(status_code=500, detail="Error connecting to Sage")
+    except Exception as e:
+        print(f"Error during Sage token exchange: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Unexpected error during OAuth")
+
+
+@app.get("/api/sage/status")
+async def get_sage_status(request: Request, authorization: str = Header(None)):
+    """Check if user has Sage connected"""
+    user = get_sage_user_from_session(authorization)
+    if not user:
+        return {"connected": False}
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT realm_id, expires_at FROM sage_tokens WHERE user_email = %s
+                """, (user['email'],))
+            else:
+                cursor.execute("""
+                    SELECT realm_id, expires_at FROM sage_tokens WHERE user_email = ?
+                """, (user['email'],))
+            
+            result = cursor.fetchone()
+            if result:
+                expires_at = result['expires_at'] if DB_TYPE == 'postgresql' else result[1]
+                if isinstance(expires_at, str):
+                    expires_at = datetime.fromisoformat(expires_at)
+                is_valid = expires_at and expires_at > datetime.now()
+                return {"connected": True, "valid": is_valid}
+    except Exception:
+        pass
+    
+    return {"connected": False}
+
+
+@app.post("/api/sage/disconnect")
+async def disconnect_sage(request: Request, authorization: str = Header(None)):
+    """Disconnect Sage account"""
+    user = get_sage_user_from_session(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("DELETE FROM sage_tokens WHERE user_email = %s", (user['email'],))
+            else:
+                cursor.execute("DELETE FROM sage_tokens WHERE user_email = ?", (user['email'],))
+            
+            conn.commit()
+            return {"success": True, "message": "Sage account disconnected"}
+    except Exception as e:
+        print(f"Error disconnecting Sage: {e}")
+        raise HTTPException(status_code=500, detail="Error disconnecting Sage account")
+
+
+@app.get("/api/sage/invoices")
+async def get_sage_invoices(request: Request, authorization: str = Header(None)):
+    """
+    Fetch invoices from Sage
+    Calculate lien deadlines for each
+    """
+    # Get user from session
+    user = get_sage_user_from_session(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    # Get valid access token
+    access_token = await get_valid_sage_access_token(user['email'])
+    if not access_token:
+        raise HTTPException(status_code=401, detail="Sage not connected. Please connect your account first.")
+    
+    # Get realm_id
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT realm_id FROM sage_tokens WHERE user_email = %s
+                """, (user['email'],))
+            else:
+                cursor.execute("""
+                    SELECT realm_id FROM sage_tokens WHERE user_email = ?
+                """, (user['email'],))
+            
+            result = cursor.fetchone()
+            if not result:
+                raise HTTPException(status_code=401, detail="Sage not connected")
+            
+            realm_id = result['realm_id'] if DB_TYPE == 'postgresql' else result[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting realm_id: {e}")
+        raise HTTPException(status_code=500, detail="Error accessing Sage connection")
+    
+    # Fetch invoices from Sage
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{SAGE_API_BASE}/sales_invoices",
+                headers={
+                    "Accept": "application/json",
+                    "Authorization": f"Bearer {access_token}",
+                    "X-Business": realm_id
+                },
+                params={
+                    "items_per_page": 100
+                }
+            )
+            
+            if response.status_code == 401:
+                # Token expired, try refreshing
+                new_token = await refresh_sage_access_token(user['email'])
+                if new_token:
+                    # Retry with new token
+                    response = await client.get(
+                        f"{SAGE_API_BASE}/sales_invoices",
+                        headers={
+                            "Accept": "application/json",
+                            "Authorization": f"Bearer {new_token}",
+                            "X-Business": realm_id
+                        },
+                        params={
+                            "items_per_page": 100
+                        }
+                    )
+            
+            if response.status_code != 200:
+                error_detail = response.text
+                print(f"Sage API error: {error_detail}")
+                raise HTTPException(status_code=400, detail=f"Failed to fetch invoices: {error_detail}")
+            
+            data = response.json()
+            invoices = data.get("$items", [])
+            
+            # Process invoices
+            results = []
+            for invoice in invoices:
+                invoice_date = invoice.get("date")
+                contact = invoice.get("contact", {})
+                customer_name = contact.get("displayed_as", "Unknown")
+                amount = invoice.get("net_amount", 0)
+                invoice_id = invoice.get("id")
+                
+                # Try to get customer address for state determination
+                customer_state = None
+                if "main_address" in contact:
+                    main_addr = contact["main_address"]
+                    customer_state = main_addr.get("region")
+                
+                results.append({
+                    "invoice_id": invoice_id,
+                    "customer": customer_name,
+                    "date": invoice_date,
+                    "amount": float(amount) if amount else 0.0,
+                    "state": customer_state,
+                    "preliminary_deadline": None,  # Will be calculated on demand
+                    "lien_deadline": None  # Will be calculated on demand
+                })
+            
+            return {"invoices": results, "count": len(results)}
+            
+    except httpx.HTTPError as e:
+        print(f"HTTP error fetching Sage invoices: {e}")
+        raise HTTPException(status_code=500, detail="Error connecting to Sage")
+    except Exception as e:
+        print(f"Error fetching Sage invoices: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Unexpected error fetching invoices")
 
 if __name__ == "__main__":
     import uvicorn
