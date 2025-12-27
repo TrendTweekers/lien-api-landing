@@ -480,25 +480,26 @@
                     </div>
                 </div>
 
-                <!-- Procore Integration Card (Placeholder) -->
-                <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 opacity-60" id="procore-section">
+                <!-- Procore Integration Card -->
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-6" id="procore-section">
                     <div class="flex flex-col h-full">
                         <div class="flex items-start gap-4 mb-4">
-                            <div class="w-12 h-12 bg-gray-400 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <span class="text-white text-2xl font-bold">P</span>
                             </div>
                             <div class="flex-1">
                                 <h3 class="text-lg font-semibold text-gray-900 mb-1">Procore Integration</h3>
-                                <p class="text-sm text-gray-600">Coming soon - Import project data</p>
+                                <p class="text-sm text-gray-600">Import projects and calculate lien deadlines</p>
                             </div>
                         </div>
                         <div class="mt-auto">
                             <div class="flex items-center justify-between mb-4">
-                                <span class="text-sm text-gray-500">Coming Soon</span>
+                                <span id="procore-status" class="text-sm text-gray-600">Not connected</span>
                             </div>
                             <button 
-                                disabled
-                                class="w-full bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg cursor-not-allowed"
+                                onclick="connectProcore()"
+                                id="procore-connect-btn"
+                                class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
                             >
                                 Connect Procore
                             </button>
@@ -520,6 +521,9 @@
             </div>
             <div id="sage-invoices" class="mt-6 hidden">
                 <!-- Sage invoice list will appear here after connection -->
+            </div>
+            <div id="procore-projects" class="mt-6 hidden">
+                <!-- Procore projects list will appear here after connection -->
             </div>
         </div>
 
@@ -1996,6 +2000,151 @@
             }
         }
 
+        // Procore Integration Functions
+        async function connectProcore() {
+            const token = localStorage.getItem('session_token');
+            if (!token) {
+                alert('Please log in first');
+                window.location.href = '/dashboard';
+                return;
+            }
+            
+            try {
+                // Pass token as query parameter for browser redirect
+                window.location.href = `/api/procore/auth?token=${encodeURIComponent(token)}`;
+            } catch (error) {
+                console.error('Error connecting to Procore:', error);
+                alert('Failed to connect to Procore. Please try again.');
+            }
+        }
+
+        async function checkProcoreStatus() {
+            const token = localStorage.getItem('session_token');
+            if (!token) return;
+
+            try {
+                const response = await fetch('/api/procore/status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const statusEl = document.getElementById('procore-status');
+                    const connectBtn = document.getElementById('procore-connect-btn');
+                    
+                    if (data.connected) {
+                        if (statusEl) {
+                            statusEl.textContent = 'Connected ✓';
+                            statusEl.className = 'text-sm text-green-600 font-medium';
+                        }
+                        if (connectBtn) {
+                            connectBtn.textContent = 'Disconnect';
+                            connectBtn.onclick = disconnectProcore;
+                            connectBtn.className = 'w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200';
+                        }
+                        loadProcoreProjects();
+                    } else {
+                        if (statusEl) {
+                            statusEl.textContent = 'Not connected';
+                            statusEl.className = 'text-sm text-gray-600';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking Procore status:', error);
+            }
+        }
+
+        async function loadProcoreProjects() {
+            const token = localStorage.getItem('session_token');
+            if (!token) return;
+
+            try {
+                const response = await fetch('/api/procore/projects', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        // Not connected
+                        return;
+                    }
+                    throw new Error('Failed to load projects');
+                }
+                
+                const data = await response.json();
+                displayProcoreProjects(data.projects || []);
+            } catch (error) {
+                console.error('Error loading Procore projects:', error);
+            }
+        }
+
+        function displayProcoreProjects(projects) {
+            const container = document.getElementById('procore-projects');
+            if (!container) return;
+            
+            if (!projects || projects.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+            
+            container.classList.remove('hidden');
+            
+            let html = '<h4 class="font-semibold text-lg mb-4 text-gray-900">Projects from Procore</h4>';
+            html += '<div class="space-y-3 max-h-96 overflow-y-auto">';
+            
+            projects.forEach(project => {
+                const name = escapeHtml(project.name || 'Unnamed Project');
+                const id = project.id || '';
+                const address = project.address ? escapeHtml(project.address) : '';
+                
+                html += `
+                    <div class="bg-white p-4 rounded-lg border border-gray-200 hover:border-purple-300 transition">
+                        <div class="flex justify-between items-center flex-wrap gap-4">
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-900">${name}</p>
+                                ${address ? `<p class="text-sm text-gray-600 mt-1">${address}</p>` : ''}
+                                ${id ? `<p class="text-xs text-gray-500 mt-1">Project ID: ${id}</p>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        async function disconnectProcore() {
+            if (!confirm('Disconnect Procore account?')) return;
+            
+            const token = localStorage.getItem('session_token');
+            if (!token) return;
+
+            try {
+                const response = await fetch('/api/procore/disconnect', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    showNotification('Procore disconnected successfully', 'success');
+                    checkProcoreStatus();
+                } else {
+                    alert('Failed to disconnect Procore account');
+                }
+            } catch (error) {
+                console.error('Error disconnecting Procore:', error);
+                alert('Error disconnecting Procore account');
+            }
+        }
+
         // Report Integration Issue
         function reportIntegrationIssue(integrationName) {
             // Get user email if available
@@ -2143,11 +2292,18 @@
                 checkSageStatus();
             }, 500);
         }
+        if (urlParams.get('procore_connected') === 'true') {
+            setTimeout(() => {
+                showNotification('Procore connected successfully!', 'success');
+                checkProcoreStatus();
+            }, 500);
+        }
 
         // Check integration statuses on page load
         window.addEventListener('DOMContentLoaded', () => {
             checkQuickBooksStatus();
             checkSageStatus();
+            checkProcoreStatus();
         });
     </script>
 </body>
