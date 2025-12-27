@@ -159,6 +159,18 @@ async def quickbooks_connect(request: Request):
     }
     
     auth_url = f"{QB_AUTH_URL}?{urlencode(params)}"
+    
+    # Debug logging
+    print("=" * 60)
+    print("🔍 QuickBooks OAuth Connect Debug")
+    print("=" * 60)
+    print(f"QB_REDIRECT_URI (from env): {QB_REDIRECT_URI}")
+    print(f"QB_CLIENT_ID: {QB_CLIENT_ID[:10]}..." if QB_CLIENT_ID else "QB_CLIENT_ID: None")
+    print(f"QB_AUTH_URL: {QB_AUTH_URL}")
+    print(f"Redirect URI being sent: {QB_REDIRECT_URI}")
+    print(f"Complete OAuth URL: {auth_url}")
+    print("=" * 60)
+    
     return RedirectResponse(url=auth_url)
 
 
