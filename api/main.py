@@ -1208,13 +1208,6 @@ print(f"🖼️ images_dir={images_dir} exists={images_dir.exists()}")
 if images_dir.exists():
     app.mount("/images", StaticFiles(directory=str(images_dir), html=False), name="images")
 
-# Serve static files from public directory (favicons, manifest, etc.)
-# This mount must be LAST so API routes take precedence
-public_dir = PROJECT_ROOT / "public"
-print(f"📁 public_dir={public_dir} exists={public_dir.exists()}")
-if public_dir.exists():
-    app.mount("/", StaticFiles(directory=str(public_dir), html=True), name="public")
-
 # Redirect www to non-www
 @app.middleware("http")
 async def redirect_www(request: Request, call_next):
@@ -11179,6 +11172,14 @@ async def get_procore_projects(request: Request, current_user: dict = Depends(ge
     except Exception as e:
         print(f"Error fetching Procore projects: {e}")
         raise HTTPException(status_code=500, detail="Error fetching Procore projects")
+
+
+# Serve static files from public directory (favicons, manifest, etc.)
+# This mount must be LAST so API routes take precedence
+public_dir = PROJECT_ROOT / "public"
+print(f"📁 public_dir={public_dir} exists={public_dir.exists()}")
+if public_dir.exists():
+    app.mount("/", StaticFiles(directory=str(public_dir), html=True), name="public")
 
 
 if __name__ == "__main__":
