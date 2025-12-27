@@ -42,9 +42,9 @@ async def get_current_user(authorization: str = Header(None)):
             cursor = get_db_cursor(conn)
             
             if DB_TYPE == 'postgresql':
-                cursor.execute("SELECT email, subscription_status FROM users WHERE session_token = %s", (token,))
+                cursor.execute("SELECT id, email, subscription_status FROM users WHERE session_token = %s", (token,))
             else:
-                cursor.execute("SELECT email, subscription_status FROM users WHERE session_token = ?", (token,))
+                cursor.execute("SELECT id, email, subscription_status FROM users WHERE session_token = ?", (token,))
             
             user = cursor.fetchone()
             
@@ -54,12 +54,14 @@ async def get_current_user(authorization: str = Header(None)):
             # Extract fields - handle both dict-like and tuple results
             try:
                 if isinstance(user, dict):
+                    user_id = user.get('id')
                     email = user.get('email', '')
                     subscription_status = user.get('subscription_status', '')
                 else:
                     # Tuple/list result
-                    email = user[0] if len(user) > 0 else ''
-                    subscription_status = user[1] if len(user) > 1 else ''
+                    user_id = user[0] if len(user) > 0 else None
+                    email = user[1] if len(user) > 1 else ''
+                    subscription_status = user[2] if len(user) > 2 else ''
             except (TypeError, KeyError, IndexError):
                 raise HTTPException(status_code=401, detail="Invalid user data")
             
@@ -67,8 +69,10 @@ async def get_current_user(authorization: str = Header(None)):
                 raise HTTPException(status_code=403, detail="Subscription expired")
             
             return {
+                "id": user_id,
                 "email": email,
-                "subscription_status": subscription_status
+                "subscription_status": subscription_status,
+                "unlimited": True
             }
     except HTTPException:
         raise

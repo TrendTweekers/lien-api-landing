@@ -11,6 +11,7 @@ from fastapi.responses import RedirectResponse
 import httpx
 from urllib.parse import urlencode
 from api.database import get_db, get_db_cursor, DB_TYPE
+from api.calculations import get_current_user
 
 router = APIRouter()
 
@@ -70,7 +71,7 @@ def get_user_from_session(authorization: str = Header(None)):
 
 
 @router.get("/api/quickbooks/connect")
-async def quickbooks_connect(request: Request, authorization: str = Header(None)):
+async def quickbooks_connect(request: Request, current_user: dict = Depends(get_current_user)):
     """
     Initiate QuickBooks OAuth flow
     Redirects user to QuickBooks authorization page
@@ -78,10 +79,8 @@ async def quickbooks_connect(request: Request, authorization: str = Header(None)
     if not QB_CLIENT_ID or not QB_CLIENT_SECRET:
         raise HTTPException(status_code=500, detail="QuickBooks integration not configured")
     
-    # Get user from session
-    user = get_user_from_session(authorization)
-    if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    # Use current_user from dependency
+    user = current_user
     
     # Generate secure random state and store it with user ID
     state = secrets.token_urlsafe(32)
@@ -364,15 +363,13 @@ async def get_valid_access_token(user_id: int):
 
 
 @router.get("/api/quickbooks/invoices")
-async def get_quickbooks_invoices(request: Request, authorization: str = Header(None)):
+async def get_quickbooks_invoices(request: Request, current_user: dict = Depends(get_current_user)):
     """
     Fetch invoices from QuickBooks
     Calculate lien deadlines for each
     """
-    # Get user from session
-    user = get_user_from_session(authorization)
-    if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    # Use current_user from dependency
+    user = current_user
     
     # Get valid access token
     access_token = await get_valid_access_token(user['id'])

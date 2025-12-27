@@ -63,7 +63,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 from .analytics import router as analytics_router
 from .admin import router as admin_router
 from .quickbooks import router as quickbooks_router
-from .calculations import router as calculations_router
+from .calculations import router as calculations_router, get_current_user
 
 # Import short link generator
 from .short_link_system import ShortLinkGenerator
@@ -10219,7 +10219,7 @@ async def get_valid_sage_access_token(user_email: str):
 
 
 @app.get("/api/sage/auth")
-async def sage_auth(request: Request, authorization: str = Header(None)):
+async def sage_auth(request: Request, current_user: dict = Depends(get_current_user)):
     """
     Initiate Sage OAuth flow
     Redirects user to Sage authorization page
@@ -10227,10 +10227,8 @@ async def sage_auth(request: Request, authorization: str = Header(None)):
     if not SAGE_CLIENT_ID or not SAGE_CLIENT_SECRET:
         raise HTTPException(status_code=500, detail="Sage integration not configured")
     
-    # Get user from session
-    user = get_sage_user_from_session(authorization)
-    if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    # Use current_user from dependency
+    user = current_user
     
     # Generate secure random state and store it with user email
     state = secrets.token_urlsafe(32)
@@ -10456,11 +10454,9 @@ async def get_sage_status(request: Request, authorization: str = Header(None)):
 
 
 @app.post("/api/sage/disconnect")
-async def disconnect_sage(request: Request, authorization: str = Header(None)):
+async def disconnect_sage(request: Request, current_user: dict = Depends(get_current_user)):
     """Disconnect Sage account"""
-    user = get_sage_user_from_session(authorization)
-    if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user = current_user
     
     try:
         with get_db() as conn:
@@ -10479,15 +10475,13 @@ async def disconnect_sage(request: Request, authorization: str = Header(None)):
 
 
 @app.get("/api/sage/invoices")
-async def get_sage_invoices(request: Request, authorization: str = Header(None)):
+async def get_sage_invoices(request: Request, current_user: dict = Depends(get_current_user)):
     """
     Fetch invoices from Sage
     Calculate lien deadlines for each
     """
-    # Get user from session
-    user = get_sage_user_from_session(authorization)
-    if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    # Use current_user from dependency
+    user = current_user
     
     # Get valid access token
     access_token = await get_valid_sage_access_token(user['email'])
