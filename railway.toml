@@ -6,3 +6,7 @@ startCommand = "cd /app && uvicorn api.main:app --host 0.0.0.0 --port $PORT"
 
 [build.nixPacks]
 pythonVersion = "3.11"
+
+[[cron]]
+schedule = "0 9 * * *"
+command = "python api/cron_send_reminders.py"
