@@ -315,7 +315,8 @@ async def save_calculation(data: SaveCalculationRequest, current_user: dict = De
                     print(f"❌ ERROR: fetchone() returned None!")
                     raise Exception("Failed to insert calculation into database - no ID returned")
                 
-                calculation_id = result[0]
+                # RealDictCursor (PostgreSQL) and sqlite3.Row both support dict-like access
+                calculation_id = result['id']
                 print(f"✅ Calculation ID: {calculation_id}")
             else:
                 print(f"📝 Executing SQLite INSERT query...")
