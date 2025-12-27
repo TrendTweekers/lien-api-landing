@@ -611,3 +611,24 @@ async def get_quickbooks_status(request: Request, authorization: str = Header(No
     
     return {"connected": False}
 
+
+@router.post("/api/quickbooks/disconnect")
+async def disconnect_quickbooks(request: Request, current_user: dict = Depends(get_current_user)):
+    """Disconnect QuickBooks account"""
+    user = current_user
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("DELETE FROM quickbooks_tokens WHERE user_id = %s", (user['id'],))
+            else:
+                cursor.execute("DELETE FROM quickbooks_tokens WHERE user_id = ?", (user['id'],))
+            
+            conn.commit()
+            return {"success": True, "message": "QuickBooks account disconnected"}
+    except Exception as e:
+        print(f"Error disconnecting QuickBooks: {e}")
+        raise HTTPException(status_code=500, detail="Error disconnecting QuickBooks account")
+
