@@ -1012,24 +1012,27 @@
                         });
                     }
                     
-                    // Display results
+                    // Display results first
                     displayDashboardResults(data);
                     
-                    // Store calculation data and show save form
-                    const stateCode = state;
-                    const stateName = getStateNameFromCode(stateCode);
-                    const prelimDays = data.preliminary_notice?.days_from_now || null;
-                    const lienDays = data.lien_filing?.days_from_now || null;
-                    
-                    showSaveProjectForm({
-                        stateName: stateName,
-                        stateCode: stateCode,
-                        invoiceDate: invoiceDate,
-                        prelimDeadline: data.preliminary_notice?.deadline || null,
-                        prelimDeadlineDays: prelimDays,
-                        lienDeadline: data.lien_filing?.deadline || null,
-                        lienDeadlineDays: lienDays
-                    });
+                    // Then show save form after a short delay to ensure DOM is ready
+                    setTimeout(() => {
+                        const stateCode = state;
+                        const stateName = getStateNameFromCode(stateCode);
+                        const prelimDays = data.preliminary_notice?.days_from_now || null;
+                        const lienDays = data.lien_filing?.days_from_now || null;
+                        
+                        // Store and show save form
+                        showSaveProjectForm({
+                            stateName: stateName,
+                            stateCode: stateCode,
+                            invoiceDate: invoiceDate,
+                            prelimDeadline: data.preliminary_notice?.deadline || null,
+                            prelimDeadlineDays: prelimDays,
+                            lienDeadline: data.lien_filing?.deadline || null,
+                            lienDeadlineDays: lienDays
+                        });
+                    }, 300);
                     
                     // Save to history
                     saveCalculation(data);
@@ -1297,7 +1300,7 @@
                     if (calc) {
                         const stateCode = calc.stateCode || calc.state;
                         const stateName = calc.state || getStateNameFromCode(stateCode);
-                        const url = `/api/v1/guide/${stateCode}/pdf?state_name=${encodeURIComponent(stateName)}&invoice_date=${encodeURIComponent(calc.invoiceDate)}`;
+                        const url = `/api/v1/guide/${stateCode}/pdf?invoice_date=${encodeURIComponent(calc.invoiceDate)}&state_name=${encodeURIComponent(stateName)}`;
                         window.open(url, '_blank');
                     } else {
                         alert('Unable to generate PDF. Project not found.');
