@@ -10975,19 +10975,20 @@ async def procore_callback(code: str, state: str):
         raise HTTPException(status_code=500, detail="Error verifying OAuth state")
     
     # Exchange code for tokens
+    # Procore requires Basic Authentication - client_id:client_secret in Authorization header
+    # Do NOT include client_id/client_secret in POST body
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 PROCORE_TOKEN_URL,
                 headers={
                     "Accept": "application/json",
-                    "Content-Type": "application/x-www-form-urlencoded"
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Authorization": f"Basic {get_procore_basic_auth()}"
                 },
                 data={
-                    "client_id": PROCORE_CLIENT_ID,
-                    "client_secret": PROCORE_CLIENT_SECRET,
-                    "code": code,
                     "grant_type": "authorization_code",
+                    "code": code,
                     "redirect_uri": PROCORE_REDIRECT_URI
                 }
             )
