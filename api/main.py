@@ -1243,6 +1243,16 @@ async def run_sage_migration(username: str = Depends(verify_admin)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/admin/run-procore-migration")
+async def run_procore_migration(username: str = Depends(verify_admin)):
+    """Run Procore tokens table migration"""
+    try:
+        from .migrations.add_procore_tokens import run_migration
+        run_migration()
+        return {"success": True, "message": "Procore migration completed"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Valid state codes (all 50 US states + DC)
 VALID_STATES = [
     "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL",
@@ -10071,6 +10081,19 @@ SAGE_API_BASE = "https://api.intacct.com"
 # Sage scopes
 SAGE_SCOPES = "full_access"
 
+# Procore OAuth credentials from environment
+PROCORE_CLIENT_ID = os.getenv("PROCORE_CLIENT_ID")
+PROCORE_CLIENT_SECRET = os.getenv("PROCORE_CLIENT_SECRET")
+PROCORE_REDIRECT_URI = os.getenv("PROCORE_REDIRECT_URI", "https://liendeadline.com/api/procore/callback")
+
+# Procore OAuth URLs
+PROCORE_AUTH_URL = "https://login.procore.com/oauth/authorize"
+PROCORE_TOKEN_URL = "https://login.procore.com/oauth/token"
+PROCORE_API_BASE = "https://api.procore.com/rest/v1.0"
+
+# Procore scopes (default: read-only access to projects)
+PROCORE_SCOPES = "read:projects"
+
 
 def get_sage_basic_auth():
     """Create Basic Auth header for Sage token exchange"""
@@ -10111,6 +10134,156 @@ def get_sage_user_from_session(authorization: str = Header(None)):
         print(f"Error getting user from session: {e}")
     
     return None
+
+
+def get_procore_basic_auth():
+    """Create Basic Auth header for Procore token exchange"""
+    credentials = f"{PROCORE_CLIENT_ID}:{PROCORE_CLIENT_SECRET}"
+    return base64.b64encode(credentials.encode()).decode()
+
+
+def get_procore_user_from_session(authorization: str = Header(None)):
+    """Get user email from session token for Procore - matches working endpoints"""
+    if not authorization or not authorization.startswith('Bearer '):
+        return None
+    
+    token = authorization.replace('Bearer ', '')
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Use same lookup as working endpoints: users table with session_token
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT email, id FROM users 
+                    WHERE session_token = %s
+                """, (token,))
+            else:
+                cursor.execute("""
+                    SELECT email, id FROM users 
+                    WHERE session_token = ?
+                """, (token,))
+            
+            result = cursor.fetchone()
+            if result:
+                if DB_TYPE == 'postgresql':
+                    return {"email": result['email'], "id": result['id']}
+                else:
+                    return {"email": result[0], "id": result[1]}
+    except Exception as e:
+        print(f"Error getting user from session: {e}")
+    
+    return None
+
+
+async def refresh_procore_access_token(user_email: str):
+    """Refresh Procore access token using refresh token"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT refresh_token FROM procore_tokens WHERE user_email = %s
+                """, (user_email,))
+            else:
+                cursor.execute("""
+                    SELECT refresh_token FROM procore_tokens WHERE user_email = ?
+                """, (user_email,))
+            
+            result = cursor.fetchone()
+            if not result:
+                return None
+            
+            refresh_token = result['refresh_token'] if DB_TYPE == 'postgresql' else result[0]
+            
+            if not refresh_token:
+                return None
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    PROCORE_TOKEN_URL,
+                    headers={
+                        "Accept": "application/json",
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    data={
+                        "client_id": PROCORE_CLIENT_ID,
+                        "client_secret": PROCORE_CLIENT_SECRET,
+                        "grant_type": "refresh_token",
+                        "refresh_token": refresh_token
+                    }
+                )
+                
+                if response.status_code != 200:
+                    return None
+                
+                tokens = response.json()
+                expires_in = tokens.get('expires_in', 3600)
+                expires_at = datetime.now() + timedelta(seconds=expires_in)
+                
+                # Update tokens
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        UPDATE procore_tokens
+                        SET access_token = %s, refresh_token = %s, expires_at = %s, updated_at = NOW()
+                        WHERE user_email = %s
+                    """, (tokens['access_token'], tokens.get('refresh_token', refresh_token), 
+                          expires_at, user_email))
+                else:
+                    cursor.execute("""
+                        UPDATE procore_tokens
+                        SET access_token = ?, refresh_token = ?, expires_at = ?, updated_at = datetime('now')
+                        WHERE user_email = ?
+                    """, (tokens['access_token'], tokens.get('refresh_token', refresh_token), 
+                          expires_at, user_email))
+                
+                conn.commit()
+                return tokens['access_token']
+    except Exception as e:
+        print(f"Error refreshing Procore token: {e}")
+        return None
+
+
+async def get_valid_procore_access_token(user_email: str):
+    """Get valid Procore access token, refreshing if necessary"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT access_token, expires_at FROM procore_tokens WHERE user_email = %s
+                """, (user_email,))
+            else:
+                cursor.execute("""
+                    SELECT access_token, expires_at FROM procore_tokens WHERE user_email = ?
+                """, (user_email,))
+            
+            result = cursor.fetchone()
+            if not result:
+                return None
+            
+            if DB_TYPE == 'postgresql':
+                access_token = result['access_token']
+                expires_at = result['expires_at']
+            else:
+                access_token = result[0]
+                expires_at = datetime.fromisoformat(result[1]) if isinstance(result[1], str) else result[1]
+            
+            # Check if token is expired (with 5 minute buffer)
+            if expires_at and expires_at < datetime.now() + timedelta(minutes=5):
+                # Refresh token
+                new_token = await refresh_procore_access_token(user_email)
+                if new_token:
+                    return new_token
+                return None
+            
+            return access_token
+    except Exception as e:
+        print(f"Error getting valid Procore token: {e}")
+        return None
 
 
 async def refresh_sage_access_token(user_email: str):
