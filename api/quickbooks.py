@@ -8,6 +8,7 @@ import secrets
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Request, Depends, Header
 from fastapi.responses import RedirectResponse
+from starlette.requests import Request
 import httpx
 from urllib.parse import urlencode
 from api.database import get_db, get_db_cursor, DB_TYPE
@@ -162,13 +163,32 @@ async def quickbooks_connect(request: Request):
 
 
 @router.get("/api/quickbooks/callback")
-async def quickbooks_callback(code: str, state: str, realmId: str):
+async def quickbooks_callback(request: Request, code: str = None, state: str = None, realmId: str = None, realm_id: str = None):
     """
     Handle OAuth callback from QuickBooks
     Exchange authorization code for access token
     """
-    if not code or not state or not realmId:
-        raise HTTPException(status_code=400, detail="Missing required parameters")
+    print("=" * 60)
+    print("🔍 QuickBooks OAuth Callback Debug")
+    print("=" * 60)
+    print(f"Query params: {dict(request.query_params)}")
+    print(f"code: {code}")
+    print(f"state: {state}")
+    print(f"realmId: {realmId}")
+    print(f"realm_id: {realm_id}")
+    
+    # QuickBooks may send realmId or realm_id - try both
+    realm_id_value = realmId or realm_id
+    
+    if not code or not state:
+        error_msg = f"Missing required parameters: code={bool(code)}, state={bool(state)}"
+        print(f"❌ {error_msg}")
+        return RedirectResponse(url="/customer-dashboard.html?error=" + urlencode({"error": "Missing OAuth parameters"}))
+    
+    if not realm_id_value:
+        error_msg = "Missing realmId parameter"
+        print(f"❌ {error_msg}")
+        return RedirectResponse(url="/customer-dashboard.html?error=" + urlencode({"error": "Missing company ID"}))
     
     # Verify state and get user ID
     try:
@@ -188,9 +208,17 @@ async def quickbooks_callback(code: str, state: str, realmId: str):
             
             result = cursor.fetchone()
             if not result:
-                raise HTTPException(status_code=400, detail="Invalid or expired state")
+                error_msg = "Invalid or expired OAuth state"
+                print(f"❌ {error_msg}")
+                return RedirectResponse(url="/customer-dashboard.html?error=" + urlencode({"error": error_msg}))
             
-            user_id = result['user_id'] if DB_TYPE == 'postgresql' else result[0]
+            # Extract user_id - handle both dict and tuple results
+            if isinstance(result, dict):
+                user_id = result.get('user_id')
+            else:
+                user_id = result[0] if len(result) > 0 else None
+            
+            print(f"✅ Found user_id: {user_id} for state: {state[:10]}...")
             
             # Delete used state
             if DB_TYPE == 'postgresql':
@@ -224,10 +252,16 @@ async def quickbooks_callback(code: str, state: str, realmId: str):
             
             if response.status_code != 200:
                 error_detail = response.text
-                print(f"QuickBooks token exchange failed: {error_detail}")
-                raise HTTPException(status_code=400, detail=f"Failed to get access token: {error_detail}")
+                print(f"❌ QuickBooks token exchange failed:")
+                print(f"   Status: {response.status_code}")
+                print(f"   Response: {error_detail}")
+                return RedirectResponse(url="/customer-dashboard.html?error=" + urlencode({"error": "Failed to get access token"}))
             
             tokens = response.json()
+            print(f"✅ Token exchange successful")
+            print(f"   Access token: {tokens.get('access_token', '')[:20]}...")
+            print(f"   Refresh token: {bool(tokens.get('refresh_token'))}")
+            print(f"   Expires in: {tokens.get('expires_in')} seconds")
             
             # Calculate expiration time
             expires_in = tokens.get('expires_in', 3600)  # Default 1 hour
@@ -257,7 +291,7 @@ async def quickbooks_callback(code: str, state: str, realmId: str):
                             SET realm_id = %s, access_token = %s, refresh_token = %s,
                                 expires_at = %s, updated_at = NOW()
                             WHERE user_id = %s
-                        """, (realmId, tokens['access_token'], tokens.get('refresh_token', ''), 
+                        """, (realm_id_value, tokens['access_token'], tokens.get('refresh_token', ''), 
                               expires_at, user_id))
                     else:
                         cursor.execute("""
@@ -265,8 +299,9 @@ async def quickbooks_callback(code: str, state: str, realmId: str):
                             SET realm_id = ?, access_token = ?, refresh_token = ?,
                                 expires_at = ?, updated_at = datetime('now')
                             WHERE user_id = ?
-                        """, (realmId, tokens['access_token'], tokens.get('refresh_token', ''), 
+                        """, (realm_id_value, tokens['access_token'], tokens.get('refresh_token', ''), 
                               expires_at, user_id))
+                    print(f"✅ Updated existing QuickBooks tokens for user_id: {user_id}")
                 else:
                     # Insert new tokens
                     if DB_TYPE == 'postgresql':
@@ -274,29 +309,36 @@ async def quickbooks_callback(code: str, state: str, realmId: str):
                             INSERT INTO quickbooks_tokens 
                             (user_id, realm_id, access_token, refresh_token, expires_at)
                             VALUES (%s, %s, %s, %s, %s)
-                        """, (user_id, realmId, tokens['access_token'], 
+                        """, (user_id, realm_id_value, tokens['access_token'], 
                               tokens.get('refresh_token', ''), expires_at))
                     else:
                         cursor.execute("""
                             INSERT INTO quickbooks_tokens 
                             (user_id, realm_id, access_token, refresh_token, expires_at)
                             VALUES (?, ?, ?, ?, ?)
-                        """, (user_id, realmId, tokens['access_token'], 
+                        """, (user_id, realm_id_value, tokens['access_token'], 
                               tokens.get('refresh_token', ''), expires_at))
+                    print(f"✅ Inserted new QuickBooks tokens for user_id: {user_id}, realm_id: {realm_id_value}")
                 
                 conn.commit()
+                print(f"✅ Database commit successful")
             
             # Redirect to customer dashboard with success message
+            print(f"✅ Redirecting to dashboard with success")
             return RedirectResponse(url="/customer-dashboard.html?qb_connected=true")
             
     except httpx.HTTPError as e:
-        print(f"HTTP error during token exchange: {e}")
-        raise HTTPException(status_code=500, detail="Error connecting to QuickBooks")
-    except Exception as e:
-        print(f"Error during token exchange: {e}")
+        error_msg = f"HTTP error during token exchange: {e}"
+        print(f"❌ {error_msg}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Unexpected error during OAuth")
+        return RedirectResponse(url="/customer-dashboard.html?error=" + urlencode({"error": "Network error connecting to QuickBooks"}))
+    except Exception as e:
+        error_msg = f"Error during token exchange: {e}"
+        print(f"❌ {error_msg}")
+        import traceback
+        traceback.print_exc()
+        return RedirectResponse(url="/customer-dashboard.html?error=" + urlencode({"error": "Unexpected error during OAuth"}))
 
 
 async def refresh_access_token(user_id: int):
