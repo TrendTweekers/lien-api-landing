@@ -407,33 +407,98 @@
     </nav>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- QuickBooks Integration Section -->
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8" id="quickbooks-section">
-            <div class="flex items-center justify-between flex-wrap gap-4">
-                <div class="flex items-center gap-4">
-                    <svg class="w-12 h-12 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-900">QuickBooks Integration</h3>
-                        <p class="text-sm text-gray-600">Import invoices and auto-calculate lien deadlines</p>
+        <!-- Integrations Section - 3 Column Grid -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Accounting Integrations</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- QuickBooks Integration Card -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-6" id="quickbooks-section">
+                    <div class="flex flex-col h-full">
+                        <div class="flex items-start gap-4 mb-4">
+                            <svg class="w-12 h-12 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-1">QuickBooks Integration</h3>
+                                <p class="text-sm text-gray-600">Import invoices and auto-calculate lien deadlines</p>
+                            </div>
+                        </div>
+                        <div class="mt-auto">
+                            <div class="flex items-center justify-between mb-4">
+                                <span id="qb-status" class="text-sm text-gray-600">Not connected</span>
+                            </div>
+                            <button 
+                                onclick="connectQuickBooks()"
+                                id="qb-connect-btn"
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
+                            >
+                                Connect QuickBooks
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-4">
-                    <span id="qb-status" class="text-sm text-gray-600"></span>
-                    <button 
-                        onclick="connectQuickBooks()"
-                        id="qb-connect-btn"
-                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
-                    >
-                        Connect QuickBooks
-                    </button>
+
+                <!-- Sage Integration Card -->
+                <div class="bg-green-50 border border-green-200 rounded-lg p-6" id="sage-section">
+                    <div class="flex flex-col h-full">
+                        <div class="flex items-start gap-4 mb-4">
+                            <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <span class="text-white text-2xl font-bold">S</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-1">Sage Integration</h3>
+                                <p class="text-sm text-gray-600">Import invoices from Sage accounting</p>
+                            </div>
+                        </div>
+                        <div class="mt-auto">
+                            <div class="flex items-center justify-between mb-4">
+                                <span id="sage-status" class="text-sm text-gray-600">Not connected</span>
+                            </div>
+                            <button 
+                                onclick="connectSage()"
+                                id="sage-connect-btn"
+                                class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
+                            >
+                                Connect Sage
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Procore Integration Card (Placeholder) -->
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 opacity-60" id="procore-section">
+                    <div class="flex flex-col h-full">
+                        <div class="flex items-start gap-4 mb-4">
+                            <div class="w-12 h-12 bg-gray-400 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <span class="text-white text-2xl font-bold">P</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-1">Procore Integration</h3>
+                                <p class="text-sm text-gray-600">Coming soon - Import project data</p>
+                            </div>
+                        </div>
+                        <div class="mt-auto">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm text-gray-500">Coming Soon</span>
+                            </div>
+                            <button 
+                                disabled
+                                class="w-full bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg cursor-not-allowed"
+                            >
+                                Connect Procore
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             
+            <!-- Invoice Lists (shown after connection) -->
             <div id="qb-invoices" class="mt-6 hidden">
-                <!-- Invoice list will appear here after connection -->
+                <!-- QuickBooks invoice list will appear here after connection -->
+            </div>
+            <div id="sage-invoices" class="mt-6 hidden">
+                <!-- Sage invoice list will appear here after connection -->
             </div>
         </div>
 
@@ -1891,6 +1956,129 @@
             }, 3000);
         }
 
+        // Sage Integration Functions
+        async function connectSage() {
+            const token = localStorage.getItem('session_token');
+            if (!token) {
+                alert('Please log in first');
+                window.location.href = '/dashboard';
+                return;
+            }
+            
+            try {
+                window.location.href = '/api/sage/auth';
+            } catch (error) {
+                console.error('Error connecting to Sage:', error);
+                alert('Failed to connect to Sage. Please try again.');
+            }
+        }
+
+        async function checkSageStatus() {
+            const token = localStorage.getItem('session_token');
+            if (!token) return;
+
+            try {
+                const response = await fetch('/api/sage/status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const statusEl = document.getElementById('sage-status');
+                    const connectBtn = document.getElementById('sage-connect-btn');
+                    
+                    if (data.connected) {
+                        if (statusEl) {
+                            statusEl.textContent = 'Connected ✓';
+                            statusEl.className = 'text-sm text-green-600 font-medium';
+                        }
+                        if (connectBtn) {
+                            connectBtn.textContent = 'Reconnect';
+                        }
+                        loadSageInvoices();
+                    } else {
+                        if (statusEl) {
+                            statusEl.textContent = 'Not connected';
+                            statusEl.className = 'text-sm text-gray-600';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking Sage status:', error);
+            }
+        }
+
+        async function loadSageInvoices() {
+            const token = localStorage.getItem('session_token');
+            if (!token) return;
+
+            try {
+                const response = await fetch('/api/sage/invoices', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        // Not connected
+                        return;
+                    }
+                    throw new Error('Failed to load invoices');
+                }
+                
+                const data = await response.json();
+                displaySageInvoices(data.invoices || []);
+            } catch (error) {
+                console.error('Error loading Sage invoices:', error);
+            }
+        }
+
+        function displaySageInvoices(invoices) {
+            const container = document.getElementById('sage-invoices');
+            if (!container) return;
+            
+            if (!invoices || invoices.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+            
+            container.classList.remove('hidden');
+            
+            let html = '<h4 class="font-semibold text-lg mb-4 text-gray-900">Recent Invoices from Sage</h4>';
+            html += '<div class="space-y-3 max-h-96 overflow-y-auto">';
+            
+            invoices.forEach(inv => {
+                const date = inv.date || 'N/A';
+                const amount = inv.amount ? `$${inv.amount.toFixed(2)}` : '$0.00';
+                const state = inv.state || '';
+                const customer = escapeHtml(inv.customer || 'Unknown');
+                
+                html += `
+                    <div class="bg-white p-4 rounded-lg border border-gray-200 hover:border-green-300 transition">
+                        <div class="flex justify-between items-center flex-wrap gap-4">
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-900">${customer}</p>
+                                <p class="text-sm text-gray-600">Date: ${date} | Amount: ${amount}</p>
+                                ${state ? `<p class="text-xs text-gray-500 mt-1">State: ${state}</p>` : ''}
+                            </div>
+                            <button 
+                                onclick="calculateForInvoice('${date}', '${state}')"
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap"
+                            >
+                                Calculate Deadline
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
         // Check if just connected from OAuth callback
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('qb_connected') === 'true') {
@@ -1899,10 +2087,17 @@
                 checkQuickBooksStatus();
             }, 500);
         }
+        if (urlParams.get('sage_connected') === 'true') {
+            setTimeout(() => {
+                showNotification('Sage connected successfully!', 'success');
+                checkSageStatus();
+            }, 500);
+        }
 
-        // Check QuickBooks status on page load
+        // Check integration statuses on page load
         window.addEventListener('DOMContentLoaded', () => {
             checkQuickBooksStatus();
+            checkSageStatus();
         });
     </script>
 </body>
