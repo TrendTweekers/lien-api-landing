@@ -10806,6 +10806,361 @@ async def get_sage_invoices(request: Request, current_user: dict = Depends(get_c
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Unexpected error fetching invoices")
 
+
+# ============================================================================
+# PROCORE OAUTH INTEGRATION ENDPOINTS
+# ============================================================================
+
+@app.get("/api/procore/auth")
+async def procore_auth(request: Request):
+    """
+    Initiate Procore OAuth flow
+    Redirects user to Procore authorization page
+    Accepts token via query parameter (for browser redirects) or Authorization header
+    """
+    if not PROCORE_CLIENT_ID or not PROCORE_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="Procore integration not configured")
+    
+    # Extract token from query parameter (browser redirect) or Authorization header
+    token = request.query_params.get('token')
+    if not token:
+        # Try Authorization header
+        authorization = request.headers.get('authorization') or request.headers.get('Authorization')
+        if authorization and authorization.startswith('Bearer '):
+            token = authorization.replace('Bearer ', '').strip()
+    
+    if not token:
+        # Redirect to login if no token
+        return RedirectResponse(url="/dashboard?error=Please log in first")
+    
+    # Look up user from token
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id, email, subscription_status FROM users WHERE session_token = %s", (token,))
+            else:
+                cursor.execute("SELECT id, email, subscription_status FROM users WHERE session_token = ?", (token,))
+            
+            user_result = cursor.fetchone()
+            
+            if not user_result:
+                return RedirectResponse(url="/dashboard?error=Invalid session")
+            
+            # Extract user info
+            if isinstance(user_result, dict):
+                user_id = user_result.get('id')
+                user_email = user_result.get('email', '')
+                subscription_status = user_result.get('subscription_status', '')
+            else:
+                user_id = user_result[0] if len(user_result) > 0 else None
+                user_email = user_result[1] if len(user_result) > 1 else ''
+                subscription_status = user_result[2] if len(user_result) > 2 else ''
+            
+            if subscription_status not in ['active', 'trialing']:
+                return RedirectResponse(url="/dashboard?error=Subscription expired")
+            
+            user = {"id": user_id, "email": user_email}
+    except Exception as e:
+        print(f"Error looking up user: {e}")
+        return RedirectResponse(url="/dashboard?error=Authentication failed")
+    
+    # Generate secure random state and store it with user email
+    state = secrets.token_urlsafe(32)
+    
+    # Store state temporarily (expires in 10 minutes)
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Create oauth_states table if it doesn't exist (for Procore)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS procore_oauth_states (
+                        id SERIAL PRIMARY KEY,
+                        user_email VARCHAR(255) NOT NULL,
+                        state VARCHAR(255) UNIQUE NOT NULL,
+                        expires_at TIMESTAMP NOT NULL
+                    )
+                """)
+                cursor.execute("""
+                    INSERT INTO procore_oauth_states (user_email, state, expires_at)
+                    VALUES (%s, %s, %s)
+                """, (user['email'], state, datetime.now() + timedelta(minutes=10)))
+            else:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS procore_oauth_states (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_email TEXT NOT NULL,
+                        state TEXT UNIQUE NOT NULL,
+                        expires_at TEXT NOT NULL
+                    )
+                """)
+                cursor.execute("""
+                    INSERT INTO procore_oauth_states (user_email, state, expires_at)
+                    VALUES (?, ?, ?)
+                """, (user['email'], state, datetime.now() + timedelta(minutes=10)))
+            
+            conn.commit()
+    except Exception as e:
+        print(f"Error storing Procore OAuth state: {e}")
+    
+    params = {
+        "client_id": PROCORE_CLIENT_ID,
+        "scope": PROCORE_SCOPES,
+        "redirect_uri": PROCORE_REDIRECT_URI,
+        "response_type": "code",
+        "state": state
+    }
+    
+    auth_url = f"{PROCORE_AUTH_URL}?{urlencode(params)}"
+    return RedirectResponse(url=auth_url)
+
+
+@app.get("/api/procore/callback")
+async def procore_callback(code: str, state: str):
+    """
+    Handle OAuth callback from Procore
+    Exchange authorization code for access token
+    """
+    if not code or not state:
+        raise HTTPException(status_code=400, detail="Missing required parameters")
+    
+    # Verify state and get user email
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT user_email FROM procore_oauth_states
+                    WHERE state = %s AND expires_at > NOW()
+                """, (state,))
+            else:
+                cursor.execute("""
+                    SELECT user_email FROM procore_oauth_states
+                    WHERE state = ? AND expires_at > datetime('now')
+                """, (state,))
+            
+            result = cursor.fetchone()
+            if not result:
+                raise HTTPException(status_code=400, detail="Invalid or expired state")
+            
+            user_email = result['user_email'] if DB_TYPE == 'postgresql' else result[0]
+            
+            # Delete used state
+            if DB_TYPE == 'postgresql':
+                cursor.execute("DELETE FROM procore_oauth_states WHERE state = %s", (state,))
+            else:
+                cursor.execute("DELETE FROM procore_oauth_states WHERE state = ?", (state,))
+            
+            conn.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error verifying Procore state: {e}")
+        raise HTTPException(status_code=500, detail="Error verifying OAuth state")
+    
+    # Exchange code for tokens
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                PROCORE_TOKEN_URL,
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                data={
+                    "client_id": PROCORE_CLIENT_ID,
+                    "client_secret": PROCORE_CLIENT_SECRET,
+                    "code": code,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": PROCORE_REDIRECT_URI
+                }
+            )
+            
+            if response.status_code != 200:
+                error_detail = response.text
+                print(f"Procore token exchange failed: {error_detail}")
+                raise HTTPException(status_code=400, detail=f"Failed to get access token: {error_detail}")
+            
+            tokens = response.json()
+            
+            # Calculate expiration time
+            expires_in = tokens.get('expires_in', 3600)  # Default 1 hour
+            expires_at = datetime.now() + timedelta(seconds=expires_in)
+            
+            # Save tokens to database
+            with get_db() as conn:
+                cursor = get_db_cursor(conn)
+                
+                # Check if user already has tokens
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT id FROM procore_tokens WHERE user_email = %s
+                    """, (user_email,))
+                else:
+                    cursor.execute("""
+                        SELECT id FROM procore_tokens WHERE user_email = ?
+                    """, (user_email,))
+                
+                existing = cursor.fetchone()
+                
+                if existing:
+                    # Update existing tokens
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute("""
+                            UPDATE procore_tokens
+                            SET access_token = %s, refresh_token = %s,
+                                expires_at = %s, updated_at = NOW()
+                            WHERE user_email = %s
+                        """, (tokens['access_token'], tokens.get('refresh_token', ''), 
+                              expires_at, user_email))
+                    else:
+                        cursor.execute("""
+                            UPDATE procore_tokens
+                            SET access_token = ?, refresh_token = ?,
+                                expires_at = ?, updated_at = datetime('now')
+                            WHERE user_email = ?
+                        """, (tokens['access_token'], tokens.get('refresh_token', ''), 
+                              expires_at, user_email))
+                else:
+                    # Insert new tokens
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute("""
+                            INSERT INTO procore_tokens 
+                            (user_email, access_token, refresh_token, expires_at)
+                            VALUES (%s, %s, %s, %s)
+                        """, (user_email, tokens['access_token'], 
+                              tokens.get('refresh_token', ''), expires_at))
+                    else:
+                        cursor.execute("""
+                            INSERT INTO procore_tokens 
+                            (user_email, access_token, refresh_token, expires_at)
+                            VALUES (?, ?, ?, ?)
+                        """, (user_email, tokens['access_token'], 
+                              tokens.get('refresh_token', ''), expires_at))
+                
+                conn.commit()
+            
+            # Redirect to customer dashboard with success message
+            return RedirectResponse(url="/customer-dashboard.html?procore_connected=true")
+            
+    except httpx.HTTPError as e:
+        print(f"HTTP error during Procore token exchange: {e}")
+        raise HTTPException(status_code=500, detail="Error connecting to Procore")
+    except Exception as e:
+        print(f"Error during Procore token exchange: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Unexpected error during OAuth")
+
+
+@app.get("/api/procore/status")
+async def get_procore_status(request: Request, authorization: str = Header(None)):
+    """Check if user has Procore connected"""
+    user = get_procore_user_from_session(authorization)
+    if not user:
+        return {"connected": False}
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT expires_at FROM procore_tokens WHERE user_email = %s
+                """, (user['email'],))
+            else:
+                cursor.execute("""
+                    SELECT expires_at FROM procore_tokens WHERE user_email = ?
+                """, (user['email'],))
+            
+            result = cursor.fetchone()
+            if result:
+                expires_at = result['expires_at'] if DB_TYPE == 'postgresql' else result[0]
+                if isinstance(expires_at, str):
+                    expires_at = datetime.fromisoformat(expires_at)
+                is_valid = expires_at and expires_at > datetime.now()
+                return {"connected": True, "valid": is_valid}
+    except Exception:
+        pass
+    
+    return {"connected": False}
+
+
+@app.post("/api/procore/disconnect")
+async def disconnect_procore(request: Request, current_user: dict = Depends(get_current_user)):
+    """Disconnect Procore account"""
+    user = current_user
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("DELETE FROM procore_tokens WHERE user_email = %s", (user['email'],))
+            else:
+                cursor.execute("DELETE FROM procore_tokens WHERE user_email = ?", (user['email'],))
+            
+            conn.commit()
+            return {"success": True, "message": "Procore account disconnected"}
+    except Exception as e:
+        print(f"Error disconnecting Procore: {e}")
+        raise HTTPException(status_code=500, detail="Error disconnecting Procore account")
+
+
+@app.get("/api/procore/projects")
+async def get_procore_projects(request: Request, current_user: dict = Depends(get_current_user)):
+    """
+    Fetch projects from Procore
+    """
+    # Use current_user from dependency
+    user = current_user
+    
+    # Get valid access token
+    access_token = await get_valid_procore_access_token(user['email'])
+    if not access_token:
+        raise HTTPException(status_code=401, detail="Procore not connected. Please connect your account first.")
+    
+    # Fetch projects from Procore
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{PROCORE_API_BASE}/projects",
+                headers={
+                    "Accept": "application/json",
+                    "Authorization": f"Bearer {access_token}"
+                }
+            )
+            
+            if response.status_code == 401:
+                # Token expired, try refreshing
+                new_token = await refresh_procore_access_token(user['email'])
+                if new_token:
+                    response = await client.get(
+                        f"{PROCORE_API_BASE}/projects",
+                        headers={
+                            "Accept": "application/json",
+                            "Authorization": f"Bearer {new_token}"
+                        }
+                    )
+                else:
+                    raise HTTPException(status_code=401, detail="Procore token expired. Please reconnect.")
+            
+            if response.status_code != 200:
+                raise HTTPException(status_code=response.status_code, detail=f"Procore API error: {response.text}")
+            
+            projects = response.json()
+            return {"projects": projects}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching Procore projects: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching Procore projects")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
