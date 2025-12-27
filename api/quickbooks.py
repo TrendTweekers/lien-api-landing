@@ -155,7 +155,8 @@ async def quickbooks_connect(request: Request):
         "scope": QB_SCOPES,
         "redirect_uri": QB_REDIRECT_URI,
         "response_type": "code",
-        "state": state
+        "state": state,
+        "locale": "en_US"  # Force English locale to prevent Swedish locale issues
     }
     
     auth_url = f"{QB_AUTH_URL}?{urlencode(params)}"
