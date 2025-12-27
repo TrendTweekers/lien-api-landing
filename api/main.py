@@ -1867,7 +1867,6 @@ async def generate_state_guide_pdf(state_code: str, request: Request):
     
     if invoice_date_str:
         try:
-            from datetime import datetime, timedelta
             from .calculators import calculate_default, calculate_texas, calculate_washington, calculate_california, calculate_ohio, calculate_oregon, calculate_hawaii
             
             # Parse invoice date - handle both MM/DD/YYYY and YYYY-MM-DD formats
