@@ -10906,15 +10906,29 @@ async def procore_auth(request: Request):
     except Exception as e:
         print(f"Error storing Procore OAuth state: {e}")
     
+    # Build OAuth URL properly with correct parameter order
     params = {
-        "client_id": PROCORE_CLIENT_ID,
-        "scope": PROCORE_SCOPES,
-        "redirect_uri": PROCORE_REDIRECT_URI,
         "response_type": "code",
+        "client_id": PROCORE_CLIENT_ID,
+        "redirect_uri": PROCORE_REDIRECT_URI,
+        "scope": PROCORE_SCOPES,  # Will be properly URL-encoded by urlencode()
         "state": state
     }
     
+    # Use urlencode() to properly encode all parameters (handles colons, spaces, etc.)
     auth_url = f"{PROCORE_AUTH_URL}?{urlencode(params)}"
+    
+    # Debug logging
+    print("=" * 60)
+    print("🔍 Procore OAuth Connect Debug")
+    print("=" * 60)
+    print(f"PROCORE_CLIENT_ID: {PROCORE_CLIENT_ID[:10]}..." if PROCORE_CLIENT_ID else "PROCORE_CLIENT_ID: None")
+    print(f"PROCORE_REDIRECT_URI: {PROCORE_REDIRECT_URI}")
+    print(f"PROCORE_SCOPES: {PROCORE_SCOPES}")
+    print(f"PROCORE_AUTH_URL: {PROCORE_AUTH_URL}")
+    print(f"Complete OAuth URL: {auth_url}")
+    print("=" * 60)
+    
     return RedirectResponse(url=auth_url)
 
 
