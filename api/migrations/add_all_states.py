@@ -402,8 +402,8 @@ STATE_DATA = {
                 "statute": "IC 32-28-3-1(i)"
             },
             "lien_filing": {
-                "deadline_description": "60 days residential, 90 days commercial from last furnishing",
-                "deadline_days": None,
+                "deadline_description": "60 days residential, 90 days commercial from last furnishing (using 60-day residential default)",
+                "deadline_days": 60,
                 "deadline_formula": None,
                 "statute": "IC 32-28-3-3"
             },
@@ -474,8 +474,8 @@ STATE_DATA = {
                 "statute": "Louisiana Revised Statutes § 9:4804(C)"
             },
             "lien_filing": {
-                "deadline_description": "60 days from substantial completion if no Notice of Contract; 30 days from Notice of Termination",
-                "deadline_days": None,
+                "deadline_description": "60 days from substantial completion (or 30 days from Notice of Termination if applicable)",
+                "deadline_days": 60,
                 "deadline_formula": None,
                 "statute": "Louisiana Revised Statutes § 9:4822"
             },
@@ -546,8 +546,8 @@ STATE_DATA = {
                 "statute": "M.G.L. c. 254 § 4"
             },
             "lien_filing": {
-                "deadline_description": "Earliest of 90 days after Notice of Substantial Completion, 120 days after Notice of Termination, or 120 days after last furnished",
-                "deadline_days": None,
+                "deadline_description": "Earliest of 90 days after Notice of Substantial Completion, 120 days after Notice of Termination, or 120 days after last furnished (using 90-day default)",
+                "deadline_days": 90,
                 "deadline_formula": None,
                 "statute": "M.G.L. c. 254 § 8"
             },
@@ -786,8 +786,8 @@ STATE_DATA = {
                 "statute": "N.J.S.A. 2A:44A-20"
             },
             "lien_filing": {
-                "deadline_description": "90 days non-residential, 120 days residential from last providing",
-                "deadline_days": None,
+                "deadline_description": "90 days non-residential, 120 days residential from last providing (using 90-day non-residential default)",
+                "deadline_days": 90,
                 "deadline_formula": None,
                 "statute": "N.J.S.A. 2A:44A-6"
             },
@@ -882,8 +882,8 @@ STATE_DATA = {
                 "statute": "O.R.C. §1311.05"
             },
             "lien_filing": {
-                "deadline_description": "75 days non-residential; 60 days residential from last furnishing",
-                "deadline_days": None,
+                "deadline_description": "75 days non-residential; 60 days residential from last furnishing (using 60-day residential default)",
+                "deadline_days": 60,
                 "deadline_formula": None,
                 "statute": "O.R.C. §1311.06(B)"
             },
@@ -1074,8 +1074,8 @@ STATE_DATA = {
                 "statute": "Texas Property Code § 53.056"
             },
             "lien_filing": {
-                "deadline_description": "Non-residential: 15th of 4th month; Residential: 15th of 3rd month",
-                "deadline_days": None,
+                "deadline_description": "Non-residential: 15th of 4th month; Residential: 15th of 3rd month (105-day commercial default if formula unavailable)",
+                "deadline_days": 105,
                 "deadline_formula": "4th month + 15 days (non-res); 3rd month + 15 days (res)",
                 "statute": "Texas Property Code § 53.052"
             },
