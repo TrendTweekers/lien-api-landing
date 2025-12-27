@@ -559,15 +559,7 @@ def init_db():
                     cursor.execute("CREATE INDEX IF NOT EXISTS idx_calculations_state ON calculations(state)")
                     print("✅ Created calculations table")
                     
-                    # Insert some sample calculations for testing
-                    cursor.execute("""
-                        INSERT INTO calculations (state, notice_date, calculation_date, preliminary_notice, lien_deadline)
-                        VALUES 
-                        ('CA', '2024-01-01', '2024-01-01', '2024-01-20', '2024-02-01'),
-                        ('TX', '2024-01-02', '2024-01-02', '2024-01-22', '2024-02-02'),
-                        ('FL', '2024-01-03', '2024-01-03', '2024-01-25', '2024-02-05')
-                    """)
-                    print("✅ Inserted sample calculations")
+                    # REMOVED: Old sample INSERT statements - now using proper migration
             
             if DB_TYPE == 'postgresql':
                 # Create calculations table (PostgreSQL)
@@ -589,15 +581,7 @@ def init_db():
                     cursor.execute("CREATE INDEX IF NOT EXISTS idx_calculations_state ON calculations(state)")
                     print("✅ Created calculations table")
                     
-                    # Insert some sample calculations for testing
-                    cursor.execute("""
-                        INSERT INTO calculations (state, notice_date, calculation_date, preliminary_notice, lien_deadline)
-                        VALUES 
-                        ('CA', '2024-01-01', '2024-01-01', '2024-01-20', '2024-02-01'),
-                        ('TX', '2024-01-02', '2024-01-02', '2024-01-22', '2024-02-02'),
-                        ('FL', '2024-01-03', '2024-01-03', '2024-01-25', '2024-02-05')
-                    """)
-                    print("✅ Inserted sample calculations")
+                    # REMOVED: Old sample INSERT statements - now using proper migration
             
             # Create triggers for SQLite
             if DB_TYPE == 'sqlite':
@@ -2925,20 +2909,7 @@ async def calculate_deadline(
                     (today_str, client_ip)
                 )
                 
-                # Insert calculation with detailed dates (PostgreSQL)
-                cursor.execute('''
-                    INSERT INTO calculations 
-                    (state, notice_date, calculation_date, preliminary_notice, lien_deadline)
-                    VALUES (%s, %s, %s, %s, %s)
-                ''', (
-                    state_code,
-                    notice_date_str,
-                    today_str,
-                    prelim_date_str if prelim_date_str else None,
-                    lien_date_str if lien_date_str else None
-                ))
-                
-                print(f"✅ Calculation saved to PostgreSQL: {state_code} - Notice: {notice_date_str}, Prelim: {prelim_date_str}, Lien: {lien_date_str}")
+                # REMOVED: Old INSERT INTO calculations block - now handled by calculations.py router
             else:
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS page_views (
@@ -2977,20 +2948,7 @@ async def calculate_deadline(
                     (today_str, client_ip)
                 )
                 
-                # Insert calculation with detailed dates (SQLite)
-                cursor.execute('''
-                    INSERT INTO calculations 
-                    (state, notice_date, calculation_date, preliminary_notice, lien_deadline)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', (
-                    state_code,
-                    notice_date_str,
-                    today_str,
-                    prelim_date_str if prelim_date_str else None,
-                    lien_date_str if lien_date_str else None
-                ))
-                
-                print(f"✅ Calculation saved to SQLite: {state_code} - Notice: {notice_date_str}, Prelim: {prelim_date_str}, Lien: {lien_date_str}")
+                # REMOVED: Old INSERT INTO calculations block - now handled by calculations.py router
             
             conn.commit()
     except Exception as e:

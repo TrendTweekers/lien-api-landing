@@ -276,7 +276,11 @@ async def save_calculation(data: SaveCalculationRequest, current_user: dict = De
                     data.quickbooksInvoiceId,
                     datetime.now()
                 ))
-                calculation_id = cursor.fetchone()[0]
+                result = cursor.fetchone()
+                if not result:
+                    conn.rollback()
+                    raise Exception("Failed to insert calculation into database")
+                calculation_id = result[0]
             else:
                 cursor.execute("""
                     INSERT INTO calculations (
