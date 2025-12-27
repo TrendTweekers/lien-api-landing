@@ -1093,16 +1093,6 @@ async def run_state_migration():
             "traceback": traceback.format_exc()
         }
 
-@app.get("/api/admin/run-sage-migration")
-async def run_sage_migration(username: str = Depends(verify_admin)):
-    """Run Sage tokens table migration"""
-    try:
-        from .migrations.add_sage_tokens import run_migration
-        run_migration()
-        return {"success": True, "message": "Sage migration completed"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.get("/api/admin/debug-pdf-data/{state}")
 async def debug_pdf_data(state: str):
     """Debug endpoint to see what data PDF generation uses"""
@@ -1242,6 +1232,16 @@ def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
             headers={"WWW-Authenticate": "Basic"},
         )
     return credentials.username
+
+@app.get("/api/admin/run-sage-migration")
+async def run_sage_migration(username: str = Depends(verify_admin)):
+    """Run Sage tokens table migration"""
+    try:
+        from .migrations.add_sage_tokens import run_migration
+        run_migration()
+        return {"success": True, "message": "Sage migration completed"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Valid state codes (all 50 US states + DC)
 VALID_STATES = [
