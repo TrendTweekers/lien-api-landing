@@ -1158,32 +1158,8 @@ async def debug_pdf_data(state: str):
 @app.on_event("startup")
 async def startup():
     """Initialize the application on startup."""
-    print("🚀 Starting application...")
-    
-    # Run migrations in background (non-blocking)
-    try:
-        import asyncio
-        from .database import init_db
-        from .migrations.fix_production_database import main as run_migration
-        from .migrations.add_calculations_tables import run_migration as run_calc_migration
-        
-        # Run in thread pool to avoid blocking
-        await asyncio.to_thread(init_db)
-        print("✅ Database initialized")
-        
-        await asyncio.to_thread(run_migration)
-        print("✅ Migration completed")
-        
-        await asyncio.to_thread(run_calc_migration)
-        print("✅ Calculations migration completed")
-        
-    except Exception as e:
-        print(f"⚠️ Startup warning: {e}")
-        import traceback
-        traceback.print_exc()
-        # Don't crash - continue anyway
-    
-    print("✅ Application startup complete")
+    print("🚀 Starting application - migrations disabled")
+    print("✅ Application startup complete (migrations disabled)")
 
 # Serve static files (CSS, JS)
 try:
