@@ -17,11 +17,16 @@ def run_migration():
             conn = psycopg2.connect(DATABASE_URL)
             cursor = conn.cursor()
             
-            print("Creating calculations and email_reminders tables (PostgreSQL)...")
+            print("Dropping old tables and creating new calculations structure (PostgreSQL)...")
             
-            # Create calculations table
+            # Drop old tables if they exist (CASCADE removes dependencies)
+            cursor.execute("DROP TABLE IF EXISTS email_reminders CASCADE")
+            cursor.execute("DROP TABLE IF EXISTS calculations CASCADE")
+            print("  Dropped old tables")
+            
+            # Create calculations table with NEW correct structure
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS calculations (
+                CREATE TABLE calculations (
                     id SERIAL PRIMARY KEY,
                     user_email VARCHAR(255) NOT NULL,
                     project_name VARCHAR(255) NOT NULL,
@@ -38,12 +43,13 @@ def run_migration():
                     quickbooks_invoice_id VARCHAR(255),
                     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
                     updated_at TIMESTAMP
-                );
+                )
             """)
+            print("  Created calculations table")
             
             # Create email_reminders table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS email_reminders (
+                CREATE TABLE email_reminders (
                     id SERIAL PRIMARY KEY,
                     calculation_id INTEGER NOT NULL,
                     user_email VARCHAR(255) NOT NULL,
@@ -59,27 +65,30 @@ def run_migration():
                     alert_sent BOOLEAN DEFAULT FALSE,
                     sent_at TIMESTAMP,
                     created_at TIMESTAMP NOT NULL DEFAULT NOW()
-                    -- REMOVED: FOREIGN KEY constraint to avoid dependency issues
-                );
+                )
             """)
+            print("  Created email_reminders table")
             
-            # Create indexes for performance
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_calculations_user_email ON calculations(user_email);
-                CREATE INDEX IF NOT EXISTS idx_calculations_created_at ON calculations(created_at DESC);
-                CREATE INDEX IF NOT EXISTS idx_reminders_send_date ON email_reminders(send_date, alert_sent);
-                CREATE INDEX IF NOT EXISTS idx_reminders_user_email ON email_reminders(user_email);
-            """)
+            # Create indexes separately to avoid multi-statement errors
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_calculations_user_email ON calculations(user_email)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_calculations_created_at ON calculations(created_at DESC)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_reminders_send_date ON email_reminders(send_date, alert_sent)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_email ON email_reminders(user_email)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_reminders_calculation_id ON email_reminders(calculation_id)")
+            print("  Created indexes")
             
             conn.commit()
             cursor.close()
             conn.close()
             
-            print("✅ Migration completed successfully (PostgreSQL)")
+            print("✅ Calculations tables created successfully with correct structure")
             return True
             
     except Exception as e:
         print(f"⚠️ PostgreSQL migration failed: {e}")
+        import traceback
+        traceback.print_exc()
+        # Don't raise - allow server to continue starting
         # Try SQLite as fallback
         try:
             import sqlite3
