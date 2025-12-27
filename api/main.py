@@ -10063,7 +10063,8 @@ SAGE_CLIENT_SECRET = os.getenv("SAGE_CLIENT_SECRET")
 SAGE_REDIRECT_URI = os.getenv("SAGE_REDIRECT_URI", "https://liendeadline.com/api/sage/callback")
 
 # Sage OAuth URLs
-SAGE_AUTH_URL = "https://www.sageone.com/oauth2/auth/central?filter=apiv3.1"
+# Using Sage Business Cloud Accounting OAuth endpoints
+SAGE_AUTH_URL = "https://www.sageone.com/oauth2/auth/central"
 SAGE_TOKEN_URL = "https://oauth.accounting.sage.com/token"
 SAGE_API_BASE = "https://api.accounting.sage.com/v3.1"
 
@@ -10318,10 +10319,11 @@ async def sage_auth(request: Request):
         "scope": SAGE_SCOPES,
         "redirect_uri": SAGE_REDIRECT_URI,
         "response_type": "code",
-        "state": state
+        "state": state,
+        "filter": "apiv3.1"  # API version filter
     }
     
-    auth_url = f"{SAGE_AUTH_URL}&{urlencode(params)}"
+    auth_url = f"{SAGE_AUTH_URL}?{urlencode(params)}"
     return RedirectResponse(url=auth_url)
 
 
