@@ -153,9 +153,31 @@ def create_reminder(cursor, calculation_id, user_email, project_name, client_nam
 async def save_calculation(data: SaveCalculationRequest, current_user: dict = Depends(get_current_user)):
     """Save a calculation with project details and set up email reminders"""
     
+    print(f"=" * 60)
+    print(f"🔍 SAVE CALCULATION DEBUG")
+    print(f"=" * 60)
+    print(f"User email: {current_user.get('email')}")
+    print(f"Project name: {data.projectName}")
+    print(f"Client name: {data.clientName}")
+    print(f"Invoice amount: {data.invoiceAmount}")
+    print(f"Notes: {data.notes}")
+    print(f"State: {data.state}")
+    print(f"State code: {data.stateCode}")
+    print(f"Invoice date: {data.invoiceDate}")
+    print(f"Prelim deadline: {data.prelimDeadline}")
+    print(f"Prelim days: {data.prelimDeadlineDays}")
+    print(f"Lien deadline: {data.lienDeadline}")
+    print(f"Lien days: {data.lienDeadlineDays}")
+    print(f"Reminders: {data.reminders}")
+    print(f"QuickBooks Invoice ID: {data.quickbooksInvoiceId}")
+    print(f"DB Type: {DB_TYPE}")
+    print(f"=" * 60)
+    
     try:
+        print(f"📝 Getting database connection...")
         with get_db() as conn:
             cursor = get_db_cursor(conn)
+            print(f"✅ Database connection established")
             
             # Ensure tables exist
             if DB_TYPE == 'postgresql':
@@ -242,6 +264,12 @@ async def save_calculation(data: SaveCalculationRequest, current_user: dict = De
             
             # 1. Save the calculation/project
             if DB_TYPE == 'postgresql':
+                print(f"📝 Executing PostgreSQL INSERT query...")
+                print(f"   Values: email={current_user['email']}, project={data.projectName}, client={data.clientName}")
+                print(f"   invoice_amount={data.invoiceAmount}, state={data.state}, state_code={data.stateCode}")
+                print(f"   invoice_date={data.invoiceDate}, prelim_deadline={data.prelimDeadline}")
+                print(f"   lien_deadline={data.lienDeadline}, quickbooks_id={data.quickbooksInvoiceId}")
+                
                 cursor.execute("""
                     INSERT INTO calculations (
                         user_email,
@@ -276,12 +304,26 @@ async def save_calculation(data: SaveCalculationRequest, current_user: dict = De
                     data.quickbooksInvoiceId,
                     datetime.now()
                 ))
+                print(f"✅ INSERT executed successfully")
+                
                 result = cursor.fetchone()
+                print(f"📊 Result from fetchone(): {result}")
+                print(f"📊 Result type: {type(result)}")
+                
                 if not result:
                     conn.rollback()
-                    raise Exception("Failed to insert calculation into database")
+                    print(f"❌ ERROR: fetchone() returned None!")
+                    raise Exception("Failed to insert calculation into database - no ID returned")
+                
                 calculation_id = result[0]
+                print(f"✅ Calculation ID: {calculation_id}")
             else:
+                print(f"📝 Executing SQLite INSERT query...")
+                print(f"   Values: email={current_user['email']}, project={data.projectName}, client={data.clientName}")
+                print(f"   invoice_amount={data.invoiceAmount}, state={data.state}, state_code={data.stateCode}")
+                print(f"   invoice_date={data.invoiceDate}, prelim_deadline={data.prelimDeadline}")
+                print(f"   lien_deadline={data.lienDeadline}, quickbooks_id={data.quickbooksInvoiceId}")
+                
                 cursor.execute("""
                     INSERT INTO calculations (
                         user_email,
@@ -315,14 +357,20 @@ async def save_calculation(data: SaveCalculationRequest, current_user: dict = De
                     data.quickbooksInvoiceId,
                     datetime.now()
                 ))
+                print(f"✅ INSERT executed successfully")
+                
                 calculation_id = cursor.lastrowid
+                print(f"✅ Calculation ID (from lastrowid): {calculation_id}")
             
             # 2. Set up email reminders based on user preferences
+            print(f"📧 Setting up email reminders...")
             reminders_created = 0
             
             # Preliminary notice reminders (only if prelim deadline exists)
             if data.prelimDeadline:
+                print(f"   Prelim deadline exists: {data.prelimDeadline}")
                 if data.reminders.prelim7:
+                    print(f"   Creating prelim 7-day reminder...")
                     create_reminder(
                         cursor,
                         calculation_id,
@@ -337,8 +385,10 @@ async def save_calculation(data: SaveCalculationRequest, current_user: dict = De
                         7
                     )
                     reminders_created += 1
+                    print(f"   ✅ Prelim 7-day reminder created")
                 
                 if data.reminders.prelim1:
+                    print(f"   Creating prelim 1-day reminder...")
                     create_reminder(
                         cursor,
                         calculation_id,
@@ -353,9 +403,13 @@ async def save_calculation(data: SaveCalculationRequest, current_user: dict = De
                         1
                     )
                     reminders_created += 1
+                    print(f"   ✅ Prelim 1-day reminder created")
+            else:
+                print(f"   No prelim deadline, skipping prelim reminders")
             
             # Lien filing reminders
             if data.reminders.lien7:
+                print(f"   Creating lien 7-day reminder...")
                 create_reminder(
                     cursor,
                     calculation_id,
@@ -370,8 +424,10 @@ async def save_calculation(data: SaveCalculationRequest, current_user: dict = De
                     7
                 )
                 reminders_created += 1
+                print(f"   ✅ Lien 7-day reminder created")
             
             if data.reminders.lien1:
+                print(f"   Creating lien 1-day reminder...")
                 create_reminder(
                     cursor,
                     calculation_id,
@@ -386,8 +442,18 @@ async def save_calculation(data: SaveCalculationRequest, current_user: dict = De
                     1
                 )
                 reminders_created += 1
+                print(f"   ✅ Lien 1-day reminder created")
             
+            print(f"📊 Total reminders created: {reminders_created}")
+            print(f"💾 Committing transaction...")
             conn.commit()
+            print(f"✅ Transaction committed successfully")
+        
+            print(f"=" * 60)
+            print(f"✅ SAVE CALCULATION SUCCESS")
+            print(f"   Calculation ID: {calculation_id}")
+            print(f"   Reminders Created: {reminders_created}")
+            print(f"=" * 60)
         
         return {
             "success": True,
@@ -397,9 +463,14 @@ async def save_calculation(data: SaveCalculationRequest, current_user: dict = De
         }
         
     except Exception as e:
-        print(f"Error saving calculation: {e}")
+        print(f"=" * 60)
+        print(f"❌ EXCEPTION in save_calculation:")
+        print(f"   Error type: {type(e).__name__}")
+        print(f"   Error message: {str(e)}")
+        print(f"=" * 60)
         import traceback
         traceback.print_exc()
+        print(f"=" * 60)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/calculations/history")
