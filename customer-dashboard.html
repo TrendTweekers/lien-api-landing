@@ -1842,11 +1842,13 @@
                     
                     if (data.connected) {
                         if (statusEl) {
-                            statusEl.textContent = 'Connected';
+                            statusEl.textContent = 'Connected ✓';
                             statusEl.className = 'text-sm text-green-600 font-medium';
                         }
                         if (connectBtn) {
-                            connectBtn.textContent = 'Reconnect';
+                            connectBtn.textContent = 'Disconnect';
+                            connectBtn.onclick = disconnectQuickBooks;
+                            connectBtn.className = 'w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200';
                         }
                         loadQuickBooksInvoices();
                     } else {
@@ -1858,6 +1860,32 @@
                 }
             } catch (error) {
                 console.error('Error checking QuickBooks status:', error);
+            }
+        }
+
+        async function disconnectQuickBooks() {
+            if (!confirm('Disconnect QuickBooks account?')) return;
+            
+            const token = localStorage.getItem('session_token');
+            if (!token) return;
+
+            try {
+                const response = await fetch('/api/quickbooks/disconnect', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    showNotification('QuickBooks disconnected successfully', 'success');
+                    checkQuickBooksStatus();
+                } else {
+                    alert('Failed to disconnect QuickBooks account');
+                }
+            } catch (error) {
+                console.error('Error disconnecting QuickBooks:', error);
+                alert('Error disconnecting QuickBooks account');
             }
         }
 
