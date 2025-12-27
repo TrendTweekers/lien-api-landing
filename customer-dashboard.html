@@ -1791,7 +1791,8 @@
             }
             
             try {
-                window.location.href = '/api/quickbooks/connect';
+                // Pass token as query parameter for browser redirect
+                window.location.href = `/api/quickbooks/connect?token=${encodeURIComponent(token)}`;
             } catch (error) {
                 console.error('Error connecting to QuickBooks:', error);
                 alert('Failed to connect to QuickBooks. Please try again.');
@@ -1966,7 +1967,8 @@
             }
             
             try {
-                window.location.href = '/api/sage/auth';
+                // Pass token as query parameter for browser redirect
+                window.location.href = `/api/sage/auth?token=${encodeURIComponent(token)}`;
             } catch (error) {
                 console.error('Error connecting to Sage:', error);
                 alert('Failed to connect to Sage. Please try again.');

@@ -10219,16 +10219,59 @@ async def get_valid_sage_access_token(user_email: str):
 
 
 @app.get("/api/sage/auth")
-async def sage_auth(request: Request, current_user: dict = Depends(get_current_user)):
+async def sage_auth(request: Request):
     """
     Initiate Sage OAuth flow
     Redirects user to Sage authorization page
+    Accepts token via query parameter (for browser redirects) or Authorization header
     """
     if not SAGE_CLIENT_ID or not SAGE_CLIENT_SECRET:
         raise HTTPException(status_code=500, detail="Sage integration not configured")
     
-    # Use current_user from dependency
-    user = current_user
+    # Extract token from query parameter (browser redirect) or Authorization header
+    token = request.query_params.get('token')
+    if not token:
+        # Try Authorization header
+        authorization = request.headers.get('authorization') or request.headers.get('Authorization')
+        if authorization and authorization.startswith('Bearer '):
+            token = authorization.replace('Bearer ', '').strip()
+    
+    if not token:
+        # Redirect to login if no token
+        return RedirectResponse(url="/dashboard?error=Please log in first")
+    
+    # Look up user from token
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id, email, subscription_status FROM users WHERE session_token = %s", (token,))
+            else:
+                cursor.execute("SELECT id, email, subscription_status FROM users WHERE session_token = ?", (token,))
+            
+            user_result = cursor.fetchone()
+            
+            if not user_result:
+                return RedirectResponse(url="/dashboard?error=Invalid session")
+            
+            # Extract user info
+            if isinstance(user_result, dict):
+                user_id = user_result.get('id')
+                user_email = user_result.get('email', '')
+                subscription_status = user_result.get('subscription_status', '')
+            else:
+                user_id = user_result[0] if len(user_result) > 0 else None
+                user_email = user_result[1] if len(user_result) > 1 else ''
+                subscription_status = user_result[2] if len(user_result) > 2 else ''
+            
+            if subscription_status not in ['active', 'trialing']:
+                return RedirectResponse(url="/dashboard?error=Subscription expired")
+            
+            user = {"id": user_id, "email": user_email}
+    except Exception as e:
+        print(f"Error looking up user: {e}")
+        return RedirectResponse(url="/dashboard?error=Authentication failed")
     
     # Generate secure random state and store it with user email
     state = secrets.token_urlsafe(32)
