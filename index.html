@@ -2470,6 +2470,23 @@ function displayResults(data) {
     // Get state name for PDF URL parameter
     const stateName = data.state_name || (typeof getStateNameFromCode !== 'undefined' ? getStateNameFromCode(stateCode) : stateCode);
     
+    // Get invoice_date for PDF URL parameter (from data or form)
+    let invoiceDate = data.invoice_date || data.notice_date || null;
+    if (!invoiceDate) {
+        // Try to get from form inputs
+        const invoiceDatePicker = document.getElementById('invoiceDatePicker');
+        const invoiceDateDisplay = document.getElementById('invoiceDateDisplay');
+        if (invoiceDatePicker && invoiceDatePicker.value) {
+            invoiceDate = invoiceDatePicker.value;
+        } else if (invoiceDateDisplay && invoiceDateDisplay.value) {
+            // Convert MM/DD/YYYY to YYYY-MM-DD
+            const parts = invoiceDateDisplay.value.split('/');
+            if (parts.length === 3) {
+                invoiceDate = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+            }
+        }
+    }
+    
     // Extract preliminary notice
     if (data.preliminary_notice) {
         if (typeof data.preliminary_notice === 'object' && data.preliminary_notice !== null) {
@@ -2559,7 +2576,7 @@ function displayResults(data) {
             <p class="text-sm text-gray-700 mb-3">
                 Get your complete ${stateCode} mechanics lien deadline guide with step-by-step instructions.
             </p>
-            <a href="/api/v1/guide/${stateCode}/pdf?state_name=${encodeURIComponent(stateName)}" target="_blank" onclick="if(typeof gtag !== 'undefined') { gtag('event', 'pdf_download', { 'event_category': 'PDF', 'event_label': '${stateCode}', 'value': 1 }); }" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded text-sm transition-colors">
+            <a href="/api/v1/guide/${stateCode}/pdf?${invoiceDate ? `invoice_date=${encodeURIComponent(invoiceDate)}&` : ''}state_name=${encodeURIComponent(stateName)}" target="_blank" onclick="if(typeof gtag !== 'undefined') { gtag('event', 'pdf_download', { 'event_category': 'PDF', 'event_label': '${stateCode}', 'value': 1 }); }" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded text-sm transition-colors">
                 Download ${stateName} Lien Guide (PDF)
             </a>
             <p class="text-xs text-gray-500 mt-2">⭐ Trusted by 500+ material suppliers</p>
