@@ -10078,7 +10078,7 @@ def get_sage_basic_auth():
 
 
 def get_sage_user_from_session(authorization: str = Header(None)):
-    """Get user email from session token for Sage"""
+    """Get user email from session token for Sage - matches working endpoints"""
     if not authorization or not authorization.startswith('Bearer '):
         return None
     
@@ -10088,15 +10088,16 @@ def get_sage_user_from_session(authorization: str = Header(None)):
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
+            # Use same lookup as working endpoints: users table with session_token
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
-                    SELECT email, id FROM customers 
-                    WHERE api_key = %s AND status = 'active'
+                    SELECT email, id FROM users 
+                    WHERE session_token = %s
                 """, (token,))
             else:
                 cursor.execute("""
-                    SELECT email, id FROM customers 
-                    WHERE api_key = ? AND status = 'active'
+                    SELECT email, id FROM users 
+                    WHERE session_token = ?
                 """, (token,))
             
             result = cursor.fetchone()
