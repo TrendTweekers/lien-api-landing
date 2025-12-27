@@ -1275,9 +1275,11 @@ def migrate_states():
                     SELECT EXISTS (
                         SELECT FROM information_schema.tables 
                         WHERE table_name = 'lien_deadlines'
-                    )
+                    ) as exists
                 """)
-                table_exists = cursor.fetchone()[0]
+                result = cursor.fetchone()
+                # PostgreSQL with RealDictCursor returns dict-like object
+                table_exists = result.get('exists', False) if result else False
             else:
                 cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='lien_deadlines'")
                 table_exists = cursor.fetchone() is not None
@@ -1473,7 +1475,8 @@ def migrate_states():
             if DB_TYPE == 'postgresql':
                 cursor.execute("SELECT COUNT(*) as count FROM lien_deadlines")
                 result = cursor.fetchone()
-                total_count = result['count'] if isinstance(result, dict) else result[0]
+                # PostgreSQL with RealDictCursor returns dict-like object
+                total_count = result.get('count', 0) if result else 0
             else:
                 cursor.execute("SELECT COUNT(*) as count FROM lien_deadlines")
                 result = cursor.fetchone()
