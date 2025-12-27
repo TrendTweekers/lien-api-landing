@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import Request
 from datetime import datetime, timedelta
 from pydantic import BaseModel
 from typing import Optional, Dict
@@ -30,12 +31,21 @@ class SaveCalculationRequest(BaseModel):
     quickbooksInvoiceId: Optional[str] = None
 
 # Dependency to get current user from session token
-async def get_current_user(authorization: str = Header(None)):
-    """Get current user from session token"""
+async def get_current_user(request: Request):
+    """Get current user from session token - extract from Request headers"""
+    # Extract authorization header from request (case-insensitive)
+    authorization = request.headers.get('authorization') or request.headers.get('Authorization')
+    
+    print(f"🔍 get_current_user called")
+    print(f"   Authorization header: {authorization[:50] if authorization else 'None'}...")
+    print(f"   All headers: {list(request.headers.keys())}")
+    
     if not authorization or not authorization.startswith('Bearer '):
+        print(f"❌ get_current_user: No valid authorization header")
         raise HTTPException(status_code=401, detail="No token provided")
     
-    token = authorization.replace('Bearer ', '')
+    token = authorization.replace('Bearer ', '').strip()
+    print(f"🔍 get_current_user: Extracted token: {token[:20]}...")
     
     try:
         with get_db() as conn:
@@ -47,8 +57,10 @@ async def get_current_user(authorization: str = Header(None)):
                 cursor.execute("SELECT id, email, subscription_status FROM users WHERE session_token = ?", (token,))
             
             user = cursor.fetchone()
+            print(f"🔍 get_current_user: Database query result: {user is not None}")
             
             if not user:
+                print(f"❌ get_current_user: No user found for token")
                 raise HTTPException(status_code=401, detail="Invalid session")
             
             # Extract fields - handle both dict-like and tuple results
@@ -62,10 +74,13 @@ async def get_current_user(authorization: str = Header(None)):
                     user_id = user[0] if len(user) > 0 else None
                     email = user[1] if len(user) > 1 else ''
                     subscription_status = user[2] if len(user) > 2 else ''
-            except (TypeError, KeyError, IndexError):
+                print(f"✅ get_current_user: Found user - email: {email}, status: {subscription_status}")
+            except (TypeError, KeyError, IndexError) as e:
+                print(f"❌ get_current_user: Error extracting user fields: {e}")
                 raise HTTPException(status_code=401, detail="Invalid user data")
             
             if subscription_status not in ['active', 'trialing']:
+                print(f"❌ get_current_user: Subscription not active - status: {subscription_status}")
                 raise HTTPException(status_code=403, detail="Subscription expired")
             
             return {
@@ -77,8 +92,10 @@ async def get_current_user(authorization: str = Header(None)):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Session verification error: {repr(e)}")
-        raise HTTPException(status_code=500, detail="Session verification failed")
+        print(f"❌ get_current_user: Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=401, detail="Authentication failed")
 
 def create_reminder(cursor, calculation_id, user_email, project_name, client_name, 
                    invoice_amount, state, notes, deadline_type, deadline_date, days_before):
