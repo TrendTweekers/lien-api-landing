@@ -1,0 +1,3 @@
+# Include root requirements
+-r ../requirements.txt
+
