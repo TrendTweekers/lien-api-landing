@@ -1157,7 +1157,9 @@ async def debug_pdf_data(state: str):
 # Initialize database on startup
 @app.on_event("startup")
 async def startup():
-    # Verify all dependencies are installed
+    import asyncio
+    
+    # Verify all dependencies are installed (non-blocking)
     print("\n" + "="*60)
     print("🔍 VERIFYING DEPENDENCIES")
     print("="*60)
@@ -1167,28 +1169,39 @@ async def startup():
         
         verify_script = Path(__file__).parent / "verify_imports.py"
         if verify_script.exists():
-            result = subprocess.run(
-                ["python", str(verify_script)],
-                capture_output=True,
-                text=True,
-                timeout=10,
-                cwd=Path(__file__).parent.parent
-            )
-            if result.stdout:
-                print(result.stdout)
-            if result.stderr:
-                print("⚠️ Verification stderr:", result.stderr)
-            if result.returncode != 0:
-                print("⚠️ WARNING: Some dependencies missing!")
+            # Run subprocess in thread pool to avoid blocking
+            def run_verify():
+                return subprocess.run(
+                    ["python", str(verify_script)],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                    cwd=Path(__file__).parent.parent
+                )
+            
+            try:
+                result = await asyncio.to_thread(run_verify)
+                if result.stdout:
+                    print(result.stdout)
+                if result.stderr:
+                    print("⚠️ Verification stderr:", result.stderr)
+                if result.returncode != 0:
+                    print("⚠️ WARNING: Some dependencies missing!")
+            except Exception as e:
+                if isinstance(e, subprocess.TimeoutExpired) or "TimeoutExpired" in str(type(e)):
+                    print("⚠️ Verification timed out after 10 seconds")
+                else:
+                    print(f"⚠️ Verification error: {e}")
         else:
             print("⚠️ verify_imports.py not found, skipping verification")
     except Exception as e:
         print(f"⚠️ Could not verify dependencies: {e}")
     print("="*60 + "\n")
     
-    init_db()
+    # Initialize database (non-blocking)
+    await asyncio.to_thread(init_db)
     
-    # Run database migration on startup (import and run directly)
+    # Run database migration on startup (non-blocking)
     print("\n" + "="*60)
     print("🚀 RUNNING STARTUP MIGRATION")
     print("="*60)
@@ -1202,21 +1215,24 @@ async def startup():
             
             # Import the migration function directly
             try:
-                # Import and run main function
+                # Import and run main function (non-blocking)
                 from .migrations.fix_production_database import main as run_migration
-                run_migration()
+                await asyncio.to_thread(run_migration)
                 print("✅ Migration completed successfully")
             except ImportError as e:
                 print(f"⚠️ Could not import migration script: {e}")
-                # Fallback: try subprocess
+                # Fallback: try subprocess (non-blocking)
                 try:
-                    result = subprocess.run(
-                        ["python", str(migration_script)],
-                        capture_output=True,
-                        text=True,
-                        timeout=120,
-                        cwd=Path(__file__).parent.parent
-                    )
+                    def run_migration_subprocess():
+                        return subprocess.run(
+                            ["python", str(migration_script)],
+                            capture_output=True,
+                            text=True,
+                            timeout=120,
+                            cwd=Path(__file__).parent.parent
+                        )
+                    
+                    result = await asyncio.to_thread(run_migration_subprocess)
                     if result.stdout:
                         print(result.stdout)
                     if result.stderr:
@@ -1225,8 +1241,11 @@ async def startup():
                         print("✅ Migration completed successfully (via subprocess)")
                     else:
                         print(f"⚠️ Migration exited with code {result.returncode}")
-                except subprocess.TimeoutExpired:
-                    print("❌ Migration timed out after 120 seconds")
+                except Exception as e:
+                    if isinstance(e, subprocess.TimeoutExpired) or "TimeoutExpired" in str(type(e)):
+                        print("❌ Migration timed out after 120 seconds")
+                    else:
+                        print(f"❌ Migration subprocess error: {e}")
         else:
             print(f"⚠️ Migration script not found at {migration_script}")
             
@@ -1236,7 +1255,7 @@ async def startup():
         traceback.print_exc()
         # Don't fail startup if migration fails
     
-    # Run calculations tables migration
+    # Run calculations tables migration (non-blocking)
     try:
         print("\n" + "="*60)
         print("🚀 RUNNING CALCULATIONS TABLES MIGRATION")
@@ -1249,22 +1268,25 @@ async def startup():
             
             try:
                 from .migrations.add_calculations_tables import run_migration as run_calc_migration
-                success = run_calc_migration()
+                success = await asyncio.to_thread(run_calc_migration)
                 if success:
                     print("✅ Calculations tables migration completed successfully")
                 else:
                     print("⚠️ Calculations tables migration completed with warnings")
             except ImportError as e:
                 print(f"⚠️ Could not import calculations migration script: {e}")
-                # Fallback: try subprocess
+                # Fallback: try subprocess (non-blocking)
                 try:
-                    result = subprocess.run(
-                        ["python", str(migration_script)],
-                        capture_output=True,
-                        text=True,
-                        timeout=60,
-                        cwd=Path(__file__).parent.parent
-                    )
+                    def run_calc_subprocess():
+                        return subprocess.run(
+                            ["python", str(migration_script)],
+                            capture_output=True,
+                            text=True,
+                            timeout=60,
+                            cwd=Path(__file__).parent.parent
+                        )
+                    
+                    result = await asyncio.to_thread(run_calc_subprocess)
                     if result.stdout:
                         print(result.stdout)
                     if result.stderr:
@@ -1273,8 +1295,11 @@ async def startup():
                         print("✅ Calculations tables migration completed successfully (via subprocess)")
                     else:
                         print(f"⚠️ Calculations tables migration exited with code {result.returncode}")
-                except subprocess.TimeoutExpired:
-                    print("❌ Calculations tables migration timed out after 60 seconds")
+                except Exception as e:
+                    if isinstance(e, subprocess.TimeoutExpired) or "TimeoutExpired" in str(type(e)):
+                        print("❌ Calculations tables migration timed out after 60 seconds")
+                    else:
+                        print(f"❌ Calculations tables migration subprocess error: {e}")
         else:
             print(f"⚠️ Calculations tables migration script not found at {migration_script}")
             
@@ -1286,10 +1311,10 @@ async def startup():
     
     print("="*60 + "\n")
     
-    # Ensure users table exists
+    # Ensure users table exists (non-blocking)
     try:
         from .admin import ensure_users_table
-        created = ensure_users_table()
+        created = await asyncio.to_thread(ensure_users_table)
         if created:
             print("✅ Users table created on startup")
         else:
