@@ -1157,191 +1157,33 @@ async def debug_pdf_data(state: str):
 # Initialize database on startup
 @app.on_event("startup")
 async def startup():
-    import asyncio
+    """Initialize the application on startup."""
+    print("🚀 Starting application...")
     
-    # Verify all dependencies are installed (non-blocking)
-    print("\n" + "="*60)
-    print("🔍 VERIFYING DEPENDENCIES")
-    print("="*60)
+    # Verify imports work
     try:
         import subprocess
-        from pathlib import Path
-        
-        verify_script = Path(__file__).parent / "verify_imports.py"
-        if verify_script.exists():
-            # Run subprocess in thread pool to avoid blocking
-            def run_verify():
-                return subprocess.run(
-                    ["python", str(verify_script)],
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                    cwd=Path(__file__).parent.parent
-                )
-            
-            try:
-                result = await asyncio.to_thread(run_verify)
-                if result.stdout:
-                    print(result.stdout)
-                if result.stderr:
-                    print("⚠️ Verification stderr:", result.stderr)
-                if result.returncode != 0:
-                    print("⚠️ WARNING: Some dependencies missing!")
-            except Exception as e:
-                if isinstance(e, subprocess.TimeoutExpired) or "TimeoutExpired" in str(type(e)):
-                    print("⚠️ Verification timed out after 10 seconds")
-                else:
-                    print(f"⚠️ Verification error: {e}")
+        result = subprocess.run(
+            ["python", "-c", "import api.verify_imports"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        if result.returncode == 0:
+            print("✅ All imports verified successfully")
         else:
-            print("⚠️ verify_imports.py not found, skipping verification")
+            print(f"⚠️ Import verification failed: {result.stderr}")
     except Exception as e:
-        print(f"⚠️ Could not verify dependencies: {e}")
-    print("="*60 + "\n")
+        print(f"⚠️ Could not verify imports: {e}")
     
-    # Initialize database (non-blocking)
-    await asyncio.to_thread(init_db)
+    # TEMPORARILY DISABLED - Comment out everything else to debug crash
+    # import asyncio
+    # await asyncio.to_thread(init_db)
+    # await asyncio.to_thread(run_migration)
+    # await asyncio.to_thread(run_calc_migration)
+    # await asyncio.to_thread(ensure_users_table)
     
-    # Run database migration on startup (non-blocking)
-    print("\n" + "="*60)
-    print("🚀 RUNNING STARTUP MIGRATION")
-    print("="*60)
-    
-    try:
-        # Import and run migration directly (more reliable than subprocess)
-        migration_script = Path(__file__).parent / "migrations" / "fix_production_database.py"
-        
-        if migration_script.exists():
-            print(f"📂 Found migration script: {migration_script}")
-            
-            # Import the migration function directly
-            try:
-                # Import and run main function (non-blocking)
-                from .migrations.fix_production_database import main as run_migration
-                await asyncio.to_thread(run_migration)
-                print("✅ Migration completed successfully")
-            except ImportError as e:
-                print(f"⚠️ Could not import migration script: {e}")
-                # Fallback: try subprocess (non-blocking)
-                try:
-                    def run_migration_subprocess():
-                        return subprocess.run(
-                            ["python", str(migration_script)],
-                            capture_output=True,
-                            text=True,
-                            timeout=120,
-                            cwd=Path(__file__).parent.parent
-                        )
-                    
-                    result = await asyncio.to_thread(run_migration_subprocess)
-                    if result.stdout:
-                        print(result.stdout)
-                    if result.stderr:
-                        print("⚠️ Migration stderr:", result.stderr)
-                    if result.returncode == 0:
-                        print("✅ Migration completed successfully (via subprocess)")
-                    else:
-                        print(f"⚠️ Migration exited with code {result.returncode}")
-                except Exception as e:
-                    if isinstance(e, subprocess.TimeoutExpired) or "TimeoutExpired" in str(type(e)):
-                        print("❌ Migration timed out after 120 seconds")
-                    else:
-                        print(f"❌ Migration subprocess error: {e}")
-        else:
-            print(f"⚠️ Migration script not found at {migration_script}")
-            
-    except Exception as e:
-        print(f"❌ Migration error: {e}")
-        import traceback
-        traceback.print_exc()
-        # Don't fail startup if migration fails
-    
-    # Run calculations tables migration (non-blocking)
-    try:
-        print("\n" + "="*60)
-        print("🚀 RUNNING CALCULATIONS TABLES MIGRATION")
-        print("="*60)
-        
-        migration_script = Path(__file__).parent / "migrations" / "add_calculations_tables.py"
-        
-        if migration_script.exists():
-            print(f"📂 Found migration script: {migration_script}")
-            
-            try:
-                from .migrations.add_calculations_tables import run_migration as run_calc_migration
-                success = await asyncio.to_thread(run_calc_migration)
-                if success:
-                    print("✅ Calculations tables migration completed successfully")
-                else:
-                    print("⚠️ Calculations tables migration completed with warnings")
-            except ImportError as e:
-                print(f"⚠️ Could not import calculations migration script: {e}")
-                # Fallback: try subprocess (non-blocking)
-                try:
-                    def run_calc_subprocess():
-                        return subprocess.run(
-                            ["python", str(migration_script)],
-                            capture_output=True,
-                            text=True,
-                            timeout=60,
-                            cwd=Path(__file__).parent.parent
-                        )
-                    
-                    result = await asyncio.to_thread(run_calc_subprocess)
-                    if result.stdout:
-                        print(result.stdout)
-                    if result.stderr:
-                        print("⚠️ Migration stderr:", result.stderr)
-                    if result.returncode == 0:
-                        print("✅ Calculations tables migration completed successfully (via subprocess)")
-                    else:
-                        print(f"⚠️ Calculations tables migration exited with code {result.returncode}")
-                except Exception as e:
-                    if isinstance(e, subprocess.TimeoutExpired) or "TimeoutExpired" in str(type(e)):
-                        print("❌ Calculations tables migration timed out after 60 seconds")
-                    else:
-                        print(f"❌ Calculations tables migration subprocess error: {e}")
-        else:
-            print(f"⚠️ Calculations tables migration script not found at {migration_script}")
-            
-    except Exception as e:
-        print(f"❌ Calculations tables migration error: {e}")
-        import traceback
-        traceback.print_exc()
-        # Don't fail startup if migration fails
-    
-    print("="*60 + "\n")
-    
-    # Ensure users table exists (non-blocking)
-    try:
-        from .admin import ensure_users_table
-        created = await asyncio.to_thread(ensure_users_table)
-        if created:
-            print("✅ Users table created on startup")
-        else:
-            print("✅ Users table check: OK")
-    except Exception as e:
-        error_repr = repr(e)
-        print(f"⚠️ Users table check failed: {error_repr}")
-        # Don't fail startup if migration fails - it can be run manually via /api/admin/migrate-users-table
-    
-    # Verify critical HTML files exist
-    critical_files = ["contact.html", "index.html", "terms.html", "admin-dashboard.html"]
-    print("\n=== CRITICAL FILES CHECK ===")
-    for filename in critical_files:
-        file_path = BASE_DIR / filename
-        if file_path.exists():
-            print(f"✅ {filename} found at: {file_path.absolute()}")
-        else:
-            print(f"❌ {filename} NOT FOUND at: {file_path.absolute()}")
-    print("============================\n")
-    
-    # Log registered routes for debugging
-    print("\n=== REGISTERED ROUTES ===")
-    for route in app.routes:
-        if hasattr(route, 'path') and hasattr(route, 'methods'):
-            methods = list(route.methods) if hasattr(route.methods, '__iter__') else [str(route.methods)]
-            print(f"{methods} {route.path}")
-    print("========================\n")
+    print("✅ Application startup complete (migrations disabled)")
 
 # Serve static files (CSS, JS)
 try:
