@@ -1073,10 +1073,14 @@ async def run_state_migration():
         result = migrate_states()
         
         return {
-            "success": True,
+            "success": result.get("success", True),
             "message": "State migration completed successfully",
             "states_updated": ["IN", "LA", "MA", "NJ", "OH", "TX"],
-            "result": str(result)
+            "migration_result": {
+                "inserted": result.get("inserted", 0),
+                "updated": result.get("updated", 0),
+                "total": result.get("total", 0)
+            }
         }
     except Exception as e:
         import traceback
