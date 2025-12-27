@@ -435,6 +435,13 @@
                             >
                                 Connect QuickBooks
                             </button>
+                            <a 
+                                href="#" 
+                                onclick="reportIntegrationIssue('QuickBooks'); return false;"
+                                class="block text-center text-xs text-gray-500 hover:text-gray-700 mt-2 underline"
+                            >
+                                Report Issue
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -462,6 +469,13 @@
                             >
                                 Connect Sage
                             </button>
+                            <a 
+                                href="#" 
+                                onclick="reportIntegrationIssue('Sage'); return false;"
+                                class="block text-center text-xs text-gray-500 hover:text-gray-700 mt-2 underline"
+                            >
+                                Report Issue
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -488,6 +502,13 @@
                             >
                                 Connect Procore
                             </button>
+                            <a 
+                                href="#" 
+                                onclick="reportIntegrationIssue('Procore'); return false;"
+                                class="block text-center text-xs text-gray-500 hover:text-gray-700 mt-2 underline"
+                            >
+                                Report Issue
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -1973,6 +1994,33 @@
                 console.error('Error connecting to Sage:', error);
                 alert('Failed to connect to Sage. Please try again.');
             }
+        }
+
+        // Report Integration Issue
+        function reportIntegrationIssue(integrationName) {
+            // Get user email if available
+            const userEmail = localStorage.getItem('user_email') || 'user@example.com';
+            
+            // Create mailto link with pre-filled subject and body
+            const subject = encodeURIComponent(`Integration Issue - ${integrationName}`);
+            const body = encodeURIComponent(
+                `Integration: ${integrationName}\n\n` +
+                `Issue Description:\n` +
+                `[Please describe the issue you're experiencing]\n\n` +
+                `Steps to Reproduce:\n` +
+                `1. \n` +
+                `2. \n` +
+                `3. \n\n` +
+                `Expected Behavior:\n` +
+                `[What should happen]\n\n` +
+                `Actual Behavior:\n` +
+                `[What actually happens]\n\n` +
+                `Additional Details:\n` +
+                `[Any other relevant information]`
+            );
+            
+            const mailtoLink = `mailto:support@liendeadline.com?subject=${subject}&body=${body}`;
+            window.location.href = mailtoLink;
         }
 
         async function checkSageStatus() {
