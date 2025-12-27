@@ -1158,31 +1158,8 @@ async def debug_pdf_data(state: str):
 @app.on_event("startup")
 async def startup():
     """Initialize the application on startup."""
-    print("🚀 Starting application...")
-    
-    # Verify imports work
-    try:
-        import subprocess
-        result = subprocess.run(
-            ["python", "-c", "import api.verify_imports"],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-        if result.returncode == 0:
-            print("✅ All imports verified successfully")
-        else:
-            print(f"⚠️ Import verification failed: {result.stderr}")
-    except Exception as e:
-        print(f"⚠️ Could not verify imports: {e}")
-    
-    # TEMPORARILY DISABLED - Comment out everything else to debug crash
-    # import asyncio
-    # await asyncio.to_thread(init_db)
-    # await asyncio.to_thread(run_migration)
-    # await asyncio.to_thread(run_calc_migration)
-    # await asyncio.to_thread(ensure_users_table)
-    
+    print("🚀 Starting application - migrations disabled")
+    # All migrations and init disabled temporarily to debug crash
     print("✅ Application startup complete (migrations disabled)")
 
 # Serve static files (CSS, JS)
