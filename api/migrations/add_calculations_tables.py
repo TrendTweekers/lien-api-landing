@@ -58,8 +58,8 @@ def run_migration():
                     send_date DATE NOT NULL,
                     alert_sent BOOLEAN DEFAULT FALSE,
                     sent_at TIMESTAMP,
-                    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-                    FOREIGN KEY (calculation_id) REFERENCES calculations(id) ON DELETE CASCADE
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                    -- REMOVED: FOREIGN KEY constraint to avoid dependency issues
                 );
             """)
             
@@ -130,8 +130,8 @@ def run_migration():
                     send_date TEXT NOT NULL,
                     alert_sent INTEGER DEFAULT 0,
                     sent_at TIMESTAMP,
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (calculation_id) REFERENCES calculations(id) ON DELETE CASCADE
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    -- REMOVED: FOREIGN KEY constraint to avoid dependency issues
                 );
             """)
             
