@@ -29,9 +29,9 @@ except ImportError:
     print("⚠️ Warning: Resend package not available - email features disabled")
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from api.rate_limiter import limiter
+from .rate_limiter import limiter
 from io import BytesIO
-from api.calculators import (
+from .calculators import (
     calculate_texas, calculate_washington, calculate_california,
     calculate_ohio, calculate_oregon, calculate_hawaii, calculate_default
 )
@@ -51,23 +51,23 @@ except ImportError:
     print("   Install with: pip install reportlab==4.0.7")
 
 # Import database functions FIRST (before other local imports to avoid circular dependencies)
-from api.database import get_db, get_db_cursor, DB_TYPE, execute_query, BASE_DIR
+from .database import get_db, get_db_cursor, DB_TYPE, execute_query, BASE_DIR
 
 # Define project root (parent of api/ directory)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # THEN import routers (after database is defined)
-from api.analytics import router as analytics_router
-from api.admin import router as admin_router
-from api.quickbooks import router as quickbooks_router
-from api.calculations import router as calculations_router
+from .analytics import router as analytics_router
+from .admin import router as admin_router
+from .quickbooks import router as quickbooks_router
+from .calculations import router as calculations_router
 
 # Import short link generator
-from api.short_link_system import ShortLinkGenerator
+from .short_link_system import ShortLinkGenerator
 
 # Import payout ledger service
 try:
-    from api.services.payout_ledger import (
+    from .services.payout_ledger import (
         compute_broker_ledger,
         compute_all_brokers_ledgers,
         BrokerPayoutLedger,
@@ -84,7 +84,7 @@ except ImportError as e:
     print(f"⚠️ Warning: Payout ledger service not available: {e}")
 
 # Import email anti-abuse system
-from api.email_abuse import (
+from .email_abuse import (
     is_disposable_email,
     generate_verification_token,
     hash_email,
@@ -1056,7 +1056,7 @@ app.include_router(calculations_router, tags=["calculations"])
 async def fix_state_names_endpoint():
     """Temporary endpoint to fix state names in database"""
     try:
-        from api.migrations.fix_state_names import fix_state_names
+        from .migrations.fix_state_names import fix_state_names
         
         result = fix_state_names()
         
@@ -1219,7 +1219,7 @@ async def startup():
             # Import the migration function directly
             try:
                 # Import and run main function
-                from api.migrations.fix_production_database import main as run_migration
+                from .migrations.fix_production_database import main as run_migration
                 run_migration()
                 print("✅ Migration completed successfully")
             except ImportError as e:
@@ -1264,7 +1264,7 @@ async def startup():
             print(f"📂 Found migration script: {migration_script}")
             
             try:
-                from api.migrations.add_calculations_tables import run_migration as run_calc_migration
+                from .migrations.add_calculations_tables import run_migration as run_calc_migration
                 success = run_calc_migration()
                 if success:
                     print("✅ Calculations tables migration completed successfully")
@@ -1304,7 +1304,7 @@ async def startup():
     
     # Ensure users table exists
     try:
-        from api.admin import ensure_users_table
+        from .admin import ensure_users_table
         created = ensure_users_table()
         if created:
             print("✅ Users table created on startup")
@@ -1884,7 +1884,7 @@ async def generate_state_guide_pdf(state_code: str, request: Request):
     if invoice_date_str:
         try:
             from datetime import datetime, timedelta
-            from api.calculators import calculate_default, calculate_texas, calculate_washington, calculate_california, calculate_ohio, calculate_oregon, calculate_hawaii
+            from .calculators import calculate_default, calculate_texas, calculate_washington, calculate_california, calculate_ohio, calculate_oregon, calculate_hawaii
             
             # Parse invoice date - handle both MM/DD/YYYY and YYYY-MM-DD formats
             try:
@@ -3057,7 +3057,7 @@ async def request_api_key(request: Request, api_request: APIKeyRequest):
     Handle API key request submissions.
     Stores in database and sends notification emails.
     """
-    from api.admin import send_email_sync
+    from .admin import send_email_sync
     
     try:
         # Get client IP
@@ -3231,7 +3231,7 @@ async def submit_contact_form(request: Request, contact_data: ContactRequest):
     Handle contact form submissions.
     Validates input, stores in database, and sends email via Resend.
     """
-    from api.admin import send_email_sync
+    from .admin import send_email_sync
     
     try:
         # Get client IP
@@ -4021,7 +4021,7 @@ class TrackEmailRequest(BaseModel):
 async def auto_approve_broker(name: str, email: str, company: str, commission_model: str, message: str):
     """Auto-approve broker and create account immediately"""
     import string
-    from api.admin import send_welcome_email_background
+    from .admin import send_welcome_email_background
     
     try:
         print("=" * 60)
@@ -7680,7 +7680,7 @@ async def save_broker_payment_info(request: Request, data: dict):
             )
         
         # Import encryption utilities
-        from api.encryption import encrypt_data
+        from .encryption import encrypt_data
         
         # Encrypt sensitive data
         encrypted_iban = encrypt_data(iban) if iban else None
@@ -7823,7 +7823,7 @@ async def get_broker_payment_info(request: Request, email: str):
                 tax_id = broker[9] if len(broker) > 9 else ''
             
             # Import encryption utilities
-            from api.encryption import decrypt_data, mask_sensitive_data
+            from .encryption import decrypt_data, mask_sensitive_data
             
             # Decrypt and mask sensitive data
             masked_iban = mask_sensitive_data(decrypt_data(iban), show_last=4) if iban else ''
@@ -8120,7 +8120,7 @@ async def migrate_users_table(username: str = Depends(verify_admin)):
     Migration endpoint to create users table.
     Safe and idempotent - can be run multiple times.
     """
-    from api.admin import ensure_users_table
+    from .admin import ensure_users_table
     import traceback
     
     try:
@@ -8347,7 +8347,7 @@ async def get_broker_payment_info_admin(broker_id: int, username: str = Depends(
                 tax_id = broker[12] if len(broker) > 12 else ''
             
             # Import encryption utilities
-            from api.encryption import decrypt_data
+            from .encryption import decrypt_data
             
             # Decrypt sensitive data for admin
             decrypted_iban = decrypt_data(iban) if iban else ''
@@ -10141,7 +10141,7 @@ async def test_send_reminders(username: str = Depends(verify_admin)):
 def send_broker_password_reset_email(email: str, name: str, reset_link: str):
     """Send password reset email to broker"""
     try:
-        from api.admin import send_email_sync
+        from .admin import send_email_sync
         
         subject = "Reset Your LienDeadline Partner Password"
         
