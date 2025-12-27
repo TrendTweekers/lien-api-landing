@@ -1060,6 +1060,32 @@ async def fix_state_names_endpoint():
             "traceback": traceback.format_exc()
         }
 
+@app.get("/api/admin/run-state-migration")
+async def run_state_migration():
+    """
+    Admin endpoint to run state data migration
+    Updates deadline_days for 6 states (IN, LA, MA, NJ, OH, TX)
+    """
+    try:
+        from .migrations.add_all_states import migrate_states
+        
+        # Run the migration
+        result = migrate_states()
+        
+        return {
+            "success": True,
+            "message": "State migration completed successfully",
+            "states_updated": ["IN", "LA", "MA", "NJ", "OH", "TX"],
+            "result": str(result)
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 @app.get("/api/admin/debug-pdf-data/{state}")
 async def debug_pdf_data(state: str):
     """Debug endpoint to see what data PDF generation uses"""
