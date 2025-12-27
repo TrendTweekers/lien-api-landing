@@ -10063,10 +10063,10 @@ SAGE_CLIENT_SECRET = os.getenv("SAGE_CLIENT_SECRET")
 SAGE_REDIRECT_URI = os.getenv("SAGE_REDIRECT_URI", "https://liendeadline.com/api/sage/callback")
 
 # Sage OAuth URLs
-# Using Sage Operations GraphQL API endpoints (the product we registered in Sage Developer Console)
-SAGE_AUTH_URL = "https://id.sso.sage.com/authorize"
-SAGE_TOKEN_URL = "https://id.sso.sage.com/oauth/token"
-SAGE_API_BASE = "https://api.columbus.sage.com"
+# Using Sage Operations API endpoints (uses Sage Intacct OAuth 2.0 infrastructure)
+SAGE_AUTH_URL = "https://api.intacct.com/ia/api/v1/oauth2/authorize"
+SAGE_TOKEN_URL = "https://api.intacct.com/ia/api/v1/oauth2/token"
+SAGE_API_BASE = "https://api.intacct.com"
 
 # Sage scopes
 SAGE_SCOPES = "full_access"
