@@ -564,13 +564,11 @@
     <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
         <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 16px 0 0;">
                 <!-- Logo -->
-            <a href="/" style="text-decoration: none; margin-right: auto; height: 56px !important; display: flex !important; align-items: center !important; flex-shrink: 0 !important;">
-                <svg class="liendeadline-logo-fixed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 50" style="height: 56px !important; width: auto !important; display: block;">
-  <!-- Actual paths for lion and text here; user gets from converter -->
-  <path d="...lion shape..." fill="#FF7A59"/>
-  <text x="50" y="35" font-size="20" fill="#FF7A59">LienDeadline</text>
-</svg>
-            </a>
+            <a href="/" style="text-decoration: none; display: inline-block;">
+  <img src="/images/liendeadline-logo.png" 
+       alt="LienDeadline" 
+       style="height: 80px; width: auto; display: block;">
+</a>
             
             <!-- Desktop Nav Links -->
             <div class="desktop-nav" style="display: flex; gap: 32px; align-items: center;">
@@ -2132,40 +2130,6 @@
             overflow: visible !important;
         }
         
-        /* Logo image uses 100% of parent height */
-        .liendeadline-logo-fixed,
-        svg.liendeadline-logo-fixed,
-        header .liendeadline-logo-fixed,
-        nav .liendeadline-logo-fixed,
-        header a .liendeadline-logo-fixed,
-        .navbar-brand .liendeadline-logo-fixed,
-        .flex .liendeadline-logo-fixed,
-        .items-center .liendeadline-logo-fixed,
-        header a[href="/"] .liendeadline-logo-fixed,
-        header a[href="/admin-dashboard"] .liendeadline-logo-fixed,
-        header a[href="/broker-dashboard"] .liendeadline-logo-fixed,
-        header svg.liendeadline-logo-fixed,
-        nav svg.liendeadline-logo-fixed,
-        header a svg.liendeadline-logo-fixed {
-            height: 56px !important;
-            width: auto !important;
-            max-width: none !important;
-            display: block !important;
-            flex-shrink: 0 !important;
-            flex-grow: 0 !important;
-            flex-basis: auto !important;
-            vertical-align: middle !important;
-        }
-        
-        /* Override ALL parent containers */
-        header,
-        nav,
-        .header-container,
-        .navbar {
-            height: auto !important;
-            min-height: auto !important;
-            max-height: none !important;
-            overflow: visible !important;
         }
         
         /* Override ALL Tailwind/framework height classes */
@@ -2210,20 +2174,7 @@
                 max-height: 44px !important;
             }
             
-            .liendeadline-logo-fixed,
-            svg.liendeadline-logo-fixed,
-            header .liendeadline-logo-fixed,
-            nav .liendeadline-logo-fixed,
-            header a .liendeadline-logo-fixed,
-            .navbar-brand .liendeadline-logo-fixed,
-            header a[href="/"] .liendeadline-logo-fixed,
-            header a[href="/admin-dashboard"] .liendeadline-logo-fixed,
-            header a[href="/broker-dashboard"] .liendeadline-logo-fixed,
-            header svg.liendeadline-logo-fixed,
-            nav svg.liendeadline-logo-fixed,
-            header a svg.liendeadline-logo-fixed {
-                height: 44px !important;
-            }
+            
         }
         /* Set parent containers to fixed height */
         header a[href="/"],
@@ -2243,40 +2194,6 @@
             overflow: visible !important;
         }
         
-        /* Logo image uses 100% of parent height */
-        .liendeadline-logo-fixed,
-        svg.liendeadline-logo-fixed,
-        header .liendeadline-logo-fixed,
-        nav .liendeadline-logo-fixed,
-        header a .liendeadline-logo-fixed,
-        .navbar-brand .liendeadline-logo-fixed,
-        .flex .liendeadline-logo-fixed,
-        .items-center .liendeadline-logo-fixed,
-        header a[href="/"] .liendeadline-logo-fixed,
-        header a[href="/admin-dashboard"] .liendeadline-logo-fixed,
-        header a[href="/broker-dashboard"] .liendeadline-logo-fixed,
-        header svg.liendeadline-logo-fixed,
-        nav svg.liendeadline-logo-fixed,
-        header a svg.liendeadline-logo-fixed {
-            height: 56px !important;
-            width: auto !important;
-            max-width: none !important;
-            display: block !important;
-            flex-shrink: 0 !important;
-            flex-grow: 0 !important;
-            flex-basis: auto !important;
-            vertical-align: middle !important;
-        }
-        
-        /* Override ALL parent containers */
-        header,
-        nav,
-        .header-container,
-        .navbar {
-            height: auto !important;
-            min-height: auto !important;
-            max-height: none !important;
-            overflow: visible !important;
         }
         
         /* Override ALL Tailwind/framework height classes */
@@ -2321,20 +2238,7 @@
                 max-height: 44px !important;
             }
             
-            .liendeadline-logo-fixed,
-            svg.liendeadline-logo-fixed,
-            header .liendeadline-logo-fixed,
-            nav .liendeadline-logo-fixed,
-            header a .liendeadline-logo-fixed,
-            .navbar-brand .liendeadline-logo-fixed,
-            header a[href="/"] .liendeadline-logo-fixed,
-            header a[href="/admin-dashboard"] .liendeadline-logo-fixed,
-            header a[href="/broker-dashboard"] .liendeadline-logo-fixed,
-            header svg.liendeadline-logo-fixed,
-            nav svg.liendeadline-logo-fixed,
-            header a svg.liendeadline-logo-fixed {
-                height: 44px !important;
-            }
+            
         }
         </style>
 
@@ -3334,17 +3238,7 @@ window.addEventListener('DOMContentLoaded', function() {
         (function() {
             function enforceLogoSize() {
                 console.log('Enforcing logo size...');
-                const logos = document.querySelectorAll('.liendeadline-logo-fixed');
-                const isMobile = window.innerWidth <= 768;
-                const targetHeight = isMobile ? '44px' : '56px';
-                
-                logos.forEach(function(logo) {
-                    if (logo) {
-                        // Find parent <a> or wrapper
-                        let parent = logo.parentElement;
-                        while (parent && parent.tagName !== 'A' && parent.tagName !== 'HEADER' && parent.tagName !== 'NAV') {
-                            parent = parent.parentElement;
-                        }
+                const logos = document.querySelectorAll('
                         
                         if (parent && (parent.tagName === 'A' || parent.classList.contains('flex') || parent.hasAttribute('href'))) {
                             // Set parent height first

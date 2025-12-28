@@ -159,32 +159,7 @@
       }
     
       /* Force logo size - override ALL constraints with unique class */
-      .liendeadline-logo-fixed,
-      svg.liendeadline-logo-fixed,
-      header .liendeadline-logo-fixed,
-      nav .liendeadline-logo-fixed,
-      header a .liendeadline-logo-fixed,
-      .navbar-brand .liendeadline-logo-fixed,
-      .flex .liendeadline-logo-fixed,
-      .items-center .liendeadline-logo-fixed,
-      header a[href="/"] .liendeadline-logo-fixed,
-      header a[href="/admin-dashboard"] .liendeadline-logo-fixed,
-      header a[href="/broker-dashboard"] .liendeadline-logo-fixed,
-      header svg.liendeadline-logo-fixed,
-      nav svg.liendeadline-logo-fixed,
-      header a svg.liendeadline-logo-fixed {
-        height: 56px !important;
-        width: auto !important;
-        min-height: 56px !important;
-        max-height: 56px !important;
-        max-width: none !important;
-        display: block !important;
-        flex-shrink: 0 !important;
-        flex-grow: 0 !important;
-        flex-basis: auto !important;
-        vertical-align: middle !important;
-        line-height: 56px !important;
-      }
+      
       
       /* Override ALL parent containers */
       header,
@@ -242,24 +217,7 @@
       }
       
       @media (max-width: 768px) {
-        .liendeadline-logo-fixed,
-        svg.liendeadline-logo-fixed,
-        header .liendeadline-logo-fixed,
-        nav .liendeadline-logo-fixed,
-        header a .liendeadline-logo-fixed,
-        .navbar-brand .liendeadline-logo-fixed,
-        header a[href="/"] .liendeadline-logo-fixed,
-        header a[href="/admin-dashboard"] .liendeadline-logo-fixed,
-        header a[href="/broker-dashboard"] .liendeadline-logo-fixed,
-        header svg.liendeadline-logo-fixed,
-        nav svg.liendeadline-logo-fixed,
-        header a svg.liendeadline-logo-fixed {
-          height: 44px !important;
-          min-height: 44px !important;
-          max-height: 44px !important;
-          width: auto !important;
-          line-height: 44px !important;
-        }
+        
       }
       
       
@@ -888,20 +846,7 @@
         // Force logo size via JavaScript as final fallback
         (function() {
             function enforceLogoSize() {
-                const logos = document.querySelectorAll('.liendeadline-logo-fixed');
-                const isMobile = window.innerWidth <= 768;
-                const targetHeight = isMobile ? '44px' : '56px';
-                
-                logos.forEach(function(logo) {
-                    if (logo) {
-                        logo.style.setProperty('height', targetHeight, 'important');
-                        logo.style.setProperty('min-height', targetHeight, 'important');
-                        logo.style.setProperty('max-height', targetHeight, 'important');
-                        logo.style.setProperty('width', 'auto', 'important');
-                        logo.style.setProperty('display', 'block', 'important');
-                        logo.style.setProperty('object-fit', 'contain', 'important');
-                        logo.style.setProperty('flex-shrink', '0', 'important');
-                    }
+                const logos = document.querySelectorAll('
                 });
             }
             

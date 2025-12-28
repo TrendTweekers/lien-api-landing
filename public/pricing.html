@@ -202,32 +202,7 @@
         }
     
         /* Force logo size - override ALL constraints with unique class */
-        .liendeadline-logo-fixed,
-        svg.liendeadline-logo-fixed,
-        header .liendeadline-logo-fixed,
-        nav .liendeadline-logo-fixed,
-        header a .liendeadline-logo-fixed,
-        .navbar-brand .liendeadline-logo-fixed,
-        .flex .liendeadline-logo-fixed,
-        .items-center .liendeadline-logo-fixed,
-        header a[href="/"] .liendeadline-logo-fixed,
-        header a[href="/admin-dashboard"] .liendeadline-logo-fixed,
-        header a[href="/broker-dashboard"] .liendeadline-logo-fixed,
-        header svg.liendeadline-logo-fixed,
-        nav svg.liendeadline-logo-fixed,
-        header a svg.liendeadline-logo-fixed {
-            height: 56px !important;
-            width: auto !important;
-            min-height: 56px !important;
-            max-height: 56px !important;
-            max-width: none !important;
-            display: block !important;
-            flex-shrink: 0 !important;
-            flex-grow: 0 !important;
-            flex-basis: auto !important;
-            vertical-align: middle !important;
-            line-height: 56px !important;
-        }
+        
         
         /* Override ALL parent containers */
         header,
@@ -286,24 +261,7 @@
         
         /* Mobile Navigation */
         @media (max-width: 768px) {
-            .liendeadline-logo-fixed,
-            svg.liendeadline-logo-fixed,
-            header .liendeadline-logo-fixed,
-            nav .liendeadline-logo-fixed,
-            header a .liendeadline-logo-fixed,
-            .navbar-brand .liendeadline-logo-fixed,
-            header a[href="/"] .liendeadline-logo-fixed,
-            header a[href="/admin-dashboard"] .liendeadline-logo-fixed,
-            header a[href="/broker-dashboard"] .liendeadline-logo-fixed,
-            header svg.liendeadline-logo-fixed,
-            nav svg.liendeadline-logo-fixed,
-            header a svg.liendeadline-logo-fixed {
-                height: 44px !important;
-                min-height: 44px !important;
-                max-height: 44px !important;
-                width: auto !important;
-                line-height: 44px !important;
-            }
+            
         }
         </style
     </head>
@@ -313,13 +271,11 @@
     <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
         <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 16px 0 0;">
             <!-- Logo -->
-            <a href="/" style="text-decoration: none; margin-right: auto; display: flex; align-items: center; display: flex !important; align-items: center !important; flex-shrink: 0 !important; height: 56px !important; display: flex !important; align-items: center !important; flex-shrink: 0 !important; ">
-                <svg class="liendeadline-logo-fixed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 50" style="height: 56px !important; width: auto !important; display: block;">
-  <!-- Actual paths for lion and text here; user gets from converter -->
-  <path d="...lion shape..." fill="#FF7A59"/>
-  <text x="50" y="35" font-size="20" fill="#FF7A59">LienDeadline</text>
-</svg>
-            </a>
+            <a href="/" style="text-decoration: none; display: inline-block;">
+  <img src="/images/liendeadline-logo.png" 
+       alt="LienDeadline" 
+       style="height: 80px; width: auto; display: block;">
+</a>
             
             <!-- Desktop Nav Links -->
             <div style="display: flex; gap: 32px; align-items: center;">
@@ -915,20 +871,7 @@
         // Force logo size via JavaScript as final fallback
         (function() {
             function enforceLogoSize() {
-                const logos = document.querySelectorAll('.liendeadline-logo-fixed');
-                const isMobile = window.innerWidth <= 768;
-                const targetHeight = isMobile ? '44px' : '56px';
-                
-                logos.forEach(function(logo) {
-                    if (logo) {
-                        logo.style.setProperty('height', targetHeight, 'important');
-                        logo.style.setProperty('min-height', targetHeight, 'important');
-                        logo.style.setProperty('max-height', targetHeight, 'important');
-                        logo.style.setProperty('width', 'auto', 'important');
-                        logo.style.setProperty('display', 'block', 'important');
-                        logo.style.setProperty('object-fit', 'contain', 'important');
-                        logo.style.setProperty('flex-shrink', '0', 'important');
-                    }
+                const logos = document.querySelectorAll('
                 });
             }
             
