@@ -522,11 +522,11 @@
     </div>
     
     <!-- Header -->
-    <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
-        <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 16px 0 0;">
+    <header class="bg-white border-b border-gray-200 py-4 sticky top-0 z-50 h-auto min-h-[80px] overflow-visible">
+        <nav class="flex justify-between items-center max-w-7xl mx-auto px-4 h-auto min-h-[80px] overflow-visible">
                 <!-- Logo -->
-            <a href="/" class="logo" style="text-decoration: none;">
-                <img src="/images/liendeadline-logo.png" alt="LienDeadline" class="logo">
+            <a href="/" class="logo flex-shrink-0 overflow-visible" style="text-decoration: none;">
+                <img src="/images/liendeadline-logo.png" alt="LienDeadline" class="logo h-20 w-auto block object-contain">
             </a>
             
             <!-- Desktop Nav Links -->
@@ -2071,15 +2071,22 @@
         }
     
         /* Logo Container and Image Styles */
-        /* Use more specific selectors with classes for better specificity */
-        /* Override any parent container constraints */
-        header,
-        header nav {
+        /* Ensure header and nav don't constrain logo */
+        header {
             height: auto !important;
-            min-height: auto !important;
+            min-height: 80px !important;
             max-height: none !important;
+            overflow: visible !important;
         }
         
+        header nav {
+            height: auto !important;
+            min-height: 80px !important;
+            max-height: none !important;
+            overflow: visible !important;
+        }
+        
+        /* Logo container - prevent compression */
         header nav a.logo,
         header a.logo {
             height: auto !important;
@@ -2092,9 +2099,9 @@
             line-height: normal !important;
             margin: 0 !important;
             padding: 0 !important;
-            vertical-align: baseline !important;
         }
         
+        /* Logo image - ensure 80px height */
         header nav img.logo,
         header img.logo,
         header nav img[alt="LienDeadline"],
@@ -2102,14 +2109,21 @@
             height: 80px !important;
             width: auto !important;
             display: block !important;
-            min-height: 0 !important;
+            min-height: 80px !important;
             max-height: none !important;
             object-fit: contain !important;
-            vertical-align: baseline !important;
         }
         
         /* Mobile Responsive */
         @media (max-width: 768px) {
+            header {
+                min-height: 44px !important;
+            }
+            
+            header nav {
+                min-height: 44px !important;
+            }
+            
             header nav a.logo,
             header a.logo {
                 height: auto !important;
@@ -2123,6 +2137,7 @@
             header img[alt="LienDeadline"] {
                 height: 44px !important;
                 width: auto !important;
+                min-height: 44px !important;
             }
         }
         </style>
