@@ -1409,8 +1409,10 @@
             let loadedCalculations = [];
 
             function viewProject(calculationId) {
+                // Convert to number in case it's passed as a string
+                const id = parseInt(calculationId, 10);
                 // Find the project from the loaded calculations
-                const project = window.loadedCalculations?.find(c => c.id === calculationId);
+                const project = window.loadedCalculations?.find(c => c.id === id);
                 
                 if (!project) {
                     alert('Project not found');
