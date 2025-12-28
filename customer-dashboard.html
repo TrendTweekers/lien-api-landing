@@ -1575,7 +1575,11 @@
                 const stateName = currentProject.state || '';
                 
                 // Generate PDF URL with invoice date
-                const pdfUrl = `/api/v1/guide/${stateCode}/pdf?invoice_date=${dateStr}&state_name=${encodeURIComponent(stateName)}`;
+                // Get project type (default to commercial if not specified)
+                const projectType = currentProject.projectType || 'commercial';
+                
+                // Build the PDF URL with all required parameters
+                const pdfUrl = `/api/v1/guide/${stateCode}/pdf?invoice_date=${dateStr}&state_name=${encodeURIComponent(stateName)}&project_type=${projectType}`;
                 
                 // Open PDF in new tab
                 window.open(pdfUrl, '_blank');
