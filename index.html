@@ -95,7 +95,7 @@
     </script>
     
     >
-<style>
+    <style>
         /* Note: Base body/html styles now in lovable-scale.css */
         /* Only component-specific overrides here */
         
@@ -543,7 +543,7 @@
             -webkit-text-fill-color: transparent;
         }
     </style
-    </head>
+</head>
 <body class="min-h-screen bg-background text-foreground antialiased">
     
     <!-- SUCCESS BANNER (appears after Stripe redirect) -->
@@ -564,9 +564,9 @@
     <!-- Header -->
     <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
         <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 16px 0 0;">
-            <!-- Logo -->
+                <!-- Logo -->
             <a href="/" style="text-decoration: none; margin-right: auto; height: 56px !important; display: flex !important; align-items: center !important; flex-shrink: 0 !important;">
-                <img src="/images/liendeadline-logo.png" alt="LienDeadline" class="liendeadline-logo-fixed" style="height: 100% !important; width: auto !important; display: block !important; object-fit: contain !important;">
+                <img src="/images/liendeadline-logo.svg?v=1" alt="LienDeadline" class="liendeadline-logo-fixed" style="height: 56px !important; width: auto !important; display: block !important;">
             </a>
             
             <!-- Desktop Nav Links -->
@@ -575,12 +575,12 @@
                 <a href="/pricing.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Pricing</a>
                 <a href="/partners.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Partners</a>
                 <a href="/" style="background: #F97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">Try Free</a>
-            </div>
-            
+                </div>
+                
             <!-- Mobile Hamburger (hidden on desktop) -->
             <button class="mobile-menu-btn" id="mobileMenuBtn" style="display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: #1F2937; padding: 4px;">
                 ☰
-            </button>
+                </button>
         </nav>
         
         <!-- Mobile Menu (hidden by default) -->
@@ -2144,11 +2144,10 @@
         header img.liendeadline-logo-fixed,
         nav img.liendeadline-logo-fixed,
         header a img.liendeadline-logo-fixed {
-            height: 100% !important;
+            height: 56px !important;
             width: auto !important;
             max-width: none !important;
             display: block !important;
-            object-fit: contain !important;
             flex-shrink: 0 !important;
             flex-grow: 0 !important;
             flex-basis: auto !important;
@@ -2220,7 +2219,7 @@
             header img.liendeadline-logo-fixed,
             nav img.liendeadline-logo-fixed,
             header a img.liendeadline-logo-fixed {
-                height: 100% !important;
+                height: 56px !important;
             }
         }
         /* Set parent containers to fixed height */
@@ -2256,11 +2255,10 @@
         header img.liendeadline-logo-fixed,
         nav img.liendeadline-logo-fixed,
         header a img.liendeadline-logo-fixed {
-            height: 100% !important;
+            height: 56px !important;
             width: auto !important;
             max-width: none !important;
             display: block !important;
-            object-fit: contain !important;
             flex-shrink: 0 !important;
             flex-grow: 0 !important;
             flex-basis: auto !important;
@@ -2332,7 +2330,7 @@
             header img.liendeadline-logo-fixed,
             nav img.liendeadline-logo-fixed,
             header a img.liendeadline-logo-fixed {
-                height: 100% !important;
+                height: 56px !important;
             }
         }
         </style>
@@ -3356,11 +3354,10 @@ window.addEventListener('DOMContentLoaded', function() {
                             console.log('Set parent height to:', targetHeight);
                         }
                         
-                        // Set img to 100% of parent
-                        logo.style.setProperty('height', '100%', 'important');
+                        // Set img height directly (SVG scales perfectly)
+                        logo.style.setProperty('height', targetHeight, 'important');
                         logo.style.setProperty('width', 'auto', 'important');
                         logo.style.setProperty('display', 'block', 'important');
-                        logo.style.setProperty('object-fit', 'contain', 'important');
                         logo.style.setProperty('flex-shrink', '0', 'important');
                         
                         // Diagnostic logging
@@ -3387,7 +3384,7 @@ window.addEventListener('DOMContentLoaded', function() {
             setTimeout(enforceLogoSize, 100);
             setTimeout(enforceLogoSize, 500);
             setTimeout(enforceLogoSize, 1000);
-        })();
-    </script>
+})();
+</script>
 </body>
 </html>
