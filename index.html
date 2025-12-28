@@ -3195,5 +3195,25 @@ window.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 
+    <script>
+        // Debug: Check logo actual rendered size
+        window.addEventListener('load', () => {
+            const logo = document.querySelector('img[alt="LienDeadline"]');
+            if (logo) {
+                console.log('=== LOGO DEBUG INFO ===');
+                console.log('Logo actual height (offsetHeight):', logo.offsetHeight, 'px');
+                console.log('Logo computed style height:', window.getComputedStyle(logo).height);
+                console.log('Logo inline style height:', logo.style.height);
+                console.log('Logo natural height:', logo.naturalHeight, 'px');
+                console.log('Logo natural width:', logo.naturalWidth, 'px');
+                console.log('Logo parent element:', logo.parentElement);
+                console.log('Logo parent computed height:', logo.parentElement ? window.getComputedStyle(logo.parentElement).height : 'N/A');
+                console.log('========================');
+            } else {
+                console.log('Logo not found!');
+            }
+        });
+    </script>
+
 </body>
 </html>
