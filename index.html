@@ -525,8 +525,8 @@
     <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
         <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 16px 0 0;">
                 <!-- Logo -->
-            <a href="/" style="text-decoration: none; display: inline-block; height: auto; min-height: 80px;">
-                <img src="/images/liendeadline-logo.png" alt="LienDeadline" style="height: 80px; width: auto; display: block;">
+            <a href="/" class="logo" style="text-decoration: none; display: inline-block;">
+                <img src="/images/liendeadline-logo.png" alt="LienDeadline" class="logo">
             </a>
             
             <!-- Desktop Nav Links -->
@@ -2071,32 +2071,48 @@
         }
     
         /* Logo Container and Image Styles */
-        /* Parent Container (<a> tag) - Desktop */
-        header a[href="/"] {
-            height: auto;
-            min-height: 80px;
-            display: flex;
-            align-items: center;
-            flex-shrink: 0;
-            overflow: visible;
+        /* Use more specific selectors with classes for better specificity */
+        header nav a.logo,
+        header a.logo {
+            height: auto !important;
+            min-height: 80px !important;
+            max-height: none !important;
+            display: flex !important;
+            align-items: center !important;
+            flex-shrink: 0 !important;
+            overflow: visible !important;
+            line-height: normal !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         
-        /* Logo Image (<img> tag) */
+        header nav img.logo,
+        header img.logo,
+        header nav img[alt="LienDeadline"],
         header img[alt="LienDeadline"] {
-            height: 80px;
-            width: auto;
-            display: block;
+            height: 80px !important;
+            width: auto !important;
+            display: block !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            object-fit: contain !important;
         }
         
         /* Mobile Responsive */
         @media (max-width: 768px) {
-            header a[href="/"] {
-                height: auto;
-                min-height: 44px;
+            header nav a.logo,
+            header a.logo {
+                height: auto !important;
+                min-height: 44px !important;
+                max-height: none !important;
             }
             
+            header nav img.logo,
+            header img.logo,
+            header nav img[alt="LienDeadline"],
             header img[alt="LienDeadline"] {
-                height: 44px;
+                height: 44px !important;
+                width: auto !important;
             }
         }
         </style>
