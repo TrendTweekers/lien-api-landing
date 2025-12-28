@@ -1,385 +1,400 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>California Mechanics Lien Deadlines for Material Suppliers (2025) | LienDeadline</title>
-  <meta name="description" content="California supplier-only lien guide: 20-day preliminary notice, lien filing deadline, and enforcement deadline. Built for lumber, concrete, steel, and building material suppliers." />
+  <title>California Lien Deadlines for Material Suppliers | LienDeadline</title>
+  <meta name="description" content="California preliminary notice, lien filing, and enforcement deadlines for material suppliers. Protect yourself from $75,000+ losses by tracking the 20-day notice and strict enforcement window." />
   <link rel="canonical" href="https://liendeadline.com/state-lien-guides/california" />
 
-  <meta property="og:title" content="California Mechanics Lien Deadlines for Material Suppliers | LienDeadline" />
-  <meta property="og:description" content="Supplier-focused California lien deadlines: preliminary notice timing, lien filing, and enforcement windows — plus common mistakes to avoid." />
-  <meta property="og:url" content="https://liendeadline.com/state-lien-guides/california" />
-  <meta property="og:type" content="article" />
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-  <style>
-    :root{
-      --bg:#0b1220;
-      --card:#111a2e;
-      --muted:#9fb0d0;
-      --text:#eaf0ff;
-      --line:rgba(255,255,255,.10);
-      --accent:#ff6b6b;
-      --good:#2ee59d;
-      --warn:#ffcc66;
-      --link:#7ab7ff;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background: radial-gradient(1200px 600px at 20% 0%, rgba(122,183,255,.18), transparent 60%),
-                  radial-gradient(900px 500px at 80% 10%, rgba(255,107,107,.16), transparent 55%),
-                  var(--bg);
-      color:var(--text);
-      line-height:1.55;
-    }
-    a{color:var(--link); text-decoration:none}
-    a:hover{text-decoration:underline}
-    .wrap{max-width:1060px; margin:0 auto; padding:28px 18px 60px}
-    .topbar{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px}
-    .brand{font-weight:800; letter-spacing:.2px}
-    .brand a{color:var(--text)}
-    .nav a{color:var(--muted); margin-left:14px; font-size:14px}
-    .crumbs{font-size:13px; color:var(--muted); margin:10px 0 18px}
-    .crumbs a{color:var(--muted)}
-    .hero{
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:22px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-    }
-    h1{margin:0 0 6px; font-size:32px; line-height:1.15}
-    .subhead{margin:0; color:var(--muted); font-size:16px}
-    .badgeRow{display:flex; flex-wrap:wrap; gap:10px; margin-top:14px}
-    .badge{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 12px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background: rgba(17,26,46,.65);
-      font-size:13px;
-      color:var(--muted);
-      white-space:nowrap;
-    }
-    .badge strong{color:var(--text)}
-    .pillRisk{color:#ffd7d7; border-color: rgba(255,107,107,.35); background: rgba(255,107,107,.08)}
-    .grid{display:grid; grid-template-columns: 1.2fr .8fr; gap:14px; margin-top:14px}
-    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
-    .card{
-      background: rgba(17,26,46,.55);
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:18px;
-    }
-    .card h2{margin:0 0 10px; font-size:18px}
-    .callout{
-      border-left:4px solid var(--warn);
-      background: rgba(255,204,102,.08);
-      padding:12px 12px 12px 14px;
-      border-radius:12px;
-      color:var(--text);
-    }
-    .callout strong{color:#ffe2a8}
-    .table{
-      width:100%;
-      border-collapse:collapse;
-      overflow:hidden;
-      border-radius:14px;
-      border:1px solid var(--line);
-      background: rgba(17,26,46,.35);
-    }
-    .table th, .table td{
-      text-align:left;
-      padding:12px 12px;
-      border-bottom:1px solid var(--line);
-      vertical-align:top;
-      font-size:14px;
-    }
-    .table th{color:var(--muted); font-weight:700; background: rgba(255,255,255,.03)}
-    .table tr:last-child td{border-bottom:none}
-    .muted{color:var(--muted)}
-    .list{margin:10px 0 0; padding-left:18px}
-    .list li{margin:8px 0; color:var(--text)}
-    .kicker{color:var(--muted); font-size:13px; margin:6px 0 0}
-    .cta{
-      display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;
-      margin-top:18px;
-      padding:16px;
-      border-radius:18px;
-      border:1px solid rgba(122,183,255,.35);
-      background: linear-gradient(180deg, rgba(122,183,255,.14), rgba(17,26,46,.45));
-    }
-    .cta h3{margin:0; font-size:16px}
-    .cta p{margin:4px 0 0; color:var(--muted); font-size:14px}
-    .btn{
-      display:inline-flex; align-items:center; justify-content:center;
-      padding:10px 14px;
-      border-radius:12px;
-      background: rgba(122,183,255,.18);
-      border:1px solid rgba(122,183,255,.45);
-      color:var(--text);
-      font-weight:700;
-      font-size:14px;
-      text-decoration:none;
-      white-space:nowrap;
-    }
-    .btn:hover{background: rgba(122,183,255,.26); text-decoration:none}
-    .trial{
-      display:flex; flex-direction:column; gap:2px;
-      margin-top:10px;
-      color:var(--muted);
-      font-size:13px;
-    }
-    .trial strong{color:var(--text)}
-    details{
-      border:1px solid var(--line);
-      background: rgba(17,26,46,.35);
-      border-radius:14px;
-      padding:12px 12px;
-      margin:10px 0;
-    }
-    summary{cursor:pointer; font-weight:700}
-    .foot{
-      margin-top:18px;
-      font-size:12px;
-      color:var(--muted);
-      border-top:1px solid var(--line);
-      padding-top:14px;
-    }
-    .statutes code{
-      display:inline-block;
-      padding:2px 8px;
-      border:1px solid var(--line);
-      border-radius:999px;
-      margin:4px 6px 0 0;
-      background: rgba(255,255,255,.03);
-      color:var(--muted);
-      font-size:12px;
-    }
-  </style>
+  <!-- Tailwind CSS CDN (kept to match Texas environment, but page uses inline styles for consistency) -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- JSON-LD: Article -->
+  <!-- JSON-LD Schema -->
   <script type="application/ld+json">
   {
-    "@context":"https://schema.org",
-    "@type":"Article",
-    "headline":"California Mechanics Lien Deadlines for Material Suppliers",
-    "description":"Supplier-focused California lien guide covering preliminary notice timing, lien filing deadline, and enforcement deadline.",
-    "mainEntityOfPage":{
-      "@type":"WebPage",
-      "@id":"https://liendeadline.com/state-lien-guides/california"
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "California Lien Deadlines for Material Suppliers",
+    "description": "California preliminary notice, lien filing, and enforcement deadlines for material suppliers. Protect yourself from $75,000+ losses by tracking the 20-day notice and strict enforcement window.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "LienDeadline",
+      "url": "https://liendeadline.com"
     },
-    "publisher":{
-      "@type":"Organization",
-      "name":"LienDeadline",
-      "url":"https://liendeadline.com/"
-    },
-    "author":{
-      "@type":"Organization",
-      "name":"LienDeadline"
-    },
-    "datePublished":"2025-12-28",
-    "dateModified":"2025-12-28"
+    "datePublished": "2024-01-01",
+    "dateModified": "2024-01-01"
   }
   </script>
 
-  <!-- JSON-LD: Breadcrumbs -->
   <script type="application/ld+json">
   {
-    "@context":"https://schema.org",
-    "@type":"BreadcrumbList",
-    "itemListElement":[
-      {"@type":"ListItem","position":1,"name":"Home","item":"https://liendeadline.com/"},
-      {"@type":"ListItem","position":2,"name":"State Lien Guides","item":"https://liendeadline.com/state-lien-guides.html"},
-      {"@type":"ListItem","position":3,"name":"California","item":"https://liendeadline.com/state-lien-guides/california"}
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://liendeadline.com" },
+      { "@type": "ListItem", "position": 2, "name": "State Guides", "item": "https://liendeadline.com/state-lien-guides.html" },
+      { "@type": "ListItem", "position": 3, "name": "California", "item": "https://liendeadline.com/state-lien-guides/california" }
     ]
   }
   </script>
+
+  <style>
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #1F2937;
+      line-height: 1.6;
+    }
+    h1, h2, h3 {
+      font-family: 'Instrument Serif', serif;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0;
+    }
+    table th, table td {
+      padding: 12px 16px;
+      text-align: left;
+      border: 1px solid #E5E7EB;
+    }
+    table th {
+      background: #F9FAFB;
+      font-weight: 600;
+      color: #1F2937;
+    }
+    table tr:nth-child(even) {
+      background: #F9FAFB;
+    }
+
+    /* Logo sizing (same approach as Texas) */
+    .liendeadline-logo-fixed {
+      height: 56px !important;
+      width: auto !important;
+      min-height: 56px !important;
+      max-height: 56px !important;
+      max-width: none !important;
+      display: block !important;
+      flex-shrink: 0 !important;
+      vertical-align: middle !important;
+      line-height: 56px !important;
+    }
+    @media (max-width: 768px) {
+      .desktop-nav { display: none !important; }
+      .mobile-menu-btn { display: block !important; }
+      .liendeadline-logo-fixed {
+        height: 44px !important;
+        min-height: 44px !important;
+        max-height: 44px !important;
+        line-height: 44px !important;
+      }
+    }
+    @media (min-width: 769px) {
+      .mobile-menu-btn { display: none !important; }
+      .mobile-menu { display: none !important; }
+    }
+  </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="brand"><a href="/">LienDeadline</a></div>
-      <div class="nav">
-        <a href="/#calculator">Calculator</a>
-        <a href="/state-lien-guides.html">State Guides</a>
+  <!-- Header -->
+  <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
+    <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 16px 0 0;">
+      <!-- Logo -->
+      <a href="/" style="text-decoration: none; margin-right: auto; display: flex; align-items: center; flex-shrink: 0;">
+        <svg class="liendeadline-logo-fixed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 50" style="height: 56px !important; width: auto !important; display: block;">
+          <path d="...lion shape..." fill="#FF7A59"></path>
+          <text x="50" y="35" font-size="20" fill="#FF7A59">LienDeadline</text>
+        </svg>
+      </a>
+
+      <!-- Desktop Nav Links -->
+      <div class="desktop-nav" style="display: flex; gap: 32px; align-items: center;">
+        <a href="/#calculator" style="text-decoration: none; color: #6B7280; font-weight: 500;">Calculator</a>
+        <a href="/pricing.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Pricing</a>
+        <a href="/partners.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Partners</a>
+        <a href="/" style="background: #F97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">Try Free</a>
+      </div>
+
+      <!-- Mobile Hamburger -->
+      <button class="mobile-menu-btn" id="mobileMenuBtn" style="display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: #1F2937; padding: 4px;">☰</button>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="mobile-menu" style="display: none; background: white; border-top: 1px solid #E5E7EB; padding: 16px 24px;">
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <a href="/#calculator" style="text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Calculator</a>
+        <a href="/pricing.html" style="text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Pricing</a>
+        <a href="/partners.html" style="text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Partners</a>
+        <a href="/" style="background: #F97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; text-align: center; margin-top: 8px;">Try Free</a>
       </div>
     </div>
+  </header>
 
-    <div class="crumbs">
-      <a href="/">Home</a> → <a href="/state-lien-guides.html">State Lien Guides</a> → <span>California</span>
+  <main>
+    <!-- Breadcrumb -->
+    <section style="background: #F9FAFB; padding: 16px 24px; border-bottom: 1px solid #E5E7EB;">
+      <div style="max-width: 1200px; margin: 0 auto;">
+        <nav style="font-size: 14px; color: #6B7280;">
+          <a href="/" style="color: #6B7280; text-decoration: none;">Home</a>
+          <span style="margin: 0 8px;">→</span>
+          <a href="/state-lien-guides.html" style="color: #6B7280; text-decoration: none;">State Guides</a>
+          <span style="margin: 0 8px;">→</span>
+          <span style="color: #1F2937; font-weight: 500;">California</span>
+        </nav>
+      </div>
+    </section>
+
+    <!-- Hero Section -->
+    <section style="background: linear-gradient(135deg, #FFF9F7 0%, #FFE8DF 100%); padding: 60px 24px; text-align: center;">
+      <div style="max-width: 800px; margin: 0 auto;">
+        <div style="display: inline-block; background: #FEF3C7; border: 1px solid #F59E0B; padding: 6px 12px; border-radius: 6px; margin-bottom: 16px; font-size: 12px; color: #92400E; font-weight: 600;">
+          Avoid a $75,000+ loss from a missed deadline
+        </div>
+        <h1 style="font-size: 42px; margin-bottom: 16px; font-weight: 800; color: #1F2937;">California Lien Deadlines for Material Suppliers</h1>
+        <p style="font-size: 18px; color: #6B7280; margin-bottom: 32px; max-width: 600px; margin-left: auto; margin-right: auto;">
+          California has a strict 20-day preliminary notice rule and a short enforcement window after recording. If your notices or dates are off, you can lose lien rights even when the debt is real.
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; align-items: center;">
+          <a href="/#calculator" style="background: #F97316; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block;">
+            Calculate Your California Deadline
+          </a>
+          <p style="font-size: 14px; color: #6B7280; margin: 0;">
+            Try 3 free (no email) + 3 more after email<br />
+            <span style="font-size: 12px;">Up to 6 total • no credit card</span>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- High Risk Callout -->
+    <section style="background: #FEF2F2; border-left: 4px solid #DC2626; padding: 24px; margin: 40px 24px; border-radius: 8px;">
+      <div style="max-width: 800px; margin: 0 auto;">
+        <h2 style="font-size: 24px; margin-bottom: 12px; font-weight: 700; color: #991B1B;">California is High Risk for Suppliers</h2>
+        <p style="color: #7F1D1D; line-height: 1.7;">
+          California is deadline-sensitive at multiple stages: the preliminary notice is tied to the first furnishing date, the lien filing period is tied to project completion, and enforcement can require action soon after recording. If your team tracks dates inconsistently, California can quietly become a rights-losing state.
+        </p>
+      </div>
+    </section>
+
+    <!-- Key Deadlines Table -->
+    <section style="padding: 60px 24px; background: white;">
+      <div style="max-width: 1000px; margin: 0 auto;">
+        <h2 style="font-size: 32px; margin-bottom: 32px; font-weight: 700; color: #1F2937;">California Lien Deadlines</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Deadline Type</th>
+              <th>Timing</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Preliminary Notice</strong></td>
+              <td>Within 20 days of first providing materials</td>
+              <td>Material suppliers should send the preliminary notice within 20 days from the first date materials are provided. If you miss this window, you may limit or lose recoverable lien rights for earlier deliveries.</td>
+            </tr>
+            <tr>
+              <td><strong>Lien Filing</strong></td>
+              <td>90 days after completion of the project as a whole</td>
+              <td>The mechanics lien deadline is tied to project completion. If you wait until collections escalates, you may already be outside the filing window.</td>
+            </tr>
+            <tr>
+              <td><strong>Enforcement / Foreclosure</strong></td>
+              <td>90 days after recording the claim</td>
+              <td>After recording the lien, enforcement can require action within a short time frame. Track your recording date like a hard deadline and coordinate quickly if payment doesn't come in.</td>
+            </tr>
+            <tr>
+              <td><strong>Notice Method</strong></td>
+              <td>Registered, certified, or first-class mail with certificate</td>
+              <td>California allows registered mail, certified mail, or first-class mail with a certificate of mailing for notices. Keep proof of sending and delivery details in your job file.</td>
+            </tr>
+            <tr>
+              <td><strong>Statutes</strong></td>
+              <td>California Civil Code</td>
+              <td>California Civil Code §§ 8000-9566; §8412; §8414; §8400 et seq.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Common Mistakes -->
+    <section style="padding: 60px 24px; background: #F9FAFB;">
+      <div style="max-width: 800px; margin: 0 auto;">
+        <h2 style="font-size: 32px; margin-bottom: 32px; font-weight: 700; color: #1F2937;">Common Supplier Mistakes in California</h2>
+
+        <div style="background: white; padding: 24px; border-radius: 8px; margin-bottom: 16px; border-left: 4px solid #F59E0B;">
+          <h3 style="font-size: 20px; margin-bottom: 8px; font-weight: 600; color: #1F2937;">Sending the Preliminary Notice Too Late</h3>
+          <p style="color: #4B5563; line-height: 1.7;">
+            California's preliminary notice is tied to the first furnishing date. If you delay sending it, you can weaken your leverage or lose rights tied to earlier deliveries.
+          </p>
+        </div>
+
+        <div style="background: white; padding: 24px; border-radius: 8px; margin-bottom: 16px; border-left: 4px solid #F59E0B;">
+          <h3 style="font-size: 20px; margin-bottom: 8px; font-weight: 600; color: #1F2937;">Using the Wrong "Completion" Date</h3>
+          <p style="color: #4B5563; line-height: 1.7;">
+            The lien filing window is tied to completion of the project as a whole—not your last delivery alone. If your internal file uses a different "end date," you can miscalculate the filing deadline.
+          </p>
+        </div>
+
+        <div style="background: white; padding: 24px; border-radius: 8px; margin-bottom: 16px; border-left: 4px solid #F59E0B;">
+          <h3 style="font-size: 20px; margin-bottom: 8px; font-weight: 600; color: #1F2937;">Treating Recording as the Finish Line</h3>
+          <p style="color: #4B5563; line-height: 1.7;">
+            Recording the lien is not the end. California can require enforcement action within 90 days after recording. If you don't track the recording date, you can lose rights after doing the hard part.
+          </p>
+        </div>
+
+        <div style="background: white; padding: 24px; border-radius: 8px; border-left: 4px solid #F59E0B;">
+          <h3 style="font-size: 20px; margin-bottom: 8px; font-weight: 600; color: #1F2937;">Not Keeping Proof of Mailing</h3>
+          <p style="color: #4B5563; line-height: 1.7;">
+            Notices need defensible proof of sending. If your process doesn't capture mailing evidence reliably, you create avoidable disputes later.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Calculator Promo -->
+    <section style="background: linear-gradient(135deg, #FFF9F7 0%, #FFE8DF 100%); padding: 60px 24px; text-align: center;">
+      <div style="max-width: 800px; margin: 0 auto;">
+        <h2 style="font-size: 32px; margin-bottom: 16px; font-weight: 700; color: #1F2937;">Not Sure Which Date Controls?</h2>
+        <p style="font-size: 18px; color: #6B7280; margin-bottom: 32px;">Calculate your California deadline in seconds</p>
+        <a href="/#calculator" style="background: #F97316; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block; margin-bottom: 12px;">Calculate Your Deadline</a>
+        <p style="font-size: 14px; color: #6B7280;">Select California in the calculator to get your specific deadline</p>
+      </div>
+    </section>
+
+    <!-- FAQs -->
+    <section style="padding: 60px 24px; background: white;">
+      <div style="max-width: 800px; margin: 0 auto;">
+        <h2 style="font-size: 32px; margin-bottom: 32px; font-weight: 700; color: #1F2937;">Frequently Asked Questions</h2>
+
+        <div style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #E5E7EB;">
+          <h3 style="font-size: 20px; margin-bottom: 8px; font-weight: 600; color: #1F2937;">When is California's preliminary notice due for suppliers?</h3>
+          <p style="color: #4B5563; line-height: 1.7;">
+            The preliminary notice is due within 20 days of first providing materials. Track the first furnishing date per job so the notice doesn't slip.
+          </p>
+        </div>
+
+        <div style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #E5E7EB;">
+          <h3 style="font-size: 20px; margin-bottom: 8px; font-weight: 600; color: #1F2937;">What is the mechanics lien filing deadline in California?</h3>
+          <p style="color: #4B5563; line-height: 1.7;">
+            The lien filing deadline for material suppliers is 90 days after completion of the project as a whole. If you're unsure what date "completion" means for a specific job, use the calculator as your first check.
+          </p>
+        </div>
+
+        <div style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #E5E7EB;">
+          <h3 style="font-size: 20px; margin-bottom: 8px; font-weight: 600; color: #1F2937;">How long do I have to enforce a California lien?</h3>
+          <p style="color: #4B5563; line-height: 1.7;">
+            Enforcement is due 90 days after recording the claim. Don't treat recording as the end—recording starts the enforcement clock.
+          </p>
+        </div>
+
+        <div style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #E5E7EB;">
+          <h3 style="font-size: 20px; margin-bottom: 8px; font-weight: 600; color: #1F2937;">How should suppliers send notices in California?</h3>
+          <p style="color: #4B5563; line-height: 1.7;">
+            California allows registered mail, certified mail, or first-class mail with a certificate of mailing. Keep proof of mailing in your job file.
+          </p>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+          <h3 style="font-size: 20px; margin-bottom: 8px; font-weight: 600; color: #1F2937;">What's the fastest way to avoid missing deadlines?</h3>
+          <p style="color: #4B5563; line-height: 1.7;">
+            Use a consistent workflow: record first furnishing date, monitor completion date signals, and track the lien recording date as a separate enforcement trigger.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer Disclaimer -->
+    <section style="background: #F9FAFB; padding: 40px 24px; border-top: 1px solid #E5E7EB;">
+      <div style="max-width: 800px; margin: 0 auto; text-align: center;">
+        <p style="font-size: 14px; color: #6B7280; line-height: 1.6;">
+          This guide is for informational purposes only and does not constitute legal advice. Always verify deadlines with a licensed California construction attorney.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer style="background: white; border-top: 1px solid #E5E7EB; padding: 40px 24px;">
+    <div style="max-width: 1200px; margin: 0 auto;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <a href="/" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+          <svg class="liendeadline-logo-fixed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 50" style="height: 56px !important; width: auto !important; display: block;">
+            <path d="...lion shape..." fill="#FF7A59"></path>
+            <text x="50" y="35" font-size="20" fill="#FF7A59">LienDeadline</text>
+          </svg>
+        </a>
+      </div>
+      <div style="text-align: center; font-size: 14px; color: #6B7280;">
+        <p style="margin-bottom: 8px;">
+          <a href="/" style="color: #6B7280; text-decoration: none; margin: 0 12px;">Home</a>
+          <a href="/state-lien-guides.html" style="color: #6B7280; text-decoration: none; margin: 0 12px;">State Guides</a>
+          <a href="/pricing.html" style="color: #6B7280; text-decoration: none; margin: 0 12px;">Pricing</a>
+          <a href="/partners.html" style="color: #6B7280; text-decoration: none; margin: 0 12px;">Partners</a>
+        </p>
+        <p style="margin-top: 16px;">© 2024 LienDeadline. All rights reserved.</p>
+      </div>
     </div>
+  </footer>
 
-    <!-- HERO -->
-    <section class="hero">
-      <h1>California Mechanics Lien Deadlines (Material Suppliers)</h1>
-      <p class="subhead">Supplier-only deadlines and notice rules for California projects — built for lumber, concrete, steel, and building material distributors.</p>
+  <script>
+    // Mobile menu toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
 
-      <div class="badgeRow">
-        <div class="badge"><strong>$75,000</strong> average supplier loss per missed deadline</div>
-        <div class="badge pillRisk"><strong>High-risk state</strong> — short timelines and strict notice windows</div>
-        <div class="badge"><strong>Try 3 free (no email) + 3 more after email</strong></div>
-        <div class="badge">Up to 6 total • no credit card</div>
-      </div>
+    if (mobileMenuBtn && mobileMenu) {
+      mobileMenuBtn.addEventListener('click', function() {
+        if (mobileMenu.style.display === 'none' || mobileMenu.style.display === '') {
+          mobileMenu.style.display = 'block';
+        } else {
+          mobileMenu.style.display = 'none';
+        }
+      });
+    }
+  </script>
 
-      <div class="grid">
-        <div class="card">
-          <h2>California supplier deadlines at a glance</h2>
+  <script>
+    // Force logo size via JavaScript as final fallback
+    (function() {
+      function enforceLogoSize() {
+        const logos = document.querySelectorAll('.liendeadline-logo-fixed');
+        const isMobile = window.innerWidth <= 768;
+        const targetHeight = isMobile ? '44px' : '56px';
 
-          <table class="table" aria-label="California lien deadlines table">
-            <thead>
-              <tr>
-                <th>Step</th>
-                <th>Supplier rule (California)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>Preliminary notice</strong></td>
-                <td>
-                  <div><strong>Preliminary notice</strong> is typically required for material suppliers.</div>
-                  <div class="kicker">Timing: <strong>within 20 days</strong> of first providing materials.</div>
-                </td>
-              </tr>
-              <tr>
-                <td><strong>Lien filing deadline</strong></td>
-                <td>
-                  <div>Record the lien within <strong>90 days</strong> after <strong>completion of the project as a whole</strong>.</div>
-                </td>
-              </tr>
-              <tr>
-                <td><strong>Enforcement deadline</strong></td>
-                <td>
-                  <div>Start enforcement within <strong>90 days</strong> after recording the claim.</div>
-                </td>
-              </tr>
-              <tr>
-                <td><strong>Notice delivery methods</strong></td>
-                <td>
-                  <div>Registered mail, certified mail, or first-class mail with a certificate of mailing.</div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        logos.forEach(function(logo) {
+          if (logo) {
+            logo.style.setProperty('height', targetHeight, 'important');
+            logo.style.setProperty('min-height', targetHeight, 'important');
+            logo.style.setProperty('max-height', targetHeight, 'important');
+            logo.style.setProperty('width', 'auto', 'important');
+            logo.style.setProperty('display', 'block', 'important');
+            logo.style.setProperty('object-fit', 'contain', 'important');
+            logo.style.setProperty('flex-shrink', '0', 'important');
+          }
+        });
+      }
 
-          <div class="cta" style="margin-top:14px">
-            <div>
-              <h3>Calculate your California deadline instantly</h3>
-              <p>Use the calculator for your exact dates and project type workflow.</p>
-              <div class="trial">
-                <div><strong>Try 3 free (no email) + 3 more after email</strong></div>
-                <div>Up to 6 total • no credit card</div>
-              </div>
-            </div>
-            <a class="btn" href="/#calculator">Open Calculator →</a>
-          </div>
-        </div>
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', enforceLogoSize);
+      } else {
+        enforceLogoSize();
+      }
 
-        <div class="card">
-          <h2>Why California is high-risk for suppliers</h2>
-          <div class="callout">
-            <strong>California punishes delays.</strong>
-            If your preliminary notice window or lien/enforcement deadlines are missed, you can lose leverage fast — even when the delivery tickets are perfect.
-          </div>
-
-          <ul class="list">
-            <li><strong>20-day notice window</strong> starts when you first furnish materials (not when you invoice).</li>
-            <li><strong>Project-wide completion controls</strong> the lien filing window (90 days after completion of the overall project).</li>
-            <li><strong>Enforcement is also short</strong>: 90 days after recording.</li>
-            <li><strong>Mailing method matters</strong>: use the allowed mailing options to create proof of delivery.</li>
-          </ul>
-
-          <p class="kicker">If you ship on multiple POs or phases, treat notice + deadlines as a system — not a one-time task.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- COMMON MISTAKES -->
-    <section class="card" style="margin-top:14px">
-      <h2>Common California mistakes suppliers make</h2>
-      <ul class="list">
-        <li><strong>Waiting for the first past-due invoice</strong> before sending preliminary notice (the clock starts at first furnishing).</li>
-        <li><strong>Assuming "90 days from last delivery"</strong> — California's filing deadline here is tied to <strong>project completion as a whole</strong>.</li>
-        <li><strong>Mailing without proof</strong> (use registered, certified, or first-class with certificate of mailing).</li>
-        <li><strong>Recording the lien but not calendaring enforcement</strong> (enforcement is due <strong>90 days after recording</strong>).</li>
-        <li><strong>Not standardizing notice on every job</strong> — inconsistent notice is how good AR gets trapped.</li>
-      </ul>
-    </section>
-
-    <!-- MID PAGE CTA -->
-    <section class="cta">
-      <div>
-        <h3>Need the exact deadline for your job?</h3>
-        <p>Run the calculator with your first furnishing date and project signals.</p>
-        <div class="trial">
-          <div><strong>Try 3 free (no email) + 3 more after email</strong></div>
-          <div>Up to 6 total • no credit card</div>
-        </div>
-      </div>
-      <a class="btn" href="/#calculator">Calculate Now →</a>
-    </section>
-
-    <!-- FAQS -->
-    <section class="card" style="margin-top:14px">
-      <h2>California supplier FAQs</h2>
-
-      <details>
-        <summary>Who should send a California preliminary notice?</summary>
-        <div class="muted" style="margin-top:8px">
-          Based on the supplier-focused rule set here, <strong>material suppliers</strong> typically send preliminary notice. If you're not in direct contract with the owner, treat notice as the default safety step.
-        </div>
-      </details>
-
-      <details>
-        <summary>When does the 20-day preliminary notice clock start?</summary>
-        <div class="muted" style="margin-top:8px">
-          The timing rule provided is <strong>within 20 days of first providing materials</strong>. For suppliers, "first furnishing" is the operational trigger — not invoice date.
-        </div>
-      </details>
-
-      <details>
-        <summary>What's the lien filing deadline for California suppliers?</summary>
-        <div class="muted" style="margin-top:8px">
-          Record the claim within <strong>90 days after completion of the project as a whole</strong> (per the provided supplier rule).
-        </div>
-      </details>
-
-      <details>
-        <summary>How long do I have to enforce a recorded lien in California?</summary>
-        <div class="muted" style="margin-top:8px">
-          The enforcement window provided is <strong>90 days after recording the claim</strong>. Calendar this the same day you record.
-        </div>
-      </details>
-
-      <details>
-        <summary>How should a California preliminary notice be sent?</summary>
-        <div class="muted" style="margin-top:8px">
-          The notice method listed is <strong>registered mail, certified mail, or first-class mail with a certificate of mailing</strong>. Choose a method that preserves proof for your file.
-        </div>
-      </details>
-    </section>
-
-    <!-- STATUTES -->
-    <section class="card statutes" style="margin-top:14px">
-      <h2>Statutory references (California)</h2>
-      <div class="muted">Primary references for the supplier deadlines and notice framework:</div>
-      <div style="margin-top:10px">
-        <code>California Civil Code §§ 8000-9566</code>
-        <code>§ 8412</code>
-        <code>§ 8414</code>
-        <code>§ 8400 et seq.</code>
-      </div>
-    </section>
-
-    <!-- DISCLAIMER -->
-    <section class="foot">
-      <strong>Legal disclaimer:</strong> This page is for general informational purposes for building material suppliers and does not constitute legal advice. Mechanics lien rules can vary by project type and facts. When in doubt, confirm deadlines with counsel for your specific job.
-    </section>
-  </div>
+      window.addEventListener('resize', enforceLogoSize);
+      setTimeout(enforceLogoSize, 100);
+      setTimeout(enforceLogoSize, 500);
+    })();
+  </script>
 </body>
 </html>
-
