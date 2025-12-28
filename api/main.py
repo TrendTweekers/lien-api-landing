@@ -1285,6 +1285,12 @@ images_dir = PROJECT_ROOT / "public" / "images"
 print(f"🖼️ images_dir={images_dir} exists={images_dir.exists()}")
 if images_dir.exists():
     app.mount("/images", StaticFiles(directory=str(images_dir), html=False), name="images")
+    print(f"✅ Mounted /images -> {images_dir}")
+    # Verify logo file exists
+    logo_path = images_dir / "liendeadline-logo.png"
+    print(f"📸 Logo file exists: {logo_path.exists()} at {logo_path}")
+else:
+    print(f"❌ ERROR: images_dir does not exist: {images_dir}")
 
 # Redirect www to non-www
 @app.middleware("http")
