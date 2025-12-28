@@ -410,7 +410,19 @@
         <!-- Integrations Section - 3 Column Grid -->
         <div class="mb-8">
             <h2 class="text-2xl font-bold text-gray-900 mb-6">Accounting Integrations</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <!-- BETA BANNER -->
+            <div style="background: #fef3c7; border: 2px solid #f59e0b; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 24px;">⚠️</span>
+                <div>
+                    <strong style="color: #92400e;">Beta Feature</strong>
+                    <p style="margin: 4px 0 0 0; color: #78350f; font-size: 14px;">
+                        Integrations are currently in beta testing. For now, we recommend manually entering invoice dates into the calculator above.
+                    </p>
+                </div>
+            </div>
+            
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- QuickBooks Integration Card -->
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-6" id="quickbooks-section">
                     <div class="flex flex-col h-full">
@@ -1578,48 +1590,38 @@
                 // Pre-fill the calculator with project data
                 const dateInput = document.getElementById('dashInvoiceDate');
                 const stateSelect = document.getElementById('dashState');
+                const projectTypeSelect = document.getElementById('dashProjectType');
                 
-                if (dateInput && (currentProject.invoiceDate)) {
-                    const invoiceDate = currentProject.invoiceDate;
+                if (dateInput && currentProject.invoiceDate) {
                     // Format date as YYYY-MM-DD for date input
-                    const dateStr = new Date(invoiceDate).toISOString().split('T')[0];
+                    const dateStr = new Date(currentProject.invoiceDate).toISOString().split('T')[0];
                     dateInput.value = dateStr;
                 }
                 
-                if (stateSelect && (currentProject.stateCode)) {
+                if (stateSelect && currentProject.stateCode) {
                     stateSelect.value = currentProject.stateCode;
+                    // Trigger change event to show project type field if needed
+                    stateSelect.dispatchEvent(new Event('change'));
                 }
                 
-                // Scroll to calculator
-                const calculatorSection = document.getElementById('calculator') || document.querySelector('form#dashboardCalculatorForm');
+                if (projectTypeSelect && currentProject.projectType) {
+                    projectTypeSelect.value = currentProject.projectType;
+                } else if (projectTypeSelect) {
+                    // Default to commercial if not specified
+                    projectTypeSelect.value = 'commercial';
+                }
+                
+                // Scroll to calculator section
+                const calculatorSection = document.querySelector('.calculate-section') || document.getElementById('calculate-section') || document.querySelector('form#dashboardCalculatorForm');
                 if (calculatorSection) {
                     calculatorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
                 
-                alert('Project loaded into calculator. Make your changes and save again.');
-            }
-
-            async function deleteProject() {
-                if (!currentProject) return;
-                
-                const confirmed = confirm(`Are you sure you want to delete the project "${currentProject.projectName || 'this project'}"? This cannot be undone.`);
-                
-                if (!confirmed) return;
-                
-                try {
-                    const token = getSessionToken();
-                    const response = await fetch(`/api/calculations/${currentProject.id}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        alert('Project deleted successfully');
-                        closeProjectModal();
-                        loadCalculationHistory(); // Reload the projects table
-                    } else {
+                // Optional: Show a message
+                setTimeout(() => {
+                    alert(`Editing: ${currentProject.projectName}. Make your changes and click "Save Project & Set Reminders" to update.`);
+                }, 500);
+            } else {
                         const errorData = await response.json().catch(() => ({ detail: 'Failed to delete project' }));
                         alert(errorData.detail || 'Failed to delete project');
                     }
