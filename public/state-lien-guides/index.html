@@ -52,15 +52,17 @@
   }
   </script>
   
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  
   <style>
     :root {
-      --primary-orange: #FF6B35;
+      --primary-orange: #F97316;
       --soft-orange: #FFB085;
       --cream: #FFD8C9;
-      --dark-text: #2D3748;
-      --gray-text: #4A5568;
+      --dark-text: #1F2937;
+      --gray-text: #6B7280;
       --light-gray: #F7FAFC;
-      --border-color: #E2E8F0;
+      --border-color: #E5E7EB;
       --texas-blue: #005F86;
     }
     
@@ -115,7 +117,7 @@
     }
     
     .hidden-cta:hover {
-      background: #E55A28;
+      background: #EA580C;
     }
     
     /* State Grid - SEO Optimized */
@@ -226,7 +228,7 @@
     .final-cta {
       text-align: center;
       padding: 80px 24px;
-      background: linear-gradient(135deg, var(--primary-orange) 0%, #FF8C42 100%);
+      background: linear-gradient(135deg, var(--primary-orange) 0%, #EA580C 100%);
       color: white;
     }
     
@@ -296,14 +298,34 @@
 </head>
 
 <body>
-  <!-- Hidden placement - minimal header -->
-  <header style="background: linear-gradient(135deg, #FFF9F7 0%, #FFE8DF 100%); padding: 40px 24px; text-align: center; margin-top: 100px;">
+  <!-- Header -->
+  <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
+    <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 24px;">
+      <a href="/" style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
+        <div style="background: #F97316; color: white; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px;">
+          L
+        </div>
+        <span style="font-size: 20px; font-weight: 700; color: #1F2937;">LienDeadline</span>
+      </a>
+      
+      <div style="display: flex; gap: 32px; align-items: center;">
+        <a href="/" style="text-decoration: none; color: #6B7280; font-weight: 500;">Calculator</a>
+        <a href="/pricing.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Pricing</a>
+        <a href="/state-lien-guides" style="text-decoration: none; color: #1F2937; font-weight: 600;">State Guides</a>
+        <a href="/partners.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Partners</a>
+        <a href="/" style="background: #F97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">Try Free</a>
+      </div>
+    </nav>
+  </header>
+  
+  <!-- Hidden placement - minimal hero section -->
+  <section style="background: linear-gradient(135deg, #FFF9F7 0%, #FFE8DF 100%); padding: 40px 24px; text-align: center; margin-top: 100px;">
     <div class="container">
       <h1>State Lien Deadline Guides for Suppliers</h1>
       <p>Free, lawyer-verified lien deadline guides for building material suppliers in all 50 states.</p>
       <a href="/" class="hidden-cta">Try 3 Free →</a>
     </div>
-  </header>
+  </section>
 
   <!-- Main Content -->
   <main class="container">
