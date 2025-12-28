@@ -1854,17 +1854,48 @@ async def generate_state_guide_pdf(state_code: str, request: Request):
             
             invoice_dt_str = invoice_dt.strftime('%B %d, %Y')
             
-            # Use unified calculation function (SINGLE SOURCE OF TRUTH)
-            # This ensures PDF generator uses EXACTLY the same logic as calculator endpoint
-            result = _calculate_state_deadline_internal(
-                state_code=state_code,
-                delivery_date=invoice_dt,
-                rules=state_data,
-                role="supplier",  # PDF default (no user input)
-                project_type="commercial",  # PDF default (no user input)
-                notice_of_completion_date=None,  # PDF default (no user input)
-                notice_of_commencement_filed=False  # PDF default (no user input)
-            )
+            # Use the SAME calculation logic as calculate_deadline endpoint
+            # Extract hardcoded values into variables to match calculator pattern
+            role = "supplier"  # PDF default (no user input)
+            project_type = "commercial"  # PDF default (no user input)
+            notice_of_completion_date = None  # PDF default (no user input)
+            notice_of_commencement_filed = False  # PDF default (no user input)
+            
+            # Import calculation functions
+            from .calculators import calculate_default, calculate_texas, calculate_washington, calculate_california, calculate_ohio, calculate_oregon, calculate_hawaii
+            
+            special_rules = state_data.get('special_rules', {})
+            result = None
+            
+            # Exact same if/elif chain as calculate_deadline endpoint (using variables)
+            if state_code == "TX":
+                result = calculate_texas(invoice_dt, project_type=project_type)
+            elif state_code == "WA":
+                result = calculate_washington(invoice_dt, role=role)
+            elif state_code == "CA":
+                result = calculate_california(invoice_dt, notice_of_completion_date=notice_of_completion_date, role=role)
+            elif state_code == "OH":
+                result = calculate_ohio(invoice_dt, project_type=project_type, notice_of_commencement_filed=notice_of_commencement_filed)
+            elif state_code == "OR":
+                result = calculate_oregon(invoice_dt)
+            elif state_code == "HI":
+                result = calculate_hawaii(invoice_dt)
+            else:
+                # Default calculation for simple states (same as calculate_deadline endpoint)
+                prelim_notice = state_data.get("preliminary_notice", {})
+                lien_filing = state_data.get("lien_filing", {})
+                
+                result = calculate_default(
+                    invoice_dt,
+                    {
+                        "preliminary_notice_required": prelim_notice.get("required", False),
+                        "preliminary_notice_days": prelim_notice.get("days"),
+                        "lien_filing_days": lien_filing.get("days"),
+                        "notes": special_rules.get("notes", "")
+                    },
+                    weekend_extension=special_rules.get("weekend_extension", False),
+                    holiday_extension=special_rules.get("holiday_extension", False)
+                )
             
             # Extract deadlines from result
             prelim_deadline = result.get("preliminary_deadline")
@@ -2535,78 +2566,6 @@ def get_user_from_session(request: Request):
     
     return None
 
-def _calculate_state_deadline_internal(
-    state_code: str,
-    delivery_date: datetime,
-    rules: dict,
-    role: str = "supplier",
-    project_type: str = "commercial",
-    notice_of_completion_date: Optional[datetime] = None,
-    notice_of_commencement_filed: bool = False
-) -> dict:
-    """
-    Internal helper function for state deadline calculation.
-    Used by both calculate_deadline endpoint and PDF generator.
-    
-    This is the SINGLE SOURCE OF TRUTH for all calculation logic.
-    
-    Args:
-        state_code: Two-letter state code (e.g., "TX", "CA")
-        delivery_date: datetime object for invoice/delivery date
-        rules: State rules dict with preliminary_notice, lien_filing, special_rules
-        role: "supplier", "contractor", etc.
-        project_type: "commercial" or "residential"
-        notice_of_completion_date: Optional datetime for notice of completion (for CA)
-        notice_of_commencement_filed: Whether notice of commencement was filed (for OH)
-    
-    Returns:
-        dict with calculation results (preliminary_deadline, lien_deadline, etc.)
-    """
-    special_rules = rules.get("special_rules", {})
-    
-    # State-specific calculation logic
-    if state_code == "TX":
-        return calculate_texas(delivery_date, project_type=project_type)
-    elif state_code == "WA":
-        return calculate_washington(delivery_date, role=role)
-    elif state_code == "CA":
-        # calculate_california expects notice_of_completion_date as string, not datetime
-        noc_date_str = None
-        if notice_of_completion_date:
-            if isinstance(notice_of_completion_date, datetime):
-                noc_date_str = notice_of_completion_date.strftime("%Y-%m-%d")
-            else:
-                noc_date_str = str(notice_of_completion_date)
-        return calculate_california(
-            delivery_date,
-            notice_of_completion_date=noc_date_str,
-            role=role
-        )
-    elif state_code == "OH":
-        return calculate_ohio(
-            delivery_date,
-            project_type=project_type,
-            notice_of_commencement_filed=notice_of_commencement_filed
-        )
-    elif state_code == "OR":
-        return calculate_oregon(delivery_date)
-    elif state_code == "HI":
-        return calculate_hawaii(delivery_date)
-    else:
-        # Default calculation for simple states
-        return calculate_default(
-            delivery_date,
-            {
-                "preliminary_notice_required": rules.get("preliminary_notice", {}).get("required", False),
-                "preliminary_notice_days": rules.get("preliminary_notice", {}).get("days"),
-                "lien_filing_days": rules.get("lien_filing", {}).get("days"),
-                "notes": special_rules.get("notes", "")
-            },
-            weekend_extension=special_rules.get("weekend_extension", False),
-            holiday_extension=special_rules.get("holiday_extension", False)
-        )
-
-
 @app.post("/api/v1/calculate-deadline")
 @limiter.limit("10/minute")
 async def calculate_deadline(
@@ -2853,16 +2812,43 @@ async def calculate_deadline(
             print(f"⚠️ Error parsing notice_of_completion_date: {e}")
             notice_of_completion_dt = None
     
-    # Use unified calculation function (SINGLE SOURCE OF TRUTH)
-    result = _calculate_state_deadline_internal(
-        state_code=state_code,
-        delivery_date=delivery_date,
-        rules=rules,
-        role=role,
-        project_type=project_type,
-        notice_of_completion_date=notice_of_completion_dt,
-        notice_of_commencement_filed=request_data.notice_of_commencement_filed or False
-    )
+    # State-specific calculation logic
+    result = None
+    special_rules = rules.get("special_rules", {})
+    
+    if state_code == "TX":
+        result = calculate_texas(delivery_date, project_type=project_type)
+    elif state_code == "WA":
+        result = calculate_washington(delivery_date, role=role)
+    elif state_code == "CA":
+        result = calculate_california(
+            delivery_date,
+            notice_of_completion_date=request_data.notice_of_completion_date,
+            role=role
+        )
+    elif state_code == "OH":
+        result = calculate_ohio(
+            delivery_date,
+            project_type=project_type,
+            notice_of_commencement_filed=request_data.notice_of_commencement_filed or False
+        )
+    elif state_code == "OR":
+        result = calculate_oregon(delivery_date)
+    elif state_code == "HI":
+        result = calculate_hawaii(delivery_date)
+    else:
+        # Default calculation for simple states
+        result = calculate_default(
+            delivery_date,
+            {
+                "preliminary_notice_required": rules.get("preliminary_notice", {}).get("required", False),
+                "preliminary_notice_days": rules.get("preliminary_notice", {}).get("days"),
+                "lien_filing_days": rules.get("lien_filing", {}).get("days"),
+                "notes": special_rules.get("notes", "")
+            },
+            weekend_extension=special_rules.get("weekend_extension", False),
+            holiday_extension=special_rules.get("holiday_extension", False)
+        )
     
     # Extract deadlines from result
     prelim_deadline = result.get("preliminary_deadline")
