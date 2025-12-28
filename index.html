@@ -522,12 +522,18 @@
     </div>
     
     <!-- Header -->
-    <header class="bg-white border-b border-gray-200 py-4 sticky top-0 z-50 h-auto min-h-[80px] overflow-visible">
-        <nav class="flex justify-between items-center max-w-7xl mx-auto px-4 h-auto min-h-[80px] overflow-visible">
+    <header class="bg-white border-b border-gray-200 py-4 sticky top-0 z-50 h-auto min-h-[80px]" style="overflow: visible !important;">
+        <nav class="flex justify-between items-center max-w-7xl mx-auto px-4 h-auto min-h-[80px]" style="overflow: visible !important;">
                 <!-- Logo -->
-            <a href="/" class="logo flex-shrink-0 overflow-visible" style="text-decoration: none;">
-                <img src="/images/liendeadline-logo.png" alt="LienDeadline" class="logo h-20 w-auto block object-contain">
-            </a>
+            <div class="relative flex items-center justify-center" style="height: 100px !important; width: auto !important; min-width: 250px !important; overflow: visible !important;">
+              <a href="/" class="block" style="height: 80px !important; width: auto !important; display: block !important; position: relative !important; z-index: 50 !important;">
+                <img 
+                  src="/images/liendeadline-logo.png" 
+                  alt="LienDeadline" 
+                  style="height: 80px !important; width: auto !important; max-height: 80px !important; min-height: 80px !important; display: block !important; object-fit: contain !important; margin: 0 !important; padding: 0 !important; border: none !important;" 
+                />
+              </a>
+            </div>
             
             <!-- Desktop Nav Links -->
             <div class="desktop-nav" style="display: flex; gap: 32px; align-items: center;">
@@ -2070,76 +2076,6 @@
             }
         }
     
-        /* Logo Container and Image Styles */
-        /* Ensure header and nav don't constrain logo */
-        header {
-            height: auto !important;
-            min-height: 80px !important;
-            max-height: none !important;
-            overflow: visible !important;
-        }
-        
-        header nav {
-            height: auto !important;
-            min-height: 80px !important;
-            max-height: none !important;
-            overflow: visible !important;
-        }
-        
-        /* Logo container - prevent compression */
-        header nav a.logo,
-        header a.logo {
-            height: auto !important;
-            min-height: 80px !important;
-            max-height: none !important;
-            display: flex !important;
-            align-items: center !important;
-            flex-shrink: 0 !important;
-            overflow: visible !important;
-            line-height: normal !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        
-        /* Logo image - ensure 80px height */
-        header nav img.logo,
-        header img.logo,
-        header nav img[alt="LienDeadline"],
-        header img[alt="LienDeadline"] {
-            height: 80px !important;
-            width: auto !important;
-            display: block !important;
-            min-height: 80px !important;
-            max-height: none !important;
-            object-fit: contain !important;
-        }
-        
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            header {
-                min-height: 44px !important;
-            }
-            
-            header nav {
-                min-height: 44px !important;
-            }
-            
-            header nav a.logo,
-            header a.logo {
-                height: auto !important;
-                min-height: 44px !important;
-                max-height: none !important;
-            }
-            
-            header nav img.logo,
-            header img.logo,
-            header nav img[alt="LienDeadline"],
-            header img[alt="LienDeadline"] {
-                height: 44px !important;
-                width: auto !important;
-                min-height: 44px !important;
-            }
-        }
         </style>
 
 <script>
