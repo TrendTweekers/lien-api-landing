@@ -162,59 +162,35 @@
 <body class="bg-white text-dark-text">
     
     <!-- Header -->
-    <header class="sticky-header">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <!-- Logo -->
-                <a href="/" class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg bg-primary-orange flex items-center justify-center">
-                        <span class="text-white font-bold text-lg">L</span>
-                    </div>
-                    <span class="font-bold text-xl text-dark-text">LienDeadline</span>
-                </a>
-                
-                <!-- Desktop Navigation -->
-                <nav class="hidden md:flex items-center gap-8">
-                    <a href="/calculator.html" class="text-sm font-medium text-gray-text hover:text-dark-text transition-colors">Calculator</a>
-                    <a href="/pricing.html" class="text-sm font-medium text-dark-text font-semibold">Pricing</a>
-                    <a href="/state-coverage.html" class="text-sm font-medium text-gray-text hover:text-dark-text transition-colors">State Guides</a>
-                    <a href="/partners.html" class="text-sm font-medium text-gray-text hover:text-dark-text transition-colors">Partners</a>
-                    <a href="/" class="bg-primary-orange text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-600 transition">
-                        Try Free
-                    </a>
-                </nav>
-                
-                <!-- Mobile Menu Button -->
-                <button id="mobileMenuBtn" class="md:hidden p-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                    </svg>
-                </button>
+    <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
+        <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 24px;">
+            <a href="/" style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
+                <div style="background: #F97316; color: white; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px;">
+                    L
+                </div>
+                <span style="font-size: 20px; font-weight: 700; color: #1F2937;">LienDeadline</span>
+            </a>
+            
+            <div style="display: flex; gap: 32px; align-items: center;">
+                <a href="/" style="text-decoration: none; color: #6B7280; font-weight: 500;">Calculator</a>
+                <a href="/pricing.html" style="text-decoration: none; color: #1F2937; font-weight: 600;">Pricing</a>
+                <a href="/state-coverage.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">State Guides</a>
+                <a href="/partners.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Partners</a>
+                <a href="/" style="background: #F97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">Try Free</a>
             </div>
-        </div>
-        
-        <!-- Mobile Menu -->
-        <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200 bg-white">
-            <div class="px-4 py-4 space-y-3">
-                <a href="/calculator.html" class="block text-sm font-medium text-gray-text hover:text-dark-text">Calculator</a>
-                <a href="/pricing.html" class="block text-sm font-medium text-dark-text font-semibold">Pricing</a>
-                <a href="/state-coverage.html" class="block text-sm font-medium text-gray-text hover:text-dark-text">State Guides</a>
-                <a href="/partners.html" class="block text-sm font-medium text-gray-text hover:text-dark-text">Partners</a>
-                <a href="/" class="block bg-primary-orange text-white px-4 py-2 rounded-lg font-semibold text-center">Try Free</a>
-            </div>
-        </div>
+        </nav>
     </header>
     
     <!-- Hero Section -->
-    <section class="pricing-hero" style="padding: 60px 24px; background: linear-gradient(135deg, #FFF9F7 0%, #FFE8DF 100%);">
+    <section class="pricing-hero" style="padding: 60px 24px; background: linear-gradient(135deg, #FFF5F0 0%, #FFE8DF 100%);">
         <div class="container" style="text-align: center; max-width: 900px; margin: 0 auto;">
             
             <!-- Clean headline only -->
-            <h1 style="font-size: 48px; margin-bottom: 16px; font-weight: 800; line-height: 1.2; color: var(--dark-text);">
+            <h1 style="font-size: 48px; margin-bottom: 16px; font-weight: 800; line-height: 1.2; color: #1F2937;">
                 Pricing That Protects Your Receivables
             </h1>
             
-            <p style="font-size: 18px; color: var(--gray-text); margin-bottom: 24px;">
+            <p style="font-size: 18px; color: #6B7280; margin-bottom: 24px;">
                 One saved lien pays for 25 years of service. Never lose $75K+ to a missed deadline again.
             </p>
             
@@ -580,18 +556,18 @@
     </section>
     
     <!-- Final CTA Section -->
-    <section class="py-20 px-4 bg-gradient-to-r from-primary-orange to-orange-500 text-white">
-        <div class="container mx-auto max-w-4xl text-center">
-            <h2 class="text-4xl md:text-5xl font-bold mb-4">
-                Stop Losing Money to Missed Deadlines
-            </h2>
-            <p class="text-xl mb-8 opacity-90">
+    <section style="background: linear-gradient(135deg, #F97316 0%, #EA580C 100%); padding: 80px 24px; text-align: center; color: white;">
+        <div style="max-width: 800px; margin: 0 auto;">
+            <h2 style="font-size: 36px; margin-bottom: 16px;">Stop Losing Money to Missed Deadlines</h2>
+            <p style="font-size: 18px; margin-bottom: 32px; opacity: 0.95;">
                 Join 500+ material suppliers protecting their receivables
             </p>
-            <a href="/" class="inline-block bg-white text-primary-orange px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition mb-4">
+            <a href="/" style="display: inline-block; background: white; color: #F97316; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
                 Try 3 Free Calculations →
             </a>
-            <p class="text-sm opacity-75">No credit card • All 50 states • Instant results</p>
+            <p style="font-size: 14px; margin-top: 16px; opacity: 0.9;">
+                No credit card • All 50 states • Instant results
+            </p>
         </div>
     </section>
     
