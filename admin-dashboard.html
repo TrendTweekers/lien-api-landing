@@ -160,12 +160,15 @@
 </head>
 <body class="min-h-screen bg-gray-50">
     <!-- TOP NAVIGATION - Lovable Style -->
-    <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-        <div class="flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold" style="color: var(--navy);">LienDeadline Admin</h1>
-                <p class="text-sm" style="color: var(--muted);">Dashboard for managing brokers and customers</p>
+    <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <a href="/admin-dashboard" style="text-decoration: none;">
+                    <img src="/images/liendeadline-logo.png" alt="LienDeadline" style="height: 56px; width: auto; display: block;">
+                </a>
+                <span style="font-size: 14px; color: #6B7280; font-weight: 500;">Admin Dashboard</span>
             </div>
+            
             <div class="flex items-center space-x-4">
                 <a href="/" class="text-sm font-medium" style="color: var(--coral);">View Site</a>
                 <a href="/admin-dashboard?ui=v2" class="text-sm font-medium" style="color: var(--coral); font-weight: 600;">Switch to V2</a>

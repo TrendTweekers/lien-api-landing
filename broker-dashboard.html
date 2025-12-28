@@ -18,16 +18,22 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
-    <nav class="bg-white shadow-sm py-4 px-6">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold">Broker Dashboard</h1>
+    <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <a href="/broker-dashboard" style="text-decoration: none;">
+                    <img src="/images/liendeadline-logo.png" alt="LienDeadline" style="height: 56px; width: auto; display: block;">
+                </a>
+                <span style="font-size: 14px; color: #6B7280; font-weight: 500;">Partner Dashboard</span>
+            </div>
+            
             <div>
                 <span id="brokerName" class="text-gray-600"></span>
                 <button onclick="showChangePassword()" class="ml-4 text-blue-600 hover:underline">Change Password</button>
                 <button onclick="logout()" class="ml-4 text-red-600 hover:underline">Logout</button>
             </div>
         </div>
-    </nav>
+    </header>
     
     <div class="max-w-6xl mx-auto px-6 py-8">
         <!-- Login Form (shown if not authenticated) -->
