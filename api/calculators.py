@@ -255,6 +255,51 @@ def calculate_hawaii(invoice_date: datetime) -> Dict:
     }
 
 
+def calculate_newjersey(invoice_date: datetime, project_type: str = "commercial") -> Dict:
+    """
+    New Jersey mechanics lien deadlines for material suppliers.
+    
+    Preliminary Notice (Notice of Unpaid Balance and Right to File Lien):
+    - Residential: 60 days from last furnishing
+    - Non-residential: 90 days from last furnishing
+    
+    Lien Filing:
+    - Residential: 120 days from last furnishing
+    - Non-residential: 90 days from last furnishing
+    
+    Statute: N.J.S.A. § 2A:44A-20 (preliminary), § 2A:44A-6 (lien filing)
+    
+    Args:
+        invoice_date: Date of first/last furnishing materials
+        project_type: "residential" or "commercial" (default: "commercial")
+    
+    Returns:
+        Dict with preliminary_deadline, preliminary_required, lien_deadline, warnings
+    """
+    is_residential = project_type.lower() in ["residential", "res", "resi"]
+    
+    if is_residential:
+        prelim_days = 60
+        lien_days = 120
+    else:  # commercial/non-residential
+        prelim_days = 90
+        lien_days = 90
+    
+    prelim_deadline = invoice_date + timedelta(days=prelim_days)
+    lien_deadline = invoice_date + timedelta(days=lien_days)
+    
+    return {
+        "preliminary_deadline": prelim_deadline,
+        "preliminary_required": True,
+        "lien_deadline": lien_deadline,
+        "warnings": [
+            "Preliminary notice required within 60 days (residential) or 90 days (non-residential)",
+            "Lien must be filed within 120 days (residential) or 90 days (non-residential)",
+            "Deadlines vary by project type"
+        ]
+    }
+
+
 def calculate_default(invoice_date: datetime, state_data: Dict, 
                      weekend_extension: bool = False,
                      holiday_extension: bool = False) -> Dict:
