@@ -188,6 +188,14 @@
             }
         }
         
+        /* Force logo size */
+        header img[alt="LienDeadline"] {
+            height: 56px !important;
+            width: auto !important;
+            min-height: 56px !important;
+            max-height: 56px !important;
+        }
+        
         /* Mobile Navigation */
         @media (max-width: 768px) {
             .desktop-nav {
@@ -199,7 +207,9 @@
             }
             
             header img[alt="LienDeadline"] {
-                height: 44px;
+                height: 44px !important;
+                min-height: 44px !important;
+                max-height: 44px !important;
             }
         }
         
@@ -526,7 +536,7 @@
         <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 16px 0 0;">
             <!-- Logo -->
             <a href="/" style="text-decoration: none; margin-right: auto; display: flex; align-items: center;">
-                <img src="/images/liendeadline-logo.png" alt="LienDeadline" style="height: 56px; width: auto; display: block;">
+                <img src="/images/liendeadline-logo.png" alt="LienDeadline" style="height: 56px !important; width: auto !important; min-height: 56px !important; max-height: 56px !important; display: block;">
             </a>
             
             <!-- Desktop Nav Links -->
