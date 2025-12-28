@@ -525,7 +525,7 @@
     <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
         <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 16px 0 0;">
                 <!-- Logo -->
-            <a href="/" class="logo" style="text-decoration: none; display: inline-block;">
+            <a href="/" class="logo" style="text-decoration: none;">
                 <img src="/images/liendeadline-logo.png" alt="LienDeadline" class="logo">
             </a>
             
@@ -2072,6 +2072,14 @@
     
         /* Logo Container and Image Styles */
         /* Use more specific selectors with classes for better specificity */
+        /* Override any parent container constraints */
+        header,
+        header nav {
+            height: auto !important;
+            min-height: auto !important;
+            max-height: none !important;
+        }
+        
         header nav a.logo,
         header a.logo {
             height: auto !important;
@@ -2084,6 +2092,7 @@
             line-height: normal !important;
             margin: 0 !important;
             padding: 0 !important;
+            vertical-align: baseline !important;
         }
         
         header nav img.logo,
@@ -2096,6 +2105,7 @@
             min-height: 0 !important;
             max-height: none !important;
             object-fit: contain !important;
+            vertical-align: baseline !important;
         }
         
         /* Mobile Responsive */
