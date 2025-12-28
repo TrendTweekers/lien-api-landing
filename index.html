@@ -188,12 +188,37 @@
             }
         }
         
-        /* Force logo size */
-        header img[alt="LienDeadline"] {
+        /* Force logo size - override all parent constraints */
+        header a[href="/"] img[alt="LienDeadline"],
+        header img[alt="LienDeadline"],
+        nav img[alt="LienDeadline"],
+        header a img[alt="LienDeadline"] {
             height: 56px !important;
             width: auto !important;
             min-height: 56px !important;
             max-height: 56px !important;
+            display: block !important;
+            object-fit: contain !important;
+            flex-shrink: 0 !important;
+        }
+        
+        /* Ensure parent <a> doesn't constrain logo */
+        header a[href="/"],
+        nav a[href="/"] {
+            height: auto !important;
+            min-height: auto !important;
+            max-height: none !important;
+            display: flex !important;
+            align-items: center !important;
+            flex-shrink: 0 !important;
+        }
+        
+        /* Override any Tailwind or framework classes */
+        header .h-6,
+        header .h-8,
+        header .h-10,
+        header .h-12 {
+            height: auto !important;
         }
         
         /* Mobile Navigation */
@@ -206,10 +231,14 @@
                 display: block !important;
             }
             
-            header img[alt="LienDeadline"] {
+            header a[href="/"] img[alt="LienDeadline"],
+            header img[alt="LienDeadline"],
+            nav img[alt="LienDeadline"],
+            header a img[alt="LienDeadline"] {
                 height: 44px !important;
                 min-height: 44px !important;
                 max-height: 44px !important;
+                width: auto !important;
             }
         }
         
