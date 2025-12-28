@@ -160,7 +160,7 @@
     
       /* Force logo size - override ALL constraints with unique class */
       .liendeadline-logo-fixed,
-      img.liendeadline-logo-fixed,
+      svg.liendeadline-logo-fixed,
       header .liendeadline-logo-fixed,
       nav .liendeadline-logo-fixed,
       header a .liendeadline-logo-fixed,
@@ -170,16 +170,15 @@
       header a[href="/"] .liendeadline-logo-fixed,
       header a[href="/admin-dashboard"] .liendeadline-logo-fixed,
       header a[href="/broker-dashboard"] .liendeadline-logo-fixed,
-      header img.liendeadline-logo-fixed,
-      nav img.liendeadline-logo-fixed,
-      header a img.liendeadline-logo-fixed {
+      header svg.liendeadline-logo-fixed,
+      nav svg.liendeadline-logo-fixed,
+      header a svg.liendeadline-logo-fixed {
         height: 56px !important;
         width: auto !important;
         min-height: 56px !important;
         max-height: 56px !important;
         max-width: none !important;
         display: block !important;
-        object-fit: contain !important;
         flex-shrink: 0 !important;
         flex-grow: 0 !important;
         flex-basis: auto !important;
@@ -244,7 +243,7 @@
       
       @media (max-width: 768px) {
         .liendeadline-logo-fixed,
-        img.liendeadline-logo-fixed,
+        svg.liendeadline-logo-fixed,
         header .liendeadline-logo-fixed,
         nav .liendeadline-logo-fixed,
         header a .liendeadline-logo-fixed,
@@ -252,9 +251,9 @@
         header a[href="/"] .liendeadline-logo-fixed,
         header a[href="/admin-dashboard"] .liendeadline-logo-fixed,
         header a[href="/broker-dashboard"] .liendeadline-logo-fixed,
-        header img.liendeadline-logo-fixed,
-        nav img.liendeadline-logo-fixed,
-        header a img.liendeadline-logo-fixed {
+        header svg.liendeadline-logo-fixed,
+        nav svg.liendeadline-logo-fixed,
+        header a svg.liendeadline-logo-fixed {
           height: 44px !important;
           min-height: 44px !important;
           max-height: 44px !important;
@@ -273,7 +272,11 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 16px;">
                 <a href="/admin-dashboard" style="text-decoration: none;">
-                    <img src="/images/liendeadline-logo.svg?v=1" alt="LienDeadline" class="liendeadline-logo-fixed" style="height: 56px !important; width: auto !important; display: block !important;" class="liendeadline-logo-fixed">
+                    <svg class="liendeadline-logo-fixed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 50" style="height: 56px !important; width: auto !important; display: block;">
+  <!-- Actual paths for lion and text here; user gets from converter -->
+  <path d="...lion shape..." fill="#FF7A59"/>
+  <text x="50" y="35" font-size="20" fill="#FF7A59">LienDeadline</text>
+</svg>
                 </a>
                 <span style="font-size: 14px; color: #6B7280; font-weight: 500;">Admin Dashboard</span>
             </div>
