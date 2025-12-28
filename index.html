@@ -3332,19 +3332,43 @@ window.addEventListener('DOMContentLoaded', function() {
         // Force logo size via JavaScript as final fallback
         (function() {
             function enforceLogoSize() {
+                console.log('Enforcing logo size...');
                 const logos = document.querySelectorAll('.liendeadline-logo-fixed');
                 const isMobile = window.innerWidth <= 768;
                 const targetHeight = isMobile ? '44px' : '56px';
                 
                 logos.forEach(function(logo) {
                     if (logo) {
-                        logo.style.setProperty('height', targetHeight, 'important');
-                        logo.style.setProperty('min-height', targetHeight, 'important');
-                        logo.style.setProperty('max-height', targetHeight, 'important');
+                        // Find parent <a> or wrapper
+                        let parent = logo.parentElement;
+                        while (parent && parent.tagName !== 'A' && parent.tagName !== 'HEADER' && parent.tagName !== 'NAV') {
+                            parent = parent.parentElement;
+                        }
+                        
+                        if (parent && (parent.tagName === 'A' || parent.classList.contains('flex') || parent.hasAttribute('href'))) {
+                            // Set parent height first
+                            parent.style.setProperty('height', targetHeight, 'important');
+                            parent.style.setProperty('min-height', targetHeight, 'important');
+                            parent.style.setProperty('max-height', targetHeight, 'important');
+                            parent.style.setProperty('display', 'flex', 'important');
+                            parent.style.setProperty('align-items', 'center', 'important');
+                            parent.style.setProperty('flex-shrink', '0', 'important');
+                            console.log('Set parent height to:', targetHeight);
+                        }
+                        
+                        // Set img to 100% of parent
+                        logo.style.setProperty('height', '100%', 'important');
                         logo.style.setProperty('width', 'auto', 'important');
                         logo.style.setProperty('display', 'block', 'important');
                         logo.style.setProperty('object-fit', 'contain', 'important');
                         logo.style.setProperty('flex-shrink', '0', 'important');
+                        
+                        // Diagnostic logging
+                        const rect = logo.getBoundingClientRect();
+                        const parentRect = logo.parentElement ? logo.parentElement.getBoundingClientRect() : null;
+                        console.log('Logo rendered height:', rect.height, 'px');
+                        console.log('Parent height:', parentRect ? parentRect.height + 'px' : 'N/A');
+                        console.log('Natural image height:', logo.naturalHeight, 'px');
                     }
                 });
             }
@@ -3359,9 +3383,10 @@ window.addEventListener('DOMContentLoaded', function() {
             // Run on resize (for mobile/desktop switching)
             window.addEventListener('resize', enforceLogoSize);
             
-            // Run after a short delay to catch late-loading styles
+            // Run after delays to catch late-loading styles
             setTimeout(enforceLogoSize, 100);
             setTimeout(enforceLogoSize, 500);
+            setTimeout(enforceLogoSize, 1000);
         })();
     </script>
 </body>
