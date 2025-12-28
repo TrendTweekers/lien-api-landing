@@ -7,10 +7,8 @@
     
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-KYZG0TN07Z"></script>
-    
-</body>
-</html>
-ow.dataLayer = window.dataLayer || [];
+    <script>
+      window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-KYZG0TN07Z');
@@ -18,7 +16,6 @@ ow.dataLayer = window.dataLayer || [];
     <!-- Umami Analytics -->
     <script defer src="https://cloud.umami.is/script.js" data-website-id="02250d35-ee17-41be-845d-2fe0f7f15e63"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    >
 <style>
       /* Force logo size - override ALL constraints with unique class */
       
@@ -82,26 +79,19 @@ ow.dataLayer = window.dataLayer || [];
         
       }
       
-    </style
+    </style>
     </head>
 <body class="bg-gray-50">
     <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 16px;">
-                <a href="/broker-dashboard" style="text-decoration: none; height: auto !important; min-height: 80px;">
-                    <svg class="liendeadline-logo-fixed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 50" style="height: 56px !important; width: auto !important; display: block;">
-  <!-- Actual paths for lion and text here; user gets from converter -->
-  <path d="...lion shape..." fill="#FF7A59"/>
-  <text x="50" y="35" font-size="20" fill="#FF7A59">LienDeadline</text>
-</svg>
-                </a>
-                <span style="font-size: 14px; color: #6B7280; font-weight: 500;">Partner Dashboard</span>
+            <div>
+                <h1 style="font-size: 20px; font-weight: 600; color: #1F2937; margin: 0;">Partner Dashboard</h1>
             </div>
             
-            <div>
+            <div style="display: flex; align-items: center; gap: 16px;">
                 <span id="brokerName" class="text-gray-600"></span>
-                <button onclick="showChangePassword()" class="ml-4 text-blue-600 hover:underline">Change Password</button>
-                <button onclick="logout()" class="ml-4 text-red-600 hover:underline">Logout</button>
+                <button onclick="showChangePassword()" class="text-blue-600 hover:underline">Change Password</button>
+                <button onclick="logout()" class="text-red-600 hover:underline">Logout</button>
             </div>
         </div>
     </header>
