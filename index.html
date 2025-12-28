@@ -522,11 +522,12 @@
     </div>
     
     <!-- Header -->
-    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 h-24">
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
         <nav class="max-w-7xl mx-auto h-full px-6 flex justify-between items-center">
                 <!-- Logo -->
-            <a href="/" class="flex items-center flex-shrink-0">
-                <img src="/images/liendeadline-logo.png" alt="LienDeadline" class="h-16 md:h-[72px] w-auto object-contain" />
+            <a href="/" class="ld-brand" aria-label="LienDeadline home">
+                <img class="ld-brand-icon" src="/images/liendeadline-icon-transparent.png" alt="LienDeadline" />
+                <img class="ld-brand-wordmark" src="/images/liendeadline-wordmark-transparent.png" alt="LienDeadline" />
             </a>
             
             <!-- Desktop Nav Links -->
@@ -2069,6 +2070,51 @@
                 margin-bottom: 0 !important;
             }
         }
+        
+        /* Clean navbar logo: icon + wordmark */
+        header, nav { overflow: visible; }
+
+        .ld-brand{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            text-decoration:none;
+            flex:0 0 auto;            /* do not shrink */
+            white-space:nowrap;
+            min-width:max-content;
+        }
+        .ld-brand-icon{
+            height:32px;
+            width:auto;
+            display:block;
+            object-fit:contain;
+            flex:0 0 auto;
+        }
+        .ld-brand-wordmark{
+            height:28px;
+            width:auto;
+            display:block;
+            object-fit:contain;
+            flex:0 0 auto;
+        }
+
+        /* Make header a bit taller/cleaner */
+        header{
+            padding:18px 0;           /* gives breathing room */
+        }
+
+        @media (max-width:768px){
+            header{ padding:14px 0; }
+            .ld-brand{ gap:8px; }
+            .ld-brand-icon{ height:28px; }
+            .ld-brand-wordmark{ height:24px; }
+        }
+
+        /* Safety: if any global img rules cap height, override just for brand */
+        header img.ld-brand-icon,
+        header img.ld-brand-wordmark{
+            max-height:none !important;
+        }
     
         </style>
 
@@ -3064,23 +3110,6 @@ window.addEventListener('DOMContentLoaded', function() {
 </script>
 
     <script>
-        // Debug: Check logo actual rendered size
-        window.addEventListener('load', () => {
-            const logo = document.querySelector('img[alt="LienDeadline"]');
-            if (logo) {
-                console.log('=== LOGO DEBUG INFO ===');
-                console.log('Logo actual height (offsetHeight):', logo.offsetHeight, 'px');
-                console.log('Logo computed style height:', window.getComputedStyle(logo).height);
-                console.log('Logo inline style height:', logo.style.height);
-                console.log('Logo natural height:', logo.naturalHeight, 'px');
-                console.log('Logo natural width:', logo.naturalWidth, 'px');
-                console.log('Logo parent element:', logo.parentElement);
-                console.log('Logo parent computed height:', logo.parentElement ? window.getComputedStyle(logo.parentElement).height : 'N/A');
-                console.log('========================');
-            } else {
-                console.log('Logo not found!');
-            }
-        });
     </script>
 
 </body>

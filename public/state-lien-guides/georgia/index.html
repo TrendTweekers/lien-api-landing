@@ -91,6 +91,51 @@
         table tr:nth-child(even) {
             background: #F9FAFB;
         }
+        
+        /* Clean navbar logo: icon + wordmark */
+        header, nav { overflow: visible; }
+
+        .ld-brand{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            text-decoration:none;
+            flex:0 0 auto;            /* do not shrink */
+            white-space:nowrap;
+            min-width:max-content;
+        }
+        .ld-brand-icon{
+            height:32px;
+            width:auto;
+            display:block;
+            object-fit:contain;
+            flex:0 0 auto;
+        }
+        .ld-brand-wordmark{
+            height:28px;
+            width:auto;
+            display:block;
+            object-fit:contain;
+            flex:0 0 auto;
+        }
+
+        /* Make header a bit taller/cleaner */
+        header{
+            padding:18px 0;           /* gives breathing room */
+        }
+
+        @media (max-width:768px){
+            header{ padding:14px 0; }
+            .ld-brand{ gap:8px; }
+            .ld-brand-icon{ height:28px; }
+            .ld-brand-wordmark{ height:24px; }
+        }
+
+        /* Safety: if any global img rules cap height, override just for brand */
+        header img.ld-brand-icon,
+        header img.ld-brand-wordmark{
+            max-height:none !important;
+        }
     </style>
 </head>
 
@@ -98,8 +143,9 @@
 
 <header style="background:white;border-bottom:1px solid #E5E7EB;padding:16px 0;">
     <nav style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:32px;padding:0 16px;">
-        <a href="/" style="display:flex;align-items:center;">
-            <img src="/images/liendeadline-logo.png" alt="LienDeadline" style="height:56px;">
+        <a href="/" class="ld-brand" aria-label="LienDeadline home">
+            <img class="ld-brand-icon" src="/images/liendeadline-icon-transparent.png" alt="LienDeadline" />
+            <img class="ld-brand-wordmark" src="/images/liendeadline-wordmark-transparent.png" alt="LienDeadline" />
         </a>
         <div style="margin-left:auto;display:flex;gap:24px;align-items:center;">
             <a href="/#calculator" style="color:#6B7280;text-decoration:none;font-weight:500;">Calculator</a>
@@ -250,7 +296,10 @@
 </main>
 
 <footer style="background:white;border-top:1px solid #E5E7EB;padding:40px 24px;text-align:center;">
-    <img src="/images/liendeadline-logo.png" alt="LienDeadline" style="height:56px;margin-bottom:16px;">
+    <a href="/" class="ld-brand" aria-label="LienDeadline home" style="display: inline-flex; margin-bottom: 16px;">
+        <img class="ld-brand-icon" src="/images/liendeadline-icon-transparent.png" alt="LienDeadline" />
+        <img class="ld-brand-wordmark" src="/images/liendeadline-wordmark-transparent.png" alt="LienDeadline" />
+    </a>
     <p style="font-size:14px;color:#6B7280;">© 2024 LienDeadline. All rights reserved.</p>
 </footer>
 

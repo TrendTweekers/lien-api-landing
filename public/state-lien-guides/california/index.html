@@ -73,31 +73,58 @@
       background: #F9FAFB;
     }
 
-    /* Logo sizing (same approach as Texas) */
-    .liendeadline-logo-fixed {
-      height: 56px !important;
-      width: auto !important;
-      min-height: 56px !important;
-      max-height: 56px !important;
-      max-width: none !important;
-      display: block !important;
-      flex-shrink: 0 !important;
-      vertical-align: middle !important;
-      line-height: 56px !important;
-    }
     @media (max-width: 768px) {
       .desktop-nav { display: none !important; }
       .mobile-menu-btn { display: block !important; }
-      .liendeadline-logo-fixed {
-        height: 44px !important;
-        min-height: 44px !important;
-        max-height: 44px !important;
-        line-height: 44px !important;
-      }
     }
     @media (min-width: 769px) {
       .mobile-menu-btn { display: none !important; }
       .mobile-menu { display: none !important; }
+    }
+    
+    /* Clean navbar logo: icon + wordmark */
+    header, nav { overflow: visible; }
+
+    .ld-brand{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        text-decoration:none;
+        flex:0 0 auto;            /* do not shrink */
+        white-space:nowrap;
+        min-width:max-content;
+    }
+    .ld-brand-icon{
+        height:32px;
+        width:auto;
+        display:block;
+        object-fit:contain;
+        flex:0 0 auto;
+    }
+    .ld-brand-wordmark{
+        height:28px;
+        width:auto;
+        display:block;
+        object-fit:contain;
+        flex:0 0 auto;
+    }
+
+    /* Make header a bit taller/cleaner */
+    header{
+        padding:18px 0;           /* gives breathing room */
+    }
+
+    @media (max-width:768px){
+        header{ padding:14px 0; }
+        .ld-brand{ gap:8px; }
+        .ld-brand-icon{ height:28px; }
+        .ld-brand-wordmark{ height:24px; }
+    }
+
+    /* Safety: if any global img rules cap height, override just for brand */
+    header img.ld-brand-icon,
+    header img.ld-brand-wordmark{
+        max-height:none !important;
     }
   </style>
 </head>
@@ -107,11 +134,9 @@
   <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
     <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 16px 0 0;">
       <!-- Logo -->
-      <a href="/" style="text-decoration: none; margin-right: auto; display: flex; align-items: center; flex-shrink: 0;">
-        <svg class="liendeadline-logo-fixed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 50" style="height: 56px !important; width: auto !important; display: block;">
-          <path d="...lion shape..." fill="#FF7A59"></path>
-          <text x="50" y="35" font-size="20" fill="#FF7A59">LienDeadline</text>
-        </svg>
+      <a href="/" class="ld-brand" aria-label="LienDeadline home">
+        <img class="ld-brand-icon" src="/images/liendeadline-icon-transparent.png" alt="LienDeadline" />
+        <img class="ld-brand-wordmark" src="/images/liendeadline-wordmark-transparent.png" alt="LienDeadline" />
       </a>
 
       <!-- Desktop Nav Links -->

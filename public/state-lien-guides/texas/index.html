@@ -60,40 +60,6 @@
     
     >
 <style>
-        /* Force logo size */
-        header img[alt="LienDeadline"] {
-            height: 56px !important;
-            width: auto !important;
-            min-height: 56px !important;
-            max-height: 56px !important;
-        }
-        
-        @media (max-width: 768px) {
-            .desktop-nav {
-                display: none !important;
-            }
-            
-            .mobile-menu-btn {
-                display: block !important;
-            }
-            
-            header img[alt="LienDeadline"] {
-                height: 44px !important;
-                min-height: 44px !important;
-                max-height: 44px !important;
-            }
-        }
-        
-        @media (min-width: 769px) {
-            .mobile-menu-btn {
-                display: none !important;
-            }
-            
-            .mobile-menu {
-                display: none !important;
-            }
-        }
-        
         body {
             font-family: 'Inter', system-ui, sans-serif;
             color: #1F2937;
@@ -125,110 +91,70 @@
         table tr:nth-child(even) {
             background: #F9FAFB;
         }
-    
-        /* Force logo size - override ALL constraints with unique class */
-        .liendeadline-logo-fixed,
-        svg.liendeadline-logo-fixed,
-        header .liendeadline-logo-fixed,
-        nav .liendeadline-logo-fixed,
-        header a .liendeadline-logo-fixed,
-        .navbar-brand .liendeadline-logo-fixed,
-        .flex .liendeadline-logo-fixed,
-        .items-center .liendeadline-logo-fixed,
-        header a[href="/"] .liendeadline-logo-fixed,
-        header a[href="/admin-dashboard"] .liendeadline-logo-fixed,
-        header a[href="/broker-dashboard"] .liendeadline-logo-fixed,
-        header svg.liendeadline-logo-fixed,
-        nav svg.liendeadline-logo-fixed,
-        header a svg.liendeadline-logo-fixed {
-            height: 56px !important;
-            width: auto !important;
-            min-height: 56px !important;
-            max-height: 56px !important;
-            max-width: none !important;
-            display: block !important;
-            flex-shrink: 0 !important;
-            flex-grow: 0 !important;
-            flex-basis: auto !important;
-            vertical-align: middle !important;
-            line-height: 56px !important;
-        }
         
-        /* Override ALL parent containers */
-        header,
-        nav,
-        header a[href="/"],
-        header a[href="/admin-dashboard"],
-        header a[href="/broker-dashboard"],
-        nav a[href="/"],
-        .header-container,
-        .navbar,
-        .navbar-brand {
-            height: auto !important;
-            min-height: auto !important;
-            max-height: none !important;
-            overflow: visible !important;
-        }
-        
-        /* Ensure parent <a> doesn't constrain logo */
-        header a[href="/"],
-        header a[href="/admin-dashboard"],
-        header a[href="/broker-dashboard"],
-        nav a[href="/"],
-        .navbar-brand {
-            height: auto !important;
-            min-height: 60px !important;
-            max-height: none !important;
-            display: flex !important;
-            align-items: center !important;
-            flex-shrink: 0 !important;
-            overflow: visible !important;
-        }
-        
-        /* Override ALL Tailwind/framework height classes */
-        header .h-4,
-        header .h-6,
-        header .h-8,
-        header .h-10,
-        header .h-12,
-        header .h-auto,
-        nav .h-4,
-        nav .h-6,
-        nav .h-8,
-        nav .h-10,
-        nav .h-12,
-        nav .h-auto {
-            height: auto !important;
-        }
-        
-        /* Override any max-height constraints */
-        header img,
-        nav img,
-        header a img,
-        nav a img {
-            max-height: none !important;
-        }
-        
-        /* Mobile Navigation */
         @media (max-width: 768px) {
-            .liendeadline-logo-fixed,
-            svg.liendeadline-logo-fixed,
-            header .liendeadline-logo-fixed,
-            nav .liendeadline-logo-fixed,
-            header a .liendeadline-logo-fixed,
-            .navbar-brand .liendeadline-logo-fixed,
-            header a[href="/"] .liendeadline-logo-fixed,
-            header a[href="/admin-dashboard"] .liendeadline-logo-fixed,
-            header a[href="/broker-dashboard"] .liendeadline-logo-fixed,
-            header svg.liendeadline-logo-fixed,
-            nav svg.liendeadline-logo-fixed,
-            header a svg.liendeadline-logo-fixed {
-                height: 44px !important;
-                min-height: 44px !important;
-                max-height: 44px !important;
-                width: auto !important;
-                line-height: 44px !important;
+            .desktop-nav {
+                display: none !important;
             }
+            
+            .mobile-menu-btn {
+                display: block !important;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-menu-btn {
+                display: none !important;
+            }
+            
+            .mobile-menu {
+                display: none !important;
+            }
+        }
+        
+        /* Clean navbar logo: icon + wordmark */
+        header, nav { overflow: visible; }
+
+        .ld-brand{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            text-decoration:none;
+            flex:0 0 auto;            /* do not shrink */
+            white-space:nowrap;
+            min-width:max-content;
+        }
+        .ld-brand-icon{
+            height:32px;
+            width:auto;
+            display:block;
+            object-fit:contain;
+            flex:0 0 auto;
+        }
+        .ld-brand-wordmark{
+            height:28px;
+            width:auto;
+            display:block;
+            object-fit:contain;
+            flex:0 0 auto;
+        }
+
+        /* Make header a bit taller/cleaner */
+        header{
+            padding:18px 0;           /* gives breathing room */
+        }
+
+        @media (max-width:768px){
+            header{ padding:14px 0; }
+            .ld-brand{ gap:8px; }
+            .ld-brand-icon{ height:28px; }
+            .ld-brand-wordmark{ height:24px; }
+        }
+
+        /* Safety: if any global img rules cap height, override just for brand */
+        header img.ld-brand-icon,
+        header img.ld-brand-wordmark{
+            max-height:none !important;
         }
         </style
     </head>
@@ -237,12 +163,9 @@
     <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
         <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 16px 0 0;">
             <!-- Logo -->
-            <a href="/" style="text-decoration: none; margin-right: auto; display: flex; align-items: center; display: flex !important; align-items: center !important; flex-shrink: 0 !important; height: 56px !important; display: flex !important; align-items: center !important; flex-shrink: 0 !important; ">
-                <svg class="liendeadline-logo-fixed" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 50" style="height: 56px !important; width: auto !important; display: block;">
-  <!-- Actual paths for lion and text here; user gets from converter -->
-  <path d="...lion shape..." fill="#FF7A59"/>
-  <text x="50" y="35" font-size="20" fill="#FF7A59">LienDeadline</text>
-</svg>
+            <a href="/" class="ld-brand" aria-label="LienDeadline home">
+                <img class="ld-brand-icon" src="/images/liendeadline-icon-transparent.png" alt="LienDeadline" />
+                <img class="ld-brand-wordmark" src="/images/liendeadline-wordmark-transparent.png" alt="LienDeadline" />
             </a>
             
             <!-- Desktop Nav Links -->
