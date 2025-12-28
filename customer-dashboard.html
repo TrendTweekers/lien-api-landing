@@ -1428,7 +1428,7 @@
                                 Project Name
                             </label>
                             <div style="padding: 12px; background: #f7fafc; border-radius: 6px; color: #2d3748;">
-                                ${escapeHtml(project.projectName || project.project_name || 'N/A')}
+                                ${escapeHtml(project.projectName || 'N/A')}
                             </div>
                         </div>
                         
@@ -1438,7 +1438,7 @@
                                 Client/Customer
                             </label>
                             <div style="padding: 12px; background: #f7fafc; border-radius: 6px; color: #2d3748;">
-                                ${escapeHtml(project.clientName || project.client_name || 'N/A')}
+                                ${escapeHtml(project.clientName || 'N/A')}
                             </div>
                         </div>
                         
@@ -1448,7 +1448,7 @@
                                 Invoice Amount
                             </label>
                             <div style="padding: 12px; background: #f7fafc; border-radius: 6px; color: #2d3748;">
-                                $${parseFloat(project.invoiceAmount || project.invoice_amount || 0).toLocaleString()}
+                                $${parseFloat(project.invoiceAmount || 0).toLocaleString()}
                             </div>
                         </div>
                         
@@ -1458,7 +1458,7 @@
                                 State
                             </label>
                             <div style="padding: 12px; background: #f7fafc; border-radius: 6px; color: #2d3748;">
-                                ${escapeHtml(project.state || 'N/A')} ${project.stateCode || project.state_code ? `(${project.stateCode || project.state_code})` : ''}
+                                ${escapeHtml(project.state || 'N/A')} ${project.stateCode ? `(${project.stateCode})` : ''}
                             </div>
                         </div>
                         
@@ -1468,7 +1468,7 @@
                                 Invoice/Delivery Date
                             </label>
                             <div style="padding: 12px; background: #f7fafc; border-radius: 6px; color: #2d3748;">
-                                ${project.invoiceDate || project.invoice_date ? new Date(project.invoiceDate || project.invoice_date).toLocaleDateString() : 'N/A'}
+                                ${project.invoiceDate ? new Date(project.invoiceDate).toLocaleDateString() : 'N/A'}
                             </div>
                         </div>
                         
@@ -1478,11 +1478,11 @@
                                 📋 Preliminary Notice Deadline
                             </label>
                             <div style="font-size: 18px; color: #22543d; font-weight: bold;">
-                                ${project.prelimDeadline || project.prelim_deadline ? new Date(project.prelimDeadline || project.prelim_deadline).toLocaleDateString() : 'Not Required'}
+                                ${project.prelimDeadline ? new Date(project.prelimDeadline).toLocaleDateString() : 'Not Required'}
                             </div>
-                            ${(project.prelimDeadline || project.prelim_deadline) && (project.prelimDeadlineDays || project.prelim_deadline_days) ? `
+                            ${(project.prelimDeadline) && (project.prelimDeadlineDays) ? `
                                 <div style="font-size: 14px; color: #276749; margin-top: 4px;">
-                                    ${project.prelimDeadlineDays || project.prelim_deadline_days} days from invoice date
+                                    ${project.prelimDeadlineDays} days from invoice date
                                 </div>
                             ` : ''}
                         </div>
@@ -1493,11 +1493,11 @@
                                 ⚖️ Lien Filing Deadline
                             </label>
                             <div style="font-size: 18px; color: #7c2d12; font-weight: bold;">
-                                ${project.lienDeadline || project.lien_deadline ? new Date(project.lienDeadline || project.lien_deadline).toLocaleDateString() : 'N/A'}
+                                ${project.lienDeadline ? new Date(project.lienDeadline).toLocaleDateString() : 'N/A'}
                             </div>
-                            ${(project.lienDeadlineDays || project.lien_deadline_days) ? `
+                            ${(project.lienDeadlineDays) ? `
                                 <div style="font-size: 14px; color: #7c2d12; margin-top: 4px;">
-                                    ${project.lienDeadlineDays || project.lien_deadline_days} days from invoice date
+                                    ${project.lienDeadlineDays} days from invoice date
                                 </div>
                             ` : ''}
                         </div>
@@ -1515,20 +1515,20 @@
                         ` : ''}
                         
                         <!-- QuickBooks Invoice ID (if applicable) -->
-                        ${project.quickbooksInvoiceId || project.quickbooks_invoice_id ? `
+                        ${project.quickbooksInvoiceId ? `
                             <div>
                                 <label style="font-weight: bold; color: #4a5568; display: block; margin-bottom: 4px;">
                                     QuickBooks Invoice
                                 </label>
                                 <div style="padding: 12px; background: #ebf8ff; border-radius: 6px; color: #2c5282;">
-                                    Invoice #${escapeHtml(project.quickbooksInvoiceId || project.quickbooks_invoice_id)}
+                                    Invoice #${escapeHtml(project.quickbooksInvoiceId)}
                                 </div>
                             </div>
                         ` : ''}
                         
                         <!-- Created Date -->
                         <div style="font-size: 12px; color: #718096; text-align: center; padding-top: 12px; border-top: 1px solid #e2e8f0;">
-                            Created: ${project.createdAt || project.created_at ? new Date(project.createdAt || project.created_at).toLocaleString() : 'N/A'}
+                            Created: ${project.createdAt ? new Date(project.createdAt).toLocaleString() : 'N/A'}
                         </div>
                     </div>
                 `;
@@ -1549,7 +1549,7 @@
                 if (!currentProject) return;
                 
                 // Get invoice date
-                const invoiceDate = currentProject.invoiceDate || currentProject.invoice_date;
+                const invoiceDate = currentProject.invoiceDate;
                 if (!invoiceDate) {
                     alert('Invoice date not available for this project');
                     return;
@@ -1557,7 +1557,7 @@
                 
                 // Format date as YYYY-MM-DD
                 const dateStr = new Date(invoiceDate).toISOString().split('T')[0];
-                const stateCode = currentProject.stateCode || currentProject.state_code || 'UNKNOWN';
+                const stateCode = currentProject.stateCode || 'UNKNOWN';
                 const stateName = currentProject.state || '';
                 
                 // Generate PDF URL with invoice date
@@ -1577,15 +1577,15 @@
                 const dateInput = document.getElementById('dashInvoiceDate');
                 const stateSelect = document.getElementById('dashState');
                 
-                if (dateInput && (currentProject.invoiceDate || currentProject.invoice_date)) {
-                    const invoiceDate = currentProject.invoiceDate || currentProject.invoice_date;
+                if (dateInput && (currentProject.invoiceDate)) {
+                    const invoiceDate = currentProject.invoiceDate;
                     // Format date as YYYY-MM-DD for date input
                     const dateStr = new Date(invoiceDate).toISOString().split('T')[0];
                     dateInput.value = dateStr;
                 }
                 
-                if (stateSelect && (currentProject.stateCode || currentProject.state_code)) {
-                    stateSelect.value = currentProject.stateCode || currentProject.state_code;
+                if (stateSelect && (currentProject.stateCode)) {
+                    stateSelect.value = currentProject.stateCode;
                 }
                 
                 // Scroll to calculator
@@ -1600,7 +1600,7 @@
             async function deleteProject() {
                 if (!currentProject) return;
                 
-                const confirmed = confirm(`Are you sure you want to delete the project "${currentProject.projectName || currentProject.project_name || 'this project'}"? This cannot be undone.`);
+                const confirmed = confirm(`Are you sure you want to delete the project "${currentProject.projectName || 'this project'}"? This cannot be undone.`);
                 
                 if (!confirmed) return;
                 
