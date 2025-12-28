@@ -497,66 +497,24 @@
     </div>
     
     <!-- Header -->
-    <header class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <!-- Logo -->
-                <a href="/" class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                    </div>
-                    <span class="font-serif text-xl font-semibold text-foreground">LienDeadline<span class="text-muted-foreground">.com</span></span>
-                </a>
-                
-                <!-- Desktop Navigation -->
-                <nav class="hidden md:flex items-center gap-8">
-                    <a href="#calculator" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Calculator</a>
-                    <a href="#features" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Features</a>
-                    <a href="/pricing.html" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
-                    <a href="/comparison.html" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Comparison</a>
-                    <a href="#partners" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Partners</a>
-                </nav>
-                
-                <!-- CTA Button -->
-                <div class="hidden md:block">
-                    <a href="#calculator" class="inline-flex items-center justify-center px-6 py-2 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors">
-                        Start Free Trial
-                    </a>
+    <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
+        <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 24px;">
+            <a href="/" style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
+                <div style="background: #F97316; color: white; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px;">
+                    L
                 </div>
-                
-                <!-- Mobile Menu Button -->
-                <button id="mobileMenuBtn" class="md:hidden p-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </header>
-    
-    <!-- Mobile Menu -->
-    <div id="mobileMenu" class="hidden fixed inset-0 z-50 bg-background md:hidden">
-        <div class="flex justify-between items-center p-6 border-b border-border">
-            <span class="font-serif text-xl font-semibold">LienDeadline.com</span>
-            <button id="closeMobileMenu">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
-        <div class="flex flex-col p-6 gap-6">
-            <a href="#calculator" class="py-3 border-b border-border text-lg font-medium">Calculator</a>
-            <a href="#features" class="py-3 border-b border-border text-lg font-medium">Features</a>
-            <a href="/pricing.html" class="py-3 border-b border-border text-lg font-medium">Pricing</a>
-            <a href="/comparison.html" class="py-3 border-b border-border text-lg font-medium">Comparison</a>
-            <a href="#partners" class="py-3 border-b border-border text-lg font-medium">Partners</a>
-            <a href="#calculator" class="bg-accent text-white px-6 py-3 rounded-lg text-center font-semibold mt-4">
-                Start Free Trial
+                <span style="font-size: 20px; font-weight: 700; color: #1F2937;">LienDeadline</span>
             </a>
-        </div>
-    </div>
+            
+            <div style="display: flex; gap: 32px; align-items: center;">
+                <a href="/" style="text-decoration: none; color: #6B7280; font-weight: 500;">Calculator</a>
+                <a href="/pricing.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Pricing</a>
+                <a href="/state-coverage.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">State Guides</a>
+                <a href="/partners.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Partners</a>
+                <a href="/" style="background: #F97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">Try Free</a>
+            </div>
+        </nav>
+    </header>
     
     <main class="pt-16">
         
