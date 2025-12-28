@@ -2746,32 +2746,60 @@ async def calculate_deadline(
             except ValueError:
                 return {"error": "Invalid date format. Use MM/DD/YYYY or YYYY-MM-DD"}
     
-    # Use unified calculation function (single source of truth)
+    # State-specific calculation logic
+    result = None
     # Ensure state_name is always set - use from rules, or fallback to state_code
     state_name = rules.get("state_name") or state_code
     # If state_name is still just a code (2 letters), convert it to full name
     if state_name and len(state_name) == 2:
-        state_name = STATE_CODE_TO_NAME.get(state_name.upper(), state_name)
+        state_name_map = {
+            'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California',
+            'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'DC': 'District of Columbia',
+            'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois',
+            'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana',
+            'ME': 'Maine', 'MD': 'Maryland', 'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota',
+            'MS': 'Mississippi', 'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada',
+            'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York',
+            'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma', 'OR': 'Oregon',
+            'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina', 'SD': 'South Dakota',
+            'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont', 'VA': 'Virginia',
+            'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
+        }
+        state_name = state_name_map.get(state_name, state_name)
+    special_rules = rules.get("special_rules", {})
     
-    # Parse notice_of_completion_date if provided
-    notice_of_completion_dt = None
-    if request_data.notice_of_completion_date:
-        try:
-            notice_of_completion_dt = datetime.strptime(request_data.notice_of_completion_date, "%Y-%m-%d")
-        except ValueError:
-            try:
-                notice_of_completion_dt = datetime.strptime(request_data.notice_of_completion_date, "%m/%d/%Y")
-            except ValueError:
-                pass  # Invalid date format, will use None
-    
-    result = calculate_state_deadline(
-        state_code=state_code,
-        invoice_date=delivery_date,
-        role=role,
+    if state_code == "TX":
+        result = calculate_texas(delivery_date, project_type=project_type)
+    elif state_code == "WA":
+        result = calculate_washington(delivery_date, role=role)
+    elif state_code == "CA":
+        result = calculate_california(
+            delivery_date,
+            notice_of_completion_date=request_data.notice_of_completion_date,
+            role=role
+        )
+    elif state_code == "OH":
+        result = calculate_ohio(
+            delivery_date,
             project_type=project_type,
-        notice_of_completion_date=notice_of_completion_dt,
-        notice_of_commencement_filed=request_data.notice_of_commencement_filed or False,
-        state_rules=rules
+            notice_of_commencement_filed=request_data.notice_of_commencement_filed or False
+        )
+    elif state_code == "OR":
+        result = calculate_oregon(delivery_date)
+    elif state_code == "HI":
+        result = calculate_hawaii(delivery_date)
+    else:
+        # Default calculation for simple states
+        result = calculate_default(
+            delivery_date,
+            {
+                "preliminary_notice_required": rules.get("preliminary_notice", {}).get("required", False),
+                "preliminary_notice_days": rules.get("preliminary_notice", {}).get("days"),
+                "lien_filing_days": rules.get("lien_filing", {}).get("days"),
+                "notes": special_rules.get("notes", "")
+            },
+            weekend_extension=special_rules.get("weekend_extension", False),
+            holiday_extension=special_rules.get("holiday_extension", False)
         )
     
     # Extract deadlines from result
