@@ -188,6 +188,27 @@
             }
         }
         
+        /* Mobile Navigation */
+        @media (max-width: 768px) {
+            .desktop-nav {
+                display: none !important;
+            }
+            
+            .mobile-menu-btn {
+                display: block !important;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-menu-btn {
+                display: none !important;
+            }
+            
+            .mobile-menu {
+                display: none !important;
+            }
+        }
+        
         @keyframes fadeUp {
             from {
                 opacity: 0;
@@ -499,6 +520,7 @@
     <!-- Header -->
     <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
         <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 24px;">
+                <!-- Logo -->
             <a href="/" style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
                 <div style="background: #F97316; color: white; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px;">
                     L
@@ -506,16 +528,32 @@
                 <span style="font-size: 20px; font-weight: 700; color: #1F2937;">LienDeadline</span>
             </a>
             
-            <div style="display: flex; gap: 32px; align-items: center;">
+            <!-- Desktop Nav Links -->
+            <div class="desktop-nav" style="display: flex; gap: 32px; align-items: center;">
                 <a href="/" style="text-decoration: none; color: #6B7280; font-weight: 500;">Calculator</a>
                 <a href="/pricing.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Pricing</a>
                 <a href="/partners.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Partners</a>
                 <a href="/" style="background: #F97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">Try Free</a>
                 </div>
+                
+            <!-- Mobile Hamburger (hidden on desktop) -->
+            <button class="mobile-menu-btn" id="mobileMenuBtn" style="display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: #1F2937; padding: 4px;">
+                ☰
+                </button>
         </nav>
+        
+        <!-- Mobile Menu (hidden by default) -->
+        <div id="mobileMenu" class="mobile-menu" style="display: none; background: white; border-top: 1px solid #E5E7EB; padding: 16px 24px;">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <a href="/" style="text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Calculator</a>
+                <a href="/pricing.html" style="text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Pricing</a>
+                <a href="/partners.html" style="text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Partners</a>
+                <a href="/" style="background: #F97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; text-align: center; margin-top: 8px;">Try Free</a>
+            </div>
+        </div>
     </header>
     
-    <main class="pt-16">
+    <main>
         
         <!-- Hero Section -->
         <section class="pt-32 pb-24 lg:pt-40 lg:pb-32 overflow-hidden">
@@ -1592,12 +1630,13 @@
 
         safeAddListener('mobileMenuBtn', 'click', () => {
             const menu = document.getElementById('mobileMenu');
-            if (menu) menu.classList.remove('hidden');
-        });
-
-        safeAddListener('closeMobileMenu', 'click', () => {
-            const menu = document.getElementById('mobileMenu');
-            if (menu) menu.classList.add('hidden');
+            if (menu) {
+                if (menu.style.display === 'none' || !menu.style.display) {
+                    menu.style.display = 'block';
+                } else {
+                    menu.style.display = 'none';
+                }
+            }
         });
         
         // Close mobile menu when clicking a link (use event delegation)
@@ -1607,8 +1646,9 @@
                 // If clicking on a link, close the menu
                 if (e.target.tagName === 'A' || e.target.closest('a')) {
                     const link = e.target.tagName === 'A' ? e.target : e.target.closest('a');
+                    // Close menu for all links
+                    mobileMenu.style.display = 'none';
                     // Don't prevent default - let links navigate normally
-                    // Only close menu for anchor links (#), external links navigate normally
                     if (link.getAttribute('href')?.startsWith('#')) {
                         // Anchor link - smooth scroll will handle it
                         setTimeout(() => {
