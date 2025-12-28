@@ -82,24 +82,6 @@
             border-bottom: 1px solid #e5e7eb;
         }
         
-        .sticky-cta-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
-            background: linear-gradient(135deg, #F97316 0%, #FB923C 100%);
-            color: white;
-            padding: 12px 0;
-            transform: translateY(-100%);
-            transition: transform 0.3s ease;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        
-        .sticky-cta-bar.visible {
-            transform: translateY(0);
-        }
-        
         .pricing-card {
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
@@ -179,16 +161,6 @@
 </head>
 <body class="bg-white text-dark-text">
     
-    <!-- Sticky CTA Bar (appears on scroll) -->
-    <div id="stickyCtaBar" class="sticky-cta-bar">
-        <div class="container mx-auto px-4 flex items-center justify-between">
-            <span class="font-semibold">$299/mo unlimited | Try Free →</span>
-            <a href="/calculator.html" class="bg-white text-primary-orange px-4 py-1 rounded font-semibold hover:bg-gray-100 transition">
-                Start Free
-            </a>
-        </div>
-    </div>
-    
     <!-- Header -->
     <header class="sticky-header">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -207,7 +179,7 @@
                     <a href="/pricing.html" class="text-sm font-medium text-dark-text font-semibold">Pricing</a>
                     <a href="/state-coverage.html" class="text-sm font-medium text-gray-text hover:text-dark-text transition-colors">State Guides</a>
                     <a href="/partners.html" class="text-sm font-medium text-gray-text hover:text-dark-text transition-colors">Partners</a>
-                    <a href="/calculator.html" class="bg-primary-orange text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-600 transition">
+                    <a href="/" class="bg-primary-orange text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-600 transition">
                         Try Free
                     </a>
                 </nav>
@@ -228,7 +200,7 @@
                 <a href="/pricing.html" class="block text-sm font-medium text-dark-text font-semibold">Pricing</a>
                 <a href="/state-coverage.html" class="block text-sm font-medium text-gray-text hover:text-dark-text">State Guides</a>
                 <a href="/partners.html" class="block text-sm font-medium text-gray-text hover:text-dark-text">Partners</a>
-                <a href="/calculator.html" class="block bg-primary-orange text-white px-4 py-2 rounded-lg font-semibold text-center">Try Free</a>
+                <a href="/" class="block bg-primary-orange text-white px-4 py-2 rounded-lg font-semibold text-center">Try Free</a>
             </div>
         </div>
     </header>
@@ -248,7 +220,7 @@
             
             <!-- Sleek CTA bar (no banner) -->
             <div style="display: flex; justify-content: center; gap: 16px; margin-top: 32px; flex-wrap: wrap;">
-                <a href="/calculator.html" class="hero-cta" style="padding: 16px 28px; background: var(--primary-orange); color: white; font-weight: 600; border-radius: 8px; text-decoration: none; font-size: 16px; transition: background 0.2s;" onmouseover="this.style.background='#EA580C'" onmouseout="this.style.background='var(--primary-orange)'">
+                <a href="/" class="hero-cta" style="padding: 16px 28px; background: var(--primary-orange); color: white; font-weight: 600; border-radius: 8px; text-decoration: none; font-size: 16px; transition: background 0.2s;" onmouseover="this.style.background='#EA580C'" onmouseout="this.style.background='var(--primary-orange)'">
                     Try 3 Free →
                 </a>
                 <div style="display: flex; align-items: center; gap: 8px; padding: 16px 24px; background: rgba(249,115,22,0.1); border-radius: 8px; font-size: 14px; color: var(--primary-orange); font-weight: 600;">
@@ -260,40 +232,6 @@
             <p style="margin-top: 16px; font-size: 14px; color: var(--gray-text);">
                 3 free calculations • No credit card required • Cancel anytime
             </p>
-        </div>
-    </section>
-    
-    <!-- ROI Calculator -->
-    <section style="background: linear-gradient(135deg, var(--soft-orange) 0%, var(--cream) 100%); padding: 60px 24px; margin: 60px 0;">
-        <div class="container" style="text-align: center; max-width: 800px; margin: 0 auto;">
-            
-            <h2 style="font-size: 32px; margin-bottom: 16px; color: var(--dark-text); font-weight: 700;">Calculate Your ROI</h2>
-            <p style="margin-bottom: 32px; color: var(--gray-text);">
-                See how much one saved lien covers your subscription
-            </p>
-            
-            <!-- Sleek calculator embed -->
-            <div style="background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 24px auto; max-width: 600px;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-                    <div>
-                        <label style="display: block; font-size: 14px; color: var(--gray-text); margin-bottom: 6px;">Average invoice value</label>
-                        <input type="number" id="invoiceValue" value="75000" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 16px;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 14px; color: var(--gray-text); margin-bottom: 6px;">Liens filed per month</label>
-                        <input type="number" id="liensPerMonth" value="2" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 16px;">
-                    </div>
-                </div>
-                
-                <div style="background: var(--light-gray); padding: 20px; border-radius: 8px; margin-bottom: 16px;">
-                    <div style="font-size: 24px; font-weight: 700; color: var(--primary-orange); margin-bottom: 8px;">
-                        One saved lien pays for <span id="roi-years">25</span> years of service
-                    </div>
-                    <p style="font-size: 14px; color: var(--gray-text);">
-                        Based on Professional plan at $299/month
-                    </p>
-                </div>
-            </div>
         </div>
     </section>
     
@@ -341,7 +279,7 @@
                         </li>
                     </ul>
                     
-                    <a href="/calculator.html" class="block w-full bg-gray-200 text-dark-text text-center py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
+                    <a href="/" class="block w-full bg-gray-200 text-dark-text text-center py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
                         Start Free →
                     </a>
                 </div>
@@ -435,6 +373,40 @@
                     <a href="mailto:sales@liendeadline.com" class="block w-full bg-gray-200 text-dark-text text-center py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
                         Contact Sales →
                     </a>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ROI Calculator -->
+    <section style="background: linear-gradient(135deg, var(--soft-orange) 0%, var(--cream) 100%); padding: 60px 24px; margin: 60px 0;">
+        <div class="container" style="text-align: center; max-width: 800px; margin: 0 auto;">
+            
+            <h2 style="font-size: 32px; margin-bottom: 16px; color: var(--dark-text); font-weight: 700;">See How Much You Could Save</h2>
+            <p style="margin-bottom: 32px; color: var(--gray-text);">
+                Calculate your return on investment with LienDeadline
+            </p>
+            
+            <!-- Sleek calculator embed -->
+            <div style="background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 24px auto; max-width: 600px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                    <div>
+                        <label style="display: block; font-size: 14px; color: var(--gray-text); margin-bottom: 6px;">Average invoice value</label>
+                        <input type="number" id="invoiceValue" value="75000" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 16px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; color: var(--gray-text); margin-bottom: 6px;">Invoices per month</label>
+                        <input type="number" id="liensPerMonth" value="2" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 16px;">
+                    </div>
+                </div>
+                
+                <div style="background: var(--light-gray); padding: 20px; border-radius: 8px; margin-bottom: 16px;">
+                    <div style="font-size: 24px; font-weight: 700; color: var(--primary-orange); margin-bottom: 8px;">
+                        One saved lien pays for <span id="roi-years">25</span> years of service
+                    </div>
+                    <p style="font-size: 14px; color: var(--gray-text);">
+                        Based on Professional plan at $299/month
+                    </p>
                 </div>
             </div>
         </div>
@@ -611,7 +583,7 @@
             <p class="text-xl mb-8 opacity-90">
                 Join 500+ material suppliers protecting their receivables
             </p>
-            <a href="/calculator.html" class="inline-block bg-white text-primary-orange px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition mb-4">
+            <a href="/" class="inline-block bg-white text-primary-orange px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition mb-4">
                 Try 3 Free Calculations →
             </a>
             <p class="text-sm opacity-75">No credit card • All 50 states • Instant results</p>
@@ -637,7 +609,7 @@
                 <div>
                     <h4 class="font-semibold mb-4">Product</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="/calculator.html" class="hover:text-white transition">Calculator</a></li>
+                        <li><a href="/" class="hover:text-white transition">Calculator</a></li>
                         <li><a href="/pricing.html" class="hover:text-white transition">Pricing</a></li>
                         <li><a href="/state-coverage.html" class="hover:text-white transition">State Guides</a></li>
                         <li><a href="/api.html" class="hover:text-white transition">API</a></li>
@@ -695,22 +667,6 @@
             monthlyBtn.classList.remove('active');
             proPrice.textContent = '$2,390';
             proPeriod.textContent = '/year';
-        });
-        
-        // Sticky CTA bar on scroll
-        let lastScroll = 0;
-        const stickyBar = document.getElementById('stickyCtaBar');
-        
-        window.addEventListener('scroll', function() {
-            const currentScroll = window.pageYOffset;
-            
-            if (currentScroll > 300 && currentScroll > lastScroll) {
-                stickyBar.classList.add('visible');
-            } else if (currentScroll < 100) {
-                stickyBar.classList.remove('visible');
-            }
-            
-            lastScroll = currentScroll;
         });
         
         // Animate feature checkmarks on scroll
