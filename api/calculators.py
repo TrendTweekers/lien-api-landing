@@ -354,6 +354,53 @@ def calculate_indiana(invoice_date: datetime, project_type: str = "commercial") 
     }
 
 
+def calculate_louisiana(invoice_date: datetime, project_type: str = "commercial") -> Dict:
+    """
+    Louisiana mechanics lien deadlines for material suppliers.
+    
+    WARNING: Louisiana has complex monthly notice requirements.
+    This calculation provides conservative estimates only.
+    Suppliers should consult a Louisiana construction attorney.
+    
+    Preliminary Notice (Notice of Nonpayment):
+    - Must be sent within 75 days from the last day of each month materials furnished
+    - This function uses 75 days from invoice date as conservative estimate
+    
+    Lien Filing:
+    - 60 days from substantial completion (if no Notice of Contract filed)
+    - 6 months from substantial completion (if Notice of Contract filed)
+    - This function uses 60 days as most conservative estimate
+    
+    Statute: Louisiana Revised Statutes § 9:4804(C) (preliminary), § 9:4822 (lien filing)
+    
+    Args:
+        invoice_date: Date of last furnishing materials
+        project_type: Not used for Louisiana (no res/commercial distinction)
+    
+    Returns:
+        Dict with preliminary_deadline, preliminary_required, lien_deadline, warnings
+    """
+    # Conservative estimates - actual deadlines may vary
+    prelim_days = 75
+    lien_days = 60  # Assumes no Notice of Contract
+    
+    prelim_deadline = invoice_date + timedelta(days=prelim_days)
+    lien_deadline = invoice_date + timedelta(days=lien_days)
+    
+    return {
+        "preliminary_deadline": prelim_deadline,
+        "preliminary_required": True,
+        "lien_deadline": lien_deadline,
+        "warnings": [
+            "⚠️ CRITICAL: Louisiana has complex monthly notice requirements",
+            "Notice of Nonpayment must be sent within 75 days from last day of EACH MONTH materials furnished",
+            "Lien deadline may be 6 months (not 60 days) if Notice of Contract was filed",
+            "These are CONSERVATIVE ESTIMATES - consult a Louisiana construction attorney",
+            "Suppliers to suppliers have NO lien rights in Louisiana"
+        ]
+    }
+
+
 def calculate_default(invoice_date: datetime, state_data: Dict, 
                      weekend_extension: bool = False,
                      holiday_extension: bool = False) -> Dict:
