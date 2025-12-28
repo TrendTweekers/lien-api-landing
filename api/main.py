@@ -11354,6 +11354,12 @@ if images_dir.exists():
 else:
     print(f"❌ ERROR: images_dir does not exist: {images_dir}")
 
+# Redirect trailing slash for state guides (e.g., /state-lien-guides/texas/ -> /state-lien-guides/texas)
+@app.get("/state-lien-guides/{state}/")
+async def redirect_state_guide_trailing_slash(state: str):
+    """Redirect trailing slash to non-trailing slash for state guides"""
+    return RedirectResponse(url=f"/state-lien-guides/{state}", status_code=301)
+
 # Serve static files from public directory (favicons, manifest, etc.)
 # This mount must be LAST so API routes take precedence
 public_dir = PROJECT_ROOT / "public"
