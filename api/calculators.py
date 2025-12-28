@@ -401,6 +401,49 @@ def calculate_louisiana(invoice_date: datetime, project_type: str = "commercial"
     }
 
 
+def calculate_massachusetts(invoice_date: datetime, project_type: str = "commercial") -> Dict:
+    """
+    Massachusetts mechanics lien deadlines for material suppliers.
+    
+    Preliminary Notice (Notice of Identification):
+    - Must be filed within 30 days of first providing work
+    - For suppliers to subcontractors
+    
+    Lien Filing:
+    - Earliest of:
+      - 90 days after Notice of Substantial Completion
+      - 120 days after Notice of Termination
+      - 120 days after last furnishing labor or materials
+    - This function uses 120 days as most conservative estimate
+    
+    Statute: MGL ch. 254 § 4 (preliminary), MGL ch. 254 § 8 (lien filing)
+    
+    Args:
+        invoice_date: Date of first/last furnishing materials
+        project_type: Not used for Massachusetts
+    
+    Returns:
+        Dict with preliminary_deadline, preliminary_required, lien_deadline, warnings
+    """
+    prelim_days = 30
+    lien_days = 120  # Most conservative estimate
+    
+    prelim_deadline = invoice_date + timedelta(days=prelim_days)
+    lien_deadline = invoice_date + timedelta(days=lien_days)
+    
+    return {
+        "preliminary_deadline": prelim_deadline,
+        "preliminary_required": True,
+        "lien_deadline": lien_deadline,
+        "warnings": [
+            "Preliminary notice (Notice of Identification) required within 30 days for suppliers to subcontractors",
+            "Lien deadline may be shorter if Notice of Substantial Completion or Notice of Termination filed",
+            "This calculation uses 120 days as most conservative estimate",
+            "Actual deadline may be 90 days if Notice of Substantial Completion filed"
+        ]
+    }
+
+
 def calculate_default(invoice_date: datetime, state_data: Dict, 
                      weekend_extension: bool = False,
                      holiday_extension: bool = False) -> Dict:
