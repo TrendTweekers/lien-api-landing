@@ -1854,15 +1854,41 @@ async def generate_state_guide_pdf(state_code: str, request: Request):
             
             invoice_dt_str = invoice_dt.strftime('%B %d, %Y')
             
-            # Use unified calculation function (same as calculate_deadline endpoint)
-            result = calculate_state_deadline(
-                state_code=state_code,
-                invoice_date=invoice_dt,
-                role="supplier",
-                project_type="commercial",
-                notice_of_completion_date=None,
-                notice_of_commencement_filed=False,
-                state_rules=state_data
+            # Use the SAME calculation logic as calculate_deadline endpoint
+            # Call the existing calculate_deadline endpoint logic (not hardcoded)
+            from .calculators import calculate_default, calculate_texas, calculate_washington, calculate_california, calculate_ohio, calculate_oregon, calculate_hawaii
+            
+            special_rules = state_data.get('special_rules', {})
+            result = None
+            
+            # Exact same logic as calculate_deadline endpoint
+            if state_code == "TX":
+                result = calculate_texas(invoice_dt, project_type="commercial")
+            elif state_code == "WA":
+                result = calculate_washington(invoice_dt, role="supplier")
+            elif state_code == "CA":
+                result = calculate_california(invoice_dt, notice_of_completion_date=None, role="supplier")
+            elif state_code == "OH":
+                result = calculate_ohio(invoice_dt, project_type="commercial", notice_of_commencement_filed=False)
+            elif state_code == "OR":
+                result = calculate_oregon(invoice_dt)
+            elif state_code == "HI":
+                result = calculate_hawaii(invoice_dt)
+            else:
+                # Default calculation for simple states (same as calculate_deadline endpoint)
+                prelim_notice = state_data.get("preliminary_notice", {})
+                lien_filing = state_data.get("lien_filing", {})
+                
+                result = calculate_default(
+                    invoice_dt,
+                    {
+                        "preliminary_notice_required": prelim_notice.get("required", False),
+                        "preliminary_notice_days": prelim_notice.get("days"),
+                        "lien_filing_days": lien_filing.get("days"),
+                        "notes": special_rules.get("notes", "")
+                    },
+                    weekend_extension=special_rules.get("weekend_extension", False),
+                    holiday_extension=special_rules.get("holiday_extension", False)
                 )
             
             # Extract deadlines from result
