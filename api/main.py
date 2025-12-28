@@ -2574,6 +2574,47 @@ def get_user_from_session(request: Request):
     
     return None
 
+@app.delete("/api/calculations/{calculation_id}")
+async def delete_calculation(calculation_id: int, request: Request):
+    """Delete a saved calculation/project"""
+    user = get_user_from_session(request)
+    if not user:
+        raise HTTPException(401, "Not authenticated")
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Verify ownership before deleting
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    DELETE FROM calculations 
+                    WHERE id = %s AND user_email = %s
+                    RETURNING id
+                """, (calculation_id, user['email']))
+            else:
+                cursor.execute("""
+                    DELETE FROM calculations 
+                    WHERE id = ? AND user_email = ?
+                """, (calculation_id, user['email']))
+            
+            deleted = cursor.fetchone()
+            
+            if not deleted:
+                raise HTTPException(404, "Project not found or you don't have permission to delete it")
+            
+            conn.commit()
+            
+            return {"success": True, "message": "Project deleted successfully"}
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deleting calculation: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(500, "Failed to delete project")
+
 @app.post("/api/v1/calculate-deadline")
 @limiter.limit("10/minute")
 async def calculate_deadline(
