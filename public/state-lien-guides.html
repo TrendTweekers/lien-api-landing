@@ -16,36 +16,22 @@
     
     >
 <style>
-        /* Force logo size - override all parent constraints */
-        header a[href="/"] img[alt="LienDeadline"],
-        header img[alt="LienDeadline"],
-        nav img[alt="LienDeadline"],
-        header a img[alt="LienDeadline"] {
+        /* Reset the parent container styles */
+        header a[href="/"] {
+            display: block !important;
+            height: auto !important;
+            line-height: normal !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            text-decoration: none !important;
+        }
+        
+        /* Apply specific styles to the logo */
+        header img[alt="LienDeadline"] {
             height: 80px !important;
             width: auto !important;
-            min-height: 80px !important;
-            max-height: 80px !important;
             display: block !important;
-            flex-shrink: 0 !important;
-        }
-        
-        /* Ensure parent <a> doesn't constrain logo */
-        header a[href="/"],
-        nav a[href="/"] {
-            height: auto !important;
-            min-height: 80px !important;
-            max-height: none !important;
-            display: flex !important;
-            align-items: center !important;
-            flex-shrink: 0 !important;
-        }
-        
-        /* Override any Tailwind or framework classes */
-        header .h-6,
-        header .h-8,
-        header .h-10,
-        header .h-12 {
-            height: auto !important;
+            margin: 0 auto !important;
         }
         
         @media (max-width: 768px) {
@@ -53,13 +39,8 @@
                 display: none !important;
             }
             
-            header a[href="/"] img[alt="LienDeadline"],
-            header img[alt="LienDeadline"],
-            nav img[alt="LienDeadline"],
-            header a img[alt="LienDeadline"] {
+            header img[alt="LienDeadline"] {
                 height: 44px !important;
-                min-height: 44px !important;
-                max-height: 44px !important;
                 width: auto !important;
             }
         }
@@ -69,87 +50,6 @@
                 display: none !important;
             }
         }
-    
-        /* Force logo size - override ALL constraints with unique class */
-        
-        
-        /* Override ALL parent containers */
-        header,
-        nav,
-        header a[href="/"],
-        header a[href="/admin-dashboard"],
-        header a[href="/broker-dashboard"],
-        nav a[href="/"],
-        .header-container,
-        .navbar,
-        .navbar-brand {
-            height: auto !important;
-            min-height: auto !important;
-            max-height: none !important;
-            overflow: visible !important;
-        }
-        
-        /* Ensure parent <a> doesn't constrain logo */
-        header a[href="/"],
-        header a[href="/admin-dashboard"],
-        header a[href="/broker-dashboard"],
-        nav a[href="/"],
-        .navbar-brand {
-            height: auto !important;
-            min-height: 60px !important;
-            max-height: none !important;
-            display: flex !important;
-            align-items: center !important;
-            flex-shrink: 0 !important;
-            overflow: visible !important;
-        }
-        
-        /* Override ALL Tailwind/framework height classes */
-        header .h-4,
-        header .h-6,
-        header .h-8,
-        header .h-10,
-        header .h-12,
-        header .h-auto,
-        nav .h-4,
-        nav .h-6,
-        nav .h-8,
-        nav .h-10,
-        nav .h-12,
-        nav .h-auto {
-            height: auto !important;
-        }
-        
-        /* Override any max-height constraints */
-        header img,
-        nav img,
-        header a img,
-        nav a img {
-            max-height: none !important;
-        }
-        
-        /* Mobile Navigation */
-        @media (max-width: 768px) {
-            
-        }
-        
-        /* NUCLEAR LOGO FIX - OVERRIDE EVERYTHING */
-        header img[alt="LienDeadline"],
-        nav img[alt="LienDeadline"] {
-            height: 80px !important;
-            width: auto !important;
-            min-height: 80px !important;
-            max-height: 80px !important;
-            display: block !important;
-            object-fit: contain !important;
-        }
-
-        header a[href="/"],
-        nav a[href="/"] {
-            display: block !important;
-            line-height: 0 !important;
-            height: auto !important;
-        }
         </style>
     </head>
 <body>
@@ -157,11 +57,9 @@
     <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
         <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 16px 0 0;">
             <!-- Logo -->
-            <a href="/" style="text-decoration: none !important; display: flex !important; align-items: center !important; height: auto !important; min-height: 0 !important; max-height: none !important; line-height: normal !important;">
-  <img src="/images/liendeadline-logo.png" 
-       alt="LienDeadline" 
-       style="height: 80px !important; width: auto !important; display: block !important; min-height: 0 !important; max-height: none !important; object-fit: contain !important;">
-</a>
+            <a href="/">
+                <img src="/images/liendeadline-logo.png" alt="LienDeadline">
+            </a>
             
             <!-- Desktop Nav Links -->
             <div class="desktop-nav" style="display: flex; gap: 32px; align-items: center;">
