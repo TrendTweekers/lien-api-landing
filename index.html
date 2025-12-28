@@ -3233,55 +3233,5 @@ window.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 
-    <script>
-        // Force logo size via JavaScript as final fallback
-        (function() {
-            function enforceLogoSize() {
-                console.log('Enforcing logo size...');
-                const logos = document.querySelectorAll('
-                        
-                        if (parent && (parent.tagName === 'A' || parent.classList.contains('flex') || parent.hasAttribute('href'))) {
-                            // Set parent height first
-                            parent.style.setProperty('height', targetHeight, 'important');
-                            parent.style.setProperty('min-height', targetHeight, 'important');
-                            parent.style.setProperty('max-height', targetHeight, 'important');
-                            parent.style.setProperty('display', 'flex', 'important');
-                            parent.style.setProperty('align-items', 'center', 'important');
-                            parent.style.setProperty('flex-shrink', '0', 'important');
-                            console.log('Set parent height to:', targetHeight);
-                        }
-                        
-                        // Set SVG height directly (inline SVG scales perfectly)
-                        logo.style.setProperty('height', targetHeight, 'important');
-                        logo.style.setProperty('width', 'auto', 'important');
-                        logo.style.setProperty('display', 'block', 'important');
-                        logo.style.setProperty('flex-shrink', '0', 'important');
-                        
-                        // Diagnostic logging
-                        const rect = logo.getBoundingClientRect();
-                        const parentRect = logo.parentElement ? logo.parentElement.getBoundingClientRect() : null;
-                        console.log('Logo rendered height:', rect.height, 'px');
-                        console.log('Parent height:', parentRect ? parentRect.height + 'px' : 'N/A');
-                        console.log('Natural image height:', logo.naturalHeight, 'px');
-                    }
-                });
-            }
-            
-            // Run on load
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', enforceLogoSize);
-            } else {
-                enforceLogoSize();
-            }
-            
-            // Run on resize (for mobile/desktop switching)
-            window.addEventListener('resize', enforceLogoSize);
-            
-            // Run after delays to catch late-loading styles
-            setTimeout(enforceLogoSize, 100);
-            setTimeout(enforceLogoSize, 500);
-            setTimeout(enforceLogoSize, 1000);
-})();
-</script>
 </body>
 </html>
