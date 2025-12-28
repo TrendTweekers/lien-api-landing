@@ -144,14 +144,32 @@
         @media (max-width: 768px) {
             
         }
-        </style
+        
+        /* NUCLEAR LOGO FIX - OVERRIDE EVERYTHING */
+        header img[alt="LienDeadline"],
+        nav img[alt="LienDeadline"] {
+            height: 80px !important;
+            width: auto !important;
+            min-height: 80px !important;
+            max-height: 80px !important;
+            display: block !important;
+            object-fit: contain !important;
+        }
+
+        header a[href="/"],
+        nav a[href="/"] {
+            display: block !important;
+            line-height: 0 !important;
+            height: auto !important;
+        }
+        </style>
     </head>
 <body>
     <!-- Header -->
     <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
         <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 16px 0 0;">
             <!-- Logo -->
-            <a href="/" style="text-decoration: none; display: inline-block; height: auto !important; min-height: 80px;">
+            <a href="/" style="text-decoration: none; display: block; line-height: 0;">
   <img src="/images/liendeadline-logo.png" 
        alt="LienDeadline" 
        style="height: 80px; width: auto; display: block;">
@@ -165,10 +183,6 @@
                 <a href="/" style="background: #F97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">Try Free</a>
             </div>
             
-            <!-- Mobile Hamburger (hidden on desktop) -->
-            <button class="mobile-menu-btn" id="mobileMenuBtn" style="display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: #1F2937; padding: 4px;">
-                ☰
-            </button>
         </nav>
         
         <!-- Mobile Menu (hidden by default) -->
