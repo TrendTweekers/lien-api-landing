@@ -156,6 +156,23 @@
       .btn-success:hover {
         background: #059669;
       }
+    
+      /* Force logo size */
+      header img[alt="LienDeadline"] {
+        height: 56px !important;
+        width: auto !important;
+        min-height: 56px !important;
+        max-height: 56px !important;
+      }
+      
+      @media (max-width: 768px) {
+        header img[alt="LienDeadline"] {
+          height: 44px !important;
+          min-height: 44px !important;
+          max-height: 44px !important;
+        }
+      }
+
     </style>
 </head>
 <body class="min-h-screen bg-gray-50">
