@@ -1004,163 +1004,36 @@
             </div>
         </section>
         
-        <!-- Pricing Section -->
-        <section id="pricing" class="py-24 lg:py-32 bg-white">
-            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center max-w-screen-xl mx-auto mb-16">
-                    <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-foreground mb-6">
-                        Simple, <span class="italic text-accent">transparent</span> pricing
-                    </h2>
-                    <p class="text-xl text-muted-foreground">
-                        One saved lien pays for 25 years of service. No hidden fees.
+        <!-- Simple Pricing Teaser (replaces full pricing) -->
+        <section id="pricing" style="background: linear-gradient(135deg, #FEF3C7 0%, #FED7AA 100%); padding: 80px 24px; text-align: center;">
+            <div style="max-width: 800px; margin: 0 auto;">
+                <h2 style="font-size: 36px; margin-bottom: 16px; color: #1F2937; font-weight: 700;">
+                    Simple Pricing That Makes Sense
+                </h2>
+                <p style="font-size: 18px; color: #6B7280; margin-bottom: 24px;">
+                    One saved lien pays for 25+ years of service
+                </p>
+                
+                <!-- Price Highlight -->
+                <div style="background: white; border-radius: 12px; padding: 32px; max-width: 500px; margin: 0 auto 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <p style="font-size: 20px; color: #6B7280; margin-bottom: 8px;">Professional Plan</p>
+                    <p style="font-size: 48px; font-weight: 700; color: #F97316; margin-bottom: 8px;">
+                        $299<span style="font-size: 24px; color: #6B7280;">/month</span>
                     </p>
+                    <p style="color: #10B981; font-weight: 600; margin-bottom: 16px;">
+                        or $2,390/year (save $1,198)
+                    </p>
+                    <p style="font-size: 14px; color: #6B7280; margin-bottom: 24px;">
+                        Unlimited calculations • All 50 states • Email reminders
+                    </p>
+                    <a href="/pricing.html" style="display: inline-block; background: #F97316; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; transition: background 0.2s;" onmouseover="this.style.background='#EA580C'" onmouseout="this.style.background='#F97316'">
+                        View Full Pricing →
+                    </a>
                 </div>
                 
-                <div class="grid md:grid-cols-3 gap-8 max-w-screen-xl mx-auto">
-                    <!-- Starter Plan -->
-                    <div class="p-8 rounded-2xl border border-border bg-white">
-                        <h3 class="font-serif text-2xl font-semibold text-foreground mb-2">Starter</h3>
-                        <p class="text-lg font-serif text-foreground mb-6">Free</p>
-                        <p class="text-sm text-muted-foreground mb-6">Try before you buy</p>
-                        <ul class="space-y-3 mb-8">
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>3 calculations</span>
-                            </li>
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>All 50 states + DC</span>
-                            </li>
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>Instant results</span>
-                            </li>
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>Email support</span>
-                            </li>
-                        </ul>
-                        <a href="#calculator" class="block w-full h-14 px-6 rounded-lg border border-border bg-white text-foreground font-medium hover:bg-secondary transition-colors text-center leading-[3.5rem] text-lg">
-                            Start Free →
-                        </a>
-                    </div>
-                    
-                    <!-- Professional Plan (Highlighted) -->
-                    <div class="relative p-8 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white">
-                        <h3 class="font-serif text-2xl font-semibold mb-2">Professional</h3>
-                        <p class="text-lg font-serif mb-1">
-                            <span class="text-4xl">$299</span>/month
-                        </p>
-                        <p class="text-sm text-white/70 mb-6">For growing supply yards</p>
-                        
-                        <ul class="space-y-3 mb-8">
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>Unlimited calculations</span>
-                            </li>
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>All 50 states + DC</span>
-                            </li>
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>API access</span>
-                            </li>
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>Document generation</span>
-                            </li>
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>Unlimited team members</span>
-                            </li>
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>Priority support</span>
-                            </li>
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-accent shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>Monthly law updates</span>
-                            </li>
-                        </ul>
-                        <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" id="professional-upgrade-btn" class="block w-full h-14 px-6 rounded-lg bg-accent text-white font-semibold text-lg hover:bg-accent/90 transition-colors text-center leading-[3.5rem]">
-                            Upgrade to Professional →
-                        </a>
-                    </div>
-                    
-                    <!-- Enterprise Plan -->
-                    <div class="p-8 rounded-2xl border border-border bg-white">
-                        <h3 class="font-serif text-2xl font-semibold text-foreground mb-2">Enterprise</h3>
-                        <p class="text-lg font-serif text-foreground mb-6">Custom</p>
-                        <p class="text-sm text-muted-foreground mb-6">For large operations</p>
-                        <ul class="space-y-3 mb-8">
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>Everything in Professional</span>
-                            </li>
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>Custom integrations</span>
-                            </li>
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>Dedicated account manager</span>
-                            </li>
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>SLA guarantee</span>
-                            </li>
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>On-premise option</span>
-                            </li>
-                            <li class="flex items-start gap-2 text-sm">
-                                <svg class="w-5 h-5 text-success shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>Custom training</span>
-                            </li>
-                        </ul>
-                        <a href="mailto:sales@liendeadline.com" class="block w-full h-12 px-6 rounded-lg border border-border bg-white text-foreground font-medium hover:bg-secondary transition-colors text-center leading-[3rem]">
-                            Contact Sales →
-                        </a>
-                    </div>
-                </div>
-                
-                <p class="text-center text-sm text-muted-foreground mt-12">
-                    All plans include a 30-day money-back guarantee. Cancel anytime.
+                <!-- Trust Elements -->
+                <p style="font-size: 14px; color: #6B7280;">
+                    ✓ 60% cheaper than Levelset • ✓ 3 free trials • ✓ Cancel anytime
                 </p>
             </div>
         </section>
