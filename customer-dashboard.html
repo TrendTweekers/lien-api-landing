@@ -6,10 +6,13 @@
     <title>Deadline Dashboard - LienDeadline.com</title>
     
     <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KYZG0TN07Z"></script>`n    <script>`n      window.dataLayer = window.dataLayer || [];
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KYZG0TN07Z"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-KYZG0TN07Z');`n    </script>
+      gtag('config', 'G-KYZG0TN07Z');
+    </script>
     <!-- Umami Analytics -->
     <script defer src="https://cloud.umami.is/script.js" data-website-id="02250d35-ee17-41be-845d-2fe0f7f15e63"></script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
@@ -455,7 +458,13 @@
     </head>
 <body class="bg-gray-50">
     <!-- Navigation -->
-    <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 24px;">`n        <div style="display: flex; justify-content: space-between; align-items: center;">`n            <div>`n                <h1 style="font-size: 20px; font-weight: 600; color: #1F2937; margin: 0;">Customer Dashboard</h1>`n            </div>`n`n            <div class="flex gap-4 items-center">
+    <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="font-size: 20px; font-weight: 600; color: #1F2937; margin: 0;">Customer Dashboard</h1>
+            </div>
+
+            <div class="flex gap-4 items-center">
                 <span id="user-email" class="text-sm text-gray-600"></span>
                 <a href="index.html" class="text-gray-600 hover:text-gray-900">Landing Page</a>
                 <button onclick="logout()" class="text-red-600 hover:text-red-700">Logout</button>
