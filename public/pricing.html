@@ -246,7 +246,7 @@
                         <button id="monthlyBtn" class="active">Monthly</button>
                         <button id="annualBtn">Annual</button>
                     </div>
-                    <span class="text-success-green font-semibold">Save 20%</span>
+                    <span id="saveText" class="text-success-green font-semibold">Save 20%</span>
                 </div>
             </div>
             
@@ -292,6 +292,11 @@
                     <div class="mb-6">
                         <span class="text-4xl font-bold text-dark-text" id="proPrice">$299</span>
                         <span class="text-gray-text" id="proPeriod">/month</span>
+                        <div id="savingsBadge" class="hidden mt-2">
+                            <span class="inline-block bg-success-green text-white text-sm font-semibold px-3 py-1 rounded-full">
+                                Save $1,198 (33% off)
+                            </span>
+                        </div>
                     </div>
                     
                     <ul class="space-y-4 mb-8">
@@ -330,7 +335,7 @@
                     </ul>
                     
                     <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" id="proCta" class="block w-full bg-primary-orange text-white text-center py-3 rounded-lg font-semibold hover:bg-orange-600 transition">
-                        Start Professional →
+                        <span id="proCtaText">Start Professional →</span>
                     </a>
                 </div>
                 
@@ -654,12 +659,23 @@
         const annualBtn = document.getElementById('annualBtn');
         const proPrice = document.getElementById('proPrice');
         const proPeriod = document.getElementById('proPeriod');
+        const proCta = document.getElementById('proCta');
+        const proCtaText = document.getElementById('proCtaText');
+        const savingsBadge = document.getElementById('savingsBadge');
+        const saveText = document.getElementById('saveText');
+        
+        const MONTHLY_STRIPE_LINK = 'https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00';
+        const ANNUAL_STRIPE_LINK = 'https://buy.stripe.com/aFacN5gBL7ln9Z72AZ9fW01';
         
         monthlyBtn.addEventListener('click', function() {
             monthlyBtn.classList.add('active');
             annualBtn.classList.remove('active');
             proPrice.textContent = '$299';
             proPeriod.textContent = '/month';
+            proCta.href = MONTHLY_STRIPE_LINK;
+            proCtaText.textContent = 'Start Professional →';
+            savingsBadge.classList.add('hidden');
+            saveText.textContent = 'Save 20%';
         });
         
         annualBtn.addEventListener('click', function() {
@@ -667,6 +683,10 @@
             monthlyBtn.classList.remove('active');
             proPrice.textContent = '$2,390';
             proPeriod.textContent = '/year';
+            proCta.href = ANNUAL_STRIPE_LINK;
+            proCtaText.textContent = 'Start Professional (Annual) →';
+            savingsBadge.classList.remove('hidden');
+            saveText.textContent = 'Save $1,198 (33% off)';
         });
         
         // Animate feature checkmarks on scroll
