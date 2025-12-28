@@ -300,6 +300,60 @@ def calculate_newjersey(invoice_date: datetime, project_type: str = "commercial"
     }
 
 
+def calculate_indiana(invoice_date: datetime, project_type: str = "commercial") -> Dict:
+    """
+    Indiana mechanics lien deadlines for material suppliers.
+    
+    Preliminary Notice:
+    - Residential (renovation): 30 days from first furnishing
+    - Residential (new construction): 60 days from first furnishing
+    - Commercial: Not required
+    
+    Lien Filing:
+    - Residential (1-2 unit): 60 days from last furnishing
+    - Commercial: 90 days from last furnishing
+    
+    Statute: IC 32-28-3-1 (preliminary), IC 32-28-3-3 (lien filing)
+    
+    Args:
+        invoice_date: Date of first/last furnishing materials
+        project_type: "residential" or "commercial" (default: "commercial")
+    
+    Returns:
+        Dict with preliminary_deadline, preliminary_required, lien_deadline, warnings
+    """
+    is_residential = project_type.lower() in ["residential", "res", "resi"]
+    
+    if is_residential:
+        # For simplicity, use 60 days (new construction)
+        # In real use, you'd need to distinguish renovation vs new construction
+        prelim_days = 60
+        prelim_required = True
+        lien_days = 60
+    else:  # commercial
+        prelim_days = None
+        prelim_required = False
+        lien_days = 90
+    
+    prelim_deadline = invoice_date + timedelta(days=prelim_days) if prelim_days else None
+    lien_deadline = invoice_date + timedelta(days=lien_days)
+    
+    warnings = []
+    if is_residential:
+        warnings.append("Preliminary notice required within 60 days (new construction) or 30 days (renovation)")
+        warnings.append("Lien must be filed within 60 days for residential projects")
+    else:
+        warnings.append("Preliminary notice not required for commercial projects")
+        warnings.append("Lien must be filed within 90 days for commercial projects")
+    
+    return {
+        "preliminary_deadline": prelim_deadline,
+        "preliminary_required": prelim_required,
+        "lien_deadline": lien_deadline,
+        "warnings": warnings
+    }
+
+
 def calculate_default(invoice_date: datetime, state_data: Dict, 
                      weekend_extension: bool = False,
                      holiday_extension: bool = False) -> Dict:

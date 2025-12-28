@@ -36,7 +36,7 @@ from .rate_limiter import limiter
 from io import BytesIO
 from .calculators import (
     calculate_texas, calculate_washington, calculate_california,
-    calculate_ohio, calculate_oregon, calculate_hawaii, calculate_newjersey, calculate_default
+    calculate_ohio, calculate_oregon, calculate_hawaii, calculate_newjersey, calculate_indiana, calculate_default
 )
 
 # Unified calculation helper function - used by both PDF generation and calculate_deadline endpoint
@@ -1862,7 +1862,7 @@ async def generate_state_guide_pdf(state_code: str, request: Request):
             notice_of_commencement_filed = False  # PDF default (no user input)
             
             # Import calculation functions
-            from .calculators import calculate_default, calculate_texas, calculate_washington, calculate_california, calculate_ohio, calculate_oregon, calculate_hawaii, calculate_newjersey
+            from .calculators import calculate_default, calculate_texas, calculate_washington, calculate_california, calculate_ohio, calculate_oregon, calculate_hawaii, calculate_newjersey, calculate_indiana
             
             special_rules = state_data.get('special_rules', {})
             result = None
@@ -1882,6 +1882,8 @@ async def generate_state_guide_pdf(state_code: str, request: Request):
                 result = calculate_hawaii(invoice_dt)
             elif state_code == "NJ":
                 result = calculate_newjersey(invoice_dt, project_type=project_type)
+            elif state_code == "IN":
+                result = calculate_indiana(invoice_dt, project_type=project_type)
             else:
                 # Default calculation for simple states (same as calculate_deadline endpoint)
                 prelim_notice = state_data.get("preliminary_notice", {})
@@ -2840,6 +2842,8 @@ async def calculate_deadline(
         result = calculate_hawaii(delivery_date)
     elif state_code == "NJ":
         result = calculate_newjersey(delivery_date, project_type=project_type)
+    elif state_code == "IN":
+        result = calculate_indiana(delivery_date, project_type=project_type)
     else:
         # Default calculation for simple states
         result = calculate_default(
