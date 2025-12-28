@@ -11335,15 +11335,22 @@ async def get_procore_projects(request: Request, current_user: dict = Depends(ge
 
 
 # Serve images from public/images directory
-# IMPORTANT: This must come BEFORE the / mount to ensure /images requests are handled correctly
+# IMPORTANT: Use explicit route instead of mount to avoid conflicts with catch-all / mount
 images_dir = PROJECT_ROOT / "public" / "images"
 print(f"🖼️ images_dir={images_dir} exists={images_dir.exists()}")
 if images_dir.exists():
-    app.mount("/images", StaticFiles(directory=str(images_dir), html=False), name="images")
-    print(f"✅ Mounted /images -> {images_dir}")
-    # Verify logo file exists
     logo_path = images_dir / "liendeadline-logo.png"
     print(f"📸 Logo file exists: {logo_path.exists()} at {logo_path}")
+    
+    @app.get("/images/{filename}")
+    async def serve_image(filename: str):
+        """Serve images from public/images directory"""
+        file_path = images_dir / filename
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(str(file_path))
+        raise HTTPException(status_code=404, detail="Image not found")
+    
+    print(f"✅ Registered /images/{{filename}} route -> {images_dir}")
 else:
     print(f"❌ ERROR: images_dir does not exist: {images_dir}")
 
