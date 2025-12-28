@@ -1623,9 +1623,31 @@
                 
                 // Optional: Show a message
                 setTimeout(() => {
+            }
                     alert(`Editing: ${currentProject.projectName}. Make your changes and click "Save Project & Set Reminders" to update.`);
                 }, 500);
-            } else {
+
+            async function deleteProject() {
+                if (!currentProject) return;
+                
+                const confirmed = confirm(`Are you sure you want to delete the project "${currentProject.projectName || 'this project'}"? This cannot be undone.`);
+                
+                if (!confirmed) return;
+                
+                try {
+                    const token = getSessionToken();
+                    const response = await fetch(`/api/calculations/${currentProject.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        alert('Project deleted successfully');
+                        closeProjectModal();
+                        loadCalculationHistory(); // Reload the projects table
+                    } else {
                         const errorData = await response.json().catch(() => ({ detail: 'Failed to delete project' }));
                         alert(errorData.detail || 'Failed to delete project');
                     }
