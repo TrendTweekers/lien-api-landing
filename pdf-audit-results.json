@@ -1,0 +1,162 @@
+[
+  {
+    "state": "UT",
+    "match": true,
+    "calculator": {
+      "prelim_deadline": null,
+      "lien_deadline": null
+    },
+    "pdf": {
+      "prelim_deadline": "Not found",
+      "lien_deadline": "Not found"
+    },
+    "details": {
+      "prelim_match": true,
+      "lien_match": true
+    }
+  },
+  {
+    "state": "CA",
+    "match": true,
+    "calculator": {
+      "prelim_deadline": null,
+      "lien_deadline": null
+    },
+    "pdf": {
+      "prelim_deadline": "Not found",
+      "lien_deadline": "Not found"
+    },
+    "details": {
+      "prelim_match": true,
+      "lien_match": true
+    }
+  },
+  {
+    "state": "TX",
+    "match": true,
+    "calculator": {
+      "prelim_deadline": null,
+      "lien_deadline": null
+    },
+    "pdf": {
+      "prelim_deadline": "Not found",
+      "lien_deadline": "Not found"
+    },
+    "details": {
+      "prelim_match": true,
+      "lien_match": true
+    }
+  },
+  {
+    "state": "FL",
+    "match": true,
+    "calculator": {
+      "prelim_deadline": null,
+      "lien_deadline": null
+    },
+    "pdf": {
+      "prelim_deadline": "Not found",
+      "lien_deadline": "Not found"
+    },
+    "details": {
+      "prelim_match": true,
+      "lien_match": true
+    }
+  },
+  {
+    "state": "NY",
+    "match": true,
+    "calculator": {
+      "prelim_deadline": null,
+      "lien_deadline": null
+    },
+    "pdf": {
+      "prelim_deadline": "Not found",
+      "lien_deadline": "Not found"
+    },
+    "details": {
+      "prelim_match": true,
+      "lien_match": true
+    }
+  },
+  {
+    "state": "WA",
+    "match": true,
+    "calculator": {
+      "prelim_deadline": null,
+      "lien_deadline": null
+    },
+    "pdf": {
+      "prelim_deadline": "Not found",
+      "lien_deadline": "Not found"
+    },
+    "details": {
+      "prelim_match": true,
+      "lien_match": true
+    }
+  },
+  {
+    "state": "OR",
+    "match": true,
+    "calculator": {
+      "prelim_deadline": null,
+      "lien_deadline": null
+    },
+    "pdf": {
+      "prelim_deadline": "Not found",
+      "lien_deadline": "Not found"
+    },
+    "details": {
+      "prelim_match": true,
+      "lien_match": true
+    }
+  },
+  {
+    "state": "OH",
+    "match": true,
+    "calculator": {
+      "prelim_deadline": null,
+      "lien_deadline": null
+    },
+    "pdf": {
+      "prelim_deadline": "Not found",
+      "lien_deadline": "Not found"
+    },
+    "details": {
+      "prelim_match": true,
+      "lien_match": true
+    }
+  },
+  {
+    "state": "HI",
+    "match": true,
+    "calculator": {
+      "prelim_deadline": null,
+      "lien_deadline": null
+    },
+    "pdf": {
+      "prelim_deadline": "Not found",
+      "lien_deadline": "Not found"
+    },
+    "details": {
+      "prelim_match": true,
+      "lien_match": true
+    }
+  },
+  {
+    "state": "AK",
+    "match": true,
+    "calculator": {
+      "prelim_deadline": null,
+      "lien_deadline": null
+    },
+    "pdf": {
+      "prelim_deadline": "Not found",
+      "lien_deadline": "Not found"
+    },
+    "details": {
+      "prelim_match": true,
+      "lien_match": true
+    }
+  }
+]

@@ -52,7 +52,8 @@
         }
     </script>
     
-    <style>
+    >
+<style>
         :root {
             --primary-orange: #F97316;
             --dark-text: #1F2937;
@@ -200,8 +201,114 @@
                 width: auto !important;
             }
         }
-    </style>
-</head>
+    
+        /* Force logo size - override ALL constraints with unique class */
+        .liendeadline-logo-fixed,
+        img.liendeadline-logo-fixed,
+        header .liendeadline-logo-fixed,
+        nav .liendeadline-logo-fixed,
+        header a .liendeadline-logo-fixed,
+        .navbar-brand .liendeadline-logo-fixed,
+        .flex .liendeadline-logo-fixed,
+        .items-center .liendeadline-logo-fixed,
+        header a[href="/"] .liendeadline-logo-fixed,
+        header a[href="/admin-dashboard"] .liendeadline-logo-fixed,
+        header a[href="/broker-dashboard"] .liendeadline-logo-fixed,
+        header img.liendeadline-logo-fixed,
+        nav img.liendeadline-logo-fixed,
+        header a img.liendeadline-logo-fixed {
+            height: 56px !important;
+            width: auto !important;
+            min-height: 56px !important;
+            max-height: 56px !important;
+            max-width: none !important;
+            display: block !important;
+            object-fit: contain !important;
+            flex-shrink: 0 !important;
+            flex-grow: 0 !important;
+            flex-basis: auto !important;
+            vertical-align: middle !important;
+            line-height: 56px !important;
+        }
+        
+        /* Override ALL parent containers */
+        header,
+        nav,
+        header a[href="/"],
+        header a[href="/admin-dashboard"],
+        header a[href="/broker-dashboard"],
+        nav a[href="/"],
+        .header-container,
+        .navbar,
+        .navbar-brand {
+            height: auto !important;
+            min-height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+        }
+        
+        /* Ensure parent <a> doesn't constrain logo */
+        header a[href="/"],
+        header a[href="/admin-dashboard"],
+        header a[href="/broker-dashboard"],
+        nav a[href="/"],
+        .navbar-brand {
+            height: auto !important;
+            min-height: 60px !important;
+            max-height: none !important;
+            display: flex !important;
+            align-items: center !important;
+            flex-shrink: 0 !important;
+            overflow: visible !important;
+        }
+        
+        /* Override ALL Tailwind/framework height classes */
+        header .h-4,
+        header .h-6,
+        header .h-8,
+        header .h-10,
+        header .h-12,
+        header .h-auto,
+        nav .h-4,
+        nav .h-6,
+        nav .h-8,
+        nav .h-10,
+        nav .h-12,
+        nav .h-auto {
+            height: auto !important;
+        }
+        
+        /* Override any max-height constraints */
+        header img,
+        nav img,
+        header a img,
+        nav a img {
+            max-height: none !important;
+        }
+        
+        /* Mobile Navigation */
+        @media (max-width: 768px) {
+            .liendeadline-logo-fixed,
+            img.liendeadline-logo-fixed,
+            header .liendeadline-logo-fixed,
+            nav .liendeadline-logo-fixed,
+            header a .liendeadline-logo-fixed,
+            .navbar-brand .liendeadline-logo-fixed,
+            header a[href="/"] .liendeadline-logo-fixed,
+            header a[href="/admin-dashboard"] .liendeadline-logo-fixed,
+            header a[href="/broker-dashboard"] .liendeadline-logo-fixed,
+            header img.liendeadline-logo-fixed,
+            nav img.liendeadline-logo-fixed,
+            header a img.liendeadline-logo-fixed {
+                height: 44px !important;
+                min-height: 44px !important;
+                max-height: 44px !important;
+                width: auto !important;
+                line-height: 44px !important;
+            }
+        }
+        </style
+    </head>
 <body class="bg-white text-dark-text">
     
     <!-- Header -->
@@ -209,7 +316,7 @@
         <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 16px 0 0;">
             <!-- Logo -->
             <a href="/" style="text-decoration: none; margin-right: auto; display: flex; align-items: center;">
-                <img src="/images/liendeadline-logo.png" alt="LienDeadline" style="height: 56px !important; width: auto !important; min-height: 56px !important; max-height: 56px !important; display: block;">
+                <img src="/images/liendeadline-logo.png" alt="LienDeadline" class="liendeadline-logo-fixed" style="height: 56px !important; width: auto !important; min-height: 56px !important; max-height: 56px !important; display: block;" class="liendeadline-logo-fixed">
             </a>
             
             <!-- Desktop Nav Links -->
@@ -800,6 +907,43 @@
                 });
             }
         });
+    </script>
+
+    <script>
+        // Force logo size via JavaScript as final fallback
+        (function() {
+            function enforceLogoSize() {
+                const logos = document.querySelectorAll('.liendeadline-logo-fixed');
+                const isMobile = window.innerWidth <= 768;
+                const targetHeight = isMobile ? '44px' : '56px';
+                
+                logos.forEach(function(logo) {
+                    if (logo) {
+                        logo.style.setProperty('height', targetHeight, 'important');
+                        logo.style.setProperty('min-height', targetHeight, 'important');
+                        logo.style.setProperty('max-height', targetHeight, 'important');
+                        logo.style.setProperty('width', 'auto', 'important');
+                        logo.style.setProperty('display', 'block', 'important');
+                        logo.style.setProperty('object-fit', 'contain', 'important');
+                        logo.style.setProperty('flex-shrink', '0', 'important');
+                    }
+                });
+            }
+            
+            // Run on load
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', enforceLogoSize);
+            } else {
+                enforceLogoSize();
+            }
+            
+            // Run on resize (for mobile/desktop switching)
+            window.addEventListener('resize', enforceLogoSize);
+            
+            // Run after a short delay to catch late-loading styles
+            setTimeout(enforceLogoSize, 100);
+            setTimeout(enforceLogoSize, 500);
+        })();
     </script>
 </body>
 </html>

@@ -1,0 +1,62 @@
+[
+  {
+    "state": "UT",
+    "error": "Connection refused - API not running at http://localhost:8000",
+    "code": "ECONNREFUSED",
+    "fullError": "AggregateError: Error"
+  },
+  {
+    "state": "CA",
+    "error": "Connection refused - API not running at http://localhost:8000",
+    "code": "ECONNREFUSED",
+    "fullError": "AggregateError: Error"
+  },
+  {
+    "state": "TX",
+    "error": "Connection refused - API not running at http://localhost:8000",
+    "code": "ECONNREFUSED",
+    "fullError": "AggregateError: Error"
+  },
+  {
+    "state": "FL",
+    "error": "Connection refused - API not running at http://localhost:8000",
+    "code": "ECONNREFUSED",
+    "fullError": "AggregateError: Error"
+  },
+  {
+    "state": "NY",
+    "error": "Connection refused - API not running at http://localhost:8000",
+    "code": "ECONNREFUSED",
+    "fullError": "AggregateError: Error"
+  },
+  {
+    "state": "WA",
+    "error": "Connection refused - API not running at http://localhost:8000",
+    "code": "ECONNREFUSED",
+    "fullError": "AggregateError: Error"
+  },
+  {
+    "state": "OR",
+    "error": "Connection refused - API not running at http://localhost:8000",
+    "code": "ECONNREFUSED",
+    "fullError": "AggregateError: Error"
+  },
+  {
+    "state": "OH",
+    "error": "Connection refused - API not running at http://localhost:8000",
+    "code": "ECONNREFUSED",
+    "fullError": "AggregateError: Error"
+  },
+  {
+    "state": "HI",
+    "error": "Connection refused - API not running at http://localhost:8000",
+    "code": "ECONNREFUSED",
+    "fullError": "AggregateError: Error"
+  },
+  {
+    "state": "AK",
+    "error": "Connection refused - API not running at http://localhost:8000",
+    "code": "ECONNREFUSED",
+    "fullError": "AggregateError: Error"
+  }
+]
