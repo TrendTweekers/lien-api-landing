@@ -466,43 +466,70 @@ async def get_valid_access_token(user_id: int):
 @router.get("/api/quickbooks/invoices")
 async def get_quickbooks_invoices(request: Request, current_user: dict = Depends(get_current_user)):
     """
-    Fetch invoices from QuickBooks
-    Calculate lien deadlines for each
+    Fetch invoices from QuickBooks for the logged-in user
+    Returns invoices from last 90 days
     """
     # Use current_user from dependency
     user = current_user
     
-    # Get valid access token
-    access_token = await get_valid_access_token(user['id'])
-    if not access_token:
-        raise HTTPException(status_code=401, detail="QuickBooks not connected. Please connect your account first.")
-    
-    # Get realm_id
+    # Get user's QuickBooks tokens
     try:
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
-                    SELECT realm_id FROM quickbooks_tokens WHERE user_id = %s
+                    SELECT access_token, refresh_token, realm_id, expires_at
+                    FROM quickbooks_tokens
+                    WHERE user_id = %s
                 """, (user['id'],))
             else:
                 cursor.execute("""
-                    SELECT realm_id FROM quickbooks_tokens WHERE user_id = ?
+                    SELECT access_token, refresh_token, realm_id, expires_at
+                    FROM quickbooks_tokens
+                    WHERE user_id = ?
                 """, (user['id'],))
             
-            result = cursor.fetchone()
-            if not result:
-                raise HTTPException(status_code=401, detail="QuickBooks not connected")
+            qb_token = cursor.fetchone()
             
-            realm_id = result['realm_id'] if DB_TYPE == 'postgresql' else result[0]
+            if not qb_token:
+                raise HTTPException(status_code=404, detail="QuickBooks not connected")
+            
+            # Extract token data
+            if DB_TYPE == 'postgresql':
+                access_token = qb_token.get('access_token')
+                refresh_token = qb_token.get('refresh_token')
+                realm_id = qb_token.get('realm_id')
+                expires_at = qb_token.get('expires_at')
+            else:
+                access_token = qb_token[0] if len(qb_token) > 0 else None
+                refresh_token = qb_token[1] if len(qb_token) > 1 else None
+                realm_id = qb_token[2] if len(qb_token) > 2 else None
+                expires_at = qb_token[3] if len(qb_token) > 3 else None
+            
+            # Refresh token if expired
+            if expires_at:
+                if isinstance(expires_at, str):
+                    expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+                if expires_at < datetime.now() + timedelta(minutes=5):
+                    # Token expired, refresh it
+                    new_token = await refresh_access_token(user['id'])
+                    if new_token:
+                        access_token = new_token
+                    else:
+                        raise HTTPException(status_code=401, detail="Failed to refresh QuickBooks token")
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error getting realm_id: {e}")
+        print(f"Error getting QuickBooks tokens: {e}")
         raise HTTPException(status_code=500, detail="Error accessing QuickBooks connection")
     
-    # Fetch invoices from QuickBooks
+    # Fetch invoices from QuickBooks API
+    # Get invoices from last 90 days
+    ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
+    
+    query = f"SELECT * FROM Invoice WHERE TxnDate >= '{ninety_days_ago}' MAXRESULTS 100"
+    
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(
@@ -512,7 +539,7 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                     "Authorization": f"Bearer {access_token}"
                 },
                 params={
-                    "query": "SELECT * FROM Invoice MAXRESULTS 100"
+                    "query": query
                 }
             )
             
@@ -528,14 +555,14 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                             "Authorization": f"Bearer {new_token}"
                         },
                         params={
-                            "query": "SELECT * FROM Invoice MAXRESULTS 100"
+                            "query": query
                         }
                     )
             
             if response.status_code != 200:
                 error_detail = response.text
                 print(f"QuickBooks API error: {error_detail}")
-                raise HTTPException(status_code=400, detail=f"Failed to fetch invoices: {error_detail}")
+                raise HTTPException(status_code=500, detail=f"Failed to fetch invoices from QuickBooks: {error_detail}")
             
             data = response.json()
             invoices = data.get("QueryResponse", {}).get("Invoice", [])
@@ -544,32 +571,23 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
             if isinstance(invoices, dict):
                 invoices = [invoices]
             
-            # Process invoices
-            results = []
-            for invoice in invoices:
-                txn_date = invoice.get("TxnDate")
-                customer_ref = invoice.get("CustomerRef", {})
-                customer_name = customer_ref.get("name", "Unknown")
-                amount = invoice.get("TotalAmt", 0)
-                invoice_id = invoice.get("Id")
-                
-                # Try to get customer address for state determination
-                customer_state = None
-                if "BillAddr" in invoice:
-                    bill_addr = invoice["BillAddr"]
-                    customer_state = bill_addr.get("CountrySubDivisionCode")
-                
-                results.append({
-                    "invoice_id": invoice_id,
-                    "customer": customer_name,
-                    "date": txn_date,
-                    "amount": float(amount) if amount else 0.0,
-                    "state": customer_state,
-                    "preliminary_deadline": None,  # Will be calculated on demand
-                    "lien_deadline": None  # Will be calculated on demand
+            # Format invoices for frontend
+            formatted_invoices = []
+            for inv in invoices:
+                formatted_invoices.append({
+                    "id": inv.get("Id"),
+                    "invoice_number": inv.get("DocNumber"),
+                    "date": inv.get("TxnDate"),
+                    "customer_name": inv.get("CustomerRef", {}).get("name", "Unknown"),
+                    "amount": float(inv.get("TotalAmt", 0)),
+                    "balance": float(inv.get("Balance", 0)),
+                    "status": "Unpaid" if float(inv.get("Balance", 0)) > 0 else "Paid"
                 })
             
-            return {"invoices": results, "count": len(results)}
+            return {
+                "invoices": formatted_invoices,
+                "count": len(formatted_invoices)
+            }
             
     except httpx.HTTPError as e:
         print(f"HTTP error fetching invoices: {e}")
