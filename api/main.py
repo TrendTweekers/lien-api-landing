@@ -1826,7 +1826,7 @@ async def generate_state_guide_pdf(state_code: str, request: Request):
     
     prelim_days = prelim_notice.get('days', prelim_notice.get('commercial_days', prelim_notice.get('standard_days', None)))
     lien_days = lien_filing.get('days', lien_filing.get('commercial_days', lien_filing.get('standard_days', 120)))
-    prelim_required = state_data.get('preliminary_notice_required', False)
+    prelim_required = prelim_notice.get('required', False)
     
     # Get invoice_date from query parameters (optional)
     invoice_date_str = request.query_params.get('invoice_date', '')
