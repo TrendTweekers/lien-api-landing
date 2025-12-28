@@ -625,10 +625,15 @@
     
     <script>
         // Mobile menu toggle
-        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
-            const menu = document.getElementById('mobileMenu');
-            menu.classList.toggle('hidden');
-        });
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', function() {
+                const menu = document.getElementById('mobileMenu');
+                if (menu) {
+                    menu.classList.toggle('hidden');
+                }
+            });
+        }
         
         // Pricing toggle (Monthly/Annual)
         const monthlyBtn = document.getElementById('monthlyBtn');
@@ -643,27 +648,41 @@
         const MONTHLY_STRIPE_LINK = 'https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00';
         const ANNUAL_STRIPE_LINK = 'https://buy.stripe.com/aFacN5gBL7ln9Z72AZ9fW01';
         
-        monthlyBtn.addEventListener('click', function() {
-            monthlyBtn.classList.add('active');
-            annualBtn.classList.remove('active');
-            proPrice.textContent = '$299';
-            proPeriod.textContent = '/month';
-            proCta.href = MONTHLY_STRIPE_LINK;
-            proCtaText.textContent = 'Start Professional →';
-            savingsBadge.classList.add('hidden');
-            saveText.textContent = 'Save 20%';
-        });
-        
-        annualBtn.addEventListener('click', function() {
-            annualBtn.classList.add('active');
-            monthlyBtn.classList.remove('active');
-            proPrice.textContent = '$2,390';
-            proPeriod.textContent = '/year';
-            proCta.href = ANNUAL_STRIPE_LINK;
-            proCtaText.textContent = 'Start Professional (Annual) →';
-            savingsBadge.classList.remove('hidden');
-            saveText.textContent = 'Save $1,198 (33% off)';
-        });
+        // Safety check: Only add event listeners if all required elements exist
+        if (monthlyBtn && annualBtn && proPrice && proPeriod && proCta && proCtaText && savingsBadge && saveText) {
+            monthlyBtn.addEventListener('click', function() {
+                monthlyBtn.classList.add('active');
+                annualBtn.classList.remove('active');
+                proPrice.textContent = '$299';
+                proPeriod.textContent = '/month';
+                proCta.href = MONTHLY_STRIPE_LINK;
+                proCtaText.textContent = 'Start Professional →';
+                savingsBadge.classList.add('hidden');
+                saveText.textContent = 'Save 20%';
+            });
+            
+            annualBtn.addEventListener('click', function() {
+                annualBtn.classList.add('active');
+                monthlyBtn.classList.remove('active');
+                proPrice.textContent = '$2,390';
+                proPeriod.textContent = '/year';
+                proCta.href = ANNUAL_STRIPE_LINK;
+                proCtaText.textContent = 'Start Professional (Annual) →';
+                savingsBadge.classList.remove('hidden');
+                saveText.textContent = 'Save $1,198 (33% off)';
+            });
+        } else {
+            console.error('Pricing toggle elements not found. Missing:', {
+                monthlyBtn: !monthlyBtn,
+                annualBtn: !annualBtn,
+                proPrice: !proPrice,
+                proPeriod: !proPeriod,
+                proCta: !proCta,
+                proCtaText: !proCtaText,
+                savingsBadge: !savingsBadge,
+                saveText: !saveText
+            });
+        }
         
         // Animate feature checkmarks on scroll
         const observerOptions = {
