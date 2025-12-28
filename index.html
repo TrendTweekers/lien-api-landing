@@ -191,7 +191,7 @@
         
         /* Mobile Navigation */
         .mobile-menu-btn {
-            display: none; /* Hidden by default on desktop */
+            display: none !important; /* Hidden by default on desktop */
         }
         
         @media (max-width: 768px) {
@@ -526,7 +526,7 @@
     <header style="background: white; border-bottom: 1px solid #E5E7EB; padding: 16px 0; position: sticky; top: 0; z-index: 1000;">
         <nav style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 16px 0 0;">
                 <!-- Logo -->
-            <a href="/" style="text-decoration: none; display: inline-block;">
+            <a href="/" style="text-decoration: none; display: inline-block; height: auto !important; min-height: 80px;">
   <img src="/images/liendeadline-logo.png" 
        alt="LienDeadline" 
        style="height: 80px; width: auto; display: block;">
@@ -2074,7 +2074,7 @@
         }
     
                 /* Force logo size via parent height - override ALL constraints */
-        /* Set parent containers to fixed height */
+        /* Set parent containers to auto height */
         header a[href="/"],
         header a[href="/admin-dashboard"],
         header a[href="/broker-dashboard"],
@@ -2083,9 +2083,9 @@
         header a.flex,
         nav a.flex,
         .flex.items-center a[href="/"] {
-            height: 56px !important;
-            min-height: 56px !important;
-            max-height: 56px !important;
+            height: auto !important;
+            min-height: 80px !important;
+            max-height: none !important;
             display: flex !important;
             align-items: center !important;
             flex-shrink: 0 !important;
