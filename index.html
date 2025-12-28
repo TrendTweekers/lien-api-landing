@@ -190,13 +190,17 @@
         }
         
         /* Mobile Navigation */
+        .mobile-menu-btn {
+            display: none; /* Hidden by default on desktop */
+        }
+        
         @media (max-width: 768px) {
             .desktop-nav {
                 display: none !important;
             }
             
             .mobile-menu-btn {
-                display: block !important;
+                display: block !important; /* Show on mobile */
             }
         }
         
