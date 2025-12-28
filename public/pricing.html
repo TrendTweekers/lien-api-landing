@@ -53,6 +53,18 @@
     </script>
     
     <style>
+        :root {
+            --primary-orange: #F97316;
+            --dark-text: #1F2937;
+            --gray-text: #6B7280;
+            --light-bg: #FEF3C7;
+            --success-green: #10B981;
+            --soft-orange: #FFF9F7;
+            --cream: #FFE8DF;
+            --border-color: #E5E7EB;
+            --light-gray: #F3F4F6;
+        }
+        
         h1, h2, h3, h4, h5, h6 {
             font-family: 'Instrument Serif', serif;
         }
@@ -222,48 +234,65 @@
     </header>
     
     <!-- Hero Section -->
-    <section class="pt-20 pb-12 px-4">
-        <div class="container mx-auto max-w-4xl text-center">
-            <h1 class="text-5xl md:text-6xl font-bold text-dark-text mb-4">
-                Pricing That Actually Makes Sense
+    <section class="pricing-hero" style="padding: 60px 24px; background: linear-gradient(135deg, #FFF9F7 0%, #FFE8DF 100%);">
+        <div class="container" style="text-align: center; max-width: 900px; margin: 0 auto;">
+            
+            <!-- Clean headline only -->
+            <h1 style="font-size: 48px; margin-bottom: 16px; font-weight: 800; line-height: 1.2; color: var(--dark-text);">
+                Pricing That Protects Your Receivables
             </h1>
-            <p class="text-xl text-gray-text mb-8">
-                One saved lien pays for 25+ years of service
+            
+            <p style="font-size: 18px; color: var(--gray-text); margin-bottom: 24px;">
+                One saved lien pays for 25 years of service. Never lose $75K+ to a missed deadline again.
             </p>
             
-            <!-- Trust Badges -->
-            <div class="flex flex-wrap justify-center gap-6 mb-8 text-sm text-gray-text">
-                <span class="flex items-center gap-2">
-                    <span>⚡</span> 0.3s calculations
-                </span>
-                <span class="flex items-center gap-2">
-                    <span>🇺🇸</span> All 50 states
-                </span>
-                <span class="flex items-center gap-2">
-                    <span>💰</span> 60% cheaper than Levelset
-                </span>
+            <!-- Sleek CTA bar (no banner) -->
+            <div style="display: flex; justify-content: center; gap: 16px; margin-top: 32px; flex-wrap: wrap;">
+                <a href="/calculator.html" class="hero-cta" style="padding: 16px 28px; background: var(--primary-orange); color: white; font-weight: 600; border-radius: 8px; text-decoration: none; font-size: 16px; transition: background 0.2s;" onmouseover="this.style.background='#EA580C'" onmouseout="this.style.background='var(--primary-orange)'">
+                    Try 3 Free →
+                </a>
+                <div style="display: flex; align-items: center; gap: 8px; padding: 16px 24px; background: rgba(249,115,22,0.1); border-radius: 8px; font-size: 14px; color: var(--primary-orange); font-weight: 600;">
+                    <span>⚡</span>
+                    <span>$299/month unlimited</span>
+                </div>
             </div>
             
-            <!-- CTA -->
-            <div class="mb-4">
-                <a href="/calculator.html" class="inline-block bg-primary-orange text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-orange-600 transition">
-                    Try 3 Free Calculations →
-                </a>
-            </div>
-            <p class="text-sm text-gray-text">No credit card required</p>
+            <p style="margin-top: 16px; font-size: 14px; color: var(--gray-text);">
+                3 free calculations • No credit card required • Cancel anytime
+            </p>
         </div>
     </section>
     
     <!-- ROI Calculator -->
-    <section class="py-8 px-4">
-        <div class="container mx-auto max-w-2xl">
-            <div class="roi-calculator text-center">
-                <p class="text-lg font-semibold text-dark-text mb-2">
-                    💡 ROI Calculator
-                </p>
-                <p class="text-dark-text">
-                    One saved <strong>$75,000</strong> lien = <strong>21 years</strong> of service
-                </p>
+    <section style="background: linear-gradient(135deg, var(--soft-orange) 0%, var(--cream) 100%); padding: 60px 24px; margin: 60px 0;">
+        <div class="container" style="text-align: center; max-width: 800px; margin: 0 auto;">
+            
+            <h2 style="font-size: 32px; margin-bottom: 16px; color: var(--dark-text); font-weight: 700;">Calculate Your ROI</h2>
+            <p style="margin-bottom: 32px; color: var(--gray-text);">
+                See how much one saved lien covers your subscription
+            </p>
+            
+            <!-- Sleek calculator embed -->
+            <div style="background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 24px auto; max-width: 600px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                    <div>
+                        <label style="display: block; font-size: 14px; color: var(--gray-text); margin-bottom: 6px;">Average invoice value</label>
+                        <input type="number" id="invoiceValue" value="75000" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 16px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; color: var(--gray-text); margin-bottom: 6px;">Liens filed per month</label>
+                        <input type="number" id="liensPerMonth" value="2" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 16px;">
+                    </div>
+                </div>
+                
+                <div style="background: var(--light-gray); padding: 20px; border-radius: 8px; margin-bottom: 16px;">
+                    <div style="font-size: 24px; font-weight: 700; color: var(--primary-orange); margin-bottom: 8px;">
+                        One saved lien pays for <span id="roi-years">25</span> years of service
+                    </div>
+                    <p style="font-size: 14px; color: var(--gray-text);">
+                        Based on Professional plan at $299/month
+                    </p>
+                </div>
             </div>
         </div>
     </section>
@@ -701,6 +730,40 @@
         document.querySelectorAll('.feature-checkmark').forEach(checkmark => {
             observer.observe(checkmark);
         });
+        
+        // ROI Calculator
+        function calculateROI() {
+            const invoiceValue = parseFloat(document.getElementById('invoiceValue').value) || 75000;
+            const liensPerMonth = parseFloat(document.getElementById('liensPerMonth').value) || 2;
+            const monthlyPrice = 299;
+            const annualPrice = monthlyPrice * 12;
+            
+            // Calculate: One saved lien value / monthly price = years of service
+            const yearsOfService = Math.floor(invoiceValue / annualPrice);
+            
+            // Update the display
+            const roiYearsEl = document.getElementById('roi-years');
+            if (roiYearsEl) {
+                roiYearsEl.textContent = yearsOfService;
+            }
+        }
+        
+        // Attach event listeners to ROI calculator inputs
+        const invoiceValueInput = document.getElementById('invoiceValue');
+        const liensPerMonthInput = document.getElementById('liensPerMonth');
+        
+        if (invoiceValueInput) {
+            invoiceValueInput.addEventListener('input', calculateROI);
+            invoiceValueInput.addEventListener('change', calculateROI);
+        }
+        
+        if (liensPerMonthInput) {
+            liensPerMonthInput.addEventListener('input', calculateROI);
+            liensPerMonthInput.addEventListener('change', calculateROI);
+        }
+        
+        // Calculate initial ROI
+        calculateROI();
         
         // Stripe checkout tracking
         document.getElementById('proCta').addEventListener('click', function(e) {
