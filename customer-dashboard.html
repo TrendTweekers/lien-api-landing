@@ -7,8 +7,11 @@
     
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-KYZG0TN07Z"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
+    
+</body>
+</html>
+
+.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-KYZG0TN07Z');
@@ -21,7 +24,7 @@
     <link rel="stylesheet" href="styles.css">
     <!-- Lovable Scale Stylesheet (load first) -->
     <link rel="stylesheet" href="/lovable-scale.css">
-
+    >
     <script>
         // Check authentication on page load
         async function checkAuth() {
@@ -513,14 +516,14 @@
                                 onclick="connectQuickBooks()"
                                 id="qb-connect-btn"
                                 class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
-
+                            >
                                 Connect QuickBooks
                             </button>
                             <a 
                                 href="#" 
                                 onclick="reportIntegrationIssue('QuickBooks'); return false;"
                                 class="block text-center text-xs text-gray-500 hover:text-gray-700 mt-2 underline"
-
+                            >
                                 Report Issue
                             </a>
                         </div>
@@ -547,14 +550,14 @@
                                 onclick="connectSage()"
                                 id="sage-connect-btn"
                                 class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
-
+                            >
                                 Connect Sage
                             </button>
                             <a 
                                 href="#" 
                                 onclick="reportIntegrationIssue('Sage'); return false;"
                                 class="block text-center text-xs text-gray-500 hover:text-gray-700 mt-2 underline"
-
+                            >
                                 Report Issue
                             </a>
                         </div>
@@ -581,14 +584,14 @@
                                 onclick="connectProcore()"
                                 id="procore-connect-btn"
                                 class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
-
+                            >
                                 Connect Procore
                             </button>
                             <a 
                                 href="#" 
                                 onclick="reportIntegrationIssue('Procore'); return false;"
                                 class="block text-center text-xs text-gray-500 hover:text-gray-700 mt-2 underline"
-
+                            >
                                 Report Issue
                             </a>
                         </div>
@@ -644,7 +647,7 @@
                         name="invoice_date"
                         required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-
+                    >
                 </div>
                 
                 <!-- State Selection -->
@@ -655,7 +658,7 @@
                         name="state"
                         required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-
+                    >
                         <option value="">Select a state...</option>
                         <option value="AL">Alabama</option>
                         <option value="AK">Alaska</option>
@@ -718,7 +721,7 @@
                         id="dashRole" 
                         name="role"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-
+                    >
                         <option value="supplier">Material Supplier</option>
                         <option value="subcontractor">Subcontractor</option>
                         <option value="contractor">General Contractor</option>
@@ -733,7 +736,7 @@
                         id="dashProjectType" 
                         name="project_type"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-
+                    >
                         <option value="commercial">Commercial</option>
                         <option value="residential">Residential</option>
                     </select>
@@ -748,7 +751,7 @@
                         id="dashNOCDate" 
                         name="notice_of_completion_date"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-
+                    >
                     <p class="text-xs text-gray-500 mt-1">Optional - If owner filed Notice of Completion, deadline may shorten</p>
                 </div>
                 
@@ -756,7 +759,7 @@
                     type="submit"
                     id="dashCalcBtn"
                     class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"
-
+                >
                     Calculate Deadlines
                 </button>
             </form>
@@ -2340,7 +2343,7 @@
                                 <button 
                                     onclick="calculateFromInvoice('${invoiceId}', '${date}', '${escapeHtml(customer)}', ${inv.amount || 0})"
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap"
-
+                                >
                                     Calculate
                                 </button>
                             </div>
@@ -2869,7 +2872,7 @@
                             <button 
                                 onclick="calculateForInvoice('${date}', '${state}')"
                                 class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap"
-
+                            >
                                 Calculate Deadline
                             </button>
                         </div>
