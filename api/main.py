@@ -11354,16 +11354,28 @@ if images_dir.exists():
 else:
     print(f"❌ ERROR: images_dir does not exist: {images_dir}")
 
-# Redirect trailing slash for state guides (e.g., /state-lien-guides/texas/ -> /state-lien-guides/texas)
+# Serve static files from public directory (favicons, manifest, etc.)
+# This mount must be LAST so API routes take precedence
+public_dir = PROJECT_ROOT / "public"
+print(f"📁 public_dir={public_dir} exists={public_dir.exists()}")
+
+# State guide routes - must be BEFORE StaticFiles mount to prevent redirect loops
+# Handle trailing slash: redirect /state-lien-guides/{state}/ -> /state-lien-guides/{state}
 @app.get("/state-lien-guides/{state}/")
 async def redirect_state_guide_trailing_slash(state: str):
     """Redirect trailing slash to non-trailing slash for state guides"""
     return RedirectResponse(url=f"/state-lien-guides/{state}", status_code=301)
 
-# Serve static files from public directory (favicons, manifest, etc.)
-# This mount must be LAST so API routes take precedence
-public_dir = PROJECT_ROOT / "public"
-print(f"📁 public_dir={public_dir} exists={public_dir.exists()}")
+# Handle non-trailing slash: serve index.html if it exists
+@app.get("/state-lien-guides/{state}")
+async def serve_state_guide(state: str):
+    """Serve state guide index.html file"""
+    if public_dir.exists():
+        index_file = public_dir / "state-lien-guides" / state / "index.html"
+        if index_file.exists() and index_file.is_file():
+            return FileResponse(str(index_file))
+    raise HTTPException(status_code=404, detail="State guide not found")
+
 if public_dir.exists():
     app.mount("/", StaticFiles(directory=str(public_dir), html=True), name="public")
 
