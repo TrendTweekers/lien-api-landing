@@ -3,6 +3,7 @@ const fs = require('fs');
 
 const STATES = ['UT', 'CA', 'TX', 'FL', 'NY', 'WA', 'OR', 'OH', 'HI', 'AK'];
 const TEST_DATE = '2025-12-27';
+// Use production URL if API_BASE env var not set, otherwise allow localhost override
 const API_BASE = process.env.API_BASE || 'http://localhost:8000';
 
 async function audit() {
@@ -80,8 +81,22 @@ async function audit() {
       }
       
     } catch (e) {
-      console.error(`${state}: ERROR - ${e.message}`);
-      results.push({ state, error: e.message, stack: e.stack });
+      let errorMsg = '';
+      if (e.code === 'ECONNREFUSED') {
+        errorMsg = `Connection refused - API not running at ${API_BASE}`;
+      } else if (e.response) {
+        errorMsg = `HTTP ${e.response.status}: ${e.response.statusText}`;
+        if (e.response.data) {
+          const dataStr = typeof e.response.data === 'string' ? e.response.data : JSON.stringify(e.response.data);
+          errorMsg += ` - ${dataStr.substring(0, 150)}`;
+        }
+      } else if (e.message) {
+        errorMsg = e.message;
+      } else {
+        errorMsg = `Unknown error: ${e.code || 'No error code'}`;
+      }
+      console.error(`${state}: ERROR - ${errorMsg}`);
+      results.push({ state, error: errorMsg, code: e.code, fullError: e.toString() });
     }
   }
   
