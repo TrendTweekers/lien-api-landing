@@ -153,45 +153,47 @@
         });
         }
         
-        // Logout function - Global scope for onclick handler
-        window.logout = async function() {
-            try {
-                // Get the session token
-                const token = localStorage.getItem('session_token');
-                
-                if (token) {
-                    // Call the logout API endpoint
-                    await fetch('/api/logout', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                }
-                
-                // Clear ALL auth-related data from localStorage
-                localStorage.removeItem('session_token');
-                localStorage.removeItem('user_email');
-                localStorage.removeItem('user');
-                localStorage.removeItem('subscription_status');
-                
-                // Clear sessionStorage too (if used)
-                sessionStorage.clear();
-                
-                // Redirect to landing page
-                window.location.href = '/';
-                
-            } catch (error) {
-                console.error('Logout error:', error);
-                // Still clear local data even if API call fails
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.href = '/';
-            }
-        };
+        // Logout function removed - using event listener approach
 
         // Run on page load
+        
+        // Logout button event listener
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                
+                try {
+                    const token = localStorage.getItem('session_token');
+                    
+                    // Call logout API
+                    if (token) {
+                        await fetch('/api/logout', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                    }
+                    
+                    // Clear all storage
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    
+                    // Redirect to landing page
+                    window.location.href = '/';
+                    
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    // Clear storage even if API fails
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/';
+                }
+            });
+        }
+
         window.addEventListener('DOMContentLoaded', checkAuth);
     </script>
 <style>
@@ -577,7 +579,7 @@
             <div class="flex gap-4 items-center">
                 <span id="user-email" class="text-sm text-gray-600"></span>
                 <a href="index.html" class="text-gray-600 hover:text-gray-900">Landing Page</a>
-                <button onclick="logout()" class="text-red-600 hover:text-red-700">Logout</button>
+                <button id="logout-btn" class="text-red-600 hover:text-red-700">Logout</button>
             </div>
         </div>
     </header>
@@ -2291,7 +2293,7 @@
             alert('Opening invoices...\n\nIn production, shows list of invoices from Stripe.');
         }
 
-                // Duplicate logout function removed - using window.logout
+                // Duplicate logout function removed - using event listener
         }
             
             try {

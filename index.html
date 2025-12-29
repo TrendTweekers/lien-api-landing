@@ -3,6 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- CRITICAL: Prevent logo flash - load before anything else -->
+    <style>
+        /* Prevent logo flash - load before anything else */
+        img[alt*="LienDeadline"], 
+        .logo img,
+        header img,
+        nav img,
+        .ld-brand-icon,
+        .ld-brand-wordmark {
+            height: 32px !important;
+            width: auto !important;
+            max-height: 32px !important;
+            object-fit: contain !important;
+        }
+        
+        .ld-brand-wordmark {
+            height: 28px !important;
+            max-height: 28px !important;
+        }
+        
+        @media (max-width: 768px) {
+            img[alt*="LienDeadline"], 
+            .logo img,
+            header img,
+            nav img,
+            .ld-brand-icon {
+                height: 28px !important;
+                max-height: 28px !important;
+            }
+            .ld-brand-wordmark {
+                height: 24px !important;
+                max-height: 24px !important;
+            }
+        }
+    </style>
+    
     <title>Lien Deadline Calculator | All 50 States + DC | LienDeadline</title>
     
     <!-- Preload logo images to prevent flash -->
