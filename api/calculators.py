@@ -4,6 +4,44 @@ Handles complex calculation logic for states with special rules
 """
 from datetime import datetime, timedelta
 from typing import Dict, Optional
+import os
+import json
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
+VALID_STATES = [
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL",
+    "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "ME",
+    "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
+    "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI",
+    "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+]
+
+STATE_CODE_TO_NAME = {
+    'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
+    'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware',
+    'DC': 'District of Columbia', 'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii',
+    'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa',
+    'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine',
+    'MD': 'Maryland', 'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota',
+    'MS': 'Mississippi', 'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska',
+    'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico',
+    'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio',
+    'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island',
+    'SC': 'South Carolina', 'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas',
+    'UT': 'Utah', 'VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington',
+    'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
+}
+
+# Load state rules (fallback to JSON if database not available)
+try:
+    with open(BASE_DIR / "state_rules.json", 'r') as f:
+        STATE_RULES = json.load(f)
+except FileNotFoundError:
+    STATE_RULES = {}
+    print("WARNING: state_rules.json not found")
+
 
 # Try to import optional dependencies
 try:
@@ -145,6 +183,93 @@ def calculate_washington(invoice_date: datetime, role: str = "supplier") -> Dict
         "lien_deadline": lien_deadline,
         "warnings": warnings
     }
+
+
+def calculate_state_deadline(
+    state_code: str,
+    invoice_date: datetime,
+    role: str = "supplier",
+    project_type: str = "commercial",
+    notice_of_completion_date: Optional[datetime] = None,
+    notice_of_commencement_filed: bool = False,
+    state_rules: Optional[dict] = None
+):
+    """
+    Unified state deadline calculation function.
+    Uses the same logic for all endpoints to ensure consistency.
+    
+    Args:
+        state_code: Two-letter state code (e.g., "TX", "CA")
+        invoice_date: datetime object for invoice/delivery date
+        role: "supplier", "contractor", etc.
+        project_type: "commercial" or "residential"
+        notice_of_completion_date: Optional datetime for notice of completion
+        notice_of_commencement_filed: Whether notice of commencement was filed
+        state_rules: Optional dict with state rules (for default calculation)
+    
+    Returns:
+        dict with calculation results (preliminary_deadline, lien_deadline, etc.)
+    """
+    state_code = state_code.upper()
+    
+    # State-specific calculation logic (single source of truth)
+    if state_code == "TX":
+        return calculate_texas(invoice_date, project_type=project_type)
+    elif state_code == "WA":
+        return calculate_washington(invoice_date, role=role)
+    elif state_code == "CA":
+        return calculate_california(
+            invoice_date,
+            notice_of_completion_date=notice_of_completion_date,
+            role=role
+        )
+    elif state_code == "OH":
+        return calculate_ohio(
+            invoice_date,
+            project_type=project_type,
+            notice_of_commencement_filed=notice_of_commencement_filed
+        )
+    elif state_code == "OR":
+        return calculate_oregon(invoice_date)
+    elif state_code == "HI":
+        return calculate_hawaii(invoice_date)
+    elif state_code == "NJ":
+        return calculate_newjersey(invoice_date, project_type=project_type)
+    elif state_code == "IN":
+        return calculate_indiana(invoice_date, project_type=project_type)
+    elif state_code == "LA":
+        return calculate_louisiana(invoice_date, project_type=project_type)
+    elif state_code == "MA":
+        return calculate_massachusetts(invoice_date, project_type=project_type)
+    else:
+        # Default calculation for simple states
+        if not state_rules:
+            # Fallback to basic defaults if no rules provided
+            prelim_required = False
+            prelim_days = 20
+            lien_days = 120
+            special_rules = {}
+        else:
+            prelim_notice = state_rules.get('preliminary_notice', {})
+            lien_filing = state_rules.get('lien_filing', {})
+            special_rules = state_rules.get('special_rules', {})
+            
+            prelim_required = prelim_notice.get('required', False)
+            prelim_days = prelim_notice.get('days') or prelim_notice.get('commercial_days') or 20
+            lien_days = lien_filing.get('days') or lien_filing.get('commercial_days') or 120
+        
+        return calculate_default(
+            invoice_date,
+            {
+                "preliminary_notice_required": prelim_required,
+                "preliminary_notice_days": prelim_days,
+                "lien_filing_days": lien_days,
+                "notes": special_rules.get("notes", "")
+            },
+            weekend_extension=special_rules.get("weekend_extension", False),
+            holiday_extension=special_rules.get("holiday_extension", False)
+        )
+
 
 
 def calculate_california(invoice_date: datetime, 

@@ -147,6 +147,8 @@ from .analytics import router as analytics_router
 from .admin import router as admin_router
 from .quickbooks import router as quickbooks_router
 from .calculations import router as calculations_router, get_current_user
+from .routers import auth
+from .routers import calculations as public_calculations
 
 # Import short link generator
 from .short_link_system import ShortLinkGenerator
@@ -745,6 +747,7 @@ def init_db():
             
             # Insert sample data if table is empty
             try:
+
                 if DB_TYPE == 'postgresql':
                     cursor.execute("SELECT COUNT(*) as count FROM partner_applications")
                     result = cursor.fetchone()
@@ -825,6 +828,7 @@ def init_db():
             # Create api_key_requests table if it doesn't exist
             if 'api_key_requests' not in existing_tables:
                 print("Creating api_key_requests table...")
+
                 if DB_TYPE == 'postgresql':
                     cursor.execute("""
                         CREATE TABLE api_key_requests (
@@ -1120,6 +1124,8 @@ app.include_router(analytics_router, prefix="/api/analytics", tags=["analytics"]
 app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
 app.include_router(quickbooks_router, tags=["quickbooks"])
 app.include_router(calculations_router, tags=["calculations"])
+app.include_router(auth.router, tags=["auth"])
+app.include_router(public_calculations.router, tags=["public_calculations"])
 
 # Temporary endpoint to fix state names
 @app.get("/api/admin/fix-state-names-now")
@@ -1522,52 +1528,6 @@ async def referral_redirect(short_code: str, request: Request):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.get("/v1/states")
-def get_states():
-    """Get list of supported states - returns all 51 states with code and name"""
-    try:
-        # Try to get states from database with names
-        with get_db() as conn:
-            cursor = get_db_cursor(conn)
-            if DB_TYPE == 'postgresql':
-                cursor.execute("""
-                    SELECT state_code, state_name 
-                    FROM lien_deadlines 
-                    ORDER BY state_code
-                """)
-            else:
-                cursor.execute("""
-                    SELECT state_code, state_name 
-                    FROM lien_deadlines 
-                    ORDER BY state_code
-                """)
-            states = cursor.fetchall()
-            
-            if states:
-                result = []
-                for row in states:
-                    if isinstance(row, dict):
-                        result.append({
-                            "code": row.get("state_code"),
-                            "name": row.get("state_name")
-                        })
-                    else:
-                        result.append({
-                            "code": row[0],
-                            "name": row[1]
-                        })
-                return {
-                    "states": result,
-                    "count": len(result)
-                }
-    except Exception as e:
-        print(f"⚠️ Error querying database for states: {e}")
-    
-    # Fallback: return state codes only if database query fails
-    return {
-        "states": [{"code": code, "name": code} for code in VALID_STATES],
-        "count": len(VALID_STATES)
-    }
 
 @app.get("/api/v1/guide/{state_code}/pdf")
 async def generate_state_guide_pdf(state_code: str, request: Request):
@@ -2236,20 +2196,7 @@ class APIKeyRequest(BaseModel):
     volume: str
     use_case: str | None = None
 
-class TrackCalculationRequest(BaseModel):
-    """Request model for tracking calculation attempts"""
-    state: str = None
-    notice_date: str = None
-    last_work_date: str = None
-    email: str = None  # Allow email to be sent from frontend for admin check
 
-class CalculateDeadlineRequest(BaseModel):
-    invoice_date: str
-    state: str
-    role: str = "supplier"
-    project_type: str = "commercial"
-    notice_of_completion_date: Optional[str] = None
-    notice_of_commencement_filed: Optional[bool] = False
 
 def get_client_ip(request: Request) -> str:
     """Get real client IP from headers (works with Railway/Cloudflare)"""
@@ -2300,244 +2247,11 @@ def is_broker_email(email: str) -> bool:
         print(f"⚠️ Error checking broker email: {e}")
         return False  # Fail closed - assume not a broker if check fails
 
-@app.post("/api/v1/track-calculation")
-@limiter.limit("20/minute")
-async def track_calculation(request: Request, request_data: TrackCalculationRequest = None):
-    """
-    Track calculation attempt and enforce server-side limits.
-    Returns whether calculation is allowed and current count.
-    """
-    from fastapi.responses import JSONResponse
-    
-    try:
-        client_ip = get_client_ip(request)
-        user_agent = request.headers.get('user-agent', 'unknown')
-        user_agent_hash = get_user_agent_hash(request)
-        
-        # Create composite key: IP + user agent hash (handles shared IPs better)
-        tracking_key = f"{client_ip}:{user_agent_hash}"
-        
-        # Get email from request first (for admin check before DB lookup)
-        request_email = None
-        if request_data and request_data.email:
-            request_email = request_data.email.strip().lower()
-        
-        # Admin/dev user bypass (check BEFORE database lookup)
-        DEV_EMAIL = "kartaginy1@gmail.com"
-        if request_email and request_email == DEV_EMAIL.lower():
-            print(f"✅ Admin/dev user detected from request: {request_email} - allowing unlimited calculations")
-            return JSONResponse(
-                status_code=200,
-                content={
-                    "status": "allowed",
-                    "calculation_count": 0,
-                    "remaining_calculations": 999999,
-                    "email_provided": True,
-                    "quota": {"unlimited": True}
-                }
-            )
-        
-        with get_db() as conn:
-            cursor = get_db_cursor(conn)
-            
-            # Ensure email_gate_tracking table exists with tracking_key column
-            if DB_TYPE == 'postgresql':
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS email_gate_tracking (
-                        id SERIAL PRIMARY KEY,
-                        ip_address VARCHAR NOT NULL,
-                        tracking_key VARCHAR NOT NULL,
-                        email VARCHAR,
-                        calculation_count INTEGER DEFAULT 0,
-                        first_calculation_at TIMESTAMP DEFAULT NOW(),
-                        last_calculation_at TIMESTAMP DEFAULT NOW(),
-                        email_captured_at TIMESTAMP,
-                        created_at TIMESTAMP DEFAULT NOW()
-                    )
-                """)
-                # Add tracking_key column if it doesn't exist (migration)
-                try:
-                    cursor.execute("ALTER TABLE email_gate_tracking ADD COLUMN IF NOT EXISTS tracking_key VARCHAR")
-                except:
-                    pass  # Column might already exist
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_tracking_key ON email_gate_tracking(tracking_key)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_ip ON email_gate_tracking(ip_address)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_email ON email_gate_tracking(email)")
-                
-                # Get current tracking record
-                cursor.execute("""
-                    SELECT calculation_count, email, email_captured_at 
-                    FROM email_gate_tracking 
-                    WHERE tracking_key = %s 
-                    ORDER BY last_calculation_at DESC 
-                    LIMIT 1
-                """, (tracking_key,))
-            else:
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS email_gate_tracking (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        ip_address TEXT NOT NULL,
-                        tracking_key TEXT NOT NULL,
-                        email TEXT,
-                        calculation_count INTEGER DEFAULT 0,
-                        first_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        last_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        email_captured_at TIMESTAMP,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                # Add tracking_key column if it doesn't exist (migration)
-                try:
-                    cursor.execute("ALTER TABLE email_gate_tracking ADD COLUMN tracking_key TEXT")
-                except:
-                    pass  # Column might already exist
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_tracking_key ON email_gate_tracking(tracking_key)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_ip ON email_gate_tracking(ip_address)")
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_email ON email_gate_tracking(email)")
-                
-                cursor.execute("""
-                    SELECT calculation_count, email, email_captured_at 
-                    FROM email_gate_tracking 
-                    WHERE tracking_key = ? 
-                    ORDER BY last_calculation_at DESC 
-                    LIMIT 1
-                """, (tracking_key,))
-            
-            tracking = cursor.fetchone()
-            
-            # Parse tracking data
-            if tracking:
-                if isinstance(tracking, dict):
-                    count = tracking.get('calculation_count', 0)
-                    db_email = tracking.get('email')
-                    email_captured_at = tracking.get('email_captured_at')
-                elif hasattr(tracking, 'keys'):
-                    count = tracking['calculation_count'] if 'calculation_count' in tracking.keys() else tracking[0]
-                    db_email = tracking['email'] if 'email' in tracking.keys() else (tracking[1] if len(tracking) > 1 else None)
-                    email_captured_at = tracking['email_captured_at'] if 'email_captured_at' in tracking.keys() else (tracking[2] if len(tracking) > 2 else None)
-                else:
-                    count = tracking[0] if tracking else 0
-                    db_email = tracking[1] if tracking and len(tracking) > 1 else None
-                    email_captured_at = tracking[2] if tracking and len(tracking) > 2 else None
-            else:
-                count = 0
-                db_email = None
-                email_captured_at = None
-            
-            # Use email from request if provided, otherwise use DB email
-            email = request_email or (db_email.lower() if db_email else None)
-            
-            # Determine limits
-            CALCULATIONS_BEFORE_EMAIL = 3
-            TOTAL_FREE_CALCULATIONS = 6
-            
-            # Check if user is a broker - brokers get same limits as customers (no unlimited access)
-            is_broker = email and is_broker_email(email)
-            if is_broker:
-                print(f"⚠️ Broker attempting calculation: {email} - applying same limits as customers")
-            
-            # Admin/dev user bypass (unlimited calculations)
-            DEV_EMAIL = "kartaginy1@gmail.com"
-            is_dev_user = email and email.lower() == DEV_EMAIL.lower()
-            
-            if is_dev_user:
-                print(f"✅ Admin/dev user detected: {email} - allowing unlimited calculations")
-                remaining = 999999  # Effectively unlimited
-            # Check if limit exceeded (same for brokers and customers)
-            elif not email:
-                # No email provided yet
-                if count >= CALCULATIONS_BEFORE_EMAIL:
-                    return JSONResponse(
-                        status_code=403,
-                        content={
-                            "status": "limit_reached",
-                            "message": "Free trial limit reached. Please provide your email for 3 more calculations.",
-                            "calculation_count": count,
-                            "remaining_calculations": 0,
-                            "email_required": True,
-                            "limit_type": "before_email"
-                        }
-                    )
-                remaining = CALCULATIONS_BEFORE_EMAIL - count
-            else:
-                # Email provided - brokers get same limits as customers
-                if count >= TOTAL_FREE_CALCULATIONS:
-                    error_msg = "Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
-                    if is_broker:
-                        error_msg += " Note: Brokers have the same calculation limits as customers."
-                    return JSONResponse(
-                        status_code=403,
-                        content={
-                            "status": "limit_reached",
-                            "message": error_msg,
-                            "calculation_count": count,
-                            "remaining_calculations": 0,
-                            "email_required": False,
-                            "limit_type": "upgrade_required"
-                        }
-                    )
-                remaining = TOTAL_FREE_CALCULATIONS - count
-            
-            # Increment count BEFORE allowing calculation
-            new_count = count + 1
-            
-            if tracking:
-                # Update existing record
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        UPDATE email_gate_tracking 
-                        SET calculation_count = %s,
-                            last_calculation_at = NOW()
-                        WHERE tracking_key = %s
-                    """, (new_count, tracking_key))
-                else:
-                    cursor.execute("""
-                        UPDATE email_gate_tracking 
-                        SET calculation_count = ?,
-                            last_calculation_at = CURRENT_TIMESTAMP
-                        WHERE tracking_key = ?
-                    """, (new_count, tracking_key))
-            else:
-                # Create new record
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        INSERT INTO email_gate_tracking (ip_address, tracking_key, calculation_count)
-                        VALUES (%s, %s, 1)
-                    """, (client_ip, tracking_key))
-                else:
-                    cursor.execute("""
-                        INSERT INTO email_gate_tracking (ip_address, tracking_key, calculation_count)
-                        VALUES (?, ?, 1)
-                    """, (client_ip, tracking_key))
-            
-            conn.commit()
-            
-            # Return success with updated count
-            return {
-                "status": "allowed",
-                "calculation_count": new_count,
-                "remaining_calculations": remaining - 1,  # Subtract 1 since we just incremented
-                "email_required": not email and new_count >= CALCULATIONS_BEFORE_EMAIL,
-                "email_provided": bool(email)
-            }
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error in track_calculation: {e}")
-        import traceback
-        traceback.print_exc()
-        # On error, allow calculation (fail open for better UX)
-        return {
-            "status": "allowed",
-            "calculation_count": 0,
-            "remaining_calculations": 3,
-            "email_required": False,
-            "email_provided": False,
-            "error": str(e)
-        }
 
-@app.post("/v1/calculate")
+
+
+
+
 def get_user_from_session(request: Request):
     """Helper to get logged-in user from session token"""
     authorization = request.headers.get('authorization', '')
@@ -2616,457 +2330,7 @@ async def delete_calculation(calculation_id: int, request: Request):
         traceback.print_exc()
         raise HTTPException(500, "Failed to delete project")
 
-@app.post("/api/v1/calculate-deadline")
-@limiter.limit("10/minute")
-async def calculate_deadline(
-    request: Request,
-    request_data: CalculateDeadlineRequest
-):
-    """
-    Calculate deadline - now enforces server-side limits.
-    Frontend should call /api/v1/track-calculation first to check limits.
-    """
-    invoice_date = request_data.invoice_date
-    state = request_data.state
-    role = request_data.role
-    project_type = request_data.project_type
-    state_code = state.upper()
-    
-    # Check if user is logged in with active/trialing subscription
-    logged_in_user = get_user_from_session(request)
-    quota = {'unlimited': False, 'remaining': 0, 'limit': 3}
-    
-    if logged_in_user and logged_in_user.get('unlimited'):
-        # Skip limit checks for logged-in active/trialing users
-        quota = {'unlimited': True}
-    else:
-        # Get client IP and tracking key
-        client_ip = get_client_ip(request)
-        user_agent_hash = get_user_agent_hash(request)
-        tracking_key = f"{client_ip}:{user_agent_hash}"
-        
-        # Check limits BEFORE processing calculation (server-side enforcement)
-        try:
-            with get_db() as conn:
-                cursor = get_db_cursor(conn)
-                
-                # Get current tracking
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        SELECT calculation_count, email 
-                        FROM email_gate_tracking 
-                        WHERE tracking_key = %s 
-                        ORDER BY last_calculation_at DESC 
-                        LIMIT 1
-                    """, (tracking_key,))
-                else:
-                    cursor.execute("""
-                        SELECT calculation_count, email 
-                        FROM email_gate_tracking 
-                        WHERE tracking_key = ? 
-                        ORDER BY last_calculation_at DESC 
-                        LIMIT 1
-                    """, (tracking_key,))
-                
-                tracking = cursor.fetchone()
-                
-                if tracking:
-                    if isinstance(tracking, dict):
-                        count = tracking.get('calculation_count', 0)
-                        email = tracking.get('email')
-                    elif hasattr(tracking, 'keys'):
-                        count = tracking['calculation_count'] if 'calculation_count' in tracking.keys() else tracking[0]
-                        email = tracking['email'] if 'email' in tracking.keys() else (tracking[1] if len(tracking) > 1 else None)
-                    else:
-                        count = tracking[0] if tracking else 0
-                        email = tracking[1] if tracking and len(tracking) > 1 else None
-                    
-                    # Admin/dev user bypass (check BEFORE broker check)
-                    DEV_EMAIL = "kartaginy1@gmail.com"
-                    is_dev_user = email and email.lower() == DEV_EMAIL.lower()
-                    
-                    if is_dev_user:
-                        print(f"✅ Admin/dev user detected in calculate_deadline: {email} - allowing unlimited calculations")
-                        quota = {'unlimited': True}
-                    else:
-                        # Check if user is a broker - brokers get same limits as customers
-                        is_broker = email and is_broker_email(email)
-                        if is_broker:
-                            print(f"⚠️ Broker attempting calculation: {email} - applying same limits as customers")
-                        
-                        limit = 6 if email else 3
-                        remaining = max(0, limit - count)
-                        quota = {'unlimited': False, 'remaining': remaining, 'limit': limit}
-                        
-                        # Enforce limits server-side (same for brokers and customers)
-                        if not email and count >= 3:
-                            raise HTTPException(
-                                status_code=403,
-                                detail="Free trial limit reached. Please provide your email for 3 more calculations."
-                            )
-                        
-                        if email and count >= 6:
-                            # Brokers get same limits - no unlimited access
-                            error_msg = "Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
-                            if is_broker:
-                                error_msg += " Note: Brokers have the same calculation limits as customers."
-                            raise HTTPException(
-                                status_code=403,
-                                detail=error_msg
-                            )
-        except HTTPException:
-            raise
-        except Exception as e:
-            print(f"⚠️ Error checking limits in calculate_deadline: {e}")
-            # Continue with calculation if limit check fails (fail open for UX)
-    
-    # Validate state (check against VALID_STATES list)
-    if state_code not in VALID_STATES:
-        return {
-            "error": f"State {state_code} not supported",
-            "available_states": VALID_STATES,
-            "message": "Please select a valid US state or DC"
-        }
-    
-    # Try to get rules from database first, fallback to JSON
-    rules = None
-    try:
-        with get_db() as conn:
-            cursor = get_db_cursor(conn)
-            db_state = None
-            
-            # Try querying by state code first (most common case)
-            if DB_TYPE == 'postgresql':
-                cursor.execute("""
-                    SELECT * FROM lien_deadlines WHERE UPPER(state_code) = %s
-                """, (state_code.upper(),))
-            else:
-                cursor.execute("""
-                    SELECT * FROM lien_deadlines WHERE UPPER(state_code) = ?
-                """, (state_code.upper(),))
-            db_state = cursor.fetchone()
-            
-            # If not found by state code, try converting code to name and search by state_name
-            if not db_state and state_code.upper() in STATE_CODE_TO_NAME:
-                full_name = STATE_CODE_TO_NAME[state_code.upper()]
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        SELECT * FROM lien_deadlines WHERE UPPER(state_name) = %s
-                    """, (full_name.upper(),))
-                else:
-                    cursor.execute("""
-                        SELECT * FROM lien_deadlines WHERE UPPER(state_name) = ?
-                    """, (full_name.upper(),))
-                db_state = cursor.fetchone()
-            
-            # If still not found and input might be a full name, try searching by state_name directly
-            if not db_state and len(state_code) > 2:
-                # Input might be a full state name, try searching by state_name
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        SELECT * FROM lien_deadlines WHERE UPPER(state_name) = %s
-                    """, (state_code.upper(),))
-                else:
-                    cursor.execute("""
-                        SELECT * FROM lien_deadlines WHERE UPPER(state_name) = ?
-                    """, (state_code.upper(),))
-                db_state = cursor.fetchone()
-            
-            if db_state:
-                # Convert database row to rules format
-                if isinstance(db_state, dict):
-                    rules = {
-                        "state_name": db_state.get("state_name") or state_code,  # Ensure state_name is never None
-                        "preliminary_notice": {
-                            "required": db_state.get("preliminary_notice_required", False),
-                            "days": db_state.get("preliminary_notice_days"),
-                            "formula": db_state.get("preliminary_notice_formula"),
-                            "description": db_state.get("preliminary_notice_deadline_description"),
-                            "statute": db_state.get("preliminary_notice_statute")
-                        },
-                        "lien_filing": {
-                            "days": db_state.get("lien_filing_days"),
-                            "formula": db_state.get("lien_filing_formula"),
-                            "description": db_state.get("lien_filing_deadline_description"),
-                            "statute": db_state.get("lien_filing_statute")
-                        },
-                        "special_rules": {
-                            "weekend_extension": db_state.get("weekend_extension", False),
-                            "holiday_extension": db_state.get("holiday_extension", False),
-                            "residential_vs_commercial": db_state.get("residential_vs_commercial", False),
-                            "notice_of_completion_trigger": db_state.get("notice_of_completion_trigger", False),
-                            "notes": db_state.get("notes", "")
-                        }
-                    }
-    except Exception as e:
-        print(f"⚠️ Error querying database for state {state_code}: {e}")
-    
-    # Fallback to JSON if database query failed
-    if not rules and state_code in STATE_RULES:
-        rules = STATE_RULES[state_code]
-    
-    if not rules:
-        return {
-            "error": f"State {state_code} data not available",
-            "available_states": VALID_STATES,
-            "message": "State is supported but data is not loaded. Please contact support."
-        }
-    
-    # Parse date - handle both MM/DD/YYYY and YYYY-MM-DD formats
-    delivery_date = None
-    try:
-        # Try MM/DD/YYYY format first (common in US)
-        delivery_date = datetime.strptime(invoice_date, "%m/%d/%Y")
-    except ValueError:
-        try:
-            # Try YYYY-MM-DD format (ISO format)
-            delivery_date = datetime.strptime(invoice_date, "%Y-%m-%d")
-        except ValueError:
-            try:
-                # Try ISO format with fromisoformat
-                delivery_date = datetime.fromisoformat(invoice_date)
-            except ValueError:
-                return {"error": "Invalid date format. Use MM/DD/YYYY or YYYY-MM-DD"}
-    
-    # Ensure state_name is always set - use from rules, or fallback to state_code
-    state_name = rules.get("state_name") or state_code
-    # If state_name is still just a code (2 letters), convert it to full name
-    if state_name and len(state_name) == 2:
-        state_name_map = {
-            'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California',
-            'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'DC': 'District of Columbia',
-            'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois',
-            'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana',
-            'ME': 'Maine', 'MD': 'Maryland', 'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota',
-            'MS': 'Mississippi', 'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada',
-            'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York',
-            'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma', 'OR': 'Oregon',
-            'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina', 'SD': 'South Dakota',
-            'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont', 'VA': 'Virginia',
-            'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
-        }
-        state_name = state_name_map.get(state_name, state_name)
-    
-    # Convert notice_of_completion_date from string to datetime if provided
-    notice_of_completion_dt = None
-    if request_data.notice_of_completion_date:
-        try:
-            if isinstance(request_data.notice_of_completion_date, str):
-                try:
-                    notice_of_completion_dt = datetime.strptime(request_data.notice_of_completion_date, "%Y-%m-%d")
-                except ValueError:
-                    notice_of_completion_dt = datetime.strptime(request_data.notice_of_completion_date, "%m/%d/%Y")
-            else:
-                notice_of_completion_dt = request_data.notice_of_completion_date
-        except Exception as e:
-            print(f"⚠️ Error parsing notice_of_completion_date: {e}")
-            notice_of_completion_dt = None
-    
-    # State-specific calculation logic
-    result = None
-    special_rules = rules.get("special_rules", {})
-    
-    if state_code == "TX":
-        result = calculate_texas(delivery_date, project_type=project_type)
-    elif state_code == "WA":
-        result = calculate_washington(delivery_date, role=role)
-    elif state_code == "CA":
-        result = calculate_california(
-            delivery_date,
-            notice_of_completion_date=request_data.notice_of_completion_date,
-            role=role
-        )
-    elif state_code == "OH":
-        result = calculate_ohio(
-            delivery_date,
-            project_type=project_type,
-            notice_of_commencement_filed=request_data.notice_of_commencement_filed or False
-        )
-    elif state_code == "OR":
-        result = calculate_oregon(delivery_date)
-    elif state_code == "HI":
-        result = calculate_hawaii(delivery_date)
-    elif state_code == "NJ":
-        result = calculate_newjersey(delivery_date, project_type=project_type)
-    elif state_code == "IN":
-        result = calculate_indiana(delivery_date, project_type=project_type)
-    elif state_code == "LA":
-        result = calculate_louisiana(delivery_date, project_type=project_type)
-    elif state_code == "MA":
-        result = calculate_massachusetts(delivery_date, project_type=project_type)
-    else:
-        # Default calculation for simple states
-        result = calculate_default(
-            delivery_date,
-            {
-                "preliminary_notice_required": rules.get("preliminary_notice", {}).get("required", False),
-                "preliminary_notice_days": rules.get("preliminary_notice", {}).get("days"),
-                "lien_filing_days": rules.get("lien_filing", {}).get("days"),
-                "notes": special_rules.get("notes", "")
-            },
-            weekend_extension=special_rules.get("weekend_extension", False),
-            holiday_extension=special_rules.get("holiday_extension", False)
-        )
-    
-    # Extract deadlines from result
-    prelim_deadline = result.get("preliminary_deadline")
-    lien_deadline = result.get("lien_deadline")
-    warnings = result.get("warnings", [])
-    prelim_required = result.get("preliminary_required", rules.get("preliminary_notice", {}).get("required", False))
-    
-    # Calculate days from now
-    today = datetime.now()
-    days_to_prelim = (prelim_deadline - today).days if prelim_deadline else None
-    days_to_lien = (lien_deadline - today).days if lien_deadline else None
-    
-    # Track page view and calculation (non-blocking, PostgreSQL compatible)
-    try:
-        with get_db() as conn:
-            cursor = get_db_cursor(conn)
-            
-            # Format dates for database
-            today_str = date.today().isoformat()
-            prelim_date_str = prelim_deadline.date().isoformat() if prelim_deadline else None
-            lien_date_str = lien_deadline.date().isoformat() if lien_deadline else None
-            notice_date_str = delivery_date.date().isoformat()
-            
-            # Create tables if they don't exist
-            if DB_TYPE == 'postgresql':
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS page_views (
-                        id SERIAL PRIMARY KEY,
-                        date VARCHAR NOT NULL,
-                        ip VARCHAR NOT NULL,
-                        created_at TIMESTAMP DEFAULT NOW()
-                    )
-                """)
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS calculations (
-                        id SERIAL PRIMARY KEY,
-                        user_id INTEGER,
-                        state VARCHAR NOT NULL,
-                        notice_date DATE NOT NULL,
-                        calculation_date DATE NOT NULL,
-                        preliminary_notice DATE,
-                        lien_deadline DATE,
-                        created_at TIMESTAMP DEFAULT NOW()
-                    )
-                """)
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS payments (
-                        id SERIAL PRIMARY KEY,
-                        date VARCHAR NOT NULL,
-                        amount DECIMAL(10, 2) NOT NULL,
-                        customer_email VARCHAR,
-                        created_at TIMESTAMP DEFAULT NOW()
-                    )
-                """)
-                
-                # Insert page view
-                client_ip = request.client.host if request and request.client else "unknown"
-                cursor.execute(
-                    "INSERT INTO page_views(date, ip) VALUES (%s, %s)",
-                    (today_str, client_ip)
-                )
-                
-                # REMOVED: Old INSERT INTO calculations block - now handled by calculations.py router
-            else:
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS page_views (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        date TEXT NOT NULL,
-                        ip TEXT NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS calculations (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        user_id INTEGER,
-                        state TEXT NOT NULL,
-                        notice_date DATE NOT NULL,
-                        calculation_date DATE NOT NULL,
-                        preliminary_notice DATE,
-                        lien_deadline DATE,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS payments (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        date TEXT NOT NULL,
-                        amount REAL NOT NULL,
-                        customer_email TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                
-                # Insert page view
-                client_ip = request.client.host if request and request.client else "unknown"
-                cursor.execute(
-                    "INSERT INTO page_views(date, ip) VALUES (?, ?)",
-                    (today_str, client_ip)
-                )
-                
-                # REMOVED: Old INSERT INTO calculations block - now handled by calculations.py router
-            
-            conn.commit()
-    except Exception as e:
-        # Don't fail the request if tracking fails
-        print(f"⚠️ Could not save calculation: {e}")
-        import traceback
-        traceback.print_exc()
-        # Continue even if saving fails
-    
-    # Determine urgency
-    def get_urgency(days):
-        if days <= 7:
-            return "critical"
-        elif days <= 30:
-            return "warning"
-        else:
-            return "normal"
-    
-    # Get statute citations from rules
-    prelim_notice = rules.get("preliminary_notice", {})
-    lien_filing = rules.get("lien_filing", {})
-    statute_citations = []
-    if prelim_notice.get("statute"):
-        statute_citations.append(prelim_notice["statute"])
-    if lien_filing.get("statute"):
-        statute_citations.append(lien_filing["statute"])
-    
-    # Build response
-    response = {
-        "state": state_name,
-        "state_code": state_code,
-        "invoice_date": invoice_date,
-        "role": role,
-        "project_type": project_type,
-        "preliminary_notice": {
-            "required": prelim_required,
-            "deadline": prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None,
-            "days_from_now": days_to_prelim,
-            "urgency": get_urgency(days_to_prelim) if days_to_prelim else None,
-            "description": prelim_notice.get("description", prelim_notice.get("deadline_description", ""))
-        },
-        "lien_filing": {
-            "deadline": lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None,
-            "days_from_now": days_to_lien,
-            "urgency": get_urgency(days_to_lien) if days_to_lien else None,
-            "description": lien_filing.get("description", lien_filing.get("deadline_description", ""))
-        },
-        "serving_requirements": rules.get("serving_requirements", []),
-        "statute_citations": statute_citations,
-        "warnings": warnings,
-        "critical_warnings": warnings,  # Keep for backward compatibility
-        "notes": special_rules.get("notes", ""),
-        "disclaimer": "⚠️ This is general information only, NOT legal advice.",
-        "response_time_ms": 45,
-        "quota": quota
-    }
-    
-    return response
+
 
 @app.post("/api/v1/request-api-key")
 @limiter.limit("3/minute")
@@ -3841,153 +3105,16 @@ async def check_broker_approval(data: dict):
             "pending": False
         }
 
-# Authentication Models
-class LoginRequest(BaseModel):
-    email: str
-    password: str
+
 
 class ChangePasswordRequest(BaseModel):
     email: str
     old_password: str
     new_password: str
 
-# Authentication Endpoints
-@app.post("/api/login")
-@limiter.limit("5/minute")
-async def login(request: Request, req: LoginRequest):
-    """Login endpoint - validates credentials and returns session token"""
-    print(f"🔐 Login attempt for {req.email}")
-    
-    try:
-        with get_db() as conn:
-            cursor = get_db_cursor(conn)
-            
-            # Get user by email
-            if DB_TYPE == 'postgresql':
-                cursor.execute("SELECT * FROM users WHERE email = %s", (req.email.lower(),))
-            else:
-                cursor.execute("SELECT * FROM users WHERE email = ?", (req.email.lower(),))
-            
-            user = cursor.fetchone()
-            
-            if not user:
-                print(f"❌ User not found: {req.email}")
-                raise HTTPException(status_code=401, detail="Invalid email or password")
-            
-            print(f"✅ User found: {req.email}")
-            
-            # Extract password_hash - handle both dict-like and tuple results
-            # RealDictCursor (PostgreSQL) and sqlite3.Row both support dict-like access
-            try:
-                password_hash = user['password_hash'] if 'password_hash' in user else user.get('password_hash', '')
-                subscription_status = user['subscription_status'] if 'subscription_status' in user else user.get('subscription_status', '')
-            except (TypeError, KeyError):
-                # Fallback for tuple/list results
-                if isinstance(user, (tuple, list)):
-                    password_hash = user[1] if len(user) > 1 else ''
-                    subscription_status = user[4] if len(user) > 4 else ''
-                else:
-                    password_hash = getattr(user, 'password_hash', '')
-                    subscription_status = getattr(user, 'subscription_status', '')
-            
-            # Check password with bcrypt
-            try:
-                password_match = bcrypt.checkpw(req.password.encode('utf-8'), password_hash.encode('utf-8'))
-                print(f"🔑 Password match: {password_match}")
-            except Exception as pw_error:
-                print(f"❌ Password check error: {repr(pw_error)}")
-                password_match = False
-            
-            if not password_match:
-                raise HTTPException(status_code=401, detail="Invalid email or password")
-            
-            # Check subscription status
-            if subscription_status not in ['active', 'trialing']:
-                print(f"⚠️ Subscription status: {subscription_status} (not active)")
-                raise HTTPException(status_code=403, detail="Subscription expired or cancelled")
-            
-            # Generate session token
-            token = secrets.token_urlsafe(32)
-            
-            # Update user session token and last login
-            if DB_TYPE == 'postgresql':
-                cursor.execute("""
-                    UPDATE users 
-                    SET session_token = %s, last_login_at = NOW()
-                    WHERE email = %s
-                """, (token, req.email.lower()))
-            else:
-                cursor.execute("""
-                    UPDATE users 
-                    SET session_token = ?, last_login_at = CURRENT_TIMESTAMP
-                    WHERE email = ?
-                """, (token, req.email.lower()))
-            
-            conn.commit()
-            
-            print(f"✅ Login successful for {req.email}")
-            
-            return {
-                "success": True,
-                "token": token,
-                "email": req.email.lower()
-            }
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Login error: {repr(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Login failed. Please try again.")
 
-@app.get("/api/verify-session")
-async def verify_session(authorization: str = Header(None)):
-    """Verify session token"""
-    if not authorization or not authorization.startswith('Bearer '):
-        raise HTTPException(status_code=401, detail="No token provided")
-    
-    token = authorization.replace('Bearer ', '')
-    
-    try:
-        with get_db() as conn:
-            cursor = get_db_cursor(conn)
-            
-            if DB_TYPE == 'postgresql':
-                cursor.execute("SELECT * FROM users WHERE session_token = %s", (token,))
-            else:
-                cursor.execute("SELECT * FROM users WHERE session_token = ?", (token,))
-            
-            user = cursor.fetchone()
-            
-            if not user:
-                raise HTTPException(status_code=401, detail="Invalid session")
-            
-            # Extract fields - handle both dict-like and tuple results
-            try:
-                subscription_status = user['subscription_status'] if 'subscription_status' in user else user.get('subscription_status', '')
-                email = user['email'] if 'email' in user else user.get('email', '')
-            except (TypeError, KeyError):
-                # Fallback for tuple/list results
-                if isinstance(user, (tuple, list)):
-                    subscription_status = user[4] if len(user) > 4 else ''
-                    email = user[1] if len(user) > 1 else ''
-                else:
-                    subscription_status = getattr(user, 'subscription_status', '')
-                    email = getattr(user, 'email', '')
-            
-            if subscription_status not in ['active', 'trialing']:
-                raise HTTPException(status_code=403, detail="Subscription expired")
-            
-            return {
-                "valid": True,
-                "email": email,
-                "subscription_status": subscription_status
-            }
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Session verification error: {repr(e)}")
-        raise HTTPException(status_code=500, detail="Session verification failed")
+
+
 
 @app.post("/api/change-password")
 async def change_password(req: ChangePasswordRequest):
@@ -4015,44 +3142,7 @@ async def change_password(req: ChangePasswordRequest):
     finally:
         db.close()
 
-@app.post("/api/logout")
-async def logout(authorization: str = Header(None)):
-    """Logout - invalidate session token"""
-    if not authorization or not authorization.startswith('Bearer '):
-        return {"success": True, "message": "No token provided"}
-    
-    token = authorization.replace('Bearer ', '')
-    
-    try:
-        # Get database connection
-        with get_db() as conn:
-            cursor = get_db_cursor(conn)
-            
-            # Clear the session token in the database
-            if DB_TYPE == 'postgresql':
-                cursor.execute("""
-                    UPDATE users 
-                    SET session_token = NULL, 
-                        updated_at = NOW() 
-                    WHERE session_token = %s
-                """, (token,))
-            else:  # sqlite
-                cursor.execute("""
-                    UPDATE users 
-                    SET session_token = NULL, 
-                        updated_at = CURRENT_TIMESTAMP 
-                    WHERE session_token = ?
-                """, (token,))
-            
-            conn.commit()
-        
-        return {"success": True, "message": "Logged out successfully"}
-        
-    except Exception as e:
-        print(f"Logout error: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Logout failed")
+
 
 # Track email endpoint for calculator gating
 class TrackEmailRequest(BaseModel):
@@ -5029,20 +4119,17 @@ async def stripe_webhook(request: Request):
     payload = await request.body()
     sig_header = request.headers.get('stripe-signature')
     
-    # if not STRIPE_WEBHOOK_SECRET:
-    #     raise HTTPException(status_code=500, detail="Webhook secret not configured")
+    if not STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(status_code=500, detail="Webhook secret not configured")
     
     try:
-        # TEMPORARILY DISABLED FOR TESTING 
-        # event = stripe.Webhook.construct_event(
-        #     payload, sig_header, STRIPE_WEBHOOK_SECRET
-        # )
-        event = json.loads(payload)
-        print("WARNING: Webhook signature verification disabled for testing")
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_WEBHOOK_SECRET
+        )
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid payload")
-    # except stripe.error.SignatureVerificationError:
-    #     raise HTTPException(status_code=400, detail="Invalid signature")
+    except stripe.error.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
     
     with get_db() as db:
     
@@ -5867,28 +4954,7 @@ async def serve_styles_css():
         raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
     return FileResponse(file_path, media_type="text/css")
 
-# Test endpoint
-@app.get("/test-calculate")
-def test_calculate():
-    """Test the calculation with sample data"""
-    test_results = []
-    
-    test_cases = [
-        {"invoice_date": "2025-10-24", "state": "TX", "role": "supplier"},
-        {"invoice_date": "2025-11-01", "state": "CA", "role": "supplier"},
-        {"invoice_date": "2025-09-15", "state": "FL", "role": "supplier"},
-    ]
-    
-    for test in test_cases:
-        try:
-            # Call the async function synchronously
-            import asyncio
-            result = asyncio.run(calculate_deadline(**test))
-            test_results.append(result)
-        except Exception as e:
-            test_results.append({"error": str(e), "test": test})
-    
-    return {"test_cases": test_results}
+
 
 @app.post("/v1/send-email")
 async def send_email(data: dict):
