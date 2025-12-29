@@ -5512,6 +5512,16 @@ async def stripe_webhook(request: Request):
                     print(f"✓ Updated referrals to {status_to_set} for customer {customer_id}")
             
             return {"status": "success"}
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Webhook error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return JSONResponse(
+                status_code=500,
+                content={"status": "error", "message": "Internal server error"}
+            )
 
 def send_welcome_email(email: str, temp_password: str):
     """Send welcome email with login credentials"""
