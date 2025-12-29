@@ -11456,6 +11456,42 @@ if public_dir.exists():
     app.mount("/", StaticFiles(directory=str(public_dir), html=True), name="public")
 
 
+# Stripe Checkout Session Endpoint
+class CheckoutRequest(BaseModel):
+    plan: str
+
+@app.post("/api/create-checkout-session")
+async def create_checkout_session(request: CheckoutRequest):
+    try:
+        # Use environment variables for price IDs or default to test values
+        # You should set these in your environment variables
+        PRICE_MONTHLY = os.getenv("STRIPE_PRICE_MONTHLY", "price_1Qd5xLKg7t5Qd4mZ...")  # Replace with actual test price ID
+        PRICE_ANNUAL = os.getenv("STRIPE_PRICE_ANNUAL", "price_1Qd5yPKg7t5Qd4mZ...")   # Replace with actual test price ID
+        
+        price_id = PRICE_MONTHLY
+        if request.plan == 'annual':
+            price_id = PRICE_ANNUAL
+            
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[
+                {
+                    'price': price_id,
+                    'quantity': 1,
+                },
+            ],
+            mode='subscription',
+            success_url='https://liendeadline.com/success.html?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url='https://liendeadline.com/pricing.html',
+        )
+        return {"url": checkout_session.url}
+    except Exception as e:
+        print(f"Error creating checkout session: {e}")
+        return JSONResponse(
+            status_code=400,
+            content={"message": str(e)}
+        )
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -780,9 +780,8 @@
         const savingsBadge = document.getElementById('savingsBadge');
         const saveText = document.getElementById('saveText');
         
-        const MONTHLY_STRIPE_LINK = 'https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00';
-        const ANNUAL_STRIPE_LINK = 'https://buy.stripe.com/aFacN5gBL7ln9Z72AZ9fW01';
-        
+        let currentPlan = 'monthly';
+
         // Safety check: Only add event listeners if all required elements exist
         if (monthlyBtn && annualBtn && proPrice && proPeriod && proCta && proCtaText && savingsBadge && saveText) {
             monthlyBtn.addEventListener('click', function() {
@@ -790,7 +789,7 @@
                 annualBtn.classList.remove('active');
                 proPrice.textContent = '$299';
                 proPeriod.textContent = '/month';
-                proCta.href = MONTHLY_STRIPE_LINK;
+                currentPlan = 'monthly';
                 proCtaText.textContent = 'Start Professional →';
                 savingsBadge.classList.add('hidden');
                 saveText.classList.add('hidden');
@@ -801,7 +800,7 @@
                 monthlyBtn.classList.remove('active');
                 proPrice.textContent = '$2,390';
                 proPeriod.textContent = '/year';
-                proCta.href = ANNUAL_STRIPE_LINK;
+                currentPlan = 'annual';
                 proCtaText.textContent = 'Start Professional (Annual) →';
                 savingsBadge.classList.remove('hidden');
                 saveText.textContent = 'Save $1,198 (33% off)';
@@ -818,6 +817,27 @@
                 savingsBadge: !savingsBadge,
                 saveText: !saveText
             });
+        }
+        
+        async function createCheckoutSession(plan) {
+            try {
+                const response = await fetch('/api/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ plan: plan })
+                });
+                
+                const data = await response.json();
+                
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    alert('Error creating checkout session');
+                }
+            } catch (error) {
+                console.error('Checkout error:', error);
+                alert('Error: ' + error.message);
+            }
         }
         
         // Animate feature checkmarks on scroll
