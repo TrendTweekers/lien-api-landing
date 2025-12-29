@@ -5078,6 +5078,7 @@ async def stripe_webhook(request: Request):
             db.commit()
         except Exception as e:
             print(f"Error checking idempotency: {e}")
+            db.rollback()
             # Continue processing even if idempotency check fails
     
         try:
@@ -5166,7 +5167,7 @@ async def stripe_webhook(request: Request):
                         try:
                             execute_query(db, """
                                 CREATE TABLE IF NOT EXISTS failed_emails (
-                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    id SERIAL PRIMARY KEY,
                                     email TEXT NOT NULL,
                                     password TEXT NOT NULL,
                                     reason TEXT,
@@ -5181,6 +5182,7 @@ async def stripe_webhook(request: Request):
                             print(f"⚠️ Failed email logged to database for manual follow-up")
                         except Exception as e:
                             print(f"❌ Failed to log failed email: {e}")
+                            db.rollback()
                 
                     # If referral exists, create pending commission
                     if referral_code.startswith('broker_'):
@@ -5193,7 +5195,7 @@ async def stripe_webhook(request: Request):
                             # Create referrals table if it doesn't exist (with fraud detection fields)
                             execute_query(db, """
                                 CREATE TABLE IF NOT EXISTS referrals (
-                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    id SERIAL PRIMARY KEY,
                                     broker_id TEXT NOT NULL,
                                     broker_email TEXT NOT NULL,
                                     customer_email TEXT NOT NULL,
@@ -5296,6 +5298,7 @@ async def stripe_webhook(request: Request):
                                 send_broker_notification(broker['email'], email)
                 
                 except IntegrityError:
+                    db.rollback()
                     # User already exists - just update subscription
                     execute_query(db, """
                         UPDATE users 
