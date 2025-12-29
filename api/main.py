@@ -15,6 +15,7 @@ import os
 import subprocess
 import bcrypt
 import stripe
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 import traceback
 import smtplib
 import ssl
@@ -1106,8 +1107,7 @@ def init_db():
         except:
             pass
 
-# Initialize Stripe
-stripe.api_key = os.getenv('STRIPE_SECRET_KEY', '')
+# Stripe Webhook Secret
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 
 # Include routers with full paths to match frontend calls
