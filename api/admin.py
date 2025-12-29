@@ -2579,8 +2579,91 @@ async def stripe_webhook(request: Request):
         print(f"Error checking idempotency: {e}")
         # Continue processing even if idempotency check fails
     
-    # Handle invoice payment succeeded (monthly subscription payment)
-    if event['type'] == 'invoice.payment_succeeded':
+    # Handle checkout.session.completed (initial signup)
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        customer_email = session.get('customer_details', {}).get('email') or session.get('customer_email')
+        customer_id = session.get('customer')
+        subscription_id = session.get('subscription')
+        
+        # Get referral code from metadata
+        broker_ref = session.get('metadata', {}).get('referral_code') or session.get('client_reference_id')
+        
+        if broker_ref and customer_email:
+            try:
+                cur = con.cursor()
+                # Get broker commission model
+                cur.execute("""
+                    SELECT commission_model, model 
+                    FROM brokers 
+                    WHERE referral_code = ? OR id = ?
+                    LIMIT 1
+                """, (broker_ref, broker_ref))
+                broker = cur.fetchone()
+                
+                if broker:
+                    commission_model = broker[0] if broker[0] else (broker[1] if len(broker) > 1 else 'bounty')
+                    
+                    # For bounty: only create on first payment
+                    # For recurring: create first earning event
+                    if commission_model == 'bounty':
+                        # Check if already exists
+                        cur.execute("""
+                            SELECT id FROM referrals 
+                            WHERE broker_id = ? AND customer_stripe_id = ? AND payout_type = 'bounty'
+                            LIMIT 1
+                        """, (broker_ref, customer_id))
+                        if cur.fetchone():
+                            print(f"⚠️ Bounty already exists for {customer_email} - skipping")
+                        else:
+                            # Create bounty earning event
+                            from datetime import datetime, timedelta
+                            hold_until = (datetime.now() + timedelta(days=60)).date()
+                            cur.execute("""
+                                INSERT INTO referrals(
+                                    broker_id, customer_email, customer_stripe_id,
+                                    amount, payout, payout_type,
+                                    status, hold_until, created_at
+                                )
+                                VALUES (?, ?, ?, ?, ?, 'bounty', 'on_hold', ?, datetime('now'))
+                            """, (
+                                broker_ref,
+                                customer_email,
+                                customer_id,
+                                session.get('amount_total', 0) / 100.0,
+                                500.0,
+                                hold_until
+                            ))
+                            con.commit()
+                            print(f"✅ Created bounty earning event for {customer_email}")
+                    else:  # recurring
+                        # Create first recurring earning event
+                        from datetime import datetime, timedelta
+                        hold_until = (datetime.now() + timedelta(days=60)).date()
+                        cur.execute("""
+                            INSERT INTO referrals(
+                                broker_id, customer_email, customer_stripe_id,
+                                amount, payout, payout_type,
+                                status, hold_until, created_at
+                            )
+                            VALUES (?, ?, ?, ?, ?, 'recurring', 'on_hold', ?, datetime('now'))
+                        """, (
+                            broker_ref,
+                            customer_email,
+                            customer_id,
+                            session.get('amount_total', 0) / 100.0,
+                            50.0,
+                            hold_until
+                        ))
+                        con.commit()
+                        print(f"✅ Created first recurring earning event for {customer_email}")
+            except Exception as e:
+                print(f"Error processing checkout.session.completed: {e}")
+                import traceback
+                traceback.print_exc()
+    
+    # Handle invoice.payment_succeeded (monthly subscription payment)
+    elif event['type'] == 'invoice.payment_succeeded':
         invoice = event['data']['object']
         customer_id = invoice.get('customer')
         
@@ -2595,51 +2678,68 @@ async def stripe_webhook(request: Request):
                 subscription = stripe.Subscription.retrieve(subscription_id)
                 customer_created = subscription.created
                 
-                # Calculate days active
-                days_active = (datetime.now().timestamp() - customer_created) / 86400
+                # Get referral code from metadata
+                broker_ref = invoice.get('metadata', {}).get('referral_code') or \
+                            subscription.get('metadata', {}).get('referral_code')
                 
-                # Check if 60 days passed
-                if days_active >= 60:
-                    # Get referral code from metadata
-                    broker_ref = invoice.get('metadata', {}).get('referral_code') or \
-                                subscription.get('metadata', {}).get('referral_code')
-                    
-                    if broker_ref:
-                        # Get broker commission model
-                        try:
-                            cur = con.cursor()
-                            cur.execute(
-                                "SELECT model, stripe_account_id FROM brokers WHERE id = ?",
-                                (broker_ref,)
-                            )
-                            broker = cur.fetchone()
+                if broker_ref:
+                    # Get broker commission model
+                    try:
+                        cur = con.cursor()
+                        # Try commission_model first, fallback to model for backward compatibility
+                        cur.execute("""
+                            SELECT commission_model, model 
+                            FROM brokers 
+                            WHERE referral_code = ? OR id = ?
+                            LIMIT 1
+                        """, (broker_ref, broker_ref))
+                        broker = cur.fetchone()
+                        
+                        if broker:
+                            # Use commission_model if available, otherwise fallback to model
+                            commission_model = broker[0] if broker[0] else (broker[1] if len(broker) > 1 else 'bounty')
                             
-                            if broker:
-                                model = broker[0]
-                                stripe_account_id = broker[1]
+                            # ONLY create recurring earning events for recurring model brokers
+                            # Bounty model: already handled in checkout.session.completed (one-time only)
+                            if commission_model == 'recurring':
+                                # Calculate hold_until date (60 days from now)
+                                from datetime import datetime, timedelta
+                                hold_until = (datetime.now() + timedelta(days=60)).date()
                                 
-                                # Determine payout amount based on model
-                                if model == 'bounty':
-                                    amount = 500.0
-                                else:  # recurring
-                                    amount = 50.0
-                                
-                                # Queue payout (don't pay yet - requires manual approval)
+                                # Create new recurring earning event for this monthly payment
                                 cur.execute("""
                                     INSERT INTO referrals(
-                                        broker_ref, customer_email, customer_id, 
-                                        amount, status, days_active
+                                        broker_id, customer_email, customer_stripe_id, 
+                                        amount, payout, payout_type,
+                                        status, hold_until, created_at
                                     )
-                                    VALUES (?, ?, ?, ?, 'ready', ?)
-                                """, (broker_ref, customer_email, customer_id, amount, int(days_active)))
+                                    VALUES (?, ?, ?, ?, ?, 'recurring', 'on_hold', ?, datetime('now'))
+                                """, (
+                                    broker_ref, 
+                                    customer_email, 
+                                    customer_id,
+                                    invoice.get('amount_paid', 0) / 100.0,  # Customer payment amount
+                                    50.0,  # Commission amount ($50/month)
+                                    hold_until
+                                ))
                                 
                                 con.commit()
-                        except Exception as e:
-                            print(f"Error processing broker referral: {e}")
+                                print(f"✅ Created recurring earning event: $50 for broker {broker_ref} (customer: {customer_email})")
+                            else:
+                                # Bounty model - skip monthly invoices (already paid on first payment)
+                                print(f"⚠️ Bounty model broker - skipping monthly invoice for {customer_email}")
+                        else:
+                            print(f"⚠️ Broker not found for referral_code: {broker_ref}")
+                    except Exception as e:
+                        print(f"Error processing broker referral: {e}")
+                        import traceback
+                        traceback.print_exc()
         
         except Exception as e:
             # Log error but don't fail webhook
             print(f"Webhook error: {e}")
+            import traceback
+            traceback.print_exc()
         finally:
             if con:
                 con.close()
