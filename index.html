@@ -3,7 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- CRITICAL: Prevent logo flash - load before anything else -->
+    <style>
+        /* Prevent logo flash - load before anything else */
+        img[alt*="LienDeadline"], 
+        .logo img,
+        header img,
+        nav img,
+        .ld-brand-icon,
+        .ld-brand-wordmark {
+            height: 32px !important;
+            width: auto !important;
+            max-height: 32px !important;
+            object-fit: contain !important;
+        }
+        
+        .ld-brand-wordmark {
+            height: 28px !important;
+            max-height: 28px !important;
+        }
+        
+        @media (max-width: 768px) {
+            img[alt*="LienDeadline"], 
+            .logo img,
+            header img,
+            nav img,
+            .ld-brand-icon {
+                height: 28px !important;
+                max-height: 28px !important;
+            }
+            .ld-brand-wordmark {
+                height: 24px !important;
+                max-height: 24px !important;
+            }
+        }
+    </style>
+    
     <title>Lien Deadline Calculator | All 50 States + DC | LienDeadline</title>
+    
+    <!-- Preload logo images to prevent flash -->
+    <link rel="preload" as="image" href="/images/liendeadline-icon-transparent.png">
+    <link rel="preload" as="image" href="/images/liendeadline-wordmark-transparent.png">
     
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-KYZG0TN07Z"></script>
@@ -95,6 +136,34 @@
     </script>
     
     <style>
+        /* Logo sizing - load BEFORE image to prevent flash */
+        header img.ld-brand-icon,
+        nav img.ld-brand-icon {
+            height: 32px !important;
+            width: auto !important;
+            max-height: 32px !important;
+            display: block !important;
+        }
+        header img.ld-brand-wordmark,
+        nav img.ld-brand-wordmark {
+            height: 28px !important;
+            width: auto !important;
+            max-height: 28px !important;
+            display: block !important;
+        }
+        @media (max-width: 768px) {
+            header img.ld-brand-icon,
+            nav img.ld-brand-icon {
+                height: 28px !important;
+                max-height: 28px !important;
+            }
+            header img.ld-brand-wordmark,
+            nav img.ld-brand-wordmark {
+                height: 24px !important;
+                max-height: 24px !important;
+            }
+        }
+        
         /* Note: Base body/html styles now in lovable-scale.css */
         /* Only component-specific overrides here */
         
