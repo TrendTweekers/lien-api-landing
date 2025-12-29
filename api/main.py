@@ -16,10 +16,7 @@ import subprocess
 import bcrypt
 import stripe
 import traceback
-import smtplib
-import ssl
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+
 import httpx
 from urllib.parse import urlencode
 import base64
@@ -28,16 +25,17 @@ try:
 except ImportError:
     # Fallback for non-postgres environments if needed, though get_db handles this
     from sqlite3 import IntegrityError
-try:
-    import resend
-    RESEND_AVAILABLE = True
-except ImportError:
-    RESEND_AVAILABLE = False
-    resend = None
-    print("⚠️ Warning: Resend package not available - email features disabled")
+
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from .rate_limiter import limiter
+from api.services.email import (
+    send_email_sync,
+    send_broker_welcome_email,
+    send_password_reset_email,
+    send_broker_password_reset_email
+)
+
 from io import BytesIO
 from .calculators import (
     calculate_texas, calculate_washington, calculate_california,
@@ -2341,7 +2339,6 @@ async def request_api_key(request: Request, api_request: APIKeyRequest):
     Handle API key request submissions.
     Stores in database and sends notification emails.
     """
-    from .admin import send_email_sync
     
     try:
         # Get client IP
@@ -2515,7 +2512,6 @@ async def submit_contact_form(request: Request, contact_data: ContactRequest):
     Handle contact form submissions.
     Validates input, stores in database, and sends email via Resend.
     """
-    from .admin import send_email_sync
     
     try:
         # Get client IP
@@ -3938,102 +3934,7 @@ async def track_email(request_data: TrackEmailRequest, request: Request):
 
 
 
-def send_broker_welcome_email(email: str, name: str, link: str, code: str):
-    """Send broker welcome email with referral link"""
-    try:
-        resend_key = os.environ.get("RESEND_API_KEY")
-        if resend_key:
-            resend.api_key = resend_key
-            from_email = os.environ.get("SMTP_FROM_EMAIL", "onboarding@resend.dev")
-            
-            html = f"""
-            <html>
-            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 30px; border-radius: 10px; text-align: center;">
-                    <h1 style="margin: 0;">Welcome to LienDeadline Partner Program! 🎉</h1>
-                    <p style="margin: 10px 0 0 0; opacity: 0.9;">Start earning commissions today</p>
-                </div>
-                
-                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                    <h2 style="color: #1e293b; margin-top: 0;">Congratulations, {name}!</h2>
-                    <p style="color: #475569; line-height: 1.8;">Your partner account is now active. Share your referral link with construction clients and start earning commissions.</p>
-                </div>
-                
-                <div style="background: white; border: 2px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                    <h3 style="color: #1e293b; margin-top: 0;">Your Referral Details</h3>
-                    <p style="margin: 10px 0;"><strong>Referral Code:</strong> <code style="background: #f1f5f9; padding: 5px 10px; border-radius: 4px; font-size: 16px;">{code}</code></p>
-                    <p style="margin: 10px 0;"><strong>Referral Link:</strong></p>
-                    <p style="margin: 10px 0;">
-                        <a href="{link}" style="color: #2563eb; word-break: break-all;">{link}</a>
-                    </p>
-                </div>
-                
-                <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0;">
-                    <h3 style="color: #92400e; margin-top: 0;">💰 Commission Structure</h3>
-                    <ul style="color: #92400e; line-height: 1.8; margin: 0;">
-                        <li><strong>$500 one-time</strong> per signup (bounty model)</li>
-                        <li><strong>$50/month recurring</strong> per active subscriber (recurring model)</li>
-                        <li>Commissions paid after 60-day customer retention period</li>
-                    </ul>
-                </div>
-                
-                <div style="margin: 30px 0;">
-                    <h3 style="color: #1e293b;">How It Works</h3>
-                    <ol style="color: #475569; line-height: 1.8;">
-                        <li>Share your referral link with construction clients</li>
-                        <li>When they sign up for LienDeadline Pro ($299/month), you earn a commission</li>
-                        <li>Track all referrals in your dashboard</li>
-                        <li>Get paid monthly via PayPal or bank transfer</li>
-                    </ol>
-                </div>
-                
-                <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e2e8f0; margin-top: 30px;">
-                    <a href="https://liendeadline.com/broker-dashboard" style="display: inline-block; background: #c1554e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-bottom: 15px;">
-                        View Your Dashboard →
-                    </a>
-                    <p style="color: #64748b; font-size: 14px; margin: 0;">
-                        Questions? Reply to this email or contact partners@liendeadline.com
-                    </p>
-                </div>
-            </body>
-            </html>
-            """
-            
-            params = {
-                "from": from_email,
-                "to": [email],
-                "subject": "🎉 Welcome to LienDeadline Partner Program!",
-                "html": html
-            }
-            
-            response = resend.Emails.send(params)
-            print(f"✅ Broker welcome email sent via Resend to {email}: {response.get('id', 'N/A')}")
-            return True
-        else:
-            # Fallback: log it
-            print(f"""
-            ===== BROKER WELCOME EMAIL =====
-            To: {email}
-            Subject: Welcome to LienDeadline Partner Program!
-            
-            Congrats {name}!
-            
-            Your referral link: {link}
-            Your referral code: {code}
-            
-            Share this link with construction clients.
-            You earn $500 per signup (after 60 days).
-            
-            Track referrals: https://liendeadline.com/broker-dashboard
-            ================================
-            """)
-            return False
-            
-    except Exception as e:
-        print(f"Error sending broker email: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+
 
 
 
@@ -4095,13 +3996,8 @@ async def serve_styles_css():
 
 @app.post("/v1/send-email")
 async def send_email(data: dict):
-    """Send calculation results via email using Resend"""
+    """Send calculation results via email using centralized service"""
     try:
-        # Get Resend API key from environment variable
-        resend_api_key = os.environ.get("RESEND_API_KEY")
-        if not resend_api_key:
-            raise HTTPException(status_code=500, detail="Resend API key not configured. Please set RESEND_API_KEY environment variable.")
-        
         to_email = data.get('to_email')
         results = data.get('results', {})
         
@@ -4123,22 +4019,20 @@ async def send_email(data: dict):
         <p>Visit <a href="https://liendeadline.com">LienDeadline.com</a> for more calculations!</p>
         '''
         
-        resend.api_key = resend_api_key
-        from_email = os.environ.get("SMTP_FROM_EMAIL", "onboarding@resend.dev")
+        # Send via centralized service
+        success = send_email_sync(
+            to_email=to_email,
+            subject="Your Lien Deadline Calculation - LienDeadline.com",
+            content=html_content
+        )
         
-        params = {
-            "from": from_email,
-            "to": [to_email],
-            "subject": "Your Lien Deadline Calculation - LienDeadline.com",
-            "html": html_content
-        }
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to send email. Please check server logs.")
         
-        response = resend.Emails.send(params)
-        
-        return {"status": "success", "message": "Email sent successfully!", "resend_id": response.get('id', 'N/A')}
+        return {"status": "success", "message": "Email sent successfully!"}
         
     except Exception as e:
-        print(f"Resend error: {str(e)}")
+        print(f"Email error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
 
 # Admin API endpoints (for admin dashboard)
@@ -4785,29 +4679,7 @@ async def get_pending_payouts_api(username: str = Depends(verify_admin)):
 # ==========================================
 # TEST EMAIL ENDPOINT (REMOVE AFTER TESTING)
 # ==========================================
-def send_email_sync(to_email: str, subject: str, body: str):
-    """Synchronous email sending function with timeout=10 on SMTP connection"""
-    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
-    smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_EMAIL") or "trendtweakers00@gmail.com"
-    smtp_password = (os.getenv("SMTP_PASSWORD") or "").replace(" ", "")  # Remove spaces from Gmail app password
 
-    if not smtp_password:
-        raise RuntimeError("SMTP_PASSWORD missing")
-
-    msg = MIMEMultipart()
-    msg["From"] = smtp_user
-    msg["To"] = to_email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain"))
-
-    # ✅ timeout=10 is the key: prevents indefinite hang → Cloudflare 524
-    with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
-        server.ehlo()
-        server.starttls(context=ssl.create_default_context())
-        server.ehlo()
-        server.login(smtp_user, smtp_password)
-        server.send_message(msg)
 
 class TestEmailIn(BaseModel):
     to: str
@@ -4822,7 +4694,8 @@ async def test_email(payload: TestEmailIn, background_tasks: BackgroundTasks):
             send_email_sync(
                 to_email=payload.to,
                 subject="LienDeadline test email",
-                body="If you received this, SMTP works.",
+                content="If you received this, SMTP works.",
+                is_html=False
             )
             logger.info("TEST_EMAIL_SENT to=%s", payload.to)
         except Exception as e:
@@ -4971,64 +4844,7 @@ async def reset_password(request: Request, data: dict):
             content={"status": "error", "message": "Failed to reset password"}
         )
 
-def send_password_reset_email(email: str, reset_link: str):
-    """Send password reset email"""
-    try:
-        resend_key = os.environ.get("RESEND_API_KEY")
-        if resend_key:
-            resend.api_key = resend_key
-            from_email = os.environ.get("SMTP_FROM_EMAIL", "onboarding@resend.dev")
-            
-            html_content = f"""
-            <html>
-            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="background: #1e293b; color: white; padding: 20px; border-radius: 10px; text-align: center;">
-                    <h1 style="margin: 0;">Password Reset Request</h1>
-                </div>
-                
-                <div style="padding: 30px 0;">
-                    <p>You requested a password reset for your LienDeadline account.</p>
-                    
-                    <p>Click the button below to reset your password:</p>
-                    
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="{reset_link}" style="display: inline-block; background: #c1554e; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-                            Reset Password
-                        </a>
-                    </div>
-                    
-                    <p style="color: #64748b; font-size: 14px;">
-                        This link expires in 24 hours. If you didn't request this, ignore this email.
-                    </p>
-                    
-                    <p style="color: #64748b; font-size: 14px;">
-                        Or copy and paste this link:<br>
-                        {reset_link}
-                    </p>
-                </div>
-            </body>
-            </html>
-            """
-            
-            params = {
-                "from": from_email,
-                "to": [email],
-                "subject": "Reset Your LienDeadline Password",
-                "html": html_content
-            }
-            
-            response = resend.Emails.send(params)
-            print(f"✅ Password reset email sent via Resend to {email}: {response.get('id', 'N/A')}")
-            return True
-        else:
-            print(f"⚠️ Resend not configured - Reset link: {reset_link}")
-            return False
-            
-    except Exception as e:
-        print(f"❌ Password reset email error: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+
 
 # ==========================================
 # ADMIN ENDPOINTS (in main.py for convenience)
@@ -8444,77 +8260,7 @@ async def test_send_reminders(username: str = Depends(verify_admin)):
             "traceback": traceback.format_exc()
         }
 
-def send_broker_password_reset_email(email: str, name: str, reset_link: str):
-    """Send password reset email to broker"""
-    try:
-        from .admin import send_email_sync
-        
-        subject = "Reset Your LienDeadline Partner Password"
-        
-        body_html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Password Reset</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f9fafb;">
-        <tr>
-            <td align="center" style="padding: 40px 20px;">
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
-                    <tr>
-                        <td style="padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #e5e7eb;">
-                            <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1f2937;">
-                                📋 LienDeadline
-                            </h1>
-                            <p style="margin: 12px 0 0; font-size: 16px; color: #6b7280;">
-                                Partner Program
-                            </p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 40px 40px 20px;">
-                            <h2 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #1f2937;">
-                                Password Reset Request
-                            </h2>
-                            <p style="margin: 0 0 24px; font-size: 16px; color: #4b5563; line-height: 1.6;">
-                                Hi {name},
-                            </p>
-                            <p style="margin: 0 0 24px; font-size: 16px; color: #4b5563; line-height: 1.6;">
-                                You requested a password reset for your LienDeadline Partner account. Click the button below to reset your password:
-                            </p>
-                            <div style="text-align: center; margin: 30px 0;">
-                                <a href="{reset_link}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; padding: 14px 32px; border-radius: 6px;">
-                                    Reset Password
-                                </a>
-                            </div>
-                            <p style="margin: 24px 0 0; font-size: 14px; color: #6b7280;">
-                                This link will expire in 24 hours. If you didn't request this, please ignore this email.
-                            </p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 32px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
-                            <p style="margin: 0; font-size: 12px; color: #9ca3af;">
-                                © 2025 LienDeadline. All rights reserved.
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>"""
-        
-        send_email_sync(email, subject, body_html)
-        print(f"✅ Password reset email sent to broker: {email}")
-        
-    except Exception as e:
-        print(f"❌ Password reset email error: {e}")
-        import traceback
-        traceback.print_exc()
+
 
 # ==========================================
 # SAGE OAuth Integration

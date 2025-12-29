@@ -6,14 +6,7 @@ from datetime import datetime, date
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# Initialize Resend
-try:
-    import resend
-    resend.api_key = os.getenv('RESEND_API_KEY')
-    RESEND_AVAILABLE = True
-except ImportError:
-    RESEND_AVAILABLE = False
-    print("⚠️ Resend library not available. Email sending will be disabled.")
+from api.services.email import send_email_sync
 
 def get_db_connection():
     """Get database connection (PostgreSQL or SQLite)"""
@@ -407,13 +400,12 @@ def send_reminder_email(reminder):
     else:
         subject = f"⚠️ {deadline_type_display} Deadline in {days_until} Day{'s' if days_until != 1 else ''}: {reminder['project_name']}"
     
-    # Send via Resend
-    resend.Emails.send({
-        "from": "LienDeadline Alerts <alerts@liendeadline.com>",
-        "to": reminder['user_email'],
-        "subject": subject,
-        "html": html_content
-    })
+    # Send via centralized service
+    send_email_sync(
+        to_email=reminder['user_email'],
+        subject=subject,
+        content=html_content
+    )
 
 if __name__ == "__main__":
     send_daily_reminders()
