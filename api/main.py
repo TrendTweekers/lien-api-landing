@@ -24,6 +24,11 @@ import httpx
 from urllib.parse import urlencode
 import base64
 try:
+    from psycopg2 import IntegrityError
+except ImportError:
+    # Fallback for non-postgres environments if needed, though get_db handles this
+    from sqlite3 import IntegrityError
+try:
     import resend
     RESEND_AVAILABLE = True
 except ImportError:
@@ -5036,458 +5041,457 @@ async def stripe_webhook(request: Request):
     except stripe.error.SignatureVerificationError:
         raise HTTPException(status_code=400, detail="Invalid signature")
     
-    db = get_db()
+    with get_db() as db:
     
-    # IDEMPOTENCY CHECK - Check if we've already processed this event
-    try:
-        # Create stripe_events table if it doesn't exist
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS stripe_events (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                event_id TEXT UNIQUE NOT NULL,
-                event_type TEXT NOT NULL,
-                processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        # IDEMPOTENCY CHECK - Check if we've already processed this event
+        try:
+            # Create stripe_events table if it doesn't exist
+            execute_query(db, """
+                CREATE TABLE IF NOT EXISTS stripe_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_id TEXT UNIQUE NOT NULL,
+                    event_type TEXT NOT NULL,
+                    processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            execute_query(db, "CREATE INDEX IF NOT EXISTS idx_stripe_events_event_id ON stripe_events(event_id)")
+        
+            # Check if we've already processed this event
+            existing = execute_query(db, 
+                "SELECT 1 FROM stripe_events WHERE event_id = ?",
+                (event['id'],)
+            ).fetchone()
+        
+            if existing:
+                print(f"⚠️ Duplicate event {event['id']} - skipping")
+                return {"status": "duplicate", "message": "Event already processed"}
+        
+            # Record this event
+            execute_query(db, 
+                "INSERT INTO stripe_events (event_id, event_type) VALUES (?, ?)",
+                (event['id'], event['type'])
             )
-        """)
-        db.execute("CREATE INDEX IF NOT EXISTS idx_stripe_events_event_id ON stripe_events(event_id)")
-        
-        # Check if we've already processed this event
-        existing = db.execute(
-            "SELECT 1 FROM stripe_events WHERE event_id = ?",
-            (event['id'],)
-        ).fetchone()
-        
-        if existing:
-            print(f"⚠️ Duplicate event {event['id']} - skipping")
-            return {"status": "duplicate", "message": "Event already processed"}
-        
-        # Record this event
-        db.execute(
-            "INSERT INTO stripe_events (event_id, event_type) VALUES (?, ?)",
-            (event['id'], event['type'])
-        )
-        db.commit()
-    except Exception as e:
-        print(f"Error checking idempotency: {e}")
-        # Continue processing even if idempotency check fails
+            db.commit()
+        except Exception as e:
+            print(f"Error checking idempotency: {e}")
+            # Continue processing even if idempotency check fails
     
-    try:
-        # New subscription
-        if event['type'] == 'checkout.session.completed':
-            session = event['data']['object']
-            print(f"✅ Received checkout.session.completed webhook - Event ID: {event['id']}, Session ID: {session.get('id')}")
+        try:
+            # New subscription
+            if event['type'] == 'checkout.session.completed':
+                session = event['data']['object']
+                print(f"✅ Received checkout.session.completed webhook - Event ID: {event['id']}, Session ID: {session.get('id')}")
             
-            email = session.get('customer_details', {}).get('email')
-            customer_id = session.get('customer')
-            subscription_id = session.get('subscription')
+                email = session.get('customer_details', {}).get('email')
+                customer_id = session.get('customer')
+                subscription_id = session.get('subscription')
             
-            if not email:
-                print("⚠️ No email in checkout session")
-                return {"status": "skipped"}
+                if not email:
+                    print("⚠️ No email in checkout session")
+                    return {"status": "skipped"}
             
-            # Get referral code from Stripe metadata (client_reference_id)
-            referral_code = session.get('client_reference_id', 'direct')
+                # Get referral code from Stripe metadata (client_reference_id)
+                referral_code = session.get('client_reference_id', 'direct')
             
-            # Generate secure temporary password
-            temp_password = secrets.token_urlsafe(12)
-            password_hash = bcrypt.hashpw(temp_password.encode(), bcrypt.gensalt())
+                # Generate secure temporary password
+                temp_password = secrets.token_urlsafe(12)
+                password_hash = bcrypt.hashpw(temp_password.encode(), bcrypt.gensalt())
             
-            # Create user account
-            try:
-                db.execute("""
-                    INSERT INTO users (email, password_hash, stripe_customer_id, subscription_id, subscription_status)
-                    VALUES (?, ?, ?, ?, 'active')
-                """, (email, password_hash.decode(), customer_id, subscription_id))
-                
-                # Also create customer record
-                db.execute("""
-                    INSERT INTO customers (email, stripe_customer_id, subscription_id, status, plan, amount)
-                    VALUES (?, ?, ?, 'active', 'unlimited', 299.00)
-                """, (email, customer_id, subscription_id))
-                
-                db.commit()
-                
-                # Track revenue in Umami
+                # Create user account
                 try:
-                    amount_total = session.get('amount_total')  # Amount in cents
-                    currency = session.get('currency', 'usd').upper()
-                    
-                    if amount_total:
-                        # Convert cents to dollars for Umami
-                        value = amount_total / 100.0
-                        
-                        # Send revenue event to Umami API (server-side)
-                        import urllib.request
-                        
-                        umami_payload = {
-                            'website': '02250d35-ee17-41be-845d-2fe0f7f15e63',
-                            'hostname': 'liendeadline.com',
-                            'name': 'revenue',
-                            'data': {
-                                'value': value,
-                                'currency': currency,
-                                'plan': 'professional'
-                            }
-                        }
-                        
-                        json_data = json.dumps(umami_payload).encode('utf-8')
-                        req = urllib.request.Request(
-                            'https://cloud.umami.is/api/send',
-                            data=json_data,
-                            headers={'Content-Type': 'application/json'}
-                        )
-                        
-                        try:
-                            with urllib.request.urlopen(req, timeout=5) as response:
-                                print(f"✅ Umami revenue tracked: ${value} {currency}")
-                        except Exception as umami_error:
-                            print(f"⚠️ Umami revenue tracking failed: {umami_error}")
-                except Exception as e:
-                    print(f"⚠️ Error tracking revenue in Umami: {e}")
-                    # Don't fail webhook if Umami tracking fails
+                    execute_query(db, """
+                        INSERT INTO users (email, password_hash, stripe_customer_id, subscription_id, subscription_status)
+                        VALUES (?, ?, ?, ?, 'active')
+                    """, (email, password_hash.decode(), customer_id, subscription_id))
                 
-                # CRITICAL: Send welcome email and track failures
-                email_sent = send_welcome_email(email, temp_password)
+                    # Also create customer record
+                    execute_query(db, """
+                        INSERT INTO customers (email, stripe_customer_id, subscription_id, status, plan, amount)
+                        VALUES (?, ?, ?, 'active', 'unlimited', 299.00)
+                    """, (email, customer_id, subscription_id))
                 
-                if email_sent:
-                    print(f"✅ Welcome email sent to {email}")
-                else:
-                    print(f"⚠️ Welcome email failed for {email}. Temp password: {temp_password}")
-                    # Log to failed_emails table for manual follow-up
+                    db.commit()
+                
+                    # Track revenue in Umami
                     try:
-                        db.execute("""
-                            CREATE TABLE IF NOT EXISTS failed_emails (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                email TEXT NOT NULL,
-                                password TEXT NOT NULL,
-                                reason TEXT,
-                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                            )
-                        """)
-                        db.execute("""
-                            INSERT INTO failed_emails (email, password, reason)
-                            VALUES (?, ?, 'Welcome email send failed')
-                        """, (email, temp_password))
-                        db.commit()
-                        print(f"⚠️ Failed email logged to database for manual follow-up")
-                    except Exception as e:
-                        print(f"❌ Failed to log failed email: {e}")
-                
-                # If referral exists, create pending commission
-                if referral_code.startswith('broker_'):
-                    broker = db.execute(
-                        "SELECT * FROM brokers WHERE referral_code = ?", 
-                        (referral_code,)
-                    ).fetchone()
+                        amount_total = session.get('amount_total')  # Amount in cents
+                        currency = session.get('currency', 'usd').upper()
                     
-                    if broker:
-                        # Create referrals table if it doesn't exist (with fraud detection fields)
-                        db.execute("""
-                            CREATE TABLE IF NOT EXISTS referrals (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                broker_id TEXT NOT NULL,
-                                broker_email TEXT NOT NULL,
-                                customer_email TEXT NOT NULL,
-                                customer_stripe_id TEXT,
-                                amount DECIMAL(10,2) NOT NULL,
-                                payout DECIMAL(10,2) NOT NULL,
-                                payout_type TEXT NOT NULL,
-                                status TEXT DEFAULT 'on_hold',
-                                fraud_flags TEXT,
-                                hold_until DATE,
-                                clawback_until DATE,
-                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                paid_at TIMESTAMP,
-                                FOREIGN KEY (broker_id) REFERENCES brokers(referral_code)
+                        if amount_total:
+                            # Convert cents to dollars for Umami
+                            value = amount_total / 100.0
+                        
+                            # Send revenue event to Umami API (server-side)
+                            import urllib.request
+                        
+                            umami_payload = {
+                                'website': '02250d35-ee17-41be-845d-2fe0f7f15e63',
+                                'hostname': 'liendeadline.com',
+                                'name': 'revenue',
+                                'data': {
+                                    'value': value,
+                                    'currency': currency,
+                                    'plan': 'professional'
+                                }
+                            }
+                        
+                            json_data = json.dumps(umami_payload).encode('utf-8')
+                            req = urllib.request.Request(
+                                'https://cloud.umami.is/api/send',
+                                data=json_data,
+                                headers={'Content-Type': 'application/json'}
                             )
-                        """)
-                        db.execute("CREATE INDEX IF NOT EXISTS idx_referral_status ON referrals(status)")
-                        db.execute("CREATE INDEX IF NOT EXISTS idx_referral_broker ON referrals(broker_id)")
                         
-                        # Determine payout based on broker's commission model
-                        commission_model = broker.get('commission_model', 'bounty')
-                        if commission_model == 'recurring':
-                            payout_amount = 50.00
-                            payout_type = 'recurring'
-                        else:
-                            payout_amount = 500.00
-                            payout_type = 'bounty'
+                            try:
+                                with urllib.request.urlopen(req, timeout=5) as response:
+                                    print(f"✅ Umami revenue tracked: ${value} {currency}")
+                            except Exception as umami_error:
+                                print(f"⚠️ Umami revenue tracking failed: {umami_error}")
+                    except Exception as e:
+                        print(f"⚠️ Error tracking revenue in Umami: {e}")
+                        # Don't fail webhook if Umami tracking fails
+                
+                    # CRITICAL: Send welcome email and track failures
+                    email_sent = send_welcome_email(email, temp_password)
+                
+                    if email_sent:
+                        print(f"✅ Welcome email sent to {email}")
+                    else:
+                        print(f"⚠️ Welcome email failed for {email}. Temp password: {temp_password}")
+                        # Log to failed_emails table for manual follow-up
+                        try:
+                            execute_query(db, """
+                                CREATE TABLE IF NOT EXISTS failed_emails (
+                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    email TEXT NOT NULL,
+                                    password TEXT NOT NULL,
+                                    reason TEXT,
+                                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                                )
+                            """)
+                            execute_query(db, """
+                                INSERT INTO failed_emails (email, password, reason)
+                                VALUES (?, ?, 'Welcome email send failed')
+                            """, (email, temp_password))
+                            db.commit()
+                            print(f"⚠️ Failed email logged to database for manual follow-up")
+                        except Exception as e:
+                            print(f"❌ Failed to log failed email: {e}")
+                
+                    # If referral exists, create pending commission
+                    if referral_code.startswith('broker_'):
+                        broker = execute_query(db, 
+                            "SELECT * FROM brokers WHERE referral_code = ?", 
+                            (referral_code,)
+                        ).fetchone()
+                    
+                        if broker:
+                            # Create referrals table if it doesn't exist (with fraud detection fields)
+                            execute_query(db, """
+                                CREATE TABLE IF NOT EXISTS referrals (
+                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    broker_id TEXT NOT NULL,
+                                    broker_email TEXT NOT NULL,
+                                    customer_email TEXT NOT NULL,
+                                    customer_stripe_id TEXT,
+                                    amount DECIMAL(10,2) NOT NULL,
+                                    payout DECIMAL(10,2) NOT NULL,
+                                    payout_type TEXT NOT NULL,
+                                    status TEXT DEFAULT 'on_hold',
+                                    fraud_flags TEXT,
+                                    hold_until DATE,
+                                    clawback_until DATE,
+                                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                    paid_at TIMESTAMP,
+                                    FOREIGN KEY (broker_id) REFERENCES brokers(referral_code)
+                                )
+                            """)
+                            execute_query(db, "CREATE INDEX IF NOT EXISTS idx_referral_status ON referrals(status)")
+                            execute_query(db, "CREATE INDEX IF NOT EXISTS idx_referral_broker ON referrals(broker_id)")
                         
-                        # RUN FRAUD DETECTION
-                        fraud_flags, risk_score, should_flag, auto_reject = check_fraud_signals(
-                            referral_code, 
-                            email, 
-                            customer_id,
-                            session
-                        )
-                        
-                        # Calculate hold dates
-                        from datetime import datetime, timedelta
-                        hold_until = datetime.now() + timedelta(days=60)  # 60-day hold period (catches fraud, chargebacks, disputes)
-                        clawback_until = datetime.now() + timedelta(days=90)
-                        
-                        # Determine status based on fraud detection results
-                        if should_flag:
-                            if auto_reject:
-                                status = 'flagged_for_review'  # Auto-reject but still reviewable
+                            # Determine payout based on broker's commission model
+                            commission_model = broker.get('commission_model', 'bounty')
+                            if commission_model == 'recurring':
+                                payout_amount = 50.00
+                                payout_type = 'recurring'
                             else:
-                                status = 'flagged_for_review'
-                        else:
-                            status = 'on_hold'  # Normal referral, 60-day hold
+                                payout_amount = 500.00
+                                payout_type = 'bounty'
                         
-                        # For one-time bounty: only create if this is the first payment for this customer
-                        if payout_type == 'bounty':
-                            existing_ref = db.execute("""
-                                SELECT id FROM referrals 
-                                WHERE broker_id = ? AND customer_email = ? AND payout_type = 'bounty'
-                            """, (broker['referral_code'], email)).fetchone()
+                            # RUN FRAUD DETECTION
+                            fraud_flags, risk_score, should_flag, auto_reject = check_fraud_signals(
+                                referral_code, 
+                                email, 
+                                customer_id,
+                                session
+                            )
+                        
+                            # Calculate hold dates
+                            from datetime import datetime, timedelta
+                            hold_until = datetime.now() + timedelta(days=60)  # 60-day hold period (catches fraud, chargebacks, disputes)
+                            clawback_until = datetime.now() + timedelta(days=90)
+                        
+                            # Determine status based on fraud detection results
+                            if should_flag:
+                                if auto_reject:
+                                    status = 'flagged_for_review'  # Auto-reject but still reviewable
+                                else:
+                                    status = 'flagged_for_review'
+                            else:
+                                status = 'on_hold'  # Normal referral, 60-day hold
+                        
+                            # For one-time bounty: only create if this is the first payment for this customer
+                            if payout_type == 'bounty':
+                                existing_ref = execute_query(db, """
+                                    SELECT id FROM referrals 
+                                    WHERE broker_id = ? AND customer_email = ? AND payout_type = 'bounty'
+                                """, (broker['referral_code'], email)).fetchone()
                             
-                            if existing_ref:
-                                print(f"⚠️ One-time bounty already exists for {email}, skipping duplicate")
-                                db.commit()
-                                return {"status": "skipped", "reason": "One-time bounty already paid for this customer"}
+                                if existing_ref:
+                                    print(f"⚠️ One-time bounty already exists for {email}, skipping duplicate")
+                                    db.commit()
+                                    return {"status": "skipped", "reason": "One-time bounty already paid for this customer"}
                         
-                        # Store referral with fraud data and payment_date (when payment succeeded)
-                        db.execute("""
+                            # Store referral with fraud data and payment_date (when payment succeeded)
+                            execute_query(db, """
+                                INSERT INTO referrals 
+                                (broker_id, broker_email, customer_email, customer_stripe_id,
+                                 amount, payout, payout_type, status, fraud_flags, 
+                                 hold_until, clawback_until, created_at, payment_date)
+                                VALUES (?, ?, ?, ?, 299.00, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+                            """, (
+                                broker['referral_code'],
+                                broker['email'],
+                                email,
+                                customer_id,
+                                payout_amount,
+                                payout_type,
+                                status,
+                                json.dumps({'flags': fraud_flags, 'risk_score': risk_score}),
+                                hold_until,
+                                clawback_until
+                            ))
+                        
+                            # Update broker pending count
+                            execute_query(db, """
+                                UPDATE brokers 
+                                SET pending_commissions = pending_commissions + 1 
+                                WHERE referral_code = ?
+                            """, (referral_code,))
+                        
+                            db.commit()
+                        
+                            print(f"✓ Referral tracked: {email} → {broker['email']} (${payout_amount} {payout_type} {status})")
+                            print(f"   Risk Score: {risk_score}, Flags: {fraud_flags}")
+                        
+                            # Send alerts
+                            if should_flag:
+                                print(f"🚨 FLAGGED FOR REVIEW: {referral_code}")
+                                send_admin_fraud_alert(broker['email'], email, fraud_flags, risk_score)
+                            else:
+                                send_broker_notification(broker['email'], email)
+                
+                except IntegrityError:
+                    # User already exists - just update subscription
+                    execute_query(db, """
+                        UPDATE users 
+                        SET subscription_status = 'active', subscription_id = ?
+                        WHERE email = ?
+                    """, (subscription_id, email))
+                    db.commit()
+        
+            # Recurring payment succeeded (for recurring commission model)
+            elif event['type'] == 'invoice.payment_succeeded':
+                invoice = event['data']['object']
+                customer_id = invoice.get('customer')
+                subscription_id = invoice.get('subscription')
+                amount_paid = invoice.get('amount_paid', 0) / 100.0  # Convert from cents
+            
+                if not customer_id:
+                    return {"status": "skipped", "reason": "No customer ID"}
+            
+                # Find customer email
+                customer_row = execute_query(db, """
+                    SELECT email FROM customers WHERE stripe_customer_id = ?
+                """, (customer_id,)).fetchone()
+            
+                if not customer_row:
+                    print(f"⚠️ Customer {customer_id} not found for invoice payment")
+                    return {"status": "skipped", "reason": "Customer not found"}
+            
+                customer_email = customer_row[0] if isinstance(customer_row, (list, tuple)) else customer_row.get('email')
+            
+                # Find referral that created this customer (to get broker info)
+                referral_row = execute_query(db, """
+                    SELECT broker_id, broker_email, payout_type, commission_model
+                    FROM referrals
+                    WHERE customer_stripe_id = ? OR customer_email = ?
+                    ORDER BY created_at ASC
+                    LIMIT 1
+                """, (customer_id, customer_email)).fetchone()
+            
+                if not referral_row:
+                    print(f"⚠️ No referral found for customer {customer_email}")
+                    return {"status": "skipped", "reason": "No referral found"}
+            
+                if isinstance(referral_row, dict):
+                    broker_ref_code = referral_row.get('broker_id')
+                    broker_email = referral_row.get('broker_email', '')
+                    payout_type = referral_row.get('payout_type', 'bounty')
+                    commission_model = referral_row.get('commission_model', 'bounty')
+                else:
+                    broker_ref_code = referral_row[0] if len(referral_row) > 0 else None
+                    broker_email = referral_row[1] if len(referral_row) > 1 else ''
+                    payout_type = referral_row[2] if len(referral_row) > 2 else 'bounty'
+                    commission_model = referral_row[3] if len(referral_row) > 3 else 'bounty'
+            
+                # Only create earning event if broker has recurring commission model
+                if commission_model == 'recurring' or payout_type == 'recurring':
+                    # Get broker info
+                    broker = execute_query(db, """
+                        SELECT * FROM brokers WHERE referral_code = ?
+                    """, (broker_ref_code,)).fetchone()
+                
+                    if broker:
+                        # Create new earning event for this monthly payment
+                        payout_amount = 50.00  # $50/month recurring
+                        hold_until = datetime.now() + timedelta(days=60)
+                        clawback_until = datetime.now() + timedelta(days=90)
+                    
+                        execute_query(db, """
                             INSERT INTO referrals 
                             (broker_id, broker_email, customer_email, customer_stripe_id,
-                             amount, payout, payout_type, status, fraud_flags, 
+                             amount, payout, payout_type, status, 
                              hold_until, clawback_until, created_at, payment_date)
-                            VALUES (?, ?, ?, ?, 299.00, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+                            VALUES (?, ?, ?, ?, ?, ?, 'recurring', 'on_hold', ?, ?, datetime('now'), datetime('now'))
                         """, (
-                            broker['referral_code'],
-                            broker['email'],
-                            email,
+                            broker_ref_code,
+                            broker_email,
+                            customer_email,
                             customer_id,
+                            amount_paid,
                             payout_amount,
-                            payout_type,
-                            status,
-                            json.dumps({'flags': fraud_flags, 'risk_score': risk_score}),
                             hold_until,
                             clawback_until
                         ))
-                        
-                        # Update broker pending count
-                        db.execute("""
-                            UPDATE brokers 
-                            SET pending_commissions = pending_commissions + 1 
-                            WHERE referral_code = ?
-                        """, (referral_code,))
-                        
+                    
                         db.commit()
-                        
-                        print(f"✓ Referral tracked: {email} → {broker['email']} (${payout_amount} {payout_type} {status})")
-                        print(f"   Risk Score: {risk_score}, Flags: {fraud_flags}")
-                        
-                        # Send alerts
-                        if should_flag:
-                            print(f"🚨 FLAGGED FOR REVIEW: {referral_code}")
-                            send_admin_fraud_alert(broker['email'], email, fraud_flags, risk_score)
-                        else:
-                            send_broker_notification(broker['email'], email)
-                
-            except sqlite3.IntegrityError:
-                # User already exists - just update subscription
-                db.execute("""
+                        print(f"✓ Recurring payment earning event created: {customer_email} → {broker_email} (${payout_amount})")
+            
+                return {"status": "processed", "event_type": "invoice.payment_succeeded"}
+        
+            # Subscription cancelled
+            elif event['type'] == 'customer.subscription.deleted':
+                subscription = event['data']['object']
+                customer_id = subscription['customer']
+            
+                execute_query(db, """
                     UPDATE users 
-                    SET subscription_status = 'active', subscription_id = ?
-                    WHERE email = ?
-                """, (subscription_id, email))
-                db.commit()
-        
-        # Recurring payment succeeded (for recurring commission model)
-        elif event['type'] == 'invoice.payment_succeeded':
-            invoice = event['data']['object']
-            customer_id = invoice.get('customer')
-            subscription_id = invoice.get('subscription')
-            amount_paid = invoice.get('amount_paid', 0) / 100.0  # Convert from cents
+                    SET subscription_status = 'cancelled'
+                    WHERE stripe_customer_id = ?
+                """, (customer_id,))
             
-            if not customer_id:
-                return {"status": "skipped", "reason": "No customer ID"}
+                # Check if this was a referral that should be clawed back
+                # cursor = db.cursor() - handled by execute_query
             
-            # Find customer email
-            customer_row = db.execute("""
-                SELECT email FROM customers WHERE stripe_customer_id = ?
-            """, (customer_id,)).fetchone()
-            
-            if not customer_row:
-                print(f"⚠️ Customer {customer_id} not found for invoice payment")
-                return {"status": "skipped", "reason": "Customer not found"}
-            
-            customer_email = customer_row[0] if isinstance(customer_row, (list, tuple)) else customer_row.get('email')
-            
-            # Find referral that created this customer (to get broker info)
-            referral_row = db.execute("""
-                SELECT broker_id, broker_email, payout_type, commission_model
-                FROM referrals
-                WHERE customer_stripe_id = ? OR customer_email = ?
-                ORDER BY created_at ASC
-                LIMIT 1
-            """, (customer_id, customer_email)).fetchone()
-            
-            if not referral_row:
-                print(f"⚠️ No referral found for customer {customer_email}")
-                return {"status": "skipped", "reason": "No referral found"}
-            
-            if isinstance(referral_row, dict):
-                broker_ref_code = referral_row.get('broker_id')
-                broker_email = referral_row.get('broker_email', '')
-                payout_type = referral_row.get('payout_type', 'bounty')
-                commission_model = referral_row.get('commission_model', 'bounty')
-            else:
-                broker_ref_code = referral_row[0] if len(referral_row) > 0 else None
-                broker_email = referral_row[1] if len(referral_row) > 1 else ''
-                payout_type = referral_row[2] if len(referral_row) > 2 else 'bounty'
-                commission_model = referral_row[3] if len(referral_row) > 3 else 'bounty'
-            
-            # Only create earning event if broker has recurring commission model
-            if commission_model == 'recurring' or payout_type == 'recurring':
-                # Get broker info
-                broker = db.execute("""
-                    SELECT * FROM brokers WHERE referral_code = ?
-                """, (broker_ref_code,)).fetchone()
-                
-                if broker:
-                    # Create new earning event for this monthly payment
-                    payout_amount = 50.00  # $50/month recurring
-                    hold_until = datetime.now() + timedelta(days=60)
-                    clawback_until = datetime.now() + timedelta(days=90)
-                    
-                    db.execute("""
-                        INSERT INTO referrals 
-                        (broker_id, broker_email, customer_email, customer_stripe_id,
-                         amount, payout, payout_type, status, 
-                         hold_until, clawback_until, created_at, payment_date)
-                        VALUES (?, ?, ?, ?, ?, ?, 'recurring', 'on_hold', ?, ?, datetime('now'), datetime('now'))
-                    """, (
-                        broker_ref_code,
-                        broker_email,
-                        customer_email,
-                        customer_id,
-                        amount_paid,
-                        payout_amount,
-                        hold_until,
-                        clawback_until
-                    ))
-                    
-                    db.commit()
-                    print(f"✓ Recurring payment earning event created: {customer_email} → {broker_email} (${payout_amount})")
-            
-            return {"status": "processed", "event_type": "invoice.payment_succeeded"}
-        
-        # Subscription cancelled
-        elif event['type'] == 'customer.subscription.deleted':
-            subscription = event['data']['object']
-            customer_id = subscription['customer']
-            
-            db.execute("""
-                UPDATE users 
-                SET subscription_status = 'cancelled'
-                WHERE stripe_customer_id = ?
-            """, (customer_id,))
-            
-            # Check if this was a referral that should be clawed back
-            cursor = db.cursor()
-            
-            # Update all referrals for this customer to CANCELED status
-            cursor.execute("""
-                UPDATE referrals
-                SET status = 'CANCELED'
-                WHERE customer_stripe_id = ? OR customer_email = (
-                    SELECT email FROM customers WHERE stripe_customer_id = ?
-                )
-            """, (customer_id, customer_id))
-            
-            updated_count = cursor.rowcount
-            if updated_count > 0:
-                print(f"✓ Updated {updated_count} referral(s) to CANCELED for customer {customer_id}")
-            
-            # Check for clawback eligibility (if paid within 90 days)
-            cursor.execute("""
-                SELECT id, payout, status, paid_at, created_at
-                FROM referrals
-                WHERE (customer_stripe_id = ? OR customer_email = (
-                    SELECT email FROM customers WHERE stripe_customer_id = ?
-                ))
-                AND status = 'paid'
-                AND paid_at IS NOT NULL
-            """, (customer_id, customer_id))
-            
-            paid_referrals = cursor.fetchall()
-            for ref in paid_referrals:
-                ref_id = ref[0] if isinstance(ref, (list, tuple)) else ref.get('id')
-                paid_at = ref[3] if isinstance(ref, (list, tuple)) else ref.get('paid_at')
-                
-                if paid_at:
-                    try:
-                        if isinstance(paid_at, str):
-                            paid_date = datetime.fromisoformat(paid_at.replace('Z', '+00:00'))
-                        else:
-                            paid_date = paid_at
-                        days_since_paid = (datetime.now() - paid_date).days
-                        
-                        # If cancelled within 90 days of payment, mark for clawback
-                        if days_since_paid < 90:
-                            cursor.execute("""
-                                UPDATE referrals
-                                SET status = 'clawed_back',
-                                    notes = 'Customer cancelled within 90 days of payment'
-                                WHERE id = ?
-                            """, (ref_id,))
-                            print(f"🚨 CLAWBACK: Referral {ref_id} cancelled {days_since_paid} days after payment")
-                    except Exception as e:
-                        print(f"⚠️ Error processing clawback for referral {ref_id}: {e}")
-            
-            db.execute("""
-                UPDATE customers 
-                SET status = 'cancelled'
-                WHERE stripe_customer_id = ?
-            """, (customer_id,))
-            
-            db.commit()
-        
-        # Payment failed
-        elif event['type'] == 'invoice.payment_failed':
-            invoice = event['data']['object']
-            customer_id = invoice['customer']
-            
-            db.execute("""
-                UPDATE users 
-                SET subscription_status = 'past_due'
-                WHERE stripe_customer_id = ?
-            """, (customer_id,))
-            
-            # Update referrals to PAST_DUE status
-            db.execute("""
-                UPDATE referrals
-                SET status = 'PAST_DUE'
-                WHERE customer_stripe_id = ? AND status = 'on_hold'
-            """, (customer_id,))
-            
-            db.commit()
-        
-        # Chargeback/dispute
-        elif event['type'] in ['charge.dispute.created', 'charge.refunded']:
-            charge = event['data']['object']
-            customer_id = charge.get('customer')
-            
-            if customer_id:
-                # Update referrals to REFUNDED or CHARGEBACK status
-                status_to_set = 'REFUNDED' if event['type'] == 'charge.refunded' else 'CHARGEBACK'
-                
-                db.execute("""
+                # Update all referrals for this customer to CANCELED status
+                cursor = execute_query(db, """
                     UPDATE referrals
-                    SET status = ?
-                    WHERE customer_stripe_id = ? AND status IN ('on_hold', 'ready_to_pay', 'paid')
-                """, (status_to_set, customer_id))
+                    SET status = 'CANCELED'
+                    WHERE customer_stripe_id = ? OR customer_email = (
+                        SELECT email FROM customers WHERE stripe_customer_id = ?
+                    )
+                """, (customer_id, customer_id))
+            
+                updated_count = cursor.rowcount
+                if updated_count > 0:
+                    print(f"✓ Updated {updated_count} referral(s) to CANCELED for customer {customer_id}")
+            
+                # Check for clawback eligibility (if paid within 90 days)
+                cursor = execute_query(db, """
+                    SELECT id, payout, status, paid_at, created_at
+                    FROM referrals
+                    WHERE (customer_stripe_id = ? OR customer_email = (
+                        SELECT email FROM customers WHERE stripe_customer_id = ?
+                    ))
+                    AND status = 'paid'
+                    AND paid_at IS NOT NULL
+                """, (customer_id, customer_id))
+            
+                paid_referrals = cursor.fetchall()
+                for ref in paid_referrals:
+                    ref_id = ref[0] if isinstance(ref, (list, tuple)) else ref.get('id')
+                    paid_at = ref[3] if isinstance(ref, (list, tuple)) else ref.get('paid_at')
                 
+                    if paid_at:
+                        try:
+                            if isinstance(paid_at, str):
+                                paid_date = datetime.fromisoformat(paid_at.replace('Z', '+00:00'))
+                            else:
+                                paid_date = paid_at
+                            days_since_paid = (datetime.now() - paid_date).days
+                        
+                            # If cancelled within 90 days of payment, mark for clawback
+                            if days_since_paid < 90:
+                                cursor = execute_query(db, """
+                                    UPDATE referrals
+                                    SET status = 'clawed_back',
+                                        notes = 'Customer cancelled within 90 days of payment'
+                                    WHERE id = ?
+                                """, (ref_id,))
+                                print(f"🚨 CLAWBACK: Referral {ref_id} cancelled {days_since_paid} days after payment")
+                        except Exception as e:
+                            print(f"⚠️ Error processing clawback for referral {ref_id}: {e}")
+            
+                execute_query(db, """
+                    UPDATE customers 
+                    SET status = 'cancelled'
+                    WHERE stripe_customer_id = ?
+                """, (customer_id,))
+            
                 db.commit()
-                print(f"✓ Updated referrals to {status_to_set} for customer {customer_id}")
         
-        return {"status": "success"}
-    finally:
-        db.close()
+            # Payment failed
+            elif event['type'] == 'invoice.payment_failed':
+                invoice = event['data']['object']
+                customer_id = invoice['customer']
+            
+                execute_query(db, """
+                    UPDATE users 
+                    SET subscription_status = 'past_due'
+                    WHERE stripe_customer_id = ?
+                """, (customer_id,))
+            
+                # Update referrals to PAST_DUE status
+                execute_query(db, """
+                    UPDATE referrals
+                    SET status = 'PAST_DUE'
+                    WHERE customer_stripe_id = ? AND status = 'on_hold'
+                """, (customer_id,))
+            
+                db.commit()
+        
+            # Chargeback/dispute
+            elif event['type'] in ['charge.dispute.created', 'charge.refunded']:
+                charge = event['data']['object']
+                customer_id = charge.get('customer')
+            
+                if customer_id:
+                    # Update referrals to REFUNDED or CHARGEBACK status
+                    status_to_set = 'REFUNDED' if event['type'] == 'charge.refunded' else 'CHARGEBACK'
+                
+                    execute_query(db, """
+                        UPDATE referrals
+                        SET status = ?
+                        WHERE customer_stripe_id = ? AND status IN ('on_hold', 'ready_to_pay', 'paid')
+                    """, (status_to_set, customer_id))
+                
+                    db.commit()
+                    print(f"✓ Updated referrals to {status_to_set} for customer {customer_id}")
+        
+            return {"status": "success"}
+
 
 def send_welcome_email(email: str, temp_password: str):
     """Send welcome email with login credentials"""
