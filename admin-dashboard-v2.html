@@ -573,6 +573,112 @@
                 </div>
             </section>
             
+            <!-- User Management Section -->
+            <section>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <div>
+                        <h2 class="text-xl font-semibold flex items-center gap-2">
+                            <span style="color: var(--primary);">👤</span>
+                            User Management
+                        </h2>
+                        <p class="text-sm" style="color: var(--muted);">Update user emails and reset passwords</p>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card p-6">
+                    <h3 class="text-lg font-semibold mb-4">Update User Email & Password</h3>
+                    <form id="update-user-form" class="space-y-4">
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="old-email" class="block text-sm font-medium mb-2" style="color: var(--foreground);">
+                                    Current Email *
+                                </label>
+                                <input 
+                                    type="email" 
+                                    id="old-email" 
+                                    name="old_email"
+                                    required
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                    placeholder="admin@example.com"
+                                    style="border-color: var(--border);"
+                                >
+                            </div>
+                            <div>
+                                <label for="new-email" class="block text-sm font-medium mb-2" style="color: var(--foreground);">
+                                    New Email *
+                                </label>
+                                <input 
+                                    type="email" 
+                                    id="new-email" 
+                                    name="new_email"
+                                    required
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                    placeholder="kartaginy1@gmail.com"
+                                    style="border-color: var(--border);"
+                                >
+                            </div>
+                        </div>
+                        <div>
+                            <label for="new-password" class="block text-sm font-medium mb-2" style="color: var(--foreground);">
+                                New Password *
+                            </label>
+                            <input 
+                                type="text" 
+                                id="new-password" 
+                                name="new_password"
+                                required
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                placeholder="TestPassword123!"
+                                value="TestPassword123!"
+                                style="border-color: var(--border);"
+                            >
+                            <p class="text-xs mt-1" style="color: var(--muted);">
+                                Default password: TestPassword123! (you can change it)
+                            </p>
+                        </div>
+                        
+                        <!-- Success Message -->
+                        <div id="update-user-success" class="hidden p-4 rounded-lg" style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success);">
+                            <div class="flex items-start gap-2">
+                                <span style="color: var(--success);">✅</span>
+                                <div class="flex-1">
+                                    <p class="font-medium" style="color: var(--success);">User updated successfully!</p>
+                                    <div id="update-user-details" class="mt-2 text-sm" style="color: var(--muted);"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Error Message -->
+                        <div id="update-user-error" class="hidden p-4 rounded-lg" style="background: rgba(220, 38, 38, 0.1); border: 1px solid var(--error);">
+                            <div class="flex items-start gap-2">
+                                <span style="color: var(--error);">❌</span>
+                                <div class="flex-1">
+                                    <p class="font-medium" style="color: var(--error);">Update failed</p>
+                                    <p id="update-user-error-text" class="mt-1 text-sm" style="color: var(--error);"></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button 
+                                type="submit" 
+                                id="update-user-button"
+                                class="btn btn-primary"
+                            >
+                                Update User
+                            </button>
+                            <button 
+                                type="button" 
+                                onclick="resetUpdateUserForm()"
+                                class="btn btn-outline"
+                            >
+                                Reset Form
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+            
             <!-- Broker Payouts Section -->
             <section>
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
@@ -1088,6 +1194,96 @@
     </div>
     
     <script src="/admin-dashboard-v2.js?v=20250113"></script>
+    <script>
+        // User Management Form Handler
+        document.getElementById('update-user-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const oldEmail = document.getElementById('old-email').value.trim();
+            const newEmail = document.getElementById('new-email').value.trim();
+            const newPassword = document.getElementById('new-password').value.trim();
+            
+            const successDiv = document.getElementById('update-user-success');
+            const errorDiv = document.getElementById('update-user-error');
+            const errorText = document.getElementById('update-user-error-text');
+            const detailsDiv = document.getElementById('update-user-details');
+            const submitButton = document.getElementById('update-user-button');
+            
+            // Hide previous messages
+            successDiv.classList.add('hidden');
+            errorDiv.classList.add('hidden');
+            
+            // Validate inputs
+            if (!oldEmail || !newEmail || !newPassword) {
+                errorText.textContent = 'Please fill in all fields';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            if (oldEmail === newEmail) {
+                errorText.textContent = 'New email must be different from current email';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                errorText.textContent = 'Password must be at least 8 characters';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            // Disable button and show loading
+            submitButton.disabled = true;
+            submitButton.textContent = 'Updating...';
+            
+            try {
+                // Use existing HTTP Basic Auth (browser handles it automatically)
+                const response = await fetch(`/api/admin/update-user-email?old_email=${encodeURIComponent(oldEmail)}&new_email=${encodeURIComponent(newEmail)}&new_password=${encodeURIComponent(newPassword)}`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include' // Include credentials for HTTP Basic Auth
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'success') {
+                    // Show success message
+                    detailsDiv.innerHTML = `
+                        <p><strong>Old Email:</strong> ${data.old_email}</p>
+                        <p><strong>New Email:</strong> ${data.new_email}</p>
+                        <p><strong>New Password:</strong> ${data.password}</p>
+                        <p class="mt-2 font-medium" style="color: var(--success);">${data.note}</p>
+                    `;
+                    successDiv.classList.remove('hidden');
+                    
+                    // Reset form
+                    document.getElementById('update-user-form').reset();
+                    document.getElementById('new-password').value = 'TestPassword123!';
+                } else {
+                    // Show error message
+                    errorText.textContent = data.detail || data.message || 'Failed to update user';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Update user error:', error);
+                errorText.textContent = 'An error occurred. Please check the console for details.';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                // Re-enable button
+                submitButton.disabled = false;
+                submitButton.textContent = 'Update User';
+            }
+        });
+        
+        function resetUpdateUserForm() {
+            document.getElementById('update-user-form').reset();
+            document.getElementById('new-password').value = 'TestPassword123!';
+            document.getElementById('update-user-success').classList.add('hidden');
+            document.getElementById('update-user-error').classList.add('hidden');
+        }
+    </script>
 </body>
 </html>
 

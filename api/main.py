@@ -5511,7 +5511,7 @@ def send_welcome_email(email: str, temp_password: str):
                     <p style="margin: 10px 0;"><strong>Email:</strong> {email}</p>
                     <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background: white; padding: 5px 10px; border-radius: 4px; font-size: 16px;">{temp_password}</code></p>
                     <p style="margin: 20px 0 0 0;">
-                        <a href="https://liendeadline.com/dashboard.html" style="display: inline-block; background: #c1554e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                        <a href="https://liendeadline.com/login.html" style="display: inline-block; background: #c1554e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
                             Login to Dashboard →
                         </a>
                     </p>

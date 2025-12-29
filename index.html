@@ -604,6 +604,7 @@
                 <a href="#calculator" style="text-decoration: none; color: #6B7280; font-weight: 500;">Calculator</a>
                 <a href="/pricing.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Pricing</a>
                 <a href="/#partners" style="text-decoration: none; color: #6B7280; font-weight: 500;">Partners</a>
+                <a href="/login.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Login</a>
                 <a href="/" style="background: #F97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">Try Free</a>
                 </div>
                 
@@ -619,6 +620,7 @@
                 <a href="#calculator" style="text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Calculator</a>
                 <a href="/pricing.html" style="text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Pricing</a>
                 <a href="/#partners" style="text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Partners</a>
+                <a href="/login.html" style="text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Login</a>
                 <a href="/" style="background: #F97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; text-align: center; margin-top: 8px;">Try Free</a>
             </div>
         </div>
@@ -3374,6 +3376,33 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
     <script>
+    </script>
+
+    <!-- Success Parameter Handling -->
+    <script>
+      // Check for success parameter from Stripe redirect
+      const urlParams = new URLSearchParams(window.location.search);
+      const success = urlParams.get('success');
+      
+      if (success === 'true') {
+        // Show success message
+        const banner = document.createElement('div');
+        banner.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-md text-center';
+        banner.innerHTML = `
+          <p class="font-semibold mb-2">🎉 Payment Successful!</p>
+          <p class="text-sm mb-3">Check your email for login credentials.</p>
+          <a href="/login.html" class="inline-block bg-white text-green-600 px-4 py-2 rounded font-medium hover:bg-gray-100">
+            Login Now
+          </a>
+        `;
+        document.body.appendChild(banner);
+        
+        // Auto-dismiss after 10 seconds
+        setTimeout(() => banner.remove(), 10000);
+        
+        // Remove success param from URL
+        window.history.replaceState({}, document.title, '/');
+      }
     </script>
 
 </body>
