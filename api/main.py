@@ -5017,6 +5017,99 @@ def send_admin_fraud_alert(broker_email: str, customer_email: str, flags: list, 
     # TODO: Send email/Slack notification in production
 
 
+# Stripe Checkout Session Creation
+@app.post("/api/create-checkout-session")
+async def create_checkout_session(request: Request):
+    """
+    Create a Stripe checkout session for subscription signup
+    
+    Request body:
+    {
+        "plan": "monthly" or "annual"
+    }
+    
+    Returns:
+    {
+        "url": "https://checkout.stripe.com/..."
+    }
+    """
+    try:
+        data = await request.json()
+        plan = data.get("plan", "").lower()
+        
+        if plan not in ["monthly", "annual"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid plan. Must be 'monthly' or 'annual'"
+            )
+        
+        # Get Stripe price IDs from environment variables
+        if plan == "monthly":
+            price_id = os.getenv("STRIPE_PRICE_MONTHLY")
+            if not price_id:
+                raise HTTPException(
+                    status_code=500,
+                    detail="STRIPE_PRICE_MONTHLY environment variable not configured"
+                )
+        else:  # annual
+            price_id = os.getenv("STRIPE_PRICE_ANNUAL")
+            if not price_id:
+                raise HTTPException(
+                    status_code=500,
+                    detail="STRIPE_PRICE_ANNUAL environment variable not configured"
+                )
+        
+        # Verify Stripe secret key is configured
+        if not stripe.api_key:
+            raise HTTPException(
+                status_code=500,
+                detail="STRIPE_SECRET_KEY environment variable not configured"
+            )
+        
+        # Get referral code from request metadata if available
+        referral_code = data.get("referral_code")
+        
+        # Create Stripe checkout session
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[
+                {
+                    "price": price_id,
+                    "quantity": 1,
+                }
+            ],
+            mode="subscription",
+            success_url=f"{os.getenv('BASE_URL', 'https://liendeadline.com')}/?success=true",
+            cancel_url=f"{os.getenv('BASE_URL', 'https://liendeadline.com')}/pricing.html",
+            metadata={
+                "plan": plan,
+                "referral_code": referral_code or "direct"
+            },
+            client_reference_id=referral_code or None,
+            allow_promotion_codes=True,
+        )
+        
+        return {
+            "url": checkout_session.url
+        }
+        
+    except stripe.error.StripeError as e:
+        print(f"❌ Stripe error creating checkout session: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create checkout session: {str(e)}"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error creating checkout session: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
+
 # Stripe Webhook Handler
 @app.post("/webhooks/stripe")
 async def stripe_webhook(request: Request):
