@@ -16,20 +16,6 @@ import subprocess
 import bcrypt
 import stripe
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
-
-# Debug logging for Stripe initialization
-stripe_secret_key = os.getenv('STRIPE_SECRET_KEY')
-if stripe_secret_key:
-    print(f"✅ STRIPE_SECRET_KEY environment variable exists")
-    print(f"   First 7 characters: {stripe_secret_key[:7]}...")
-else:
-    print("⚠️ STRIPE_SECRET_KEY environment variable NOT FOUND")
-    
-if stripe:
-    print(f"✅ Stripe module imported successfully (version: {stripe.__version__ if hasattr(stripe, '__version__') else 'unknown'})")
-else:
-    print("❌ Stripe module import failed")
-
 import traceback
 import smtplib
 import ssl
@@ -1284,6 +1270,20 @@ async def debug_pdf_data(state: str):
 async def startup():
     """Initialize the application on startup."""
     print("🚀 Starting application - migrations disabled")
+    
+    # Debug logging for Stripe initialization
+    stripe_secret_key = os.getenv('STRIPE_SECRET_KEY')
+    if stripe_secret_key:
+        print(f"✅ STRIPE_SECRET_KEY environment variable exists")
+        print(f"   First 7 characters: {stripe_secret_key[:7]}...")
+    else:
+        print("⚠️ STRIPE_SECRET_KEY environment variable NOT FOUND")
+    
+    if stripe:
+        print(f"✅ Stripe module imported successfully (version: {stripe.__version__ if hasattr(stripe, '__version__') else 'unknown'})")
+    else:
+        print("❌ Stripe module import failed")
+    
     print("✅ Application startup complete (migrations disabled)")
 
 # Serve static files (CSS, JS)
