@@ -239,29 +239,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Email configuration check
-print("============================================================")
-print("📧 EMAIL CONFIGURATION CHECK")
-print("============================================================")
 
-resend_key = os.environ.get("RESEND_API_KEY")
-smtp_from = os.environ.get("SMTP_FROM_EMAIL", "onboarding@resend.dev")
-
-if RESEND_AVAILABLE and resend_key:
-    print("✅ Resend: CONFIGURED")
-    print(f"   From: {smtp_from}")
-    print(f"   API Key: {'*' * min(len(resend_key), 20)}")
-elif not RESEND_AVAILABLE:
-    print("⚠️ Resend: PACKAGE NOT INSTALLED")
-    print("   Install with: pip install resend==2.4.0")
-    print("   Emails will be logged to console only")
-else:
-    print("⚠️ Resend: NOT CONFIGURED")
-    print("   Set RESEND_API_KEY environment variable")
-    print("   Emails will be logged to console only")
-    print("   Users won't receive welcome emails or password resets")
-
-print("============================================================")
 
 print("=" * 60)
 
