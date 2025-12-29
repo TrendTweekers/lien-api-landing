@@ -1,23 +1,9 @@
 User-agent: *
 Allow: /
-
-# Disallow admin and private pages
-Disallow: /admin-dashboard
-Disallow: /admin-dashboard-v2
-Disallow: /broker-dashboard
 Disallow: /customer-dashboard
-Disallow: /reset-password
-Disallow: /forgot-password
+Disallow: /broker-dashboard
+Disallow: /admin
 Disallow: /api/
 
-# Allow important pages
-Allow: /
-Allow: /comparison
-Allow: /calculator
-Allow: /pricing
-Allow: /api.html
-Allow: /lien-deadlines/
-
-# Sitemap
 Sitemap: https://liendeadline.com/sitemap.xml
 
