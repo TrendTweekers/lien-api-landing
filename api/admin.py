@@ -650,6 +650,92 @@ def create_test_user(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
 
+@router.post("/update-user-email")
+def update_user_email(
+    old_email: str,
+    new_email: str,
+    new_password: str = "TestPassword123!",
+    user: str = Depends(verify_admin)
+):
+    """
+    Update user email and optionally reset password.
+    
+    Args:
+        old_email: Current email address
+        new_email: New email address
+        new_password: New password (default: TestPassword123!)
+        user: Admin username (from auth)
+    
+    Returns:
+        Updated user account details
+    """
+    import bcrypt
+    
+    try:
+        with get_db() as conn:
+            ensure_users_table(conn=conn)
+            cursor = get_db_cursor(conn)
+            
+            # Check if old user exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id FROM users WHERE email = %s", (old_email.lower(),))
+            else:
+                cursor.execute("SELECT id FROM users WHERE email = ?", (old_email.lower(),))
+            
+            existing = cursor.fetchone()
+            if not existing:
+                raise HTTPException(status_code=404, detail=f"User with email {old_email} not found")
+            
+            # Check if new email already exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id FROM users WHERE email = %s", (new_email.lower(),))
+            else:
+                cursor.execute("SELECT id FROM users WHERE email = ?", (new_email.lower(),))
+            
+            new_email_exists = cursor.fetchone()
+            if new_email_exists:
+                raise HTTPException(status_code=400, detail=f"User with email {new_email} already exists")
+            
+            # Hash new password
+            password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            
+            # Update user email and password
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE users 
+                    SET email = %s, password_hash = %s, updated_at = NOW()
+                    WHERE email = %s
+                    RETURNING id
+                """, (new_email.lower(), password_hash, old_email.lower()))
+                result = cursor.fetchone()
+                user_id = result['id'] if isinstance(result, dict) else result[0]
+            else:
+                cursor.execute("""
+                    UPDATE users 
+                    SET email = ?, password_hash = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE email = ?
+                """, (new_email.lower(), password_hash, old_email.lower()))
+                user_id = cursor.lastrowid
+            
+            conn.commit()
+            
+            return {
+                "status": "success",
+                "message": f"User email updated successfully",
+                "old_email": old_email.lower(),
+                "new_email": new_email.lower(),
+                "password": new_password,
+                "user_id": user_id,
+                "note": f"You can now log in at /login.html with email: {new_email.lower()}"
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating user email: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to update user: {str(e)}")
+
 @router.get("/test-keys")
 def list_test_keys(user: str = Depends(verify_admin)):
     """List all test keys"""
