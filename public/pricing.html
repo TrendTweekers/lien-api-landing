@@ -445,9 +445,9 @@
                         </li>
                     </ul>
                     
-                    <button onclick="createCheckoutSession(currentPlan)" id="proCta" class="block w-full bg-primary-orange text-white text-center py-3 rounded-lg font-semibold hover:bg-orange-600 transition">
+                    <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" id="proCta" class="block w-full bg-primary-orange text-white text-center py-3 rounded-lg font-semibold hover:bg-orange-600 transition">
                         <span id="proCtaText">Start Professional →</span>
-                    </button>
+                    </a>
                 </div>
                 
                 <!-- Enterprise Tier -->
@@ -791,6 +791,7 @@
                 proPeriod.textContent = '/month';
                 currentPlan = 'monthly';
                 proCtaText.textContent = 'Start Professional →';
+                proCta.href = 'https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00';
                 savingsBadge.classList.add('hidden');
                 saveText.classList.add('hidden');
             });
@@ -802,6 +803,7 @@
                 proPeriod.textContent = '/year';
                 currentPlan = 'annual';
                 proCtaText.textContent = 'Start Professional (Annual) →';
+                proCta.href = 'https://buy.stripe.com/aFacN5gBL7ln9Z72AZ9fW01';
                 savingsBadge.classList.remove('hidden');
                 saveText.textContent = 'Save $1,198 (33% off)';
                 saveText.classList.remove('hidden');
@@ -817,11 +819,6 @@
                 savingsBadge: !savingsBadge,
                 saveText: !saveText
             });
-        }
-        
-        function createCheckoutSession(plan) {
-            // Direct redirect to Stripe test payment link
-            window.location.href = 'https://buy.stripe.com/test_3cIcN5gBL8pr6MVgrP9fW00';
         }
         
         // Animate feature checkmarks on scroll
