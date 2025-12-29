@@ -1116,31 +1116,85 @@
                     <!-- Right: Revenue calculator preview -->
                     <div class="relative">
                         <div class="bg-white/5 backdrop-blur rounded-2xl border border-white/10 p-6 sm:p-8">
-                            <h3 class="font-semibold mb-6">Partner Revenue Potential</h3>
+                            <div class="mb-4">
+                                <p class="text-sm text-white/60 mb-2">Partners choose their preferred payment model</p>
+                                <h3 class="font-semibold mb-2">Choose Your Partner Payment Model</h3>
+                                <p class="text-xs text-white/50">Select ONE model - you cannot earn both for the same client</p>
+                            </div>
                             
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
-                                    <div>
-                                        <p class="text-sm text-white/70">Referrals (Bounty)</p>
-                                        <p class="text-xl font-serif">100 clients × $500</p>
+                            <!-- Model Toggle -->
+                            <div class="flex gap-2 mb-6 p-1 bg-white/5 rounded-lg border border-white/10">
+                                <button id="recurringToggle" class="partner-model-btn active flex-1 py-2 px-4 rounded-md font-semibold text-sm transition-all" onclick="togglePartnerModel('recurring')">
+                                    Recurring Revenue
+                                </button>
+                                <button id="bountyToggle" class="partner-model-btn flex-1 py-2 px-4 rounded-md font-semibold text-sm transition-all" onclick="togglePartnerModel('bounty')">
+                                    Upfront Bounty
+                                </button>
+                            </div>
+                            
+                            <!-- Recurring Revenue Model Display -->
+                            <div id="recurringModel" class="partner-model-content">
+                                <div class="mb-4">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="text-xl">💰</span>
+                                        <h4 class="font-semibold">Recurring Revenue Model</h4>
                                     </div>
-                                    <p class="text-2xl font-serif text-accent">$50K</p>
+                                    <ul class="text-sm text-white/70 space-y-1 mb-4">
+                                        <li>• Earn $50/month for EVERY active client</li>
+                                        <li>• Works for both monthly ($299) and annual ($2,390) subscribers</li>
+                                        <li>• Get paid monthly as long as clients remain active</li>
+                                    </ul>
                                 </div>
                                 
-                                <div class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
-                                    <div>
-                                        <p class="text-sm text-white/70">Recurring (Monthly)</p>
-                                        <p class="text-xl font-serif">100 clients × $50/mo</p>
+                                <div class="bg-white/5 rounded-lg p-4 border border-white/10">
+                                    <label class="block text-sm text-white/70 mb-2">Number of clients:</label>
+                                    <input type="number" id="partnerClientCount" value="100" min="0" class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-accent mb-4" oninput="updatePartnerCalculator()">
+                                    
+                                    <div id="recurringResults" class="space-y-2">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm text-white/70">Monthly earnings:</span>
+                                            <span class="text-xl font-serif text-accent" id="recurringMonthly">100 × $50 = $5,000/month</span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm text-white/70">Annual projection:</span>
+                                            <span class="text-xl font-serif text-accent" id="recurringAnnual">100 × $50 × 12 = $60,000/year</span>
+                                        </div>
                                     </div>
-                                    <p class="text-2xl font-serif text-accent">$5K/mo</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Upfront Bounty Model Display -->
+                            <div id="bountyModel" class="partner-model-content hidden">
+                                <div class="mb-4">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="text-xl">💵</span>
+                                        <h4 class="font-semibold">Upfront Bounty Model</h4>
+                                    </div>
+                                    <ul class="text-sm text-white/70 space-y-1 mb-4">
+                                        <li>• Earn $500 one-time per referred client</li>
+                                        <li>• Get paid immediately when client signs up</li>
+                                        <li>• No ongoing payments</li>
+                                    </ul>
                                 </div>
                                 
-                                <div class="pt-4 border-t border-white/10">
-                                    <div class="flex items-center justify-between">
-                                        <p class="font-semibold">Annual Partner Revenue</p>
-                                        <p class="text-3xl font-serif text-accent">$110K+</p>
+                                <div class="bg-white/5 rounded-lg p-4 border border-white/10">
+                                    <label class="block text-sm text-white/70 mb-2">Number of clients:</label>
+                                    <input type="number" id="partnerClientCountBounty" value="100" min="0" class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-accent mb-4" oninput="updatePartnerCalculator()">
+                                    
+                                    <div id="bountyResults" class="space-y-2">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm text-white/70">Total earnings:</span>
+                                            <span class="text-2xl font-serif text-accent" id="bountyTotal">100 × $500 = $50,000 one-time</span>
+                                        </div>
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <!-- Clarifying Note -->
+                            <div class="mt-6 pt-4 border-t border-white/10">
+                                <p class="text-xs text-white/50 italic">
+                                    Note: Partners select ONE payment model when they join the program. You cannot earn both the bounty and recurring revenue for the same client.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -2157,6 +2211,30 @@
             .ld-nav{ padding:0 12px; }
         }
     
+        /* Partner Program Calculator Styles */
+        .partner-model-btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.7);
+            border: none;
+            cursor: pointer;
+        }
+        .partner-model-btn.active {
+            background: var(--accent, #F97316);
+            color: white;
+        }
+        .partner-model-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .partner-model-content {
+            transition: opacity 0.3s ease;
+        }
+        #partnerClientCount, #partnerClientCountBounty {
+            color: white;
+        }
+        #partnerClientCount::placeholder, #partnerClientCountBounty::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
         </style>
 
 <script>
@@ -3090,6 +3168,64 @@ window.addEventListener('DOMContentLoaded', function() {
         attachStripeTracking();
     }
 })();
+
+// Partner Program Calculator Toggle
+let selectedPartnerModel = 'recurring'; // default
+
+function togglePartnerModel(model) {
+    selectedPartnerModel = model;
+    
+    // Update toggle buttons
+    const recurringBtn = document.getElementById('recurringToggle');
+    const bountyBtn = document.getElementById('bountyToggle');
+    const recurringModel = document.getElementById('recurringModel');
+    const bountyModel = document.getElementById('bountyModel');
+    
+    if (model === 'recurring') {
+        recurringBtn.classList.add('active');
+        recurringBtn.classList.add('bg-accent');
+        recurringBtn.classList.remove('bg-white/5');
+        bountyBtn.classList.remove('active');
+        bountyBtn.classList.remove('bg-accent');
+        bountyBtn.classList.add('bg-white/5');
+        recurringModel.classList.remove('hidden');
+        bountyModel.classList.add('hidden');
+    } else {
+        bountyBtn.classList.add('active');
+        bountyBtn.classList.add('bg-accent');
+        bountyBtn.classList.remove('bg-white/5');
+        recurringBtn.classList.remove('active');
+        recurringBtn.classList.remove('bg-accent');
+        recurringBtn.classList.add('bg-white/5');
+        bountyModel.classList.remove('hidden');
+        recurringModel.classList.add('hidden');
+    }
+    
+    updatePartnerCalculator();
+}
+
+function updatePartnerCalculator() {
+    const clientCount = parseInt(document.getElementById('partnerClientCount').value) || parseInt(document.getElementById('partnerClientCountBounty').value) || 0;
+    
+    // Sync both inputs
+    document.getElementById('partnerClientCount').value = clientCount;
+    document.getElementById('partnerClientCountBounty').value = clientCount;
+    
+    if (selectedPartnerModel === 'recurring') {
+        const monthly = clientCount * 50;
+        const annual = monthly * 12;
+        document.getElementById('recurringMonthly').textContent = `${clientCount} × $50 = $${monthly.toLocaleString()}/month`;
+        document.getElementById('recurringAnnual').textContent = `${clientCount} × $50 × 12 = $${annual.toLocaleString()}/year`;
+    } else {
+        const total = clientCount * 500;
+        document.getElementById('bountyTotal').textContent = `${clientCount} × $500 = $${total.toLocaleString()} one-time`;
+    }
+}
+
+// Initialize calculator on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updatePartnerCalculator();
+});
 
 // Professional plan Stripe payment link tracking
 (function() {
