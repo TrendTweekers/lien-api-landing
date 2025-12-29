@@ -5493,6 +5493,10 @@ async def stripe_webhook(request: Request):
             return {"status": "success"}
 
 
+        except Exception as e:
+            print(f"Webhook error: {e}")
+            return JSONResponse(status_code=500, content={"status": "error"})
+            
 def send_welcome_email(email: str, temp_password: str):
     """Send welcome email with login credentials"""
     try:
