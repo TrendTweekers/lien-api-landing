@@ -4014,17 +4014,40 @@ async def change_password(req: ChangePasswordRequest):
 async def logout(authorization: str = Header(None)):
     """Logout - invalidate session token"""
     if not authorization or not authorization.startswith('Bearer '):
-        return {"success": True}
+        return {"success": True, "message": "No token provided"}
     
     token = authorization.replace('Bearer ', '')
     
-    db = get_db()
     try:
-        db.execute("UPDATE users SET session_token = NULL WHERE session_token = ?", (token,))
-        db.commit()
-        return {"success": True}
-    finally:
-        db.close()
+        # Get database connection
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Clear the session token in the database
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE users 
+                    SET session_token = NULL, 
+                        updated_at = NOW() 
+                    WHERE session_token = %s
+                """, (token,))
+            else:  # sqlite
+                cursor.execute("""
+                    UPDATE users 
+                    SET session_token = NULL, 
+                        updated_at = CURRENT_TIMESTAMP 
+                    WHERE session_token = ?
+                """, (token,))
+            
+            conn.commit()
+        
+        return {"success": True, "message": "Logged out successfully"}
+        
+    except Exception as e:
+        print(f"Logout error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Logout failed")
 
 # Track email endpoint for calculator gating
 class TrackEmailRequest(BaseModel):
