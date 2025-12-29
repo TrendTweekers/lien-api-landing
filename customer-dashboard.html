@@ -8,10 +8,8 @@
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-KYZG0TN07Z"></script>
     
-</body>
-</html>
-
-.dataLayer = window.dataLayer || [];
+        <script>
+      window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-KYZG0TN07Z');
@@ -23,9 +21,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
     <!-- Lovable Scale Stylesheet (load first) -->
-    <link rel="stylesheet" href="/lovable-scale.css">
-    >
-    <script>
+    <link rel="stylesheet" href="/lovable-scale.css">    <script>
         // Check authentication on page load
         async function checkAuth() {
             const token = localStorage.getItem('session_token');
@@ -470,7 +466,6 @@
 </a>
             
             <div class="flex gap-4 items-center">
-                <a href="#calculator" onclick="scrollToCalculator(event)" class="text-gray-600 hover:text-gray-900">Calculator</a>
                 <span id="user-email" class="text-sm text-gray-600"></span>
                 <a href="index.html" class="text-gray-600 hover:text-gray-900">Landing Page</a>
                 <button onclick="logout()" class="text-red-600 hover:text-red-700">Logout</button>
