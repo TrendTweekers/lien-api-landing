@@ -23,13 +23,76 @@
     <!-- Lovable Scale Stylesheet (load first) -->
     <link rel="stylesheet" href="/lovable-scale.css">    <script>
         // Check authentication on page load
-        async function checkAuth() {
+                async function checkAuth() {
             const token = localStorage.getItem('session_token');
-            
+
+            // If no token, redirect to landing page
             if (!token) {
-                window.location.href = '/dashboard';
+                window.location.href = '/';
                 return;
             }
+
+            // Verify the token is still valid
+            try {
+                const response = await fetch('/api/verify-session', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    // Token is invalid or expired
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/';
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (!data || !data.email) {
+                    // Token is invalid
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/';
+                    return;
+                }
+
+                // Token is valid, continue with dashboard initialization
+                // Display user email
+                const userEmailEl = document.getElementById('user-email');
+                if (userEmailEl) {
+                    userEmailEl.textContent = data.email;
+                }
+
+                // Store email in localStorage for convenience
+                if (data.email) {
+                    localStorage.setItem('user_email', data.email);
+                }
+
+                // Check subscription status
+                if (data.subscription_status === 'cancelled') {
+                    // Show subscription warning (you can add UI for this)
+                    console.warn('Subscription cancelled');
+                }
+
+                // Load dashboard data
+                loadDashboard();
+
+            } catch (error) {
+                console.error('Session verification error:', error);
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/';
+                return;
+            }
+        }
+
+        // Placeholder for dashboard loading function
+        function loadDashboard() {
+            // Dashboard initialization code goes here
+            // This function can be expanded with other initialization logic
+        }
             
             try {
                 const response = await fetch('/api/verify-session', {
