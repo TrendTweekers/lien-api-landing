@@ -157,43 +157,48 @@
 
         // Run on page load
         
-        // Logout button event listener
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                
-                try {
-                    const token = localStorage.getItem('session_token');
-                    
-                    // Call logout API
-                    if (token) {
-                        await fetch('/api/logout', {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            }
-                        });
-                    }
-                    
-                    // Clear all storage
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    
-                    // Redirect to landing page
-                    window.location.href = '/';
-                    
-                } catch (error) {
-                    console.error('Logout error:', error);
-                    // Clear storage even if API fails
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    window.location.href = '/';
-                }
-            });
-        }
 
+
+        
+        // Logout button event listener - inside DOMContentLoaded
+        window.addEventListener('DOMContentLoaded', () => {
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    
+                    try {
+                        const token = localStorage.getItem('session_token');
+                        
+                        // Call logout API
+                        if (token) {
+                            await fetch('/api/logout', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                        }
+                        
+                        // Clear all storage
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        
+                        // Redirect to landing page
+                        window.location.href = '/';
+                        
+                    } catch (error) {
+                        console.error('Logout error:', error);
+                        // Clear storage even if API fails
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        window.location.href = '/';
+                    }
+                });
+            }
+        });
+        
         window.addEventListener('DOMContentLoaded', checkAuth);
     </script>
 <style>
