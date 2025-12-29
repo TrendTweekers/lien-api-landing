@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - LienDeadline</title>
+  
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-KYZG0TN07Z"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-KYZG0TN07Z');
+  </script>
+  
+  <!-- Umami Analytics -->
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="02250d35-ee17-41be-845d-2fe0f7f15e63"></script>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  
+  <style>
+    /* Logo sizing - prevent flash */
+    .ld-brand-icon {
+      height: 32px !important;
+      width: auto !important;
+      max-height: 32px !important;
+      display: block !important;
+    }
+    .ld-brand-wordmark {
+      height: 28px !important;
+      width: auto !important;
+      max-height: 28px !important;
+      display: block !important;
+    }
+    @media (max-width: 768px) {
+      .ld-brand-icon {
+        height: 28px !important;
+        max-height: 28px !important;
+      }
+      .ld-brand-wordmark {
+        height: 24px !important;
+        max-height: 24px !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+  
+  <!-- Navigation Header -->
+  <header class="bg-white border-b border-gray-200">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+      <a href="/" class="flex items-center gap-2">
+        <img class="ld-brand-icon" src="/images/liendeadline-icon-transparent.png" alt="LienDeadline" />
+        <img class="ld-brand-wordmark" src="/images/liendeadline-wordmark-transparent.png" alt="LienDeadline" />
+      </a>
+      <div class="flex items-center gap-6">
+        <a href="/" class="text-gray-600 hover:text-gray-900">Home</a>
+        <a href="/pricing.html" class="text-gray-600 hover:text-gray-900">Pricing</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Login Form -->
+  <main class="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+    <div class="max-w-md w-full space-y-8">
+      
+      <!-- Header -->
+      <div class="text-center">
+        <h2 class="text-3xl font-bold text-gray-900">Welcome back</h2>
+        <p class="mt-2 text-sm text-gray-600">
+          Sign in to access your dashboard
+        </p>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" class="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md">
+        
+        <!-- Error Message -->
+        <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <span class="block sm:inline" id="error-text"></span>
+        </div>
+
+        <!-- Email Field -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+            Email Address
+          </label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email"
+            required
+            autocomplete="email"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            placeholder="you@example.com"
+          >
+        </div>
+
+        <!-- Password Field -->
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+            Password
+          </label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password"
+            required
+            autocomplete="current-password"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            placeholder="Enter your password"
+          >
+        </div>
+
+        <!-- Forgot Password Link -->
+        <div class="flex items-center justify-between">
+          <div class="text-sm">
+            <a href="/forgot-password.html" class="text-orange-600 hover:text-orange-500">
+              Forgot your password?
+            </a>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          type="submit" 
+          id="login-button"
+          class="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg transition-colors duration-200"
+        >
+          Sign In
+        </button>
+
+        <!-- Divider -->
+        <div class="relative my-6">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white text-gray-500">Don't have an account?</span>
+          </div>
+        </div>
+
+        <!-- Sign Up Link -->
+        <div class="text-center">
+          <a href="/pricing.html" class="text-orange-600 hover:text-orange-500 font-medium">
+            View Pricing & Sign Up
+          </a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- Login JavaScript -->
+  <script>
+    // Check if already logged in
+    const existingToken = localStorage.getItem('session_token');
+    if (existingToken) {
+      // Verify token is still valid
+      fetch('/api/verify-session', {
+        headers: { 'Authorization': `Bearer ${existingToken}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.valid) {
+          // Already logged in, redirect to dashboard
+          window.location.href = '/customer-dashboard';
+        }
+      })
+      .catch(() => {
+        // Token invalid, clear it
+        localStorage.clear();
+      });
+    }
+
+    // Handle form submission
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorDiv = document.getElementById('error-message');
+      const errorText = document.getElementById('error-text');
+      const submitButton = document.getElementById('login-button');
+      
+      // Hide previous errors
+      errorDiv.classList.add('hidden');
+      
+      // Disable button and show loading state
+      submitButton.disabled = true;
+      submitButton.textContent = 'Signing in...';
+      
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.token) {
+          // Store session token and user info
+          localStorage.setItem('session_token', data.token);
+          localStorage.setItem('user_email', email);
+          
+          // Redirect to dashboard
+          window.location.href = '/customer-dashboard';
+        } else {
+          // Show error message
+          errorText.textContent = data.detail || data.error || 'Invalid email or password';
+          errorDiv.classList.remove('hidden');
+          
+          // Re-enable button
+          submitButton.disabled = false;
+          submitButton.textContent = 'Sign In';
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        errorText.textContent = 'An error occurred. Please try again.';
+        errorDiv.classList.remove('hidden');
+        
+        // Re-enable button
+        submitButton.disabled = false;
+        submitButton.textContent = 'Sign In';
+      }
+    });
+  </script>
+</body>
+</html>
+
