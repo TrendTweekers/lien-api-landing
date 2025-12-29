@@ -5062,69 +5062,69 @@ async def stripe_webhook(request: Request):
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
     
-    db = get_db()
-    
-    # IDEMPOTENCY CHECK - Check if we've already processed this event
-    try:
-        # Create stripe_events table if it doesn't exist
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS stripe_events (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                event_id TEXT UNIQUE NOT NULL,
-                event_type TEXT NOT NULL,
-                processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    # Use database connection as context manager
+    with get_db() as db:
+        # IDEMPOTENCY CHECK - Check if we've already processed this event
+        try:
+            # Create stripe_events table if it doesn't exist
+            db.execute("""
+                CREATE TABLE IF NOT EXISTS stripe_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_id TEXT UNIQUE NOT NULL,
+                    event_type TEXT NOT NULL,
+                    processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            db.execute("CREATE INDEX IF NOT EXISTS idx_stripe_events_event_id ON stripe_events(event_id)")
+            
+            # Check if we've already processed this event
+            existing = db.execute(
+                "SELECT 1 FROM stripe_events WHERE event_id = ?",
+                (event['id'],)
+            ).fetchone()
+            
+            if existing:
+                print(f"⚠️ Duplicate event {event['id']} - skipping")
+                return {"status": "duplicate", "message": "Event already processed"}
+            
+            # Record this event
+            db.execute(
+                "INSERT INTO stripe_events (event_id, event_type) VALUES (?, ?)",
+                (event['id'], event['type'])
             )
-        """)
-        db.execute("CREATE INDEX IF NOT EXISTS idx_stripe_events_event_id ON stripe_events(event_id)")
+            db.commit()
+        except Exception as e:
+            print(f"Error checking idempotency: {e}")
+            # Continue processing even if idempotency check fails
         
-        # Check if we've already processed this event
-        existing = db.execute(
-            "SELECT 1 FROM stripe_events WHERE event_id = ?",
-            (event['id'],)
-        ).fetchone()
-        
-        if existing:
-            print(f"⚠️ Duplicate event {event['id']} - skipping")
-            return {"status": "duplicate", "message": "Event already processed"}
-        
-        # Record this event
-        db.execute(
-            "INSERT INTO stripe_events (event_id, event_type) VALUES (?, ?)",
-            (event['id'], event['type'])
-        )
-        db.commit()
-    except Exception as e:
-        print(f"Error checking idempotency: {e}")
-        # Continue processing even if idempotency check fails
-    
-    try:
-        # New subscription
-        if event['type'] == 'checkout.session.completed':
-            session = event['data']['object']
-            print(f"✅ Received checkout.session.completed webhook - Event ID: {event['id']}, Session ID: {session.get('id')}")
-            
-            email = session.get('customer_details', {}).get('email')
-            customer_id = session.get('customer')
-            subscription_id = session.get('subscription')
-            
-            if not email:
-                print("⚠️ No email in checkout session")
-                return {"status": "skipped"}
-            
-            # Get referral code from Stripe metadata (client_reference_id)
-            referral_code = session.get('client_reference_id', 'direct')
-            
-            # Generate secure temporary password
-            temp_password = secrets.token_urlsafe(12)
-            password_hash = bcrypt.hashpw(temp_password.encode(), bcrypt.gensalt())
-            
-            # Create user account
-            try:
-                db.execute("""
-                    INSERT INTO users (email, password_hash, stripe_customer_id, subscription_id, subscription_status)
-                    VALUES (?, ?, ?, ?, 'active')
-                """, (email, password_hash.decode(), customer_id, subscription_id))
+        try:
+            # New subscription
+            if event['type'] == 'checkout.session.completed':
+                session = event['data']['object']
+                print(f"✅ Received checkout.session.completed webhook - Event ID: {event['id']}, Session ID: {session.get('id')}")
+                
+                email = session.get('customer_details', {}).get('email')
+                customer_id = session.get('customer')
+                subscription_id = session.get('subscription')
+                
+                if not email:
+                    print("⚠️ No email in checkout session")
+                    return {"status": "skipped"}
+                
+                # Get referral code from Stripe metadata (client_reference_id)
+                referral_code = session.get('client_reference_id', 'direct')
+                
+                # Generate secure temporary password
+                temp_password = secrets.token_urlsafe(12)
+                password_hash = bcrypt.hashpw(temp_password.encode(), bcrypt.gensalt())
+                
+                # Create user account
+                try:
+                    db.execute("""
+                        INSERT INTO users (email, password_hash, stripe_customer_id, subscription_id, subscription_status)
+                        VALUES (?, ?, ?, ?, 'active')
+                    """, (email, password_hash.decode(), customer_id, subscription_id))
                 
                 # Also create customer record
                 db.execute("""
@@ -5510,10 +5510,8 @@ async def stripe_webhook(request: Request):
                 
                 db.commit()
                 print(f"✓ Updated referrals to {status_to_set} for customer {customer_id}")
-        
-        return {"status": "success"}
-    finally:
-        db.close()
+            
+            return {"status": "success"}
 
 def send_welcome_email(email: str, temp_password: str):
     """Send welcome email with login credentials"""
