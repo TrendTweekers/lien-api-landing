@@ -819,25 +819,9 @@
             });
         }
         
-        async function createCheckoutSession(plan) {
-            try {
-                const response = await fetch('/api/create-checkout-session', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ plan: plan })
-                });
-                
-                const data = await response.json();
-                
-                if (data.url) {
-                    window.location.href = data.url;
-                } else {
-                    alert('Error creating checkout session');
-                }
-            } catch (error) {
-                console.error('Checkout error:', error);
-                alert('Error: ' + error.message);
-            }
+        function createCheckoutSession(plan) {
+            // Direct redirect to Stripe test payment link
+            window.location.href = 'https://buy.stripe.com/test_3cIcN5gBL8pr6MVgrP9fW00';
         }
         
         // Animate feature checkmarks on scroll
