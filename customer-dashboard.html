@@ -129,8 +129,32 @@
             }
         }
         
-        // Logout function
-                async function logout() {
+        // Logout function - moved to global scope
+                
+                // Clear ALL auth-related data from localStorage
+                localStorage.removeItem('session_token');
+                localStorage.removeItem('user_email');
+                localStorage.removeItem('user');
+                localStorage.removeItem('subscription_status');
+                
+                // Clear sessionStorage too (if used)
+                sessionStorage.clear();
+                
+                // Redirect to landing page
+                window.location.href = '/';
+                
+            } catch (error) {
+                console.error('Logout error:', error);
+                // Still clear local data even if API call fails
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/';
+            }
+        });
+        }
+        
+        // Logout function - Global scope for onclick handler
+        window.logout = async function() {
             try {
                 // Get the session token
                 const token = localStorage.getItem('session_token');
@@ -165,9 +189,8 @@
                 sessionStorage.clear();
                 window.location.href = '/';
             }
-        });
-        }
-        
+        };
+
         // Run on page load
         window.addEventListener('DOMContentLoaded', checkAuth);
     </script>
@@ -2268,41 +2291,7 @@
             alert('Opening invoices...\n\nIn production, shows list of invoices from Stripe.');
         }
 
-                async function logout() {
-            try {
-                // Get the session token
-                const token = localStorage.getItem('session_token');
-                
-                if (token) {
-                    // Call the logout API endpoint
-                    await fetch('/api/logout', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                }
-                
-                // Clear ALL auth-related data from localStorage
-                localStorage.removeItem('session_token');
-                localStorage.removeItem('user_email');
-                localStorage.removeItem('user');
-                localStorage.removeItem('subscription_status');
-                
-                // Clear sessionStorage too (if used)
-                sessionStorage.clear();
-                
-                // Redirect to landing page
-                window.location.href = '/';
-                
-            } catch (error) {
-                console.error('Logout error:', error);
-                // Still clear local data even if API call fails
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.href = '/';
-            }
+                // Duplicate logout function removed - using window.logout
         }
             
             try {

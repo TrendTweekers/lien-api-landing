@@ -95,6 +95,34 @@
     </script>
     
     <style>
+        /* Logo sizing - load BEFORE image to prevent flash */
+        header img.ld-brand-icon,
+        nav img.ld-brand-icon {
+            height: 32px !important;
+            width: auto !important;
+            max-height: 32px !important;
+            display: block !important;
+        }
+        header img.ld-brand-wordmark,
+        nav img.ld-brand-wordmark {
+            height: 28px !important;
+            width: auto !important;
+            max-height: 28px !important;
+            display: block !important;
+        }
+        @media (max-width: 768px) {
+            header img.ld-brand-icon,
+            nav img.ld-brand-icon {
+                height: 28px !important;
+                max-height: 28px !important;
+            }
+            header img.ld-brand-wordmark,
+            nav img.ld-brand-wordmark {
+                height: 24px !important;
+                max-height: 24px !important;
+            }
+        }
+        
         /* Note: Base body/html styles now in lovable-scale.css */
         /* Only component-specific overrides here */
         
