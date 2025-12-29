@@ -5314,13 +5314,13 @@ async def stripe_webhook(request: Request):
                                 send_broker_notification(broker['email'], email)
                 
                 except sqlite3.IntegrityError:
-                # User already exists - just update subscription
-                db.execute("""
-                    UPDATE users 
-                    SET subscription_status = 'active', subscription_id = ?
-                    WHERE email = ?
-                """, (subscription_id, email))
-                db.commit()
+                    # User already exists - just update subscription
+                    db.execute("""
+                        UPDATE users 
+                        SET subscription_status = 'active', subscription_id = ?
+                        WHERE email = ?
+                    """, (subscription_id, email))
+                    db.commit()
         
         # Recurring payment succeeded (for recurring commission model)
         elif event['type'] == 'invoice.payment_succeeded':
