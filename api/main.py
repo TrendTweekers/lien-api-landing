@@ -5051,7 +5051,7 @@ async def stripe_webhook(request: Request):
             # Create stripe_events table if it doesn't exist
             execute_query(db, """
                 CREATE TABLE IF NOT EXISTS stripe_events (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id SERIAL PRIMARY KEY,
                     event_id TEXT UNIQUE NOT NULL,
                     event_type TEXT NOT NULL,
                     processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
