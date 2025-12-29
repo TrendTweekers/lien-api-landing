@@ -5321,195 +5321,195 @@ async def stripe_webhook(request: Request):
                         WHERE email = ?
                     """, (subscription_id, email))
                     db.commit()
-        
-        # Recurring payment succeeded (for recurring commission model)
-        elif event['type'] == 'invoice.payment_succeeded':
-            invoice = event['data']['object']
-            customer_id = invoice.get('customer')
-            subscription_id = invoice.get('subscription')
-            amount_paid = invoice.get('amount_paid', 0) / 100.0  # Convert from cents
             
-            if not customer_id:
-                return {"status": "skipped", "reason": "No customer ID"}
-            
-            # Find customer email
-            customer_row = db.execute("""
-                SELECT email FROM customers WHERE stripe_customer_id = ?
-            """, (customer_id,)).fetchone()
-            
-            if not customer_row:
-                print(f"⚠️ Customer {customer_id} not found for invoice payment")
-                return {"status": "skipped", "reason": "Customer not found"}
-            
-            customer_email = customer_row[0] if isinstance(customer_row, (list, tuple)) else customer_row.get('email')
-            
-            # Find referral that created this customer (to get broker info)
-            referral_row = db.execute("""
-                SELECT broker_id, broker_email, payout_type, commission_model
-                FROM referrals
-                WHERE customer_stripe_id = ? OR customer_email = ?
-                ORDER BY created_at ASC
-                LIMIT 1
-            """, (customer_id, customer_email)).fetchone()
-            
-            if not referral_row:
-                print(f"⚠️ No referral found for customer {customer_email}")
-                return {"status": "skipped", "reason": "No referral found"}
-            
-            if isinstance(referral_row, dict):
-                broker_ref_code = referral_row.get('broker_id')
-                broker_email = referral_row.get('broker_email', '')
-                payout_type = referral_row.get('payout_type', 'bounty')
-                commission_model = referral_row.get('commission_model', 'bounty')
-            else:
-                broker_ref_code = referral_row[0] if len(referral_row) > 0 else None
-                broker_email = referral_row[1] if len(referral_row) > 1 else ''
-                payout_type = referral_row[2] if len(referral_row) > 2 else 'bounty'
-                commission_model = referral_row[3] if len(referral_row) > 3 else 'bounty'
-            
-            # Only create earning event if broker has recurring commission model
-            if commission_model == 'recurring' or payout_type == 'recurring':
-                # Get broker info
-                broker = db.execute("""
-                    SELECT * FROM brokers WHERE referral_code = ?
-                """, (broker_ref_code,)).fetchone()
+            # Recurring payment succeeded (for recurring commission model)
+            elif event['type'] == 'invoice.payment_succeeded':
+                invoice = event['data']['object']
+                customer_id = invoice.get('customer')
+                subscription_id = invoice.get('subscription')
+                amount_paid = invoice.get('amount_paid', 0) / 100.0  # Convert from cents
                 
-                if broker:
-                    # Create new earning event for this monthly payment
-                    payout_amount = 50.00  # $50/month recurring
-                    hold_until = datetime.now() + timedelta(days=60)
-                    clawback_until = datetime.now() + timedelta(days=90)
-                    
-                    db.execute("""
-                        INSERT INTO referrals 
-                        (broker_id, broker_email, customer_email, customer_stripe_id,
-                         amount, payout, payout_type, status, 
-                         hold_until, clawback_until, created_at, payment_date)
-                        VALUES (?, ?, ?, ?, ?, ?, 'recurring', 'on_hold', ?, ?, datetime('now'), datetime('now'))
-                    """, (
-                        broker_ref_code,
-                        broker_email,
-                        customer_email,
-                        customer_id,
-                        amount_paid,
-                        payout_amount,
-                        hold_until,
-                        clawback_until
-                    ))
-                    
-                    db.commit()
-                    print(f"✓ Recurring payment earning event created: {customer_email} → {broker_email} (${payout_amount})")
-            
-            return {"status": "processed", "event_type": "invoice.payment_succeeded"}
-        
-        # Subscription cancelled
-        elif event['type'] == 'customer.subscription.deleted':
-            subscription = event['data']['object']
-            customer_id = subscription['customer']
-            
-            db.execute("""
-                UPDATE users 
-                SET subscription_status = 'cancelled'
-                WHERE stripe_customer_id = ?
-            """, (customer_id,))
-            
-            # Check if this was a referral that should be clawed back
-            cursor = db.cursor()
-            
-            # Update all referrals for this customer to CANCELED status
-            cursor.execute("""
-                UPDATE referrals
-                SET status = 'CANCELED'
-                WHERE customer_stripe_id = ? OR customer_email = (
-                    SELECT email FROM customers WHERE stripe_customer_id = ?
-                )
-            """, (customer_id, customer_id))
-            
-            updated_count = cursor.rowcount
-            if updated_count > 0:
-                print(f"✓ Updated {updated_count} referral(s) to CANCELED for customer {customer_id}")
-            
-            # Check for clawback eligibility (if paid within 90 days)
-            cursor.execute("""
-                SELECT id, payout, status, paid_at, created_at
-                FROM referrals
-                WHERE (customer_stripe_id = ? OR customer_email = (
-                    SELECT email FROM customers WHERE stripe_customer_id = ?
-                ))
-                AND status = 'paid'
-                AND paid_at IS NOT NULL
-            """, (customer_id, customer_id))
-            
-            paid_referrals = cursor.fetchall()
-            for ref in paid_referrals:
-                ref_id = ref[0] if isinstance(ref, (list, tuple)) else ref.get('id')
-                paid_at = ref[3] if isinstance(ref, (list, tuple)) else ref.get('paid_at')
+                if not customer_id:
+                    return {"status": "skipped", "reason": "No customer ID"}
                 
-                if paid_at:
-                    try:
-                        if isinstance(paid_at, str):
-                            paid_date = datetime.fromisoformat(paid_at.replace('Z', '+00:00'))
-                        else:
-                            paid_date = paid_at
-                        days_since_paid = (datetime.now() - paid_date).days
+                # Find customer email
+                customer_row = db.execute("""
+                    SELECT email FROM customers WHERE stripe_customer_id = ?
+                """, (customer_id,)).fetchone()
+                
+                if not customer_row:
+                    print(f"⚠️ Customer {customer_id} not found for invoice payment")
+                    return {"status": "skipped", "reason": "Customer not found"}
+                
+                customer_email = customer_row[0] if isinstance(customer_row, (list, tuple)) else customer_row.get('email')
+                
+                # Find referral that created this customer (to get broker info)
+                referral_row = db.execute("""
+                    SELECT broker_id, broker_email, payout_type, commission_model
+                    FROM referrals
+                    WHERE customer_stripe_id = ? OR customer_email = ?
+                    ORDER BY created_at ASC
+                    LIMIT 1
+                """, (customer_id, customer_email)).fetchone()
+                
+                if not referral_row:
+                    print(f"⚠️ No referral found for customer {customer_email}")
+                    return {"status": "skipped", "reason": "No referral found"}
+                
+                if isinstance(referral_row, dict):
+                    broker_ref_code = referral_row.get('broker_id')
+                    broker_email = referral_row.get('broker_email', '')
+                    payout_type = referral_row.get('payout_type', 'bounty')
+                    commission_model = referral_row.get('commission_model', 'bounty')
+                else:
+                    broker_ref_code = referral_row[0] if len(referral_row) > 0 else None
+                    broker_email = referral_row[1] if len(referral_row) > 1 else ''
+                    payout_type = referral_row[2] if len(referral_row) > 2 else 'bounty'
+                    commission_model = referral_row[3] if len(referral_row) > 3 else 'bounty'
+                
+                # Only create earning event if broker has recurring commission model
+                if commission_model == 'recurring' or payout_type == 'recurring':
+                    # Get broker info
+                    broker = db.execute("""
+                        SELECT * FROM brokers WHERE referral_code = ?
+                    """, (broker_ref_code,)).fetchone()
+                    
+                    if broker:
+                        # Create new earning event for this monthly payment
+                        payout_amount = 50.00  # $50/month recurring
+                        hold_until = datetime.now() + timedelta(days=60)
+                        clawback_until = datetime.now() + timedelta(days=90)
                         
-                        # If cancelled within 90 days of payment, mark for clawback
-                        if days_since_paid < 90:
-                            cursor.execute("""
-                                UPDATE referrals
-                                SET status = 'clawed_back',
-                                    notes = 'Customer cancelled within 90 days of payment'
-                                WHERE id = ?
-                            """, (ref_id,))
-                            print(f"🚨 CLAWBACK: Referral {ref_id} cancelled {days_since_paid} days after payment")
-                    except Exception as e:
-                        print(f"⚠️ Error processing clawback for referral {ref_id}: {e}")
+                        db.execute("""
+                            INSERT INTO referrals 
+                            (broker_id, broker_email, customer_email, customer_stripe_id,
+                             amount, payout, payout_type, status, 
+                             hold_until, clawback_until, created_at, payment_date)
+                            VALUES (?, ?, ?, ?, ?, ?, 'recurring', 'on_hold', ?, ?, datetime('now'), datetime('now'))
+                        """, (
+                            broker_ref_code,
+                            broker_email,
+                            customer_email,
+                            customer_id,
+                            amount_paid,
+                            payout_amount,
+                            hold_until,
+                            clawback_until
+                        ))
+                        
+                        db.commit()
+                        print(f"✓ Recurring payment earning event created: {customer_email} → {broker_email} (${payout_amount})")
+                
+                return {"status": "processed", "event_type": "invoice.payment_succeeded"}
             
-            db.execute("""
-                UPDATE customers 
-                SET status = 'cancelled'
-                WHERE stripe_customer_id = ?
-            """, (customer_id,))
-            
-            db.commit()
-        
-        # Payment failed
-        elif event['type'] == 'invoice.payment_failed':
-            invoice = event['data']['object']
-            customer_id = invoice['customer']
-            
-            db.execute("""
-                UPDATE users 
-                SET subscription_status = 'past_due'
-                WHERE stripe_customer_id = ?
-            """, (customer_id,))
-            
-            # Update referrals to PAST_DUE status
-            db.execute("""
-                UPDATE referrals
-                SET status = 'PAST_DUE'
-                WHERE customer_stripe_id = ? AND status = 'on_hold'
-            """, (customer_id,))
-            
-            db.commit()
-        
-        # Chargeback/dispute
-        elif event['type'] in ['charge.dispute.created', 'charge.refunded']:
-            charge = event['data']['object']
-            customer_id = charge.get('customer')
-            
-            if customer_id:
-                # Update referrals to REFUNDED or CHARGEBACK status
-                status_to_set = 'REFUNDED' if event['type'] == 'charge.refunded' else 'CHARGEBACK'
+            # Subscription cancelled
+            elif event['type'] == 'customer.subscription.deleted':
+                subscription = event['data']['object']
+                customer_id = subscription['customer']
                 
                 db.execute("""
+                    UPDATE users 
+                    SET subscription_status = 'cancelled'
+                    WHERE stripe_customer_id = ?
+                """, (customer_id,))
+                
+                # Check if this was a referral that should be clawed back
+                cursor = db.cursor()
+                
+                # Update all referrals for this customer to CANCELED status
+                cursor.execute("""
                     UPDATE referrals
-                    SET status = ?
-                    WHERE customer_stripe_id = ? AND status IN ('on_hold', 'ready_to_pay', 'paid')
-                """, (status_to_set, customer_id))
+                    SET status = 'CANCELED'
+                    WHERE customer_stripe_id = ? OR customer_email = (
+                        SELECT email FROM customers WHERE stripe_customer_id = ?
+                    )
+                """, (customer_id, customer_id))
+                
+                updated_count = cursor.rowcount
+                if updated_count > 0:
+                    print(f"✓ Updated {updated_count} referral(s) to CANCELED for customer {customer_id}")
+                
+                # Check for clawback eligibility (if paid within 90 days)
+                cursor.execute("""
+                    SELECT id, payout, status, paid_at, created_at
+                    FROM referrals
+                    WHERE (customer_stripe_id = ? OR customer_email = (
+                        SELECT email FROM customers WHERE stripe_customer_id = ?
+                    ))
+                    AND status = 'paid'
+                    AND paid_at IS NOT NULL
+                """, (customer_id, customer_id))
+                
+                paid_referrals = cursor.fetchall()
+                for ref in paid_referrals:
+                    ref_id = ref[0] if isinstance(ref, (list, tuple)) else ref.get('id')
+                    paid_at = ref[3] if isinstance(ref, (list, tuple)) else ref.get('paid_at')
+                    
+                    if paid_at:
+                        try:
+                            if isinstance(paid_at, str):
+                                paid_date = datetime.fromisoformat(paid_at.replace('Z', '+00:00'))
+                            else:
+                                paid_date = paid_at
+                            days_since_paid = (datetime.now() - paid_date).days
+                            
+                            # If cancelled within 90 days of payment, mark for clawback
+                            if days_since_paid < 90:
+                                cursor.execute("""
+                                    UPDATE referrals
+                                    SET status = 'clawed_back',
+                                        notes = 'Customer cancelled within 90 days of payment'
+                                    WHERE id = ?
+                                """, (ref_id,))
+                                print(f"🚨 CLAWBACK: Referral {ref_id} cancelled {days_since_paid} days after payment")
+                        except Exception as e:
+                            print(f"⚠️ Error processing clawback for referral {ref_id}: {e}")
+                
+                db.execute("""
+                    UPDATE customers 
+                    SET status = 'cancelled'
+                    WHERE stripe_customer_id = ?
+                """, (customer_id,))
                 
                 db.commit()
-                print(f"✓ Updated referrals to {status_to_set} for customer {customer_id}")
+            
+            # Payment failed
+            elif event['type'] == 'invoice.payment_failed':
+                invoice = event['data']['object']
+                customer_id = invoice['customer']
+                
+                db.execute("""
+                    UPDATE users 
+                    SET subscription_status = 'past_due'
+                    WHERE stripe_customer_id = ?
+                """, (customer_id,))
+                
+                # Update referrals to PAST_DUE status
+                db.execute("""
+                    UPDATE referrals
+                    SET status = 'PAST_DUE'
+                    WHERE customer_stripe_id = ? AND status = 'on_hold'
+                """, (customer_id,))
+                
+                db.commit()
+            
+            # Chargeback/dispute
+            elif event['type'] in ['charge.dispute.created', 'charge.refunded']:
+                charge = event['data']['object']
+                customer_id = charge.get('customer')
+                
+                if customer_id:
+                    # Update referrals to REFUNDED or CHARGEBACK status
+                    status_to_set = 'REFUNDED' if event['type'] == 'charge.refunded' else 'CHARGEBACK'
+                    
+                    db.execute("""
+                        UPDATE referrals
+                        SET status = ?
+                        WHERE customer_stripe_id = ? AND status IN ('on_hold', 'ready_to_pay', 'paid')
+                    """, (status_to_set, customer_id))
+                    
+                    db.commit()
+                    print(f"✓ Updated referrals to {status_to_set} for customer {customer_id}")
             
             return {"status": "success"}
 
