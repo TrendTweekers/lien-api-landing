@@ -292,7 +292,7 @@
             </h1>
             
             <p style="font-size: 18px; color: #6B7280; margin-bottom: 24px;">
-                One saved lien pays for 25 years of service. Never lose $75K+ to a missed deadline again.
+                Protect your receivables with unlimited deadline calculations. One saved lien can recover thousands in unpaid invoices.
             </p>
             
             <!-- Sleek CTA bar (no banner) -->
@@ -318,12 +318,11 @@
             <!-- Pricing Toggle -->
             <div class="text-center mb-12">
                 <div class="inline-flex items-center gap-4">
-                    <span class="text-gray-text font-medium">Monthly</span>
                     <div class="pricing-toggle">
                         <button id="monthlyBtn" class="active">Monthly</button>
                         <button id="annualBtn">Annual</button>
                     </div>
-                    <span id="saveText" class="text-success-green font-semibold">Save 20%</span>
+                    <span id="saveText" class="text-success-green font-semibold hidden"></span>
                 </div>
             </div>
             
@@ -484,7 +483,7 @@
                 
                 <div style="background: var(--light-gray); padding: 20px; border-radius: 8px; margin-bottom: 16px;">
                     <div style="font-size: 24px; font-weight: 700; color: var(--primary-orange); margin-bottom: 8px;">
-                        One saved lien pays for <span id="roi-years">25</span> years of service
+                        Protect your receivables with unlimited deadline calculations
                     </div>
                     <p style="font-size: 14px; color: var(--gray-text);">
                         Based on Professional plan at $299/month
@@ -759,7 +758,7 @@
                 proCta.href = MONTHLY_STRIPE_LINK;
                 proCtaText.textContent = 'Start Professional →';
                 savingsBadge.classList.add('hidden');
-                saveText.textContent = 'Save 20%';
+                saveText.classList.add('hidden');
             });
             
             annualBtn.addEventListener('click', function() {
@@ -771,6 +770,7 @@
                 proCtaText.textContent = 'Start Professional (Annual) →';
                 savingsBadge.classList.remove('hidden');
                 saveText.textContent = 'Save $1,198 (33% off)';
+                saveText.classList.remove('hidden');
             });
         } else {
             console.error('Pricing toggle elements not found. Missing:', {

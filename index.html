@@ -1650,9 +1650,16 @@
                         }
                     }
                     
-                    // Other errors
+                    // Other errors - check if it's a limit error
                     const errorText = await response.text();
                     console.error('API error response:', errorText);
+                    
+                    // Check if error indicates limit reached
+                    if (errorText.includes('limit') || errorText.includes('upgrade') || errorText.includes('calculations') || response.status === 403) {
+                        showUpgradeModal();
+                        return;
+                    }
+                    
                     throw new Error(`API returned ${response.status}: ${errorText}`);
                 }
                 
@@ -1711,7 +1718,12 @@
                 
             } catch (error) {
                 console.error('Full error details:', error);
-                alert('Error: ' + error.message + '\n\nPlease check the browser console (F12) for details or contact support.');
+                // Check if this is a limit reached error
+                if (error.message && (error.message.includes('limit') || error.message.includes('upgrade') || error.message.includes('calculations'))) {
+                    showUpgradeModal();
+                } else {
+                    alert('Error: ' + error.message + '\n\nPlease check the browser console (F12) for details or contact support.');
+                }
             }
         });
         
@@ -1767,7 +1779,11 @@
         
         function hideEmailCaptureModal() {
             const modal = document.getElementById('emailCaptureModal');
-            if (modal) modal.classList.add('hidden');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
         }
         
         function showUpgradeModal() {
@@ -1880,8 +1896,19 @@
                         upgradeModal.classList.add('hidden');
                         upgradeModal.style.display = 'none';
                     }
-                    // Show friendly toast message
-                    showSuccessToast('No problem! Calculator remains available.');
+                    // Disable calculate functionality
+                    const calcForm = document.getElementById('calculatorForm');
+                    const calcBtn = document.querySelector('#calculatorForm button[type="submit"]');
+                    if (calcForm) {
+                        calcForm.style.pointerEvents = 'none';
+                        calcForm.style.opacity = '0.6';
+                    }
+                    if (calcBtn) {
+                        calcBtn.disabled = true;
+                        calcBtn.textContent = 'Upgrade Required';
+                    }
+                    // Show banner
+                    showCalculationLimitBanner();
                 });
             }
         });
@@ -1893,9 +1920,11 @@
             <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative animate-fade-in">
                 <!-- Close button -->
                 <button 
-                    onclick="document.getElementById('emailCaptureModal').classList.add('hidden')" 
-                    class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                    onclick="hideEmailCaptureModal(); document.body.style.overflow = 'auto';" 
+                    class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer z-50"
+                    style="z-index: 1000; cursor: pointer;"
                     aria-label="Close"
+                    id="emailModalCloseBtn"
                 >
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -1970,15 +1999,12 @@
                     
                     <!-- Heading -->
                     <h3 class="text-2xl font-bold text-gray-900 mb-2">
-                        Upgrade to Unlimited
+                        You've Used All Your Free Calculations!
                     </h3>
                     
                     <!-- Description -->
-                    <p class="text-gray-600 mb-1">
-                        You've used all <span class="font-semibold">6 free calculations</span>.
-                    </p>
                     <p class="text-gray-600 mb-6">
-                        Unlock unlimited access for <span class="font-bold text-blue-600">$299/month</span>.
+                        You've used all <span class="font-semibold">6 free calculations</span>. To continue protecting your receivables with unlimited deadline calculations, please upgrade to a paid plan.
                     </p>
                     
                     <!-- Benefits list -->
@@ -2014,10 +2040,10 @@
                     <!-- CTA Buttons -->
                     <div class="space-y-3">
                         <a 
-                            href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00"
-                            class="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3.5 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl"
+                            href="/pricing.html"
+                            class="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3.5 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl text-center"
                         >
-                            Upgrade Now - $299/month
+                            View Pricing Plans
                         </a>
                         
                         <button 
@@ -2766,6 +2792,24 @@ function showEmailCaptureModal() {
             }).catch(err => console.error('Fallback email capture error:', err));
         }
     }
+}
+
+function showCalculationLimitBanner() {
+    // Remove existing banner if any
+    const existingBanner = document.getElementById('calculationLimitBanner');
+    if (existingBanner) existingBanner.remove();
+    
+    // Create banner
+    const banner = document.createElement('div');
+    banner.id = 'calculationLimitBanner';
+    banner.className = 'fixed top-0 left-0 right-0 bg-red-600 text-white py-3 px-4 text-center z-50 shadow-lg';
+    banner.innerHTML = `
+        <div class="max-w-7xl mx-auto flex items-center justify-center gap-4">
+            <span class="font-semibold">0 calculations remaining - Upgrade to continue</span>
+            <a href="/pricing.html" class="bg-white text-red-600 px-4 py-1 rounded font-semibold hover:bg-gray-100 transition">View Pricing</a>
+        </div>
+    `;
+    document.body.insertBefore(banner, document.body.firstChild);
 }
 
 function showUpgradeModal() {
