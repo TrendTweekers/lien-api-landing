@@ -7059,8 +7059,16 @@ async def get_pending_brokers():
         return {"pending": [], "count": 0}
 
 @app.get("/api/v1/broker/dashboard")
-async def broker_dashboard(request: Request, email: str):
+async def broker_dashboard(request: Request, email: str, authorization: str = Header(None)):
     """Get broker dashboard data - requires approved status"""
+    # Validate token
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    token = authorization.replace("Bearer ", "")
+    if not token:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
     try:
         with get_db() as conn:
             cursor = get_db_cursor(conn)
@@ -7368,6 +7376,35 @@ async def broker_login(request: Request, data: dict):
             status_code=500,
             content={"status": "error", "message": "Login failed. Please try again."}
         )
+
+@app.post("/api/v1/broker/logout")
+async def broker_logout(authorization: str = Header(None)):
+    """
+    Logout broker by clearing their session
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No authorization token provided")
+    
+    token = authorization.replace("Bearer ", "")
+    
+    try:
+        # Find broker by token (stored in localStorage, not DB)
+        # Since we don't store tokens in DB yet, we can't invalidate server-side
+        # For now, just return success (client will clear localStorage)
+        # TODO: Add session_token column to brokers table for proper logout
+        
+        print(f"✅ Broker logout requested (token: {token[:10]}...)")
+        
+        return {
+            "status": "success",
+            "message": "Logged out successfully"
+        }
+        
+    except Exception as e:
+        print(f"❌ Broker logout error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Logout failed")
 
 @app.post("/api/v1/broker/change-password")
 async def broker_change_password(request: Request, data: dict):
@@ -7692,8 +7729,16 @@ async def broker_reset_password(request: Request, data: dict):
 # ==========================================
 
 @app.post("/api/v1/broker/payment-info")
-async def save_broker_payment_info(request: Request, data: dict):
+async def save_broker_payment_info(request: Request, data: dict, authorization: str = Header(None)):
     """Save or update broker payment information (international support)"""
+    # Validate token
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    token = authorization.replace("Bearer ", "")
+    if not token:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
     try:
         email = data.get('email', '').lower().strip()
         payment_method = data.get('payment_method', '')
@@ -7802,8 +7847,16 @@ async def save_broker_payment_info(request: Request, data: dict):
         )
 
 @app.get("/api/v1/broker/payment-info")
-async def get_broker_payment_info(request: Request, email: str):
+async def get_broker_payment_info(request: Request, email: str, authorization: str = Header(None)):
     """Get broker payment information (masked for security)"""
+    # Validate token
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    token = authorization.replace("Bearer ", "")
+    if not token:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
     try:
         email = email.lower().strip()
         

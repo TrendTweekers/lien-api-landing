@@ -91,7 +91,7 @@
             <div style="display: flex; align-items: center; gap: 16px;">
                 <span id="brokerName" class="text-gray-600"></span>
                 <button onclick="showChangePassword()" class="text-blue-600 hover:underline">Change Password</button>
-                <button onclick="logout()" class="text-red-600 hover:underline">Logout</button>
+                <button id="broker-logout-btn" class="text-red-600 hover:underline">Logout</button>
             </div>
         </div>
     </header>
@@ -584,10 +584,43 @@
             }
         }
         
+        // Broker Logout Function
+        document.getElementById('broker-logout-btn')?.addEventListener('click', async () => {
+            try {
+                const token = localStorage.getItem('brokerToken');
+                
+                if (token) {
+                    // Call logout API
+                    await fetch('/api/v1/broker/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }).catch(err => console.error('Logout API error:', err));
+                }
+                
+                // Clear all broker data from localStorage
+                localStorage.removeItem('brokerToken');
+                localStorage.removeItem('broker');
+                localStorage.removeItem('brokerEmail');
+                sessionStorage.clear();
+                
+                // Redirect to homepage or partners page
+                window.location.href = '/partners.html';
+                
+            } catch (error) {
+                console.error('Logout error:', error);
+                // Clear storage even if API fails
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/partners.html';
+            }
+        });
+        
         function logout() {
-            localStorage.removeItem('brokerEmail');
-            localStorage.removeItem('brokerToken');
-            location.reload();
+            // Legacy function - redirect to new logout handler
+            document.getElementById('broker-logout-btn')?.click();
         }
         
         function showForgotPassword() {
@@ -731,7 +764,12 @@
         
         async function loadPaymentInfo() {
             try {
-                const response = await fetch(`/api/v1/broker/payment-info?email=${encodeURIComponent(currentBrokerEmail)}`);
+                const token = localStorage.getItem('brokerToken');
+                const response = await fetch(`/api/v1/broker/payment-info?email=${encodeURIComponent(currentBrokerEmail)}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
                 const data = await response.json();
                 
                 if (data.status === 'success' && data.payment_info) {
@@ -870,10 +908,12 @@
             }
             
             try {
+                const token = localStorage.getItem('brokerToken');
                 const response = await fetch('/api/v1/broker/payment-info', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
                         email: currentBrokerEmail,
@@ -911,7 +951,12 @@
         
         async function loadDashboard() {
             try {
-                const response = await fetch(`/api/v1/broker/dashboard?email=${encodeURIComponent(currentBrokerEmail)}`);
+                const token = localStorage.getItem('brokerToken');
+                const response = await fetch(`/api/v1/broker/dashboard?email=${encodeURIComponent(currentBrokerEmail)}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
                 const data = await response.json();
                 
                 if (!response.ok) {
