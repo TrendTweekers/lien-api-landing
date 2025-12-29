@@ -16,7 +16,23 @@
     <!-- Umami Analytics -->
     <script defer src="https://cloud.umami.is/script.js" data-website-id="02250d35-ee17-41be-845d-2fe0f7f15e63"></script>
     
-    <meta name="description" content="Simple, transparent pricing for material suppliers. $299/month unlimited calculations. Free tier available. 60% cheaper than Levelset.">
+    <meta name="description" content="Unlimited mechanics lien deadline calculations for $299/month or save 33% with annual billing. Never miss a critical filing deadline again.">
+    
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="Pricing That Protects Your Receivables - LienDeadline">
+    <meta property="og:description" content="Unlimited mechanics lien deadline calculations for $299/month or save 33% with annual billing. Never miss a critical filing deadline again.">
+    <meta property="og:image" content="https://liendeadline.com/images/liendeadline-logo.png">
+    <meta property="og:url" content="https://liendeadline.com/pricing.html">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Pricing That Protects Your Receivables - LienDeadline">
+    <meta name="twitter:description" content="Unlimited mechanics lien deadline calculations for $299/month or save 33% with annual billing.">
+    <meta name="twitter:image" content="https://liendeadline.com/images/liendeadline-logo.png">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://liendeadline.com/pricing.html">
     
     <!-- Favicon -->
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -241,7 +257,28 @@
             }
         }
         </style
-    </head>
+        <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": "LienDeadline Professional",
+      "description": "Unlimited mechanics lien deadline calculations, PDF state guides, and email reminders.",
+      "image": "https://liendeadline.com/images/liendeadline-logo.png",
+      "brand": {
+        "@type": "Brand",
+        "name": "LienDeadline"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "299.00",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock",
+        "url": "https://liendeadline.com/pricing.html"
+      }
+    }
+    </script>
+</head>
 <body class="bg-white text-dark-text">
     
     <!-- Header -->
@@ -408,9 +445,9 @@
                         </li>
                     </ul>
                     
-                    <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" id="proCta" class="block w-full bg-primary-orange text-white text-center py-3 rounded-lg font-semibold hover:bg-orange-600 transition">
+                    <button onclick="createCheckoutSession(currentPlan)" id="proCta" class="block w-full bg-primary-orange text-white text-center py-3 rounded-lg font-semibold hover:bg-orange-600 transition">
                         <span id="proCtaText">Start Professional →</span>
-                    </a>
+                    </button>
                 </div>
                 
                 <!-- Enterprise Tier -->
@@ -743,9 +780,8 @@
         const savingsBadge = document.getElementById('savingsBadge');
         const saveText = document.getElementById('saveText');
         
-        const MONTHLY_STRIPE_LINK = 'https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00';
-        const ANNUAL_STRIPE_LINK = 'https://buy.stripe.com/aFacN5gBL7ln9Z72AZ9fW01';
-        
+        let currentPlan = 'monthly';
+
         // Safety check: Only add event listeners if all required elements exist
         if (monthlyBtn && annualBtn && proPrice && proPeriod && proCta && proCtaText && savingsBadge && saveText) {
             monthlyBtn.addEventListener('click', function() {
@@ -753,7 +789,7 @@
                 annualBtn.classList.remove('active');
                 proPrice.textContent = '$299';
                 proPeriod.textContent = '/month';
-                proCta.href = MONTHLY_STRIPE_LINK;
+                currentPlan = 'monthly';
                 proCtaText.textContent = 'Start Professional →';
                 savingsBadge.classList.add('hidden');
                 saveText.classList.add('hidden');
@@ -764,7 +800,7 @@
                 monthlyBtn.classList.remove('active');
                 proPrice.textContent = '$2,390';
                 proPeriod.textContent = '/year';
-                proCta.href = ANNUAL_STRIPE_LINK;
+                currentPlan = 'annual';
                 proCtaText.textContent = 'Start Professional (Annual) →';
                 savingsBadge.classList.remove('hidden');
                 saveText.textContent = 'Save $1,198 (33% off)';
@@ -781,6 +817,27 @@
                 savingsBadge: !savingsBadge,
                 saveText: !saveText
             });
+        }
+        
+        async function createCheckoutSession(plan) {
+            try {
+                const response = await fetch('/api/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ plan: plan })
+                });
+                
+                const data = await response.json();
+                
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    alert('Error creating checkout session');
+                }
+            } catch (error) {
+                console.error('Checkout error:', error);
+                alert('Error: ' + error.message);
+            }
         }
         
         // Animate feature checkmarks on scroll
