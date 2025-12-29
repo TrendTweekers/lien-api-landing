@@ -23,13 +23,76 @@
     <!-- Lovable Scale Stylesheet (load first) -->
     <link rel="stylesheet" href="/lovable-scale.css">    <script>
         // Check authentication on page load
-        async function checkAuth() {
+                async function checkAuth() {
             const token = localStorage.getItem('session_token');
-            
+
+            // If no token, redirect to landing page
             if (!token) {
-                window.location.href = '/dashboard';
+                window.location.href = '/';
                 return;
             }
+
+            // Verify the token is still valid
+            try {
+                const response = await fetch('/api/verify-session', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    // Token is invalid or expired
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/';
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (!data || !data.email) {
+                    // Token is invalid
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/';
+                    return;
+                }
+
+                // Token is valid, continue with dashboard initialization
+                // Display user email
+                const userEmailEl = document.getElementById('user-email');
+                if (userEmailEl) {
+                    userEmailEl.textContent = data.email;
+                }
+
+                // Store email in localStorage for convenience
+                if (data.email) {
+                    localStorage.setItem('user_email', data.email);
+                }
+
+                // Check subscription status
+                if (data.subscription_status === 'cancelled') {
+                    // Show subscription warning (you can add UI for this)
+                    console.warn('Subscription cancelled');
+                }
+
+                // Load dashboard data
+                loadDashboard();
+
+            } catch (error) {
+                console.error('Session verification error:', error);
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/';
+                return;
+            }
+        }
+
+        // Placeholder for dashboard loading function
+        function loadDashboard() {
+            // Dashboard initialization code goes here
+            // This function can be expanded with other initialization logic
+        }
             
             try {
                 const response = await fetch('/api/verify-session', {
@@ -67,19 +130,42 @@
         }
         
         // Logout function
-        function logout() {
-            const token = localStorage.getItem('session_token');
-            
-            fetch('/api/logout', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
+                async function logout() {
+            try {
+                // Get the session token
+                const token = localStorage.getItem('session_token');
+                
+                if (token) {
+                    // Call the logout API endpoint
+                    await fetch('/api/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
                 }
-            }).finally(() => {
+                
+                // Clear ALL auth-related data from localStorage
                 localStorage.removeItem('session_token');
                 localStorage.removeItem('user_email');
-                window.location.href = '/dashboard';
-            });
+                localStorage.removeItem('user');
+                localStorage.removeItem('subscription_status');
+                
+                // Clear sessionStorage too (if used)
+                sessionStorage.clear();
+                
+                // Redirect to landing page
+                window.location.href = '/';
+                
+            } catch (error) {
+                console.error('Logout error:', error);
+                // Still clear local data even if API call fails
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/';
+            }
+        });
         }
         
         // Run on page load
@@ -2182,20 +2268,42 @@
             alert('Opening invoices...\n\nIn production, shows list of invoices from Stripe.');
         }
 
-        function logout() {
-            if (confirm('Logout?')) {
-                window.location.href = 'index.html';
+                async function logout() {
+            try {
+                // Get the session token
+                const token = localStorage.getItem('session_token');
+                
+                if (token) {
+                    // Call the logout API endpoint
+                    await fetch('/api/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                }
+                
+                // Clear ALL auth-related data from localStorage
+                localStorage.removeItem('session_token');
+                localStorage.removeItem('user_email');
+                localStorage.removeItem('user');
+                localStorage.removeItem('subscription_status');
+                
+                // Clear sessionStorage too (if used)
+                sessionStorage.clear();
+                
+                // Redirect to landing page
+                window.location.href = '/';
+                
+            } catch (error) {
+                console.error('Logout error:', error);
+                // Still clear local data even if API call fails
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/';
             }
         }
-
-        // QuickBooks Integration Functions
-        async function connectQuickBooks() {
-            const token = localStorage.getItem('session_token');
-            if (!token) {
-                alert('Please log in first');
-                window.location.href = '/dashboard';
-                return;
-            }
             
             try {
                 // Pass token as query parameter for browser redirect
