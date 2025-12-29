@@ -15,6 +15,7 @@ import os
 import subprocess
 import bcrypt
 import stripe
+from stripe import _object_classes
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 import traceback
 import smtplib
@@ -5035,9 +5036,6 @@ def send_admin_fraud_alert(broker_email: str, customer_email: str, flags: list, 
 @app.post("/webhooks/stripe")
 async def stripe_webhook(request: Request):
     """Handle Stripe webhooks for subscription events"""
-    # Force Stripe internal classes to load properly before webhook validation
-    import stripe.apps
-    
     payload = await request.body()
     sig_header = request.headers.get('stripe-signature')
     
