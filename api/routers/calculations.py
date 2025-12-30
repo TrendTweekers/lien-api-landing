@@ -325,88 +325,14 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
 
     # Admin/dev user bypass (check BEFORE database lookup)
     DEV_EMAIL = "kartaginy1@gmail.com"
-    # Allow bypass if dev email OR user is logged in
+    # Set quota flag for logged-in users or admin/dev email
+    quota_remaining = None  # Will be set to "Unlimited" for logged-in users, or calculated for public users
     if (request_email and request_email == DEV_EMAIL.lower()) or logged_in_user:
         if logged_in_user:
             print(f"✅ Logged-in user detected: {logged_in_user.get('email')} - allowing unlimited calculations")
         else:
             print(f"✅ Admin/dev user detected from request: {request_email} - allowing unlimited calculations")
-    
-        # Calculate deadlines if data is provided (Admin/Logged-in bypass)
-        if request_data and request_data.state and request_data.notice_date:
-            try:
-                state_code = request_data.state.upper()
-                if state_code in VALID_STATES:
-                    # Parse date
-                    invoice_date_str = request_data.notice_date
-                    invoice_date = None
-                    try:
-                        invoice_date = datetime.strptime(invoice_date_str, "%m/%d/%Y")
-                    except ValueError:
-                        try:
-                            invoice_date = datetime.strptime(invoice_date_str, "%Y-%m-%d")
-                        except ValueError:
-                            try:
-                                invoice_date = datetime.fromisoformat(invoice_date_str)
-                            except ValueError:
-                                pass
-                
-                    if invoice_date:
-                        # Get rules
-                        rules = STATE_RULES.get(state_code, {})
-                
-                        # Calculate
-                        result = calculate_state_deadline(
-                            state_code=state_code,
-                            invoice_date=invoice_date,
-                            role="supplier",
-                            project_type="commercial",
-                            state_rules=rules
-                        )
-                
-                        # Extract deadlines
-                        prelim_deadline = result.get("preliminary_deadline")
-                        lien_deadline = result.get("lien_deadline")
-                        prelim_required = result.get("preliminary_required", rules.get("preliminary_notice", {}).get("required", False))
-                
-                        # Format dates
-                        prelim_deadline_str = prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None
-                        lien_deadline_str = lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None
-                        noi_deadline_str = result.get("notice_of_intent_deadline").strftime('%Y-%m-%d') if result.get("notice_of_intent_deadline") else None
-                
-                        today = datetime.now()
-                        days_to_prelim = (prelim_deadline - today).days if prelim_deadline else None
-                        days_to_lien = (lien_deadline - today).days if lien_deadline else None
-            except Exception as e:
-                print(f"Error in track_calculation: {str(e)}")
-                # If possible, return a fallback or re-raise 
-                raise HTTPException(status_code=500, detail=str(e))
-
-        # Universal Format return for Admin/Logged-in Users
-        return JSONResponse(content={
-            "id": None, # No ID for unsaved calculation
-            "status": "success",
-            "quota_remaining": "Unlimited",
-            
-            # 1. New Flat Keys
-            "preliminary_notice_deadline": prelim_deadline_str,
-            "lien_deadline": lien_deadline_str,
-            "notice_of_intent_deadline": noi_deadline_str,
-
-            # 2. Nested Objects (REQUIRED for Dashboard)
-            "preliminary_notice": {
-                "deadline": prelim_deadline_str,
-                "required": prelim_required,
-                "days_remaining": days_to_prelim if days_to_prelim is not None else 0
-            },
-            "lien_filing": {
-                "deadline": lien_deadline_str,
-                "days_remaining": days_to_lien if days_to_lien is not None else 0
-            },
-            
-            # 3. Legacy Keys
-            "prelim_deadline": prelim_deadline_str
-        })
+        quota_remaining = "Unlimited"
 
     try:
         with get_db() as conn:
@@ -604,25 +530,52 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
                 except Exception as e:
                     print(f"⚠️ Error calculating in track_calculation: {e}")
     
-            # Determine quota based on login status
-            quota_info = {
-                "limit": 6 if email else 3,
-                "remaining": max(0, (6 if email else 3) - count)
-            }
-    
-            if logged_in_user and logged_in_user.get('unlimited'):
+            # Determine quota based on login status (only for non-unlimited users)
+            if quota_remaining != "Unlimited":
+                quota_info = {
+                    "limit": 6 if email else 3,
+                    "remaining": max(0, (6 if email else 3) - count)
+                }
+            else:
                 quota_info = {
                     "unlimited": True,
                     "remaining": 999999
                 }
-
-            return {
-                "status": "allowed",
-                "calculation_count": count,
+    
+            # Build Universal Data Format response
+            response = {
+                "status": "success" if quota_remaining == "Unlimited" else "allowed",
+                "quota_remaining": quota_remaining if quota_remaining == "Unlimited" else quota_info.get("remaining"),
+                "calculation_count": count if quota_remaining != "Unlimited" else 0,
                 "email_provided": bool(email),
-                "quota": quota_info,
-                **calculation_result
+                "quota": quota_info
             }
+            
+            # Add calculation results if available (Universal Data Format)
+            if calculation_result:
+                # Add flat keys
+                response["preliminary_notice_deadline"] = calculation_result.get("preliminary_notice_deadline")
+                response["lien_deadline"] = calculation_result.get("lien_deadline")
+                response["notice_of_intent_deadline"] = calculation_result.get("notice_of_intent_deadline")
+                response["prelim_deadline"] = calculation_result.get("prelim_deadline")
+                
+                # Add nested objects (REQUIRED for Dashboard)
+                if "preliminary_notice" in calculation_result:
+                    response["preliminary_notice"] = {
+                        "deadline": calculation_result["preliminary_notice"].get("deadline"),
+                        "required": calculation_result["preliminary_notice"].get("required", False),
+                        "days_remaining": calculation_result["preliminary_notice"].get("days_from_now") or calculation_result["preliminary_notice"].get("days") or 0
+                    }
+                if "lien_filing" in calculation_result:
+                    response["lien_filing"] = {
+                        "deadline": calculation_result["lien_filing"].get("deadline"),
+                        "days_remaining": calculation_result["lien_filing"].get("days_from_now") or calculation_result["lien_filing"].get("days") or 0
+                    }
+                
+                # Also include full calculation_result for backward compatibility
+                response.update(calculation_result)
+            
+            return JSONResponse(content=response)
     
     except Exception as e:
         print(f"⚠️ Error tracking calculation: {e}")
