@@ -1136,6 +1136,12 @@ try:
     static_dir = BASE_DIR / "static"
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+    
+    # Serve React Dashboard v2
+    dashboard_v2_path = BASE_DIR / "public" / "dashboard-v2"
+    if not dashboard_v2_path.exists():
+        dashboard_v2_path.mkdir(parents=True, exist_ok=True)
+    app.mount("/dashboard-v2", StaticFiles(directory=str(dashboard_v2_path), html=True), name="dashboard-v2")
 except Exception as e:
     print(f"Warning: Could not mount static files: {e}")
 
