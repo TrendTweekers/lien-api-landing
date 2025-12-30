@@ -89,11 +89,12 @@ export const DeadlineCalculator = () => {
     try {
       const response = await fetch("/api/v1/calculate-deadline", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           state: selectedState,
           invoice_date: date,
-          role: "supplier",
           project_type: "commercial"
         })
       });
@@ -122,9 +123,13 @@ export const DeadlineCalculator = () => {
     if (!result) return;
     
     try {
+      const token = localStorage.getItem('session_token');
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const response = await fetch("/api/calculations/save", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           state: selectedState,
           invoice_date: date,

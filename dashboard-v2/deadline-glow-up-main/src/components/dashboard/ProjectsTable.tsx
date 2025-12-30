@@ -33,7 +33,11 @@ export const ProjectsTable = () => {
   const fetchProjects = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/calculations/history");
+      const token = localStorage.getItem('session_token');
+      const headers: HeadersInit = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch("/api/calculations/history", { headers });
       if (!res.ok) throw new Error("Failed to fetch history");
       const data = await res.json();
       setProjects(data.history || []);
@@ -55,7 +59,11 @@ export const ProjectsTable = () => {
 
   const handleDownloadPDF = async (id: number) => {
     try {
-      const res = await fetch(`/api/calculations/${id}/pdf`);
+      const token = localStorage.getItem('session_token');
+      const headers: HeadersInit = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/calculations/${id}/pdf`, { headers });
       if (!res.ok) throw new Error("Download failed");
       
       const blob = await res.blob();

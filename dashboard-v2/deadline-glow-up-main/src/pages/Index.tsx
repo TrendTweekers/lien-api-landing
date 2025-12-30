@@ -12,9 +12,7 @@ import { ApiDocs } from "@/components/dashboard/ApiDocs";
 
 const Index = () => {
   useEffect(() => {
-    console.log('Auth check DISABLED for testing');
-    // TEMPORARILY DISABLED - REMOVE AFTER TESTING
-    /*
+    // Check for session token and verify session
     const token = localStorage.getItem('session_token');
     if (!token) {
       window.location.href = '/login.html';
@@ -27,8 +25,9 @@ const Index = () => {
       if (!res.ok) {
         window.location.href = '/login.html';
       }
+    }).catch(() => {
+      window.location.href = '/login.html';
     });
-    */
   }, []);
 
   return (
