@@ -26,20 +26,20 @@ async def get_customer_stats(request: Request):
             # We assume email is the common key
             
             if DB_TYPE == 'postgresql':
-                cursor.execute("SELECT calls_used FROM customers WHERE email = %s", (email,))
+                cursor.execute("SELECT api_calls FROM customers WHERE email = %s", (email,))
             else:
-                cursor.execute("SELECT calls_used FROM customers WHERE email = ?", (email,))
+                cursor.execute("SELECT api_calls FROM customers WHERE email = ?", (email,))
                 
             row = cursor.fetchone()
             
             api_calls = 0
             if row:
                 if isinstance(row, dict):
-                    api_calls = row.get('calls_used', 0)
+                    api_calls = row.get('api_calls', 0)
                 elif isinstance(row, tuple):
                     api_calls = row[0]
                 else:
-                    api_calls = getattr(row, 'calls_used', 0)
+                    api_calls = getattr(row, 'api_calls', 0)
             else:
                 # If not in customers table, maybe insert it? 
                 # Or just return 0

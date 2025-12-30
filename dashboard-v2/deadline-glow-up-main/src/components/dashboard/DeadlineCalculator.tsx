@@ -106,6 +106,16 @@ export const DeadlineCalculator = () => {
       if (!response.ok) throw new Error("Calculation failed");
       
       const data = await response.json();
+      console.log("🔍 API Calculation Response:", data);
+      
+      // Debug: Log the nested values we're trying to access
+      if (data.preliminary_notice) {
+        console.log("Prelim Days:", data.preliminary_notice.days_from_now);
+      }
+      if (data.lien_filing) {
+        console.log("Lien Days:", data.lien_filing.days_from_now);
+      }
+
       setResult(data);
       toast({
         title: "Calculation Complete",

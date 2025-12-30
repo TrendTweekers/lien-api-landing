@@ -216,8 +216,18 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
 
         # Calculate days remaining (using date objects)
         today = datetime.now().date()
-        prelim_days = int((prelim_date - today).days) if prelim_date else 0
-        lien_days = int((lien_date - today).days) if lien_date else 0
+        
+        # 🔍 DEBUG: Log calculation details
+        logger.info(f"CALC DEBUG: State={calc_req.state}, InvDate={inv_date}, Today={today}")
+        if raw_prelim:
+             logger.info(f"CALC DEBUG: RawPrelim={raw_prelim} (Type: {type(raw_prelim)})")
+        if raw_lien:
+             logger.info(f"CALC DEBUG: RawLien={raw_lien} (Type: {type(raw_lien)})")
+
+        prelim_days = int((prelim_date - today).days) if prelim_date else None
+        lien_days = int((lien_date - today).days) if lien_date else None
+        
+        logger.info(f"CALC DEBUG: PrelimDays={prelim_days}, LienDays={lien_days}")
 
         # For RESPONSE: Use simple YYYY-MM-DD format (CRITICAL for frontend compatibility)
         if raw_prelim:
@@ -308,6 +318,33 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
                 "daysUntil": lien_days
             }
         }
+
+        # 3.5. Increment Usage (api_calls)
+        if user and user.get('email'):
+            try:
+                user_email = user.get('email')
+                with get_db() as conn:
+                    cursor = get_db_cursor(conn)
+                    if DB_TYPE == 'postgresql':
+                        # Upsert for PostgreSQL
+                        cursor.execute("""
+                            INSERT INTO customers (email, api_calls, status)
+                            VALUES (%s, 1, 'active')
+                            ON CONFLICT (email) 
+                            DO UPDATE SET api_calls = customers.api_calls + 1
+                        """, (user_email,))
+                    else:
+                        # SQLite Upsert
+                        cursor.execute("""
+                            INSERT INTO customers (email, api_calls, status)
+                            VALUES (?, 1, 'active')
+                            ON CONFLICT(email) 
+                            DO UPDATE SET api_calls = api_calls + 1
+                        """, (user_email,))
+                    conn.commit()
+                    logger.info(f"Incremented API calls for {user_email}")
+            except Exception as e:
+                logger.error(f"Failed to increment API calls: {e}")
 
         # 4. Return with "Triple Payload" strategy:
         # - Wrapped in "data" for frontend expecting a wrapper

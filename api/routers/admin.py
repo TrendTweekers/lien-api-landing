@@ -400,13 +400,8 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
 
             # Get brokers with verified columns
             if DB_TYPE == 'postgresql':
-                # Assuming Postgres might have the fuller schema, but let's stick to common denominator or check
-                # For safety, let's use the same query structure but adapt for Postgres if needed.
-                # If Postgres has 'status', we might want it, but if we want code to work on both...
-                # Let's assume Postgres matches SQLite for now or handle errors.
-                # SAFE FALLBACK: Select what we know exists.
                 cursor.execute("""
-                    SELECT id, name, email, model, referrals, earned, stripe_account_id
+                    SELECT id, name, email, commission_model, referrals, earned, stripe_account_id
                     FROM brokers
                     ORDER BY id DESC
                 """)
@@ -433,7 +428,7 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
                         "earned": row.get('earned', 0.0),
                         "status": 'active', # Default since column missing
                         "payment_method": 'Stripe' if row.get('stripe_account_id') else 'Unlinked',
-                        "commission_model": row.get('model'),
+                        "commission_model": row.get('commission_model') or row.get('model'),
                         "referral_code": row.get('id'), # Use ID as code
                         "payment_status": 'pending_first_payment', 
                         "last_payment_date": None,
@@ -443,7 +438,7 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
                     }
                 else:
                     # Index mapping based on SELECT:
-                    # 0: id, 1: name, 2: email, 3: model, 4: referrals, 5: earned, 6: stripe_account_id
+                    # 0: id, 1: name, 2: email, 3: commission_model/model, 4: referrals, 5: earned, 6: stripe_account_id
                     broker_dict = {
                         "id": row[0],
                         "name": row[1] if row[1] else (row[2] if len(row) > 2 else 'N/A'),
