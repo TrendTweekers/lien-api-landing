@@ -1553,31 +1553,6 @@
                 currentProject = null;
             }
 
-            function downloadProjectPDF() {
-                if (!currentProject) return;
-                
-                // Get invoice date
-                const invoiceDate = currentProject.invoiceDate;
-                if (!invoiceDate) {
-                    alert('Invoice date not available for this project');
-                    return;
-                }
-                
-                // Format date as YYYY-MM-DD
-                const dateStr = new Date(invoiceDate).toISOString().split('T')[0];
-                const stateCode = currentProject.stateCode || 'UNKNOWN';
-                const stateName = currentProject.state || '';
-                
-                // Generate PDF URL with invoice date
-                // Get project type (default to commercial if not specified)
-                const projectType = currentProject.projectType || 'commercial';
-                
-                // Build the PDF URL with all required parameters
-                const pdfUrl = `/api/v1/guide/${stateCode}/pdf?invoice_date=${dateStr}&state_name=${encodeURIComponent(stateName)}&project_type=${projectType}`;
-                
-                // Open PDF in new tab
-                window.open(pdfUrl, '_blank');
-            }
 
             function editProject() {
                 if (!currentProject) return;
