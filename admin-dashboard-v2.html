@@ -586,20 +586,23 @@
                 </div>
                 
                 <div class="dashboard-card p-6">
-                    <h3 class="text-lg font-semibold mb-4">Update User Email & Password</h3>
+                    <h3 class="text-lg font-semibold mb-4">Create or Update User Account</h3>
+                    <p class="text-sm mb-4" style="color: var(--muted);">
+                        <strong>To create a new user:</strong> Leave "Current Email" empty and enter the new email and password.<br>
+                        <strong>To update existing user:</strong> Enter the current email, new email, and new password.
+                    </p>
                     <form id="update-user-form" class="space-y-4">
                         <div class="grid md:grid-cols-2 gap-4">
                             <div>
                                 <label for="old-email" class="block text-sm font-medium mb-2" style="color: var(--foreground);">
-                                    Current Email *
+                                    Current Email <span class="text-xs" style="color: var(--muted);">(leave empty to create new user)</span>
                                 </label>
                                 <input 
                                     type="email" 
                                     id="old-email" 
                                     name="old_email"
-                                    required
                                     class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                                    placeholder="admin@example.com"
+                                    placeholder="admin@example.com (optional)"
                                     style="border-color: var(--border);"
                                 >
                             </div>
@@ -1214,13 +1217,13 @@
             errorDiv.classList.add('hidden');
             
             // Validate inputs
-            if (!oldEmail || !newEmail || !newPassword) {
-                errorText.textContent = 'Please fill in all fields';
+            if (!newEmail || !newPassword) {
+                errorText.textContent = 'New email and password are required';
                 errorDiv.classList.remove('hidden');
                 return;
             }
             
-            if (oldEmail === newEmail) {
+            if (oldEmail && oldEmail === newEmail) {
                 errorText.textContent = 'New email must be different from current email';
                 errorDiv.classList.remove('hidden');
                 return;
@@ -1234,11 +1237,13 @@
             
             // Disable button and show loading
             submitButton.disabled = true;
-            submitButton.textContent = 'Updating...';
+            submitButton.textContent = oldEmail ? 'Updating...' : 'Creating...';
             
             try {
                 // Use existing HTTP Basic Auth (browser handles it automatically)
-                const response = await fetch(`/api/admin/update-user-email?old_email=${encodeURIComponent(oldEmail)}&new_email=${encodeURIComponent(newEmail)}&new_password=${encodeURIComponent(newPassword)}`, {
+                // old_email is optional - if empty, it will create a new user
+                const url = `/api/admin/update-user-email?new_email=${encodeURIComponent(newEmail)}&new_password=${encodeURIComponent(newPassword)}${oldEmail ? `&old_email=${encodeURIComponent(oldEmail)}` : ''}`;
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json'
@@ -1250,10 +1255,11 @@
                 
                 if (response.ok && data.status === 'success') {
                     // Show success message
+                    const oldEmailDisplay = data.old_email ? `<p><strong>Old Email:</strong> ${data.old_email}</p>` : '';
                     detailsDiv.innerHTML = `
-                        <p><strong>Old Email:</strong> ${data.old_email}</p>
-                        <p><strong>New Email:</strong> ${data.new_email}</p>
-                        <p><strong>New Password:</strong> ${data.password}</p>
+                        ${oldEmailDisplay}
+                        <p><strong>Email:</strong> ${data.new_email}</p>
+                        <p><strong>Password:</strong> ${data.password}</p>
                         <p class="mt-2 font-medium" style="color: var(--success);">${data.note}</p>
                     `;
                     successDiv.classList.remove('hidden');
@@ -1273,7 +1279,8 @@
             } finally {
                 // Re-enable button
                 submitButton.disabled = false;
-                submitButton.textContent = 'Update User';
+                const currentOldEmail = document.getElementById('old-email').value.trim();
+                submitButton.textContent = currentOldEmail ? 'Update User' : 'Create User';
             }
         });
         

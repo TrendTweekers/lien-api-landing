@@ -619,32 +619,134 @@ async def deny_partner(request: Request, username: str = Depends(verify_admin)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/api/admin/update-user-email")
-async def update_user_email(request: Request, username: str = Depends(verify_admin)):
-    """Update a user's email address"""
+async def update_user_email(
+    request: Request,
+    old_email: str = Query(None, description="Current email (for updates)"),
+    new_email: str = Query(None, description="New email address"),
+    new_password: str = Query(None, description="New password"),
+    username: str = Depends(verify_admin)
+):
+    """
+    Update or create a user account.
+    - If old_email exists: Updates email and password
+    - If old_email doesn't exist: Creates new user with new_email and password
+    """
+    import bcrypt
+    
     try:
-        data = await request.json()
-        user_id = data.get('user_id')
-        new_email = data.get('new_email')
+        # Try to get from query params first (for form submission)
+        if not old_email or not new_email:
+            try:
+                data = await request.json()
+                old_email = old_email or data.get('old_email')
+                new_email = new_email or data.get('new_email')
+                new_password = new_password or data.get('new_password')
+            except:
+                pass
         
-        if not user_id or not new_email:
-            raise HTTPException(status_code=400, detail="User ID and new email are required")
-            
+        if not new_email:
+            raise HTTPException(status_code=400, detail="New email is required")
+        
+        if not new_password:
+            raise HTTPException(status_code=400, detail="Password is required")
+        
+        if len(new_password) < 8:
+            raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+        
+        # Hash the password
+        password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+        if DB_TYPE == 'postgresql':
+            password_hash_str = password_hash.decode('utf-8')
+        else:
+            password_hash_str = password_hash
+        
         with get_db() as conn:
             cursor = get_db_cursor(conn)
-            if DB_TYPE == 'postgresql':
-                cursor.execute("UPDATE users SET email = %s WHERE id = %s", (new_email, user_id))
-            else:
-                cursor.execute("UPDATE users SET email = ? WHERE id = ?", (new_email, user_id))
             
-            if cursor.rowcount == 0:
-                raise HTTPException(status_code=404, detail="User not found")
+            # Check if old_email exists (for update) or if new_email already exists
+            user_exists = False
+            user_id = None
+            
+            if old_email:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT id FROM users WHERE email = %s", (old_email.lower(),))
+                else:
+                    cursor.execute("SELECT id FROM users WHERE email = ?", (old_email.lower(),))
+                user_result = cursor.fetchone()
+                if user_result:
+                    user_exists = True
+                    if isinstance(user_result, dict):
+                        user_id = user_result.get('id')
+                    else:
+                        user_id = user_result[0] if len(user_result) > 0 else None
+            
+            # Check if new_email already exists (to prevent duplicates)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id FROM users WHERE email = %s", (new_email.lower(),))
+            else:
+                cursor.execute("SELECT id FROM users WHERE email = ?", (new_email.lower(),))
+            existing_user = cursor.fetchone()
+            
+            if existing_user and (not user_exists or (isinstance(existing_user, dict) and existing_user.get('id') != user_id if user_exists else True)):
+                raise HTTPException(status_code=400, detail=f"Email {new_email} already exists")
+            
+            if user_exists:
+                # UPDATE existing user
+                if DB_TYPE == 'postgresql':
+                    cursor.execute(
+                        "UPDATE users SET email = %s, password_hash = %s WHERE id = %s",
+                        (new_email.lower(), password_hash_str, user_id)
+                    )
+                else:
+                    cursor.execute(
+                        "UPDATE users SET email = ?, password_hash = ? WHERE id = ?",
+                        (new_email.lower(), password_hash_str, user_id)
+                    )
+                conn.commit()
+                return JSONResponse(
+                    status_code=200,
+                    content={
+                        "status": "success",
+                        "message": "User updated successfully",
+                        "old_email": old_email,
+                        "new_email": new_email,
+                        "password": new_password,
+                        "note": "User can now login with the new email and password"
+                    }
+                )
+            else:
+                # CREATE new user
+                if DB_TYPE == 'postgresql':
+                    cursor.execute(
+                        """INSERT INTO users (email, password_hash, subscription_status, created_at)
+                           VALUES (%s, %s, 'active', NOW())""",
+                        (new_email.lower(), password_hash_str)
+                    )
+                else:
+                    cursor.execute(
+                        """INSERT INTO users (email, password_hash, subscription_status, created_at)
+                           VALUES (?, ?, 'active', datetime('now'))""",
+                        (new_email.lower(), password_hash_str)
+                    )
+                conn.commit()
+                return JSONResponse(
+                    status_code=200,
+                    content={
+                        "status": "success",
+                        "message": "User created successfully",
+                        "old_email": None,
+                        "new_email": new_email,
+                        "password": new_password,
+                        "note": "New user account created. User can login with this email and password."
+                    }
+                )
                 
-            conn.commit()
-            return {"status": "success", "message": "Email updated"}
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error updating user email: {e}")
+        print(f"Error updating/creating user: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 # ==========================================
