@@ -558,21 +558,6 @@ async def save_calculation(request: Request, body: SaveRequest):
                     ))
                 conn.commit()
                 calculation_id = cursor.lastrowid
-            conn.commit()
-                """, (
-                    user_email,
-                    p_name,
-                    c_name or "",
-                    float(inv_amount) if inv_amount else None,
-                    body.notes or "",
-                    state_val,
-                    state_code_val,
-                    inv_date,
-                    prelim_dead,
-                    prelim_days,
-                    lien_dead,
-                    lien_days,
-                ))
                 calculation_id = cursor.lastrowid
             
             conn.commit()
