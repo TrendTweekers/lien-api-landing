@@ -110,8 +110,18 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
         )
         print(f"🔍 DEBUG: Math Result: {result}")
 
-        prelim_deadline = result.get("prelim_deadline")
-        lien_deadline = result.get("lien_deadline")
+        # Extract and ensure we work with .date() objects
+        raw_prelim = result.get("preliminary_deadline") or result.get("prelim_deadline")
+        raw_lien = result.get("lien_deadline")
+
+        # Convert datetime to date if needed
+        prelim_deadline = raw_prelim.date() if isinstance(raw_prelim, datetime) else raw_prelim
+        lien_deadline = raw_lien.date() if isinstance(raw_lien, datetime) else raw_lien
+
+        # Calculate days remaining (both must be date objects)
+        today = datetime.now().date()
+        prelim_days = (prelim_deadline - today).days if prelim_deadline else 0
+        lien_days = (lien_deadline - today).days if lien_deadline else 0
 
         # 3. Response (Universal Format)
         return JSONResponse(content={
@@ -122,11 +132,11 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
             "preliminary_notice": {
                 "deadline": str(prelim_deadline) if prelim_deadline else None,
                 "required": True,
-                "days_remaining": (prelim_deadline - datetime.now().date()).days if prelim_deadline else 0
+                "days_remaining": prelim_days
             },
             "lien_filing": {
                 "deadline": str(lien_deadline) if lien_deadline else None,
-                "days_remaining": (lien_deadline - datetime.now().date()).days if lien_deadline else 0
+                "days_remaining": lien_days
             }
         })
     except Exception as e:
