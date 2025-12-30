@@ -142,15 +142,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 from .analytics import router as analytics_router
 from .routers.admin import router as admin_router, verify_admin
 from .quickbooks import router as quickbooks_router
-<<<<<<< HEAD
 from .routers.calculations import router as calculations_router, get_current_user
-=======
-from .calculations import router as calculations_router, get_current_user
 from .routers import auth
 from .routers import webhooks
-from .routers import calculations as public_calculations
 from .routers import brokers
->>>>>>> 97f2d531dd651542cc71bead3c9dd972a8c6d52c
 
 # Import short link generator
 from .short_link_system import ShortLinkGenerator
@@ -1106,7 +1101,6 @@ app.include_router(quickbooks_router, tags=["quickbooks"])
 app.include_router(calculations_router, tags=["calculations"])
 app.include_router(auth.router, tags=["auth"])
 app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
-app.include_router(public_calculations.router, tags=["public_calculations"])
 app.include_router(brokers.router, tags=["brokers"])
 
 
