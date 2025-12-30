@@ -55,6 +55,16 @@ export const ProjectsTable = () => {
 
   useEffect(() => {
     fetchProjects();
+
+    const handleProjectSaved = () => {
+      fetchProjects();
+    };
+
+    window.addEventListener('project-saved', handleProjectSaved);
+
+    return () => {
+      window.removeEventListener('project-saved', handleProjectSaved);
+    };
   }, []);
 
   const handleDownloadPDF = async (id: number) => {

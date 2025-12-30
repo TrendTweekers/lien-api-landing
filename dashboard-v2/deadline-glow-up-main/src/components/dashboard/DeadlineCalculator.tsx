@@ -73,7 +73,11 @@ export const DeadlineCalculator = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [projectName, setProjectName] = useState("");
+  const [clientName, setClientName] = useState("");
   const [amount, setAmount] = useState("");
+  const [notes, setNotes] = useState("");
+  const [reminder1Day, setReminder1Day] = useState(false);
+  const [reminder7Days, setReminder7Days] = useState(false);
 
   const handleCalculate = async () => {
     if (!selectedState || !date) {
@@ -134,10 +138,13 @@ export const DeadlineCalculator = () => {
           state: selectedState,
           invoice_date: date,
           project_name: projectName || "Unnamed Project",
-          client_name: "Client", 
+          client_name: clientName || "Client",
           amount: parseFloat(amount) || 0,
+          description: notes,
           prelim_deadline: result.preliminary_notice.deadline,
-          lien_deadline: result.lien_filing.deadline
+          lien_deadline: result.lien_filing.deadline,
+          reminder_1day: reminder1Day ? 1 : 0,
+          reminder_7days: reminder7Days ? 1 : 0
         })
       });
 
@@ -148,10 +155,17 @@ export const DeadlineCalculator = () => {
         description: "Project saved to dashboard.",
       });
       
-      // Clear form or refresh projects list (if we had access to trigger it)
+      // Dispatch custom event to notify ProjectsTable
+      window.dispatchEvent(new Event('project-saved'));
+
+      // Clear form
       setResult(null);
       setProjectName("");
+      setClientName("");
       setAmount("");
+      setNotes("");
+      setReminder1Day(false);
+      setReminder7Days(false);
     } catch (error) {
        toast({
         title: "Error",
@@ -249,6 +263,14 @@ export const DeadlineCalculator = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label>Client Name</Label>
+                  <Input 
+                    placeholder="Enter client name" 
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label>Amount ($)</Label>
                   <Input 
                     type="number" 
@@ -257,7 +279,46 @@ export const DeadlineCalculator = () => {
                     onChange={(e) => setAmount(e.target.value)}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Notes</Label>
+                  <Input 
+                    placeholder="Optional notes" 
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </div>
               </div>
+              
+              <div className="space-y-2">
+                <Label>Reminders</Label>
+                <div className="flex gap-4">
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      id="reminder1Day"
+                      checked={reminder1Day}
+                      onChange={(e) => setReminder1Day(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="reminder1Day" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      1 Day Before
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      id="reminder7Days"
+                      checked={reminder7Days}
+                      onChange={(e) => setReminder7Days(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="reminder7Days" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      7 Days Before
+                    </label>
+                  </div>
+                </div>
+              </div>
+
               <Button onClick={handleSave} className="w-full" variant="secondary">
                 <Save className="h-4 w-4 mr-2" />
                 Save to Dashboard
