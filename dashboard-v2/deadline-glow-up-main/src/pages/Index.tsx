@@ -14,10 +14,10 @@ const Index = () => {
   useEffect(() => {
     fetch("/api/verify-session")
       .then(res => {
-        if (!res.ok) window.location.href = "/customer-login.html";
+        if (!res.ok) window.location.href = "/login.html";
       })
       .catch(() => {
-        window.location.href = "/customer-login.html";
+        window.location.href = "/login.html";
       });
   }, []);
 
