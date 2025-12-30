@@ -214,19 +214,7 @@
         }
         
         /* Centered nav container */
-        .ld-nav{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            width:100%;
-            max-width:1200px;
-            margin:0 auto;
-            padding:0 16px;
-            box-sizing:border-box;
-        }
-        @media (max-width:768px){
-            .ld-nav{ padding:0 12px; }
-        }
+        /* .ld-nav CSS rule removed */
         
         /* Mobile Navigation */
         .mobile-menu-btn {
@@ -283,9 +271,9 @@
     
     <!-- Header -->
     <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <nav class="ld-nav">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
                 <!-- Logo -->
-            <a href="/" class="ld-brand" aria-label="LienDeadline home">
+            <a href="/" class="ld-brand flex items-center gap-2" aria-label="LienDeadline home">
                 <img class="ld-brand-icon" src="/images/liendeadline-icon-transparent.png" alt="LienDeadline" />
                 <img class="ld-brand-wordmark" src="/images/liendeadline-wordmark-transparent.png" alt="LienDeadline" />
             </a>
@@ -396,13 +384,13 @@
                 </div>
                 
                 <!-- Professional Tier (FEATURED) -->
-                <div class="pricing-card feature-popular bg-white rounded-xl shadow-lg p-8">
+                <div class="pricing-card feature-popular bg-slate-900 text-white rounded-xl shadow-lg p-8">
                     <div class="badge-popular">Most Popular</div>
-                    <h3 class="text-2xl font-bold text-dark-text mb-2">Professional</h3>
-                    <p class="text-gray-text mb-6">Growing material suppliers</p>
+                    <h3 class="text-2xl font-bold text-white mb-2">Professional</h3>
+                    <p class="text-gray-300 mb-6">Growing material suppliers</p>
                     <div class="mb-6">
-                        <span class="text-4xl font-bold text-dark-text" id="proPrice">$299</span>
-                        <span class="text-gray-text" id="proPeriod">/month</span>
+                        <span class="text-4xl font-bold text-white" id="proPrice">$299</span>
+                        <span class="text-gray-300" id="proPeriod">/month</span>
                         <div id="savingsBadge" class="hidden mt-2">
                             <span class="inline-block bg-success-green text-white text-sm font-semibold px-3 py-1 rounded-full">
                                 Save $1,198 (33% off)
@@ -412,35 +400,35 @@
                     
                     <ul class="space-y-4 mb-8">
                         <li class="flex items-start gap-3 feature-checkmark">
-                            <span class="text-success-green text-xl">✓</span>
+                            <span class="text-primary-orange text-xl">✓</span>
                             <span>Unlimited calculations</span>
                         </li>
                         <li class="flex items-start gap-3 feature-checkmark">
-                            <span class="text-success-green text-xl">✓</span>
+                            <span class="text-primary-orange text-xl">✓</span>
                             <span>All 50 states + DC</span>
                         </li>
                         <li class="flex items-start gap-3 feature-checkmark">
-                            <span class="text-success-green text-xl">✓</span>
+                            <span class="text-primary-orange text-xl">✓</span>
                             <span>PDF state guides</span>
                         </li>
                         <li class="flex items-start gap-3 feature-checkmark">
-                            <span class="text-success-green text-xl">✓</span>
+                            <span class="text-primary-orange text-xl">✓</span>
                             <span>Email reminders</span>
                         </li>
                         <li class="flex items-start gap-3 feature-checkmark">
-                            <span class="text-success-green text-xl">✓</span>
+                            <span class="text-primary-orange text-xl">✓</span>
                             <span>Team collaboration</span>
                         </li>
                         <li class="flex items-start gap-3 feature-checkmark">
-                            <span class="text-success-green text-xl">✓</span>
+                            <span class="text-primary-orange text-xl">✓</span>
                             <span>Priority support</span>
                         </li>
                         <li class="flex items-start gap-3 feature-checkmark">
-                            <span class="text-success-green text-xl">✓</span>
+                            <span class="text-primary-orange text-xl">✓</span>
                             <span>API access</span>
                         </li>
                         <li class="flex items-start gap-3 feature-checkmark">
-                            <span class="text-success-green text-xl">✓</span>
+                            <span class="text-primary-orange text-xl">✓</span>
                             <span>Monthly law updates</span>
                         </li>
                     </ul>
