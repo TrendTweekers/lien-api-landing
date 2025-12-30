@@ -140,7 +140,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # THEN import routers (after database is defined)
 from .analytics import router as analytics_router
-from .admin import router as admin_router
+from .routers.admin import router as admin_router, verify_admin
 from .quickbooks import router as quickbooks_router
 from .calculations import router as calculations_router, get_current_user
 from .routers import auth
@@ -2478,6 +2478,143 @@ async def serve_api():
         raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
     return FileResponse(file_path)
 
+
+@app.get("/admin-dashboard")
+async def serve_admin_dashboard_clean(request: Request, username: str = Depends(verify_admin)):
+    """
+    Clean URL: /admin-dashboard → serves V2 by default
+    Query params:
+    - ?ui=v1 → serves V1 (admin-dashboard.html)
+    - ?ui=v2 or no param → serves V2 (admin-dashboard-v2.html)
+    """
+    ui_version = request.query_params.get('ui', 'v2').lower()
+    
+    if ui_version == 'v1':
+        # Serve V1 dashboard
+        file_path = BASE_DIR / "admin-dashboard.html"
+        if not file_path.exists():
+            # Fallback
+            if os.path.exists("admin-dashboard.html"):
+                file_path = Path("admin-dashboard.html")
+            else:
+                raise HTTPException(status_code=404, detail="Admin dashboard V1 not found")
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+    else:
+        # Serve V2 dashboard (default)
+        file_path = BASE_DIR / "admin-dashboard-v2.html"
+        if not file_path.exists():
+            # Fallback
+            if os.path.exists("admin-dashboard-v2.html"):
+                file_path = Path("admin-dashboard-v2.html")
+            else:
+                raise HTTPException(status_code=404, detail="Admin dashboard V2 not found")
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+    
+    return Response(
+        content=html_content,
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
+
+@app.get("/admin-dashboard.html")
+async def serve_admin_dashboard_html(username: str = Depends(verify_admin)):
+    """Serve admin dashboard V1 with HTTP Basic Auth"""
+    file_path = BASE_DIR / "admin-dashboard.html"
+    if not file_path.exists():
+        if os.path.exists("admin-dashboard.html"):
+            file_path = Path("admin-dashboard.html")
+        else:
+            raise HTTPException(status_code=404, detail="Admin dashboard not found")
+    
+    with open(file_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    
+    return Response(
+        content=html_content,
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
+
+@app.get("/admin-dashboard-v2")
+async def serve_admin_dashboard_v2(username: str = Depends(verify_admin)):
+    """Serve admin dashboard V2 with HTTP Basic Auth"""
+    file_path = BASE_DIR / "admin-dashboard-v2.html"
+    if not file_path.exists():
+        if os.path.exists("admin-dashboard-v2.html"):
+            file_path = Path("admin-dashboard-v2.html")
+        else:
+            raise HTTPException(status_code=404, detail="Admin dashboard V2 not found")
+    
+    with open(file_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    
+    return Response(
+        content=html_content,
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
+
+@app.get("/admin-dashboard.js")
+async def serve_admin_dashboard_js(username: str = Depends(verify_admin)):
+    """Serve admin dashboard V1 JavaScript"""
+    file_path = BASE_DIR / "admin-dashboard.js"
+    if not file_path.exists():
+         if os.path.exists("admin-dashboard.js"):
+            file_path = Path("admin-dashboard.js")
+         else:
+            raise HTTPException(status_code=404, detail="Admin dashboard JS not found")
+    
+    with open(file_path, 'r', encoding='utf-8') as f:
+        js_content = f.read()
+    
+    return Response(
+        content=js_content,
+        media_type="application/javascript",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
+
+@app.get("/admin-dashboard-v2.js")
+async def serve_admin_dashboard_v2_js(username: str = Depends(verify_admin)):
+    """Serve admin dashboard V2 JavaScript"""
+    file_path = BASE_DIR / "admin-dashboard-v2.js"
+    if not file_path.exists():
+         if os.path.exists("admin-dashboard-v2.js"):
+            file_path = Path("admin-dashboard-v2.js")
+         else:
+            raise HTTPException(status_code=404, detail="Admin dashboard V2 JS not found")
+    
+    with open(file_path, 'r', encoding='utf-8') as f:
+        js_content = f.read()
+    
+    return Response(
+        content=js_content,
+        media_type="application/javascript",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 @app.get("/broker-dashboard.html")
 async def serve_broker_dashboard_html():
