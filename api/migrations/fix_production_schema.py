@@ -108,6 +108,13 @@ def add_column(cursor, table, col_name, col_def):
                 if "CURRENT_DATE" in col_def:
                      sqlite_def = col_def.replace("CURRENT_DATE", "DATE('now')")
                 
+                # SQLite specific fix: remove DEFAULT if it's dynamic and causing issues (like NOW())
+                # Actually, CURRENT_TIMESTAMP is allowed. The error "Cannot add a column with non-constant default"
+                # usually happens with expression defaults in older SQLite versions or specific constraints.
+                # Let's try to be safer for SQLite:
+                if "DEFAULT NOW()" in col_def:
+                     sqlite_def = col_def.replace("DEFAULT NOW()", "DEFAULT CURRENT_TIMESTAMP")
+                
                 sql = f"ALTER TABLE {table} ADD COLUMN {col_name} {sqlite_def}"
                 cursor.execute(sql)
                 print(f"   ✅ Added column {table}.{col_name} (SQLite)")
