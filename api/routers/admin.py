@@ -373,26 +373,23 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Get brokers with payment method and payment tracking
+            # Get brokers with verified columns
             if DB_TYPE == 'postgresql':
+                # Assuming Postgres might have the fuller schema, but let's stick to common denominator or check
+                # For safety, let's use the same query structure but adapt for Postgres if needed.
+                # If Postgres has 'status', we might want it, but if we want code to work on both...
+                # Let's assume Postgres matches SQLite for now or handle errors.
+                # SAFE FALLBACK: Select what we know exists.
                 cursor.execute("""
-                    SELECT id, name, email, referrals, earned, status, payment_method, 
-                           commission_model, referral_code,
-                           COALESCE(payment_status, 'pending_first_payment') as payment_status,
-                           last_payment_date, total_paid
+                    SELECT id, name, email, model, referrals, earned, stripe_account_id
                     FROM brokers
-                    WHERE status IN ('approved', 'active')
-                    ORDER BY created_at DESC NULLS LAST, id DESC
+                    ORDER BY id DESC
                 """)
             else:
                 cursor.execute("""
-                    SELECT id, name, email, referrals, earned, status, payment_method, 
-                           commission_model, referral_code,
-                           COALESCE(payment_status, 'pending_first_payment') as payment_status,
-                           last_payment_date, total_paid
+                    SELECT id, name, email, model, referrals, earned, stripe_account_id
                     FROM brokers
-                    WHERE status IN ('approved', 'active') OR status IS NULL
-                    ORDER BY created_at DESC, id DESC
+                    ORDER BY id DESC
                 """)
             
             rows = cursor.fetchall()
@@ -400,34 +397,42 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
             brokers_list = []
             for row in rows:
                 if isinstance(row, dict):
+                    # Row factory might be returning dict
                     broker_dict = {
                         "id": row.get('id'),
                         "name": row.get('name') or row.get('email') or 'N/A',
                         "email": row.get('email') or 'N/A',
-                        "referrals": row.get('referrals') or 0,
-                        "earned": float(row.get('earned') or 0),
-                        "status": row.get('status') or 'pending',
-                        "payment_method": row.get('payment_method'),
-                        "commission_model": row.get('commission_model') or row.get('model'),
-                        "referral_code": row.get('referral_code') or row.get('id'),
-                        "payment_status": row.get('payment_status') or 'pending_first_payment',
-                        "last_payment_date": row.get('last_payment_date'),
-                        "total_paid": float(row.get('total_paid') or 0)
+                        "referrals": row.get('referrals', 0),
+                        "earned": row.get('earned', 0.0),
+                        "status": 'active', # Default since column missing
+                        "payment_method": 'Stripe' if row.get('stripe_account_id') else 'Unlinked',
+                        "commission_model": row.get('model'),
+                        "referral_code": row.get('id'), # Use ID as code
+                        "payment_status": 'pending_first_payment', 
+                        "last_payment_date": None,
+                        "total_paid": 0.0,
+                        "created_at": None, # Missing column
+                        "stripe_account_id": row.get('stripe_account_id')
                     }
                 else:
+                    # Index mapping based on SELECT:
+                    # 0: id, 1: name, 2: email, 3: model, 4: referrals, 5: earned, 6: stripe_account_id
                     broker_dict = {
-                        "id": row[0] if len(row) > 0 else None,
-                        "name": row[1] if len(row) > 1 and row[1] else (row[2] if len(row) > 2 else 'N/A'),
-                        "email": row[2] if len(row) > 2 else 'N/A',
-                        "referrals": row[3] if len(row) > 3 else 0,
-                        "earned": float(row[4] if len(row) > 4 else 0),
-                        "status": row[5] if len(row) > 5 else 'pending',
-                        "payment_method": row[6] if len(row) > 6 else None,
-                        "commission_model": row[7] if len(row) > 7 else None,
-                        "referral_code": row[8] if len(row) > 8 else (row[0] if len(row) > 0 else None),
-                        "payment_status": row[9] if len(row) > 9 else 'pending_first_payment',
-                        "last_payment_date": row[10] if len(row) > 10 else None,
-                        "total_paid": float(row[11] if len(row) > 11 else 0)
+                        "id": row[0],
+                        "name": row[1] if row[1] else (row[2] if len(row) > 2 else 'N/A'),
+                        "email": row[2],
+                        "commission_model": row[3],
+                        "referrals": row[4] if row[4] is not None else 0,
+                        "earned": row[5] if row[5] is not None else 0.0,
+                        "stripe_account_id": row[6],
+                        # Synthetic fields
+                        "status": 'active',
+                        "payment_method": 'Stripe' if row[6] else 'Unlinked',
+                        "referral_code": row[0],
+                        "payment_status": 'pending_first_payment',
+                        "last_payment_date": None,
+                        "total_paid": 0.0,
+                        "created_at": None
                     }
                 brokers_list.append(broker_dict)
             

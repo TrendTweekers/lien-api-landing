@@ -3,7 +3,7 @@ import sqlite3
 import os
 
 # Get the database path (works in both local and Railway environments)
-db_path = os.getenv("DATABASE_PATH", "admin.db")
+db_path = os.getenv("DATABASE_PATH", "liendeadline.db")
 
 # Create database and tables
 con = sqlite3.connect(db_path)
