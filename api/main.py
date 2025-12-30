@@ -1137,13 +1137,36 @@ try:
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
     
-    # Serve React Dashboard v2
-    dashboard_v2_path = BASE_DIR / "public" / "dashboard-v2"
-    if not dashboard_v2_path.exists():
-        dashboard_v2_path.mkdir(parents=True, exist_ok=True)
-    app.mount("/dashboard-v2", StaticFiles(directory=str(dashboard_v2_path), html=True), name="dashboard-v2")
+    # Serve React Dashboard v2 Assets
+    dashboard_v2_assets = BASE_DIR / "public" / "dashboard-v2" / "assets"
+    if dashboard_v2_assets.exists():
+        app.mount("/dashboard-v2/assets", StaticFiles(directory=str(dashboard_v2_assets)), name="dashboard-v2-assets")
+
 except Exception as e:
     print(f"Warning: Could not mount static files: {e}")
+
+# Serve React Dashboard v2 SPA
+@app.get("/dashboard-v2")
+async def serve_dashboard_v2_root():
+    """Serve React App Root"""
+    file_path = BASE_DIR / "public" / "dashboard-v2" / "index.html"
+    if file_path.exists():
+        return FileResponse(file_path)
+    return Response("Dashboard not found", status_code=404)
+
+@app.get("/dashboard-v2/{full_path:path}")
+async def serve_dashboard_v2(full_path: str):
+    """Serve React App Paths (SPA Routing)"""
+    # Check if file exists (e.g. favicon.ico, manifest.json)
+    file_path = BASE_DIR / "public" / "dashboard-v2" / full_path
+    if file_path.exists() and file_path.is_file():
+        return FileResponse(file_path)
+    
+    # Fallback to index.html for SPA routing
+    index_path = BASE_DIR / "public" / "dashboard-v2" / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    return Response("Dashboard not found", status_code=404)
 
 # Images mount will be moved to right before the / mount to ensure proper order
 
