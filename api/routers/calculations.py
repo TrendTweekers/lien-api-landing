@@ -7,7 +7,7 @@ import logging
 import sys
 
 # We assume database imports are safe.
-from api.database import get_db_cursor, DB_TYPE
+from api.database import get_db, get_db_cursor, DB_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,20 @@ class CalculationRequest(BaseModel):
     invoice_date: str
     project_type: Optional[str] = "Commercial"
     notice_date: Optional[str] = None
+
+class SaveRequest(BaseModel):
+    project_name: str
+    client_name: Optional[str] = None
+    state: str
+    state_code: Optional[str] = None
+    invoice_date: str
+    invoice_amount: Optional[float] = None
+    prelim_deadline: Optional[str] = None
+    prelim_deadline_days: Optional[int] = None
+    lien_deadline: str
+    lien_deadline_days: int
+    notes: Optional[str] = None
+    project_type: Optional[str] = None
 
 # --- Endpoints ---
 
@@ -116,9 +130,26 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
         prelim_days = (prelim_date - today).days if prelim_date else 0
         lien_days = (lien_date - today).days if lien_date else 0
 
-        # For RESPONSE: Use ISO format to preserve time component
-        prelim_deadline_str = raw_prelim.isoformat() if raw_prelim else None
-        lien_deadline_str = raw_lien.isoformat() if raw_lien else None
+        # For RESPONSE: Use simple YYYY-MM-DD format (easier for frontend to parse)
+        if raw_prelim:
+            if isinstance(raw_prelim, datetime):
+                prelim_deadline_str = raw_prelim.strftime("%Y-%m-%d")
+            elif hasattr(raw_prelim, 'strftime'):
+                prelim_deadline_str = raw_prelim.strftime("%Y-%m-%d")
+            else:
+                prelim_deadline_str = str(raw_prelim)
+        else:
+            prelim_deadline_str = None
+            
+        if raw_lien:
+            if isinstance(raw_lien, datetime):
+                lien_deadline_str = raw_lien.strftime("%Y-%m-%d")
+            elif hasattr(raw_lien, 'strftime'):
+                lien_deadline_str = raw_lien.strftime("%Y-%m-%d")
+            else:
+                lien_deadline_str = str(raw_lien)
+        else:
+            lien_deadline_str = None
 
         # 3. Response (Universal Format)
         return JSONResponse(content={
@@ -149,6 +180,89 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
     except Exception as e:
         logger.error(f"Calculation Error: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+@router.post("/api/calculations/save")
+async def save_calculation(request: Request, body: SaveRequest):
+    """Save a calculation to the database"""
+    # 🟢 LAZY IMPORT
+    from api.routers.auth import get_user_from_session
+    from api.database import get_db
+    
+    # 1. Auth Check
+    user = get_user_from_session(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    user_id = user.get("id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid user")
+    
+    # 2. Save to database
+    try:
+        import json
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Prepare result JSON (store calculation data)
+            result_data = {
+                "state": body.state,
+                "state_code": body.state_code or body.state,
+                "invoice_date": body.invoice_date,
+                "prelim_deadline": body.prelim_deadline,
+                "lien_deadline": body.lien_deadline,
+                "prelim_deadline_days": body.prelim_deadline_days,
+                "lien_deadline_days": body.lien_deadline_days,
+                "project_type": body.project_type
+            }
+            
+            if DB_TYPE == "postgresql":
+                cursor.execute("""
+                    INSERT INTO calculations (
+                        user_id, project_name, client_name, state, amount,
+                        invoice_date, prelim_deadline, lien_deadline, result, created_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                    RETURNING id
+                """, (
+                    user_id,
+                    body.project_name,
+                    body.client_name,
+                    body.state,
+                    body.invoice_amount,
+                    body.invoice_date,
+                    body.prelim_deadline,
+                    body.lien_deadline,
+                    json.dumps(result_data)
+                ))
+                calculation_id = cursor.fetchone()[0]
+            else:
+                cursor.execute("""
+                    INSERT INTO calculations (
+                        user_id, project_name, client_name, state, amount,
+                        invoice_date, prelim_deadline, lien_deadline, result, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """, (
+                    user_id,
+                    body.project_name,
+                    body.client_name,
+                    body.state,
+                    body.invoice_amount,
+                    body.invoice_date,
+                    body.prelim_deadline,
+                    body.lien_deadline,
+                    json.dumps(result_data)
+                ))
+                calculation_id = cursor.lastrowid
+            
+            conn.commit()
+            
+            return JSONResponse(content={
+                "success": True,
+                "id": calculation_id,
+                "message": "Calculation saved successfully"
+            })
+    except Exception as e:
+        logger.error(f"Save calculation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save calculation: {str(e)}")
 
 # Add legacy public endpoint just in case
 @router.post("/api/calculate")
