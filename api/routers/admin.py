@@ -2229,4 +2229,72 @@ async def get_calculations_today(username: str = Depends(verify_admin)):
         print(f"❌ Error getting calculations today: {e}")
         return {"calculations_today": 0, "error": str(e)}
 
+@router.post("/api/admin/reset-password-emergency")
+async def reset_password_emergency(email: str, new_password: str = "TempPass123!", username: str = Depends(verify_admin)):
+    """
+    TEMPORARY EMERGENCY ENDPOINT - Remove after use!
+    Resets a user's password without authentication.
+    """
+    import bcrypt
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Check if user exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id FROM users WHERE email = %s", (email.lower(),))
+            else:
+                cursor.execute("SELECT id FROM users WHERE email = ?", (email.lower(),))
+            
+            user = cursor.fetchone()
+            
+            if not user:
+                return JSONResponse(
+                    status_code=404,
+                    content={"error": "User not found", "email": email}
+                )
+            
+            # Hash the new password
+            password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+            
+            # For PostgreSQL, decode the hash to string
+            if DB_TYPE == 'postgresql':
+                password_hash_str = password_hash.decode('utf-8')
+            else:
+                password_hash_str = password_hash
+            
+            # Update password
+            if DB_TYPE == 'postgresql':
+                cursor.execute(
+                    "UPDATE users SET password_hash = %s WHERE email = %s",
+                    (password_hash_str, email.lower())
+                )
+            else:
+                cursor.execute(
+                    "UPDATE users SET password_hash = ? WHERE email = ?",
+                    (password_hash_str, email.lower())
+                )
+            
+            conn.commit()
+            
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True,
+                    "email": email,
+                    "temporary_password": new_password,
+                    "message": "Password reset successfully. Login with this password."
+                }
+            )
+            
+    except Exception as e:
+        print(f"❌ Error resetting password: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e), "message": "Failed to reset password"}
+        )
+
 
