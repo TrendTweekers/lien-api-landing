@@ -70,31 +70,75 @@ async def get_history(request: Request):
 
     # 2. Fetch History
     try:
-        if DB_TYPE == "postgresql":
-            with get_db_cursor() as cur:
-                # Ensure your table/column names match your schema
-                cur.execute("""
-                    SELECT id, project_name, state, amount, created_at, result 
+        user_email = user.get("email", "")
+        if not user_email:
+            return JSONResponse(content={"history": []})
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == "postgresql":
+                cursor.execute("""
+                    SELECT id, project_name, client_name, state, state_code, invoice_amount, 
+                           invoice_date, prelim_deadline, prelim_deadline_days,
+                           lien_deadline, lien_deadline_days, notes, created_at
                     FROM calculations 
-                    WHERE user_id = %s 
+                    WHERE user_email = %s 
                     ORDER BY created_at DESC
-                """, (user.get("id"),))
-                rows = cur.fetchall()
-                
-                history = []
-                for row in rows:
+                """, (user_email,))
+            else:
+                cursor.execute("""
+                    SELECT id, project_name, client_name, state, state_code, invoice_amount,
+                           invoice_date, prelim_deadline, prelim_deadline_days,
+                           lien_deadline, lien_deadline_days, notes, created_at
+                    FROM calculations 
+                    WHERE user_email = ? 
+                    ORDER BY created_at DESC
+                """, (user_email,))
+            
+            rows = cursor.fetchall()
+            
+            history = []
+            for row in rows:
+                if isinstance(row, dict):
                     history.append({
-                        "id": row[0],
-                        "project_name": row[1],
-                        "state": row[2],
-                        "amount": float(row[3]) if row[3] else 0.0,
-                        "created_at": str(row[4]),
-                        "result": row[5]
+                        "id": row.get('id'),
+                        "project_name": row.get('project_name') or "",
+                        "client_name": row.get('client_name') or "",
+                        "state": row.get('state') or "",
+                        "state_code": row.get('state_code') or "",
+                        "amount": float(row.get('invoice_amount') or 0),
+                        "invoice_date": str(row.get('invoice_date') or ""),
+                        "prelim_deadline": str(row.get('prelim_deadline') or ""),
+                        "prelim_deadline_days": row.get('prelim_deadline_days'),
+                        "lien_deadline": str(row.get('lien_deadline') or ""),
+                        "lien_deadline_days": row.get('lien_deadline_days'),
+                        "notes": row.get('notes') or "",
+                        "created_at": str(row.get('created_at') or "")
                     })
-                return JSONResponse(content={"history": history})
-        return JSONResponse(content={"history": []})
+                else:
+                    # Handle tuple/row format
+                    history.append({
+                        "id": row[0] if len(row) > 0 else None,
+                        "project_name": row[1] if len(row) > 1 else "",
+                        "client_name": row[2] if len(row) > 2 else "",
+                        "state": row[3] if len(row) > 3 else "",
+                        "state_code": row[4] if len(row) > 4 else "",
+                        "amount": float(row[5]) if len(row) > 5 and row[5] else 0.0,
+                        "invoice_date": str(row[6]) if len(row) > 6 else "",
+                        "prelim_deadline": str(row[7]) if len(row) > 7 else "",
+                        "prelim_deadline_days": row[8] if len(row) > 8 else None,
+                        "lien_deadline": str(row[9]) if len(row) > 9 else "",
+                        "lien_deadline_days": row[10] if len(row) > 10 else None,
+                        "notes": row[11] if len(row) > 11 else "",
+                        "created_at": str(row[12]) if len(row) > 12 else ""
+                    })
+            
+            return JSONResponse(content={"history": history})
     except Exception as e:
         logger.error(f"History DB Error: {e}")
+        import traceback
+        traceback.print_exc()
         return JSONResponse(content={"history": []})
 
 
@@ -281,56 +325,95 @@ async def save_calculation(request: Request, body: SaveRequest):
     # 3. Save to database
     try:
         import json
+        from api.routers.auth import get_user_from_session
+        
+        # Get user email for the schema
+        user_email = user.get("email", "")
+        if not user_email:
+            raise HTTPException(status_code=400, detail="User email not found")
+        
+        # Ensure required fields have defaults
+        if not p_name:
+            p_name = "Untitled Project"
+        if not c_name:
+            c_name = "Unknown Client"
+        if not state_val:
+            state_val = "Unknown"
+        if not state_code_val:
+            state_code_val = state_val[:2].upper() if len(state_val) >= 2 else "XX"
+        if not inv_date:
+            inv_date = datetime.now().strftime("%Y-%m-%d")
+        if not lien_dead:
+            lien_dead = inv_date  # Default to invoice date if not provided
+        
+        # Ensure lien_deadline_days is set (required by schema)
+        if lien_days is None:
+            if lien_dead:
+                try:
+                    lien_date = datetime.strptime(lien_dead, "%Y-%m-%d").date()
+                    today = datetime.now().date()
+                    lien_days = int((lien_date - today).days)
+                except:
+                    lien_days = 0
+            else:
+                lien_days = 0
+        
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Prepare result JSON (store calculation data)
-            result_data = {
-                "state": state_val,
-                "state_code": state_code_val,
-                "invoice_date": inv_date,
-                "prelim_deadline": prelim_dead,
-                "lien_deadline": lien_dead,
-                "prelim_deadline_days": prelim_days,
-                "lien_deadline_days": lien_days,
-                "project_type": project_type_val
-            }
-            
+            # Use the migration schema: user_email, project_name, client_name, invoice_amount, notes,
+            # state, state_code, invoice_date, prelim_deadline, prelim_deadline_days, lien_deadline, lien_deadline_days
             if DB_TYPE == "postgresql":
                 cursor.execute("""
                     INSERT INTO calculations (
-                        user_id, project_name, client_name, state, amount,
-                        invoice_date, prelim_deadline, lien_deadline, result, created_at
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                        user_email, project_name, client_name, invoice_amount, notes,
+                        state, state_code, invoice_date, 
+                        prelim_deadline, prelim_deadline_days,
+                        lien_deadline, lien_deadline_days,
+                        created_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
                     RETURNING id
                 """, (
-                    user_id,
+                    user_email,
                     p_name,
-                    c_name,
+                    c_name or "",
+                    float(inv_amount) if inv_amount else None,
+                    body.notes or "",
                     state_val,
-                    inv_amount,
+                    state_code_val,
                     inv_date,
                     prelim_dead,
+                    prelim_days,
                     lien_dead,
-                    json.dumps(result_data)
+                    lien_days,
                 ))
-                calculation_id = cursor.fetchone()[0]
+                result = cursor.fetchone()
+                if isinstance(result, dict):
+                    calculation_id = result.get('id')
+                else:
+                    calculation_id = result[0] if result else None
             else:
                 cursor.execute("""
                     INSERT INTO calculations (
-                        user_id, project_name, client_name, state, amount,
-                        invoice_date, prelim_deadline, lien_deadline, result, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        user_email, project_name, client_name, invoice_amount, notes,
+                        state, state_code, invoice_date,
+                        prelim_deadline, prelim_deadline_days,
+                        lien_deadline, lien_deadline_days,
+                        created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """, (
-                    user_id,
+                    user_email,
                     p_name,
-                    c_name,
+                    c_name or "",
+                    float(inv_amount) if inv_amount else None,
+                    body.notes or "",
                     state_val,
-                    inv_amount,
+                    state_code_val,
                     inv_date,
                     prelim_dead,
+                    prelim_days,
                     lien_dead,
-                    json.dumps(result_data)
+                    lien_days,
                 ))
                 calculation_id = cursor.lastrowid
             
@@ -341,8 +424,12 @@ async def save_calculation(request: Request, body: SaveRequest):
                 "id": calculation_id,
                 "message": "Calculation saved successfully"
             })
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Save calculation error: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to save calculation: {str(e)}")
 
 # Add legacy public endpoint just in case
