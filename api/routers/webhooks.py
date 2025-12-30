@@ -460,91 +460,91 @@ async def stripe_webhook(request: Request):
                     # Return success to Stripe so it doesn't retry infinitely for DB errors
                     return {"status": "error", "message": str(e)}
             
-            return {"status": "success"}
+                return {"status": "success"}
 
-        # Recurring payment (subscription renewal)
-        elif event['type'] == 'invoice.payment_succeeded':
-            invoice = event['data']['object']
-            print(f"💰 Received invoice.payment_succeeded - Invoice ID: {invoice.get('id')}")
-            
-            # Only process subscription renewals (billing_reason='subscription_cycle')
-            if invoice.get('billing_reason') == 'subscription_cycle':
-                customer_id = invoice.get('customer')
-                amount_paid = invoice.get('amount_paid', 0) / 100.0  # Convert to dollars
-                subscription_id = invoice.get('subscription')
+            # Recurring payment (subscription renewal)
+            elif event['type'] == 'invoice.payment_succeeded':
+                invoice = event['data']['object']
+                print(f"💰 Received invoice.payment_succeeded - Invoice ID: {invoice.get('id')}")
                 
-                print(f"🔄 Processing renewal for Customer: {customer_id}, Amount: ${amount_paid}")
-                
-                try:
-                    # 1. Find the original referral for this customer
-                    # We need to find who referred this customer originally
-                    original_referral = execute_query(db, """
-                        SELECT broker_id, broker_email 
-                        FROM referrals 
-                        WHERE customer_stripe_id = ? 
-                        ORDER BY created_at ASC 
-                        LIMIT 1
-                    """, (customer_id,)).fetchone()
+                # Only process subscription renewals (billing_reason='subscription_cycle')
+                if invoice.get('billing_reason') == 'subscription_cycle':
+                    customer_id = invoice.get('customer')
+                    amount_paid = invoice.get('amount_paid', 0) / 100.0  # Convert to dollars
+                    subscription_id = invoice.get('subscription')
                     
-                    if original_referral:
-                        broker_id = original_referral['broker_id']
-                        broker_email = original_referral['broker_email']
+                    print(f"🔄 Processing renewal for Customer: {customer_id}, Amount: ${amount_paid}")
+                    
+                    try:
+                        # 1. Find the original referral for this customer
+                        # We need to find who referred this customer originally
+                        original_referral = execute_query(db, """
+                            SELECT broker_id, broker_email 
+                            FROM referrals 
+                            WHERE customer_stripe_id = ? 
+                            ORDER BY created_at ASC 
+                            LIMIT 1
+                        """, (customer_id,)).fetchone()
                         
-                        # 2. Check if broker is eligible for recurring commissions
-                        broker = execute_query(db, "SELECT model, email FROM brokers WHERE referral_code = ?", (broker_id,)).fetchone()
-                        
-                        if broker and broker['model'] == 'recurring':
-                            print(f"✨ Broker {broker_id} is eligible for recurring commission")
+                        if original_referral:
+                            broker_id = original_referral['broker_id']
+                            broker_email = original_referral['broker_email']
                             
-                            # 3. Create commission record
-                            # Recurring commission is flat $50 according to requirements
-                            commission_amount = 50.00
+                            # 2. Check if broker is eligible for recurring commissions
+                            broker = execute_query(db, "SELECT model, email FROM brokers WHERE referral_code = ?", (broker_id,)).fetchone()
                             
-                            # Status logic: 60 day hold
-                            hold_until = (datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d')
-                            clawback_until = (datetime.now() + timedelta(days=90)).strftime('%Y-%m-%d')
-                            
-                            execute_query(db, """
-                                INSERT INTO referrals (
+                            if broker and broker['model'] == 'recurring':
+                                print(f"✨ Broker {broker_id} is eligible for recurring commission")
+                                
+                                # 3. Create commission record
+                                # Recurring commission is flat $50 according to requirements
+                                commission_amount = 50.00
+                                
+                                # Status logic: 60 day hold
+                                hold_until = (datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d')
+                                clawback_until = (datetime.now() + timedelta(days=90)).strftime('%Y-%m-%d')
+                                
+                                execute_query(db, """
+                                    INSERT INTO referrals (
+                                        broker_id, 
+                                        broker_email, 
+                                        customer_email, 
+                                        customer_stripe_id,
+                                        amount, 
+                                        payout, 
+                                        payout_type,
+                                        status, 
+                                        hold_until,
+                                        clawback_until,
+                                        created_at
+                                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                                """, (
                                     broker_id, 
                                     broker_email, 
-                                    customer_email, 
-                                    customer_stripe_id,
-                                    amount, 
-                                    payout, 
-                                    payout_type,
-                                    status, 
+                                    invoice.get('customer_email'), 
+                                    customer_id,
+                                    amount_paid, 
+                                    commission_amount,
+                                    'recurring',
+                                    'on_hold',
                                     hold_until,
-                                    clawback_until,
-                                    created_at
-                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                            """, (
-                                broker_id, 
-                                broker_email, 
-                                invoice.get('customer_email'), 
-                                customer_id,
-                                amount_paid, 
-                                commission_amount,
-                                'recurring',
-                                'on_hold',
-                                hold_until,
-                                clawback_until
-                            ))
-                            
-                            db.commit()
-                            print(f"✅ Recurring commission recorded for broker {broker_id}")
-                            
+                                    clawback_until
+                                ))
+                                
+                                db.commit()
+                                print(f"✅ Recurring commission recorded for broker {broker_id}")
+                                
+                            else:
+                                print(f"ℹ️ Broker {broker_id} not eligible for recurring (Model: {broker.get('model') if broker else 'Unknown'})")
                         else:
-                            print(f"ℹ️ Broker {broker_id} not eligible for recurring (Model: {broker.get('model') if broker else 'Unknown'})")
-                    else:
-                        print(f"ℹ️ No original referral found for customer {customer_id}")
-                        
-                except Exception as e:
-                    print(f"❌ Error processing recurring commission: {e}")
-                    traceback.print_exc()
-                    # Don't fail the webhook for this
+                            print(f"ℹ️ No original referral found for customer {customer_id}")
+                            
+                    except Exception as e:
+                        print(f"❌ Error processing recurring commission: {e}")
+                        traceback.print_exc()
+                        # Don't fail the webhook for this
 
-            return {"status": "success"}
+                return {"status": "success"}
             
         except Exception as e:
             return JSONResponse(status_code=500, content={"status": "error"})
