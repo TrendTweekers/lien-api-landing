@@ -238,10 +238,10 @@ async def get_admin_stats(username: str = Depends(verify_admin)):
             try:
                 if DB_TYPE == 'postgresql':
                      with db.cursor() as cursor:
-                        cursor.execute("SELECT COUNT(*) FROM customers WHERE status='active'")
+                        cursor.execute("SELECT COUNT(*) FROM customers")
                         customers_count = cursor.fetchone()[0]
                 else:
-                    result = db.execute("SELECT COUNT(*) FROM customers WHERE status='active'").fetchone()
+                    result = db.execute("SELECT COUNT(*) FROM customers").fetchone()
                     customers_count = result[0] if result else 0
             except Exception as e:
                 print(f"Error counting customers: {e}")
@@ -266,11 +266,11 @@ async def get_admin_stats(username: str = Depends(verify_admin)):
             try:
                 if DB_TYPE == 'postgresql':
                      with db.cursor() as cursor:
-                        cursor.execute("SELECT SUM(amount) FROM customers WHERE status='active'")
+                        cursor.execute("SELECT SUM(amount) FROM customers WHERE LOWER(status)='active'")
                         res = cursor.fetchone()
                         revenue_result = float(res[0]) if res and res[0] else 0
                 else:
-                    result = db.execute("SELECT SUM(amount) FROM customers WHERE status='active'").fetchone()
+                    result = db.execute("SELECT SUM(amount) FROM customers WHERE LOWER(status)='active'").fetchone()
                     revenue_result = float(result[0]) if result and result[0] else 0
             except Exception as e:
                 print(f"Error calculating revenue: {e}")
@@ -313,46 +313,22 @@ async def get_customers_api(username: str = Depends(verify_admin)):
         try:
             if DB_TYPE == 'postgresql':
                  with db.cursor() as cursor:
-                    cursor.execute("""
-                        SELECT email, calls_used, status 
-                        FROM customers 
-                        ORDER BY created_at DESC
-                    """)
+                    cursor.execute("SELECT * FROM customers")
                     columns = [desc[0] for desc in cursor.description]
                     rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
             else:
-                rows = db.execute("""
-                    SELECT email, calls_used, status 
-                    FROM customers 
-                    ORDER BY created_at DESC
-                """).fetchall()
-        except Exception:
-            # Fallback if created_at doesn't exist
-            try:
-                if DB_TYPE == 'postgresql':
-                     with db.cursor() as cursor:
-                        cursor.execute("""
-                            SELECT email, api_calls, status 
-                            FROM customers 
-                            ORDER BY email
-                        """)
-                        columns = [desc[0] for desc in cursor.description]
-                        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
-                else:
-                    rows = db.execute("""
-                        SELECT email, api_calls, status 
-                        FROM customers 
-                        ORDER BY email
-                    """).fetchall()
-            except Exception as e:
-                print(f"Error querying customers: {e}")
-                return []
+                cursor = db.execute("SELECT * FROM customers")
+                columns = [desc[0] for desc in cursor.description]
+                rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except Exception as e:
+            print(f"Error querying customers: {e}")
+            return []
         
         return [
             {
-                "email": row['email'] if isinstance(row, dict) else (row['email'] if 'email' in row.keys() else row[0]),
-                "calls": (row.get('calls_used') if isinstance(row, dict) else row.get('calls_used')) or (row.get('api_calls') if isinstance(row, dict) else row.get('api_calls')) or 0,
-                "status": row.get('status') if isinstance(row, dict) else (row.get('status') or 'active')
+                "email": row.get('email') or 'N/A',
+                "calls": row.get('calls_used') or row.get('api_calls') or 0,
+                "status": row.get('status') or 'active'
             }
             for row in rows
         ]
@@ -381,7 +357,6 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
                            COALESCE(payment_status, 'pending_first_payment') as payment_status,
                            last_payment_date, total_paid
                     FROM brokers
-                    WHERE status IN ('approved', 'active')
                     ORDER BY created_at DESC NULLS LAST, id DESC
                 """)
             else:
@@ -391,7 +366,6 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
                            COALESCE(payment_status, 'pending_first_payment') as payment_status,
                            last_payment_date, total_paid
                     FROM brokers
-                    WHERE status IN ('approved', 'active') OR status IS NULL
                     ORDER BY created_at DESC, id DESC
                 """)
             
