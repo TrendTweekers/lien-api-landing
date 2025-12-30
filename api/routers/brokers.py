@@ -205,23 +205,7 @@ async def broker_login(request: Request, data: dict):
                 )
         
             # Verify password
-            try:
-                # Ensure inputs are bytes
-                password_bytes = password.encode('utf-8')
-                
-                if isinstance(password_hash, str):
-                    password_hash_bytes = password_hash.encode('utf-8')
-                else:
-                    password_hash_bytes = password_hash
-
-                if not bcrypt.checkpw(password_bytes, password_hash_bytes):
-                    return JSONResponse(
-                        status_code=401,
-                        content={"status": "error", "message": "Invalid email or password"}
-                    )
-            except Exception as e:
-                print(f"Password verification error: {e}")
-                # Fallback or fail safe
+            if not bcrypt.checkpw(password.encode(), password_hash.encode()):
                 return JSONResponse(
                     status_code=401,
                     content={"status": "error", "message": "Invalid email or password"}

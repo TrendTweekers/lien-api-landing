@@ -60,7 +60,7 @@ def is_broker_email(email: str) -> bool:
     try:
         with get_db() as conn:
             cursor = get_db_cursor(conn)
-        
+            
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     SELECT id FROM brokers 
@@ -75,10 +75,10 @@ def is_broker_email(email: str) -> bool:
                     AND status IN ('approved', 'active')
                     LIMIT 1
                 """, (email.lower().strip(),))
-        
+            
             result = cursor.fetchone()
             return result is not None
-        
+            
     except Exception as e:
         print(f"⚠️ Error checking broker email: {e}")
         return False  # Fail closed - assume not a broker if check fails
@@ -88,20 +88,20 @@ def get_user_from_session(request: Request):
     authorization = request.headers.get('authorization', '')
     if not authorization or not authorization.startswith('Bearer '):
         return None
-
+    
     token = authorization.replace('Bearer ', '')
-
+    
     try:
         with get_db() as conn:
             cursor = get_db_cursor(conn)
-        
+            
             if DB_TYPE == 'postgresql':
                 cursor.execute("SELECT email, subscription_status FROM users WHERE session_token = %s", (token,))
             else:
                 cursor.execute("SELECT email, subscription_status FROM users WHERE session_token = ?", (token,))
-        
+            
             user = cursor.fetchone()
-        
+            
             if user:
                 if isinstance(user, dict):
                     email = user.get('email')
@@ -112,12 +112,12 @@ def get_user_from_session(request: Request):
                 else:
                     email = user[0] if user and len(user) > 0 else None
                     subscription_status = user[1] if user and len(user) > 1 else None
-            
+                
                 if subscription_status in ['active', 'trialing']:
                     return {'email': email, 'subscription_status': subscription_status, 'unlimited': True}
     except Exception as e:
         print(f"⚠️ Error checking session: {e}")
-
+    
     return None
 
 # --- Endpoints ---
@@ -150,7 +150,7 @@ def get_states():
                     ORDER BY state_code
                 """)
             states = cursor.fetchall()
-        
+            
             if states:
                 result = []
                 for row in states:
@@ -170,7 +170,7 @@ def get_states():
                 }
     except Exception as e:
         print(f"⚠️ Error querying database for states: {e}")
-
+    
     # Fallback: return state codes only if database query fails
     return {
         "states": [{"code": code, "name": code} for code in VALID_STATES],
@@ -183,153 +183,37 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
     """
     Track calculation attempt and enforce server-side limits.
     Returns whether calculation is allowed and current count.
-    Also returns calculation results for authenticated users (Dashboard).
     """
     try:
         client_ip = get_client_ip(request)
         user_agent_hash = get_user_agent_hash(request)
-    
+        
         # Create composite key: IP + user agent hash (handles shared IPs better)
         tracking_key = f"{client_ip}:{user_agent_hash}"
-    
+        
         # Get email from request first (for admin check before DB lookup)
         request_email = None
         if request_data and request_data.email:
             request_email = request_data.email.strip().lower()
-
-    except Exception:
-        pass
-
-    # We use get_user_from_session to avoid breaking public site (which sends no token)
-    # This allows both authenticated (Dashboard) and public usage
-    logged_in_user = get_user_from_session(request)
-
-
-    # Admin/dev user bypass (check BEFORE database lookup)
-    DEV_EMAIL = "kartaginy1@gmail.com"
-    # Allow bypass if dev email OR user is logged in
-    if (request_email and request_email == DEV_EMAIL.lower()) or logged_in_user:
-        if logged_in_user:
-            print(f"✅ Logged-in user detected: {logged_in_user.get('email')} - allowing unlimited calculations")
-        else:
+        
+        # Admin/dev user bypass (check BEFORE database lookup)
+        DEV_EMAIL = "kartaginy1@gmail.com"
+        if request_email and request_email == DEV_EMAIL.lower():
             print(f"✅ Admin/dev user detected from request: {request_email} - allowing unlimited calculations")
-    
-        # Calculate deadlines if data is provided (Admin/Logged-in bypass)
-        calculation_result = {}
-        if request_data and request_data.state and request_data.notice_date:
-            try:
-                state_code = request_data.state.upper()
-                if state_code in VALID_STATES:
-                    # Parse date
-                    invoice_date_str = request_data.notice_date
-                    invoice_date = None
-                    try:
-                        invoice_date = datetime.strptime(invoice_date_str, "%m/%d/%Y")
-                    except ValueError:
-                        try:
-                            invoice_date = datetime.strptime(invoice_date_str, "%Y-%m-%d")
-                        except ValueError:
-                            try:
-                                invoice_date = datetime.fromisoformat(invoice_date_str)
-                            except ValueError:
-                                pass
-            
-                    if invoice_date:
-                        # Get rules
-                        rules = STATE_RULES.get(state_code, {})
-                
-                        # Calculate
-                        result = calculate_state_deadline(
-                            state_code=state_code,
-                            invoice_date=invoice_date,
-                            role="supplier",
-                            project_type="commercial",
-                            state_rules=rules
-                        )
-                
-                        # Extract deadlines
-                        prelim_deadline = result.get("preliminary_deadline")
-                        lien_deadline = result.get("lien_deadline")
-                        prelim_required = result.get("preliminary_required", rules.get("preliminary_notice", {}).get("required", False))
-                
-                        # Format dates
-                        prelim_deadline_str = prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None
-                        lien_deadline_str = lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None
-                        noi_deadline_str = result.get("notice_of_intent_deadline").strftime('%Y-%m-%d') if result.get("notice_of_intent_deadline") else None
-                
-                        today = datetime.now()
-                        days_to_prelim = (prelim_deadline - today).days if prelim_deadline else None
-                        days_to_lien = (lien_deadline - today).days if lien_deadline else None
-                
-                        # Urgency helper
-                        def get_urgency(days):
-                            if days <= 7: return "critical"
-                            elif days <= 30: return "warning"
-                            else: return "normal"
-                
-                        prelim_notice = rules.get("preliminary_notice", {})
-                        lien_filing = rules.get("lien_filing", {})
-                
-                        # Build result with 3 formats
-                        calculation_result = {
-                            "preliminary_notice": {
-                                "required": prelim_required,
-                                "deadline": prelim_deadline_str,
-                                "days": days_to_prelim,
-                                "days_from_now": days_to_prelim,
-                                "urgency": get_urgency(days_to_prelim) if days_to_prelim else None,
-                                "description": prelim_notice.get("description", prelim_notice.get("deadline_description", ""))
-                            },
-                            "lien_filing": {
-                                "deadline": lien_deadline_str,
-                                "days": days_to_lien,
-                                "days_from_now": days_to_lien,
-                                "urgency": get_urgency(days_to_lien) if days_to_lien else None,
-                                "description": lien_filing.get("description", lien_filing.get("deadline_description", ""))
-                            },
-                            "lien_deadline": {
-                                "deadline": lien_deadline_str,
-                                "days": days_to_lien
-                            },
-                            "preliminary_notice_deadline": prelim_deadline_str,
-                            "notice_of_intent_deadline": noi_deadline_str,
-                            "prelim_deadline": prelim_deadline_str
-                        }
-            except Exception as e:
-                print(f"Error in track_calculation: {str(e)}")
-                # If possible, return a fallback or re-raise 
-                raise HTTPException(status_code=500, detail=str(e))
-
-        # Universal Format return for Admin/Logged-in Users
-        return JSONResponse(content={
-            "id": None, # No ID for unsaved calculation
-            "status": "success",
-            "quota_remaining": "Unlimited",
-            
-            # 1. New Flat Keys
-            "preliminary_notice_deadline": prelim_deadline_str,
-            "lien_deadline": lien_deadline_str,
-            "notice_of_intent_deadline": noi_deadline_str,
-
-            # 2. Nested Objects (REQUIRED for Dashboard)
-            "preliminary_notice": {
-                "deadline": prelim_deadline_str,
-                "required": prelim_required,
-                "days_remaining": days_to_prelim if days_to_prelim is not None else 0
-            },
-            "lien_filing": {
-                "deadline": lien_deadline_str,
-                "days_remaining": days_to_lien if days_to_lien is not None else 0
-            },
-            
-            # 3. Legacy Keys
-            "prelim_deadline": prelim_deadline_str
-        })
-
-    try:
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "status": "allowed",
+                    "calculation_count": 0,
+                    "remaining_calculations": 999999,
+                    "email_provided": True,
+                    "quota": {"unlimited": True}
+                }
+            )
+        
         with get_db() as conn:
             cursor = get_db_cursor(conn)
-    
+            
             # Ensure email_gate_tracking table exists with tracking_key column
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
@@ -351,7 +235,7 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
                 except:
                     pass  # Column might already exist
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_tracking_key ON email_gate_tracking(tracking_key)")
-        
+                
                 # Get current tracking record
                 cursor.execute("""
                     SELECT calculation_count, email, email_captured_at 
@@ -380,7 +264,7 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
                 except:
                     pass  # Column might already exist
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_tracking_key ON email_gate_tracking(tracking_key)")
-        
+                
                 cursor.execute("""
                     SELECT calculation_count, email, email_captured_at 
                     FROM email_gate_tracking 
@@ -388,9 +272,9 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
                     ORDER BY last_calculation_at DESC 
                     LIMIT 1
                 """, (tracking_key,))
-    
+            
             tracking = cursor.fetchone()
-    
+            
             # Parse tracking data
             if tracking:
                 if isinstance(tracking, dict):
@@ -409,19 +293,19 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
                 count = 0
                 db_email = None
                 email_captured_at = None
-    
+            
             # Use email from request if provided, otherwise use DB email
             email = request_email or (db_email.lower() if db_email else None)
-    
+            
             # Determine limits
             CALCULATIONS_BEFORE_EMAIL = 3
             TOTAL_FREE_CALCULATIONS = 6
-    
+            
             # Check if user is a broker
             is_broker = email and is_broker_email(email)
             if is_broker:
                 print(f"⚠️ Broker attempting calculation: {email} - applying same limits as customers")
-    
+            
             # Update email if provided
             if request_email and request_email != db_email:
                 if DB_TYPE == 'postgresql':
@@ -437,111 +321,17 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
                         WHERE tracking_key = ?
                     """, (request_email, tracking_key))
                 conn.commit()
-    
-            # PERFORM CALCULATION IF DATA AVAILABLE
-            calculation_result = {}
-            if request_data and request_data.state and request_data.notice_date:
-                try:
-                    state_code = request_data.state.upper()
-                    if state_code in VALID_STATES:
-                        # Parse date
-                        invoice_date_str = request_data.notice_date
-                        invoice_date = None
-                        try:
-                            invoice_date = datetime.strptime(invoice_date_str, "%m/%d/%Y")
-                        except ValueError:
-                            try:
-                                invoice_date = datetime.strptime(invoice_date_str, "%Y-%m-%d")
-                            except ValueError:
-                                try:
-                                    invoice_date = datetime.fromisoformat(invoice_date_str)
-                                except ValueError:
-                                    pass
-                
-                        if invoice_date:
-                            # Get rules
-                            rules = STATE_RULES.get(state_code, {})
-                    
-                            # Calculate
-                            result = calculate_state_deadline(
-                                state_code=state_code,
-                                invoice_date=invoice_date,
-                                role="supplier",
-                                project_type="commercial",
-                                state_rules=rules
-                            )
-                    
-                            # Extract deadlines
-                            prelim_deadline = result.get("preliminary_deadline")
-                            lien_deadline = result.get("lien_deadline")
-                            prelim_required = result.get("preliminary_required", rules.get("preliminary_notice", {}).get("required", False))
-                    
-                            # Format dates
-                            prelim_deadline_str = prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None
-                            lien_deadline_str = lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None
-                            noi_deadline_str = result.get("notice_of_intent_deadline").strftime('%Y-%m-%d') if result.get("notice_of_intent_deadline") else None
-                    
-                            today = datetime.now()
-                            days_to_prelim = (prelim_deadline - today).days if prelim_deadline else None
-                            days_to_lien = (lien_deadline - today).days if lien_deadline else None
-                    
-                            # Urgency helper
-                            def get_urgency(days):
-                                if days <= 7: return "critical"
-                                elif days <= 30: return "warning"
-                                else: return "normal"
-                    
-                            prelim_notice = rules.get("preliminary_notice", {})
-                            lien_filing = rules.get("lien_filing", {})
-                    
-                            # Build result with 3 formats
-                            calculation_result = {
-                                "preliminary_notice": {
-                                    "required": prelim_required,
-                                    "deadline": prelim_deadline_str,
-                                    "days": days_to_prelim,
-                                    "days_from_now": days_to_prelim,
-                                    "urgency": get_urgency(days_to_prelim) if days_to_prelim else None,
-                                    "description": prelim_notice.get("description", prelim_notice.get("deadline_description", ""))
-                                },
-                                "lien_filing": {
-                                    "deadline": lien_deadline_str,
-                                    "days": days_to_lien,
-                                    "days_from_now": days_to_lien,
-                                    "urgency": get_urgency(days_to_lien) if days_to_lien else None,
-                                    "description": lien_filing.get("description", lien_filing.get("deadline_description", ""))
-                                },
-                                "lien_deadline": {
-                                    "deadline": lien_deadline_str,
-                                    "days": days_to_lien
-                                },
-                                "preliminary_notice_deadline": prelim_deadline_str,
-                                "notice_of_intent_deadline": noi_deadline_str,
-                                "prelim_deadline": prelim_deadline_str
-                            }
-                except Exception as e:
-                    print(f"⚠️ Error calculating in track_calculation: {e}")
-    
-            # Determine quota based on login status
-            quota_info = {
-                "limit": 6 if email else 3,
-                "remaining": max(0, (6 if email else 3) - count)
-            }
-    
-            if logged_in_user and logged_in_user.get('unlimited'):
-                quota_info = {
-                    "unlimited": True,
-                    "remaining": 999999
-                }
-
+            
             return {
                 "status": "allowed",
                 "calculation_count": count,
                 "email_provided": bool(email),
-                "quota": quota_info,
-                **calculation_result
+                "quota": {
+                    "limit": 6 if email else 3,
+                    "remaining": max(0, (6 if email else 3) - count)
+                }
             }
-    
+            
     except Exception as e:
         print(f"⚠️ Error tracking calculation: {e}")
         # Fail open
@@ -782,11 +572,6 @@ async def calculate_deadline(
     if state_name and len(state_name) == 2:
         state_name = STATE_CODE_TO_NAME.get(state_name, state_name)
 
-    # Format dates for response
-    prelim_deadline_str = prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None
-    lien_deadline_str = lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None
-    noi_deadline_str = result.get("notice_of_intent_deadline").strftime('%Y-%m-%d') if result.get("notice_of_intent_deadline") else None
-
     # Build response
     response = {
         "state": state_name,
@@ -794,36 +579,19 @@ async def calculate_deadline(
         "invoice_date": invoice_date,
         "role": role,
         "project_type": project_type,
-        
-        # Format 3: Nested Objects (likely the missing piece)
         "preliminary_notice": {
             "required": prelim_required,
-            "deadline": prelim_deadline_str,
-            "days": days_to_prelim,
+            "deadline": prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None,
             "days_from_now": days_to_prelim,
             "urgency": get_urgency(days_to_prelim) if days_to_prelim else None,
             "description": prelim_notice.get("description", prelim_notice.get("deadline_description", ""))
         },
         "lien_filing": {
-            "deadline": lien_deadline_str,
-            "days": days_to_lien,
+            "deadline": lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None,
             "days_from_now": days_to_lien,
             "urgency": get_urgency(days_to_lien) if days_to_lien else None,
             "description": lien_filing.get("description", lien_filing.get("deadline_description", ""))
         },
-        # User explicitly requested "lien_deadline" as an object in Format 3
-        "lien_deadline": {
-            "deadline": lien_deadline_str,
-            "days": days_to_lien
-        },
-
-        # Format 1: Top-level keys
-        "preliminary_notice_deadline": prelim_deadline_str,
-        "notice_of_intent_deadline": noi_deadline_str,
-        
-        # Format 2: Original "snake_case" keys (legacy)
-        "prelim_deadline": prelim_deadline_str,
-        
         "serving_requirements": rules.get("serving_requirements", []),
         "statute_citations": statute_citations,
         "warnings": warnings,
