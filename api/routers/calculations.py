@@ -28,25 +28,19 @@ async def get_history(request: Request):
     """
     Fetch history. Path matches current frontend: /api/calculations/history
     """
-    print(f"🔍 DEBUG: /api/calculations/history hit!")
-    
     # 🟢 LAZY IMPORT
     try:
         from api.routers.auth import get_user_from_session
     except ImportError:
-        print("❌ CRITICAL: Could not import get_user_from_session from api.routers.auth")
+        logger.error("CRITICAL: Could not import get_user_from_session from api.routers.auth")
         raise HTTPException(status_code=500, detail="Auth Config Error")
 
-    # 1. Auth Check (Debug Logs included)
+    # 1. Auth Check
     user = get_user_from_session(request)
-    print(f"🔍 DEBUG: Session User: {user.get('email') if user else 'None'}")
     
     if not user:
-        # Check raw cookies to debug 401
-        print(f"🔍 DEBUG: Cookies present: {list(request.cookies.keys())}")
-        print(f"🔍 DEBUG: Full cookies dict: {dict(request.cookies)}")
-        print(f"🔍 DEBUG: Authorization header: {request.headers.get('authorization', 'NOT PRESENT')}")
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        logger.warning("Auth failed - returning empty history to prevent frontend error")
+        return JSONResponse(content={"history": []})
 
     # 2. Fetch History
     try:
@@ -83,8 +77,6 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
     """
     Calculates deadline. Path matches frontend: /api/v1/calculate-deadline
     """
-    print(f"🔍 DEBUG: /api/v1/calculate-deadline hit for state: {calc_req.state}")
-
     # 🟢 LAZY IMPORTS
     from api.routers.auth import get_user_from_session
     from api.calculators import calculate_state_deadline
@@ -94,7 +86,6 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
     quota_remaining = 3
     if user:
         quota_remaining = "Unlimited"
-        print(f"✅ DEBUG: User {user.get('email')} detected.")
 
     # 2. Calculation
     try:
@@ -110,29 +101,32 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
             project_type=calc_req.project_type.lower() if calc_req.project_type else "commercial",
             notice_of_completion_date=noc_date
         )
-        print(f"🔍 DEBUG: Math Result: {result}")
 
-        # Extract and ensure we work with .date() objects
+        # Extract raw values (keep as datetime if datetime, date if date)
         raw_prelim = result.get("preliminary_deadline") or result.get("prelim_deadline")
         raw_lien = result.get("lien_deadline")
         warnings = result.get("warnings", [])
 
-        # Convert datetime to date if needed
-        prelim_deadline = raw_prelim.date() if isinstance(raw_prelim, datetime) else raw_prelim
-        lien_deadline = raw_lien.date() if isinstance(raw_lien, datetime) else raw_lien
+        # For MATH: Convert to date objects for subtraction
+        prelim_date = raw_prelim.date() if isinstance(raw_prelim, datetime) else raw_prelim
+        lien_date = raw_lien.date() if isinstance(raw_lien, datetime) else raw_lien
 
-        # Calculate days remaining (both must be date objects)
+        # Calculate days remaining (using date objects)
         today = datetime.now().date()
-        prelim_days = (prelim_deadline - today).days if prelim_deadline else 0
-        lien_days = (lien_deadline - today).days if lien_deadline else 0
+        prelim_days = (prelim_date - today).days if prelim_date else 0
+        lien_days = (lien_date - today).days if lien_date else 0
+
+        # For RESPONSE: Use ISO format to preserve time component
+        prelim_deadline_str = raw_prelim.isoformat() if raw_prelim else None
+        lien_deadline_str = raw_lien.isoformat() if raw_lien else None
 
         # 3. Response (Universal Format)
         return JSONResponse(content={
             "status": "success",
             "quota_remaining": quota_remaining,
-            "warnings": warnings,  # Include warnings list
-            "preliminary_notice_deadline": str(prelim_deadline) if prelim_deadline else None,
-            "prelim_deadline": str(prelim_deadline) if prelim_deadline else None,
+            "warnings": warnings,
+            "preliminary_notice_deadline": prelim_deadline_str,
+            "prelim_deadline": prelim_deadline_str,
             # Shotgun approach: Multiple variations of days remaining keys
             "prelim_days_remaining": prelim_days,
             "preliminary_days_remaining": prelim_days,
@@ -141,14 +135,14 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
             "days_remaining": lien_days,  # Fallback for the main deadline
             # Nested objects (for Dashboard compatibility)
             "preliminary_notice": {
-                "deadline": str(prelim_deadline) if prelim_deadline else None,
+                "deadline": prelim_deadline_str,
                 "required": True,
                 "days_remaining": prelim_days,
-                "days_until": prelim_days,  # Additional key variation
-                "days": prelim_days  # Additional key variation
+                "days_until": prelim_days,
+                "days": prelim_days
             },
             "lien_filing": {
-                "deadline": str(lien_deadline) if lien_deadline else None,
+                "deadline": lien_deadline_str,
                 "days_remaining": lien_days
             }
         })
