@@ -401,7 +401,7 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
             # Get brokers with verified columns
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
-                    SELECT id, name, email, commission_model, referrals, earned, stripe_account_id
+                    SELECT id, name, email, commission_model, total_referrals, total_earned, status, created_at, referral_code, payment_method
                     FROM brokers
                     ORDER BY id DESC
                 """)
@@ -424,38 +424,60 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
                         "id": row.get('id'),
                         "name": row.get('name') or row.get('email') or 'N/A',
                         "email": row.get('email') or 'N/A',
-                        "referrals": row.get('referrals', 0),
-                        "earned": row.get('earned', 0.0),
-                        "status": 'active', # Default since column missing
-                        "payment_method": 'Stripe' if row.get('stripe_account_id') else 'Unlinked',
+                        "referrals": row.get('total_referrals') if row.get('total_referrals') is not None else row.get('referrals', 0),
+                        "earned": row.get('total_earned') if row.get('total_earned') is not None else row.get('earned', 0.0),
+                        "status": row.get('status', 'active'),
+                        "payment_method": row.get('payment_method') or ('Stripe' if row.get('stripe_account_id') else 'Unlinked'),
                         "commission_model": row.get('commission_model') or row.get('model'),
-                        "referral_code": row.get('id'), # Use ID as code
+                        "referral_code": row.get('referral_code') or row.get('id'),
                         "payment_status": 'pending_first_payment', 
                         "last_payment_date": None,
                         "total_paid": 0.0,
-                        "created_at": None, # Missing column
+                        "created_at": row.get('created_at'),
                         "stripe_account_id": row.get('stripe_account_id')
                     }
                 else:
-                    # Index mapping based on SELECT:
-                    # 0: id, 1: name, 2: email, 3: commission_model/model, 4: referrals, 5: earned, 6: stripe_account_id
-                    broker_dict = {
-                        "id": row[0],
-                        "name": row[1] if row[1] else (row[2] if len(row) > 2 else 'N/A'),
-                        "email": row[2],
-                        "commission_model": row[3],
-                        "referrals": row[4] if row[4] is not None else 0,
-                        "earned": row[5] if row[5] is not None else 0.0,
-                        "stripe_account_id": row[6],
-                        # Synthetic fields
-                        "status": 'active',
-                        "payment_method": 'Stripe' if row[6] else 'Unlinked',
-                        "referral_code": row[0],
-                        "payment_status": 'pending_first_payment',
-                        "last_payment_date": None,
-                        "total_paid": 0.0,
-                        "created_at": None
-                    }
+                    if DB_TYPE == 'postgresql':
+                        # Postgres Tuple Mapping
+                        # 0: id, 1: name, 2: email, 3: commission_model, 4: total_referrals, 
+                        # 5: total_earned, 6: status, 7: created_at, 8: referral_code, 9: payment_method
+                        broker_dict = {
+                            "id": row[0],
+                            "name": row[1] if row[1] else (row[2] if len(row) > 2 else 'N/A'),
+                            "email": row[2],
+                            "commission_model": row[3],
+                            "referrals": row[4] if row[4] is not None else 0,
+                            "earned": row[5] if row[5] is not None else 0.0,
+                            "status": row[6] if row[6] else 'active',
+                            "created_at": row[7],
+                            "referral_code": row[8] if row[8] else row[0],
+                            "payment_method": row[9] if row[9] else 'Unlinked',
+                            "stripe_account_id": None, # Not selected in Postgres query
+                            # Synthetic fields
+                            "payment_status": 'pending_first_payment',
+                            "last_payment_date": None,
+                            "total_paid": 0.0
+                        }
+                    else:
+                        # SQLite Tuple Mapping
+                        # 0: id, 1: name, 2: email, 3: model, 4: referrals, 5: earned, 6: stripe_account_id
+                        broker_dict = {
+                            "id": row[0],
+                            "name": row[1] if row[1] else (row[2] if len(row) > 2 else 'N/A'),
+                            "email": row[2],
+                            "commission_model": row[3],
+                            "referrals": row[4] if row[4] is not None else 0,
+                            "earned": row[5] if row[5] is not None else 0.0,
+                            "stripe_account_id": row[6],
+                            # Synthetic fields
+                            "status": 'active',
+                            "payment_method": 'Stripe' if row[6] else 'Unlinked',
+                            "referral_code": row[0],
+                            "payment_status": 'pending_first_payment',
+                            "last_payment_date": None,
+                            "total_paid": 0.0,
+                            "created_at": None
+                        }
                 brokers_list.append(broker_dict)
             
             return {
