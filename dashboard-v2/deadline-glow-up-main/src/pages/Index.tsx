@@ -12,13 +12,23 @@ import { ApiDocs } from "@/components/dashboard/ApiDocs";
 
 const Index = () => {
   useEffect(() => {
-    fetch("/api/verify-session")
-      .then(res => {
-        if (!res.ok) window.location.href = "/login.html";
-      })
-      .catch(() => {
-        window.location.href = "/login.html";
-      });
+    console.log('Auth check DISABLED for testing');
+    // TEMPORARILY DISABLED - REMOVE AFTER TESTING
+    /*
+    const token = localStorage.getItem('session_token');
+    if (!token) {
+      window.location.href = '/login.html';
+      return;
+    }
+    
+    fetch('/api/verify-session', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).then(res => {
+      if (!res.ok) {
+        window.location.href = '/login.html';
+      }
+    });
+    */
   }, []);
 
   return (
