@@ -129,6 +129,11 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
             "quota_remaining": quota_remaining,
             "preliminary_notice_deadline": str(prelim_deadline) if prelim_deadline else None,
             "prelim_deadline": str(prelim_deadline) if prelim_deadline else None,
+            # Flat keys for days remaining (Frontend expects these)
+            "prelim_days_remaining": prelim_days,
+            "lien_days_remaining": lien_days,
+            "days_remaining": lien_days,  # Fallback for the main deadline
+            # Nested objects (for Dashboard compatibility)
             "preliminary_notice": {
                 "deadline": str(prelim_deadline) if prelim_deadline else None,
                 "required": True,
