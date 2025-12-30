@@ -8,6 +8,61 @@ from ..rate_limiter import limiter
 
 router = APIRouter()
 
+# --- Helper Functions ---
+
+def get_user_from_session(request: Request):
+    """Helper to get logged-in user from session token"""
+    authorization = request.headers.get('authorization', '')
+    if not authorization or not authorization.startswith('Bearer '):
+        return None
+
+    token = authorization.replace('Bearer ', '')
+
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+        
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id, email, subscription_status FROM users WHERE session_token = %s", (token,))
+            else:
+                cursor.execute("SELECT id, email, subscription_status FROM users WHERE session_token = ?", (token,))
+        
+            user = cursor.fetchone()
+        
+            if user:
+                if isinstance(user, dict):
+                    user_id = user.get('id')
+                    email = user.get('email')
+                    subscription_status = user.get('subscription_status')
+                elif hasattr(user, 'keys'):
+                    user_id = user['id'] if 'id' in user.keys() else (user[0] if len(user) > 0 else None)
+                    email = user['email'] if 'email' in user.keys() else (user[1] if len(user) > 1 else None)
+                    subscription_status = user['subscription_status'] if 'subscription_status' in user.keys() else (user[2] if len(user) > 2 else None)
+                else:
+                    user_id = user[0] if user and len(user) > 0 else None
+                    email = user[1] if user and len(user) > 1 else None
+                    subscription_status = user[2] if user and len(user) > 2 else None
+            
+                if subscription_status in ['active', 'trialing']:
+                    return {
+                        'id': user_id,
+                        'email': email,
+                        'subscription_status': subscription_status,
+                        'unlimited': True
+                    }
+    except Exception as e:
+        print(f"⚠️ Error checking session: {e}")
+
+    return None
+
+# Dependency to get current user from session token (for backward compatibility)
+async def get_current_user(request: Request):
+    """Get current user from session token - extract from Request headers"""
+    user = get_user_from_session(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return user
+
 # Authentication Models
 class LoginRequest(BaseModel):
     email: str

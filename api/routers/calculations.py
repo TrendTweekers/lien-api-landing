@@ -1,605 +1,720 @@
-from fastapi import APIRouter, HTTPException, Request, Depends, status
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from datetime import datetime, date
-from typing import Optional, List, Dict, Any
-import hashlib
+from typing import Optional
+from datetime import datetime
+import logging
+import sys
 
-from ..database import get_db, get_db_cursor, DB_TYPE
-from ..rate_limiter import limiter
-from ..calculators import (
-    calculate_state_deadline, 
-    VALID_STATES, 
-    STATE_CODE_TO_NAME, 
-    STATE_RULES
-)
+# We assume database imports are safe.
+from api.database import get_db, get_db_cursor, DB_TYPE
 
-router = APIRouter()
+logger = logging.getLogger(__name__)
 
-# --- Models ---
+# 🟢 CRITICAL CHANGE: No Prefix. We define full paths manually.
+router = APIRouter(tags=["calculations"])
 
-class TrackCalculationRequest(BaseModel):
-    """Request model for tracking calculation attempts"""
-    state: Optional[str] = None
-    notice_date: Optional[str] = None
-    last_work_date: Optional[str] = None
-    email: Optional[str] = None  # Allow email to be sent from frontend for admin check
-
-class CalculateDeadlineRequest(BaseModel):
-    invoice_date: str
+# --- Request Models ---
+class CalculationRequest(BaseModel):
     state: str
-    role: str = "supplier"
-    project_type: str = "commercial"
-    notice_of_completion_date: Optional[str] = None
-    notice_of_commencement_filed: Optional[bool] = False
+    invoice_date: str
+    project_type: Optional[str] = "Commercial"
+    notice_date: Optional[str] = None
 
-# --- Helpers ---
-
-def get_client_ip(request: Request) -> str:
-    """Get real client IP from headers (works with Railway/Cloudflare)"""
-    return (
-        request.headers.get("cf-connecting-ip") or 
-        request.headers.get("x-forwarded-for", "").split(",")[0].strip() or
-        request.headers.get("x-real-ip") or
-        (request.client.host if request.client else "unknown")
-    )
-
-def get_user_agent_hash(request: Request) -> str:
-    """Get a hash of user agent for better tracking (handles shared IPs)"""
-    user_agent = request.headers.get('user-agent', 'unknown')
-    return hashlib.md5(user_agent.encode()).hexdigest()[:8]
-
-def is_broker_email(email: str) -> bool:
-    """
-    Check if an email belongs to a broker.
-    Returns True if email exists in brokers table with approved/active status.
-    """
-    if not email:
-        return False
-    
-    try:
-        with get_db() as conn:
-            cursor = get_db_cursor(conn)
-            
-            if DB_TYPE == 'postgresql':
-                cursor.execute("""
-                    SELECT id FROM brokers 
-                    WHERE LOWER(email) = LOWER(%s) 
-                    AND status IN ('approved', 'active')
-                    LIMIT 1
-                """, (email.lower().strip(),))
-            else:
-                cursor.execute("""
-                    SELECT id FROM brokers 
-                    WHERE LOWER(email) = LOWER(?) 
-                    AND status IN ('approved', 'active')
-                    LIMIT 1
-                """, (email.lower().strip(),))
-            
-            result = cursor.fetchone()
-            return result is not None
-            
-    except Exception as e:
-        print(f"⚠️ Error checking broker email: {e}")
-        return False  # Fail closed - assume not a broker if check fails
-
-def get_user_from_session(request: Request):
-    """Helper to get logged-in user from session token"""
-    authorization = request.headers.get('authorization', '')
-    if not authorization or not authorization.startswith('Bearer '):
-        return None
-    
-    token = authorization.replace('Bearer ', '')
-    
-    try:
-        with get_db() as conn:
-            cursor = get_db_cursor(conn)
-            
-            if DB_TYPE == 'postgresql':
-                cursor.execute("SELECT email, subscription_status FROM users WHERE session_token = %s", (token,))
-            else:
-                cursor.execute("SELECT email, subscription_status FROM users WHERE session_token = ?", (token,))
-            
-            user = cursor.fetchone()
-            
-            if user:
-                if isinstance(user, dict):
-                    email = user.get('email')
-                    subscription_status = user.get('subscription_status')
-                elif hasattr(user, 'keys'):
-                    email = user['email'] if 'email' in user.keys() else (user[0] if len(user) > 0 else None)
-                    subscription_status = user['subscription_status'] if 'subscription_status' in user.keys() else (user[1] if len(user) > 1 else None)
-                else:
-                    email = user[0] if user and len(user) > 0 else None
-                    subscription_status = user[1] if user and len(user) > 1 else None
-                
-                if subscription_status in ['active', 'trialing']:
-                    return {'email': email, 'subscription_status': subscription_status, 'unlimited': True}
-    except Exception as e:
-        print(f"⚠️ Error checking session: {e}")
-    
-    return None
+class SaveRequest(BaseModel):
+    # Snake Case Fields (all Optional for permissive parsing)
+    project_name: Optional[str] = None
+    client_name: Optional[str] = None
+    state: Optional[str] = None
+    state_code: Optional[str] = None
+    invoice_date: Optional[str] = None
+    invoice_amount: Optional[float] = None
+    prelim_deadline: Optional[str] = None
+    prelim_deadline_days: Optional[int] = None
+    lien_deadline: Optional[str] = None
+    lien_deadline_days: Optional[int] = None
+    notes: Optional[str] = None
+    project_type: Optional[str] = None
+    reminder_1day: Optional[bool] = False
+    reminder_7days: Optional[bool] = False
+    # Camel Case Aliases (for React frontend)
+    projectName: Optional[str] = None
+    clientName: Optional[str] = None
+    stateCode: Optional[str] = None
+    invoiceDate: Optional[str] = None
+    invoiceAmount: Optional[float] = None
+    prelimDeadline: Optional[str] = None
+    prelimDeadlineDays: Optional[int] = None
+    lienDeadline: Optional[str] = None
+    lienDeadlineDays: Optional[int] = None
+    projectType: Optional[str] = None
+    reminder1day: Optional[bool] = False
+    reminder7days: Optional[bool] = False
+    # Nested reminders object (from frontend)
+    reminders: Optional[dict] = None
 
 # --- Endpoints ---
 
-@router.post("/v1/calculate")
-def legacy_calculate(request: Request):
+@router.get("/api/calculations/history")
+async def get_history(request: Request):
     """
-    Legacy endpoint - mapped to get_user_from_session logic.
-    Originally in api/main.py as @app.post("/v1/calculate") decorating get_user_from_session.
+    Fetch history. Path matches current frontend: /api/calculations/history
     """
-    return get_user_from_session(request)
-
-@router.get("/v1/states")
-def get_states():
-    """Get list of supported states - returns all 51 states with code and name"""
+    # 🟢 LAZY IMPORT
     try:
-        # Try to get states from database with names
-        with get_db() as conn:
-            cursor = get_db_cursor(conn)
-            if DB_TYPE == 'postgresql':
-                cursor.execute("""
-                    SELECT state_code, state_name 
-                    FROM lien_deadlines 
-                    ORDER BY state_code
-                """)
-            else:
-                cursor.execute("""
-                    SELECT state_code, state_name 
-                    FROM lien_deadlines 
-                    ORDER BY state_code
-                """)
-            states = cursor.fetchall()
-            
-            if states:
-                result = []
-                for row in states:
-                    if isinstance(row, dict):
-                        result.append({
-                            "code": row.get("state_code"),
-                            "name": row.get("state_name")
-                        })
-                    else:
-                        result.append({
-                            "code": row[0],
-                            "name": row[1]
-                        })
-                return {
-                    "states": result,
-                    "count": len(result)
-                }
-    except Exception as e:
-        print(f"⚠️ Error querying database for states: {e}")
+        from api.routers.auth import get_user_from_session
+    except ImportError:
+        logger.error("CRITICAL: Could not import get_user_from_session from api.routers.auth")
+        raise HTTPException(status_code=500, detail="Auth Config Error")
+
+    # 1. Auth Check
+    user = get_user_from_session(request)
     
-    # Fallback: return state codes only if database query fails
-    return {
-        "states": [{"code": code, "name": code} for code in VALID_STATES],
-        "count": len(VALID_STATES)
-    }
+    if not user:
+        logger.warning("Auth failed - returning empty history to prevent frontend error")
+        return JSONResponse(content={"history": []})
 
-@router.post("/api/v1/track-calculation")
-@limiter.limit("20/minute")
-async def track_calculation(request: Request, request_data: Optional[TrackCalculationRequest] = None):
-    """
-    Track calculation attempt and enforce server-side limits.
-    Returns whether calculation is allowed and current count.
-    """
+    # 2. Fetch History
     try:
-        client_ip = get_client_ip(request)
-        user_agent_hash = get_user_agent_hash(request)
-        
-        # Create composite key: IP + user agent hash (handles shared IPs better)
-        tracking_key = f"{client_ip}:{user_agent_hash}"
-        
-        # Get email from request first (for admin check before DB lookup)
-        request_email = None
-        if request_data and request_data.email:
-            request_email = request_data.email.strip().lower()
-        
-        # Admin/dev user bypass (check BEFORE database lookup)
-        DEV_EMAIL = "kartaginy1@gmail.com"
-        if request_email and request_email == DEV_EMAIL.lower():
-            print(f"✅ Admin/dev user detected from request: {request_email} - allowing unlimited calculations")
-            return JSONResponse(
-                status_code=200,
-                content={
-                    "status": "allowed",
-                    "calculation_count": 0,
-                    "remaining_calculations": 999999,
-                    "email_provided": True,
-                    "quota": {"unlimited": True}
-                }
-            )
+        user_email = user.get("email", "")
+        if not user_email:
+            return JSONResponse(content={"history": []})
         
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Ensure email_gate_tracking table exists with tracking_key column
-            if DB_TYPE == 'postgresql':
+            # Select with reminder columns (migration adds these columns on startup)
+            if DB_TYPE == "postgresql":
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS email_gate_tracking (
-                        id SERIAL PRIMARY KEY,
-                        ip_address VARCHAR NOT NULL,
-                        tracking_key VARCHAR NOT NULL,
-                        email VARCHAR,
-                        calculation_count INTEGER DEFAULT 0,
-                        first_calculation_at TIMESTAMP DEFAULT NOW(),
-                        last_calculation_at TIMESTAMP DEFAULT NOW(),
-                        email_captured_at TIMESTAMP,
-                        created_at TIMESTAMP DEFAULT NOW()
-                    )
-                """)
-                # Add tracking_key column if it doesn't exist (migration)
-                try:
-                    cursor.execute("ALTER TABLE email_gate_tracking ADD COLUMN IF NOT EXISTS tracking_key VARCHAR")
-                except:
-                    pass  # Column might already exist
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_tracking_key ON email_gate_tracking(tracking_key)")
-                
-                # Get current tracking record
-                cursor.execute("""
-                    SELECT calculation_count, email, email_captured_at 
-                    FROM email_gate_tracking 
-                    WHERE tracking_key = %s 
-                    ORDER BY last_calculation_at DESC 
-                    LIMIT 1
-                """, (tracking_key,))
+                    SELECT id, project_name, client_name, state, state_code, invoice_amount, 
+                           invoice_date, prelim_deadline, prelim_deadline_days,
+                           lien_deadline, lien_deadline_days, notes,
+                           COALESCE(reminder_1day, false) as reminder_1day,
+                           COALESCE(reminder_7days, false) as reminder_7days,
+                           created_at
+                    FROM calculations 
+                    WHERE user_email = %s 
+                    ORDER BY created_at DESC
+                """, (user_email,))
             else:
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS email_gate_tracking (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        ip_address TEXT NOT NULL,
-                        tracking_key TEXT NOT NULL,
-                        email TEXT,
-                        calculation_count INTEGER DEFAULT 0,
-                        first_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        last_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        email_captured_at TIMESTAMP,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                # Add tracking_key column if it doesn't exist (migration)
-                try:
-                    cursor.execute("ALTER TABLE email_gate_tracking ADD COLUMN tracking_key TEXT")
-                except:
-                    pass  # Column might already exist
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_tracking_key ON email_gate_tracking(tracking_key)")
-                
-                cursor.execute("""
-                    SELECT calculation_count, email, email_captured_at 
-                    FROM email_gate_tracking 
-                    WHERE tracking_key = ? 
-                    ORDER BY last_calculation_at DESC 
-                    LIMIT 1
-                """, (tracking_key,))
+                    SELECT id, project_name, client_name, state, state_code, invoice_amount,
+                           invoice_date, prelim_deadline, prelim_deadline_days,
+                           lien_deadline, lien_deadline_days, notes,
+                           COALESCE(reminder_1day, 0) as reminder_1day,
+                           COALESCE(reminder_7days, 0) as reminder_7days,
+                           created_at
+                    FROM calculations 
+                    WHERE user_email = ? 
+                    ORDER BY created_at DESC
+                """, (user_email,))
             
-            tracking = cursor.fetchone()
+            rows = cursor.fetchall()
             
-            # Parse tracking data
-            if tracking:
-                if isinstance(tracking, dict):
-                    count = tracking.get('calculation_count', 0)
-                    db_email = tracking.get('email')
-                    email_captured_at = tracking.get('email_captured_at')
-                elif hasattr(tracking, 'keys'):
-                    count = tracking['calculation_count'] if 'calculation_count' in tracking.keys() else tracking[0]
-                    db_email = tracking['email'] if 'email' in tracking.keys() else (tracking[1] if len(tracking) > 1 else None)
-                    email_captured_at = tracking['email_captured_at'] if 'email_captured_at' in tracking.keys() else (tracking[2] if len(tracking) > 2 else None)
+            history = []
+            for row in rows:
+                if isinstance(row, dict):
+                    # Extract reminder values (handle both boolean and int)
+                    reminder_1day = row.get('reminder_1day', False)
+                    reminder_7days = row.get('reminder_7days', False)
+                    # Convert to boolean if needed
+                    if isinstance(reminder_1day, int):
+                        reminder_1day = bool(reminder_1day)
+                    if isinstance(reminder_7days, int):
+                        reminder_7days = bool(reminder_7days)
+                    
+                    history.append({
+                        "id": row.get('id'),
+                        "project_name": row.get('project_name') or "",
+                        "client_name": row.get('client_name') or "",
+                        "state": row.get('state') or "",
+                        "state_code": row.get('state_code') or "",
+                        "amount": float(row.get('invoice_amount') or 0),
+                        "invoice_date": str(row.get('invoice_date') or ""),
+                        "prelim_deadline": str(row.get('prelim_deadline') or ""),
+                        "prelim_deadline_days": row.get('prelim_deadline_days'),
+                        "lien_deadline": str(row.get('lien_deadline') or ""),
+                        "lien_deadline_days": row.get('lien_deadline_days'),
+                        "notes": row.get('notes') or "",
+                        "reminder_1day": reminder_1day,
+                        "reminder_7days": reminder_7days,
+                        "created_at": str(row.get('created_at') or "")
+                    })
                 else:
-                    count = tracking[0] if tracking else 0
-                    db_email = tracking[1] if tracking and len(tracking) > 1 else None
-                    email_captured_at = tracking[2] if tracking and len(tracking) > 2 else None
-            else:
-                count = 0
-                db_email = None
-                email_captured_at = None
+                    # Handle tuple/row format - reminder columns are at index 12, 13
+                    reminder_1day = False
+                    reminder_7days = False
+                    if len(row) > 12:
+                        reminder_1day = bool(row[12]) if row[12] is not None else False
+                    if len(row) > 13:
+                        reminder_7days = bool(row[13]) if row[13] is not None else False
+                    
+                    history.append({
+                        "id": row[0] if len(row) > 0 else None,
+                        "project_name": row[1] if len(row) > 1 else "",
+                        "client_name": row[2] if len(row) > 2 else "",
+                        "state": row[3] if len(row) > 3 else "",
+                        "state_code": row[4] if len(row) > 4 else "",
+                        "amount": float(row[5]) if len(row) > 5 and row[5] else 0.0,
+                        "invoice_date": str(row[6]) if len(row) > 6 else "",
+                        "prelim_deadline": str(row[7]) if len(row) > 7 else "",
+                        "prelim_deadline_days": row[8] if len(row) > 8 else None,
+                        "lien_deadline": str(row[9]) if len(row) > 9 else "",
+                        "lien_deadline_days": row[10] if len(row) > 10 else None,
+                        "notes": row[11] if len(row) > 11 else "",
+                        "reminder_1day": reminder_1day,
+                        "reminder_7days": reminder_7days,
+                        "created_at": str(row[14] if len(row) > 14 else row[-1] if len(row) > 0 else "")
+                    })
             
-            # Use email from request if provided, otherwise use DB email
-            email = request_email or (db_email.lower() if db_email else None)
-            
-            # Determine limits
-            CALCULATIONS_BEFORE_EMAIL = 3
-            TOTAL_FREE_CALCULATIONS = 6
-            
-            # Check if user is a broker
-            is_broker = email and is_broker_email(email)
-            if is_broker:
-                print(f"⚠️ Broker attempting calculation: {email} - applying same limits as customers")
-            
-            # Update email if provided
-            if request_email and request_email != db_email:
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        UPDATE email_gate_tracking 
-                        SET email = %s, email_captured_at = NOW() 
-                        WHERE tracking_key = %s
-                    """, (request_email, tracking_key))
-                else:
-                    cursor.execute("""
-                        UPDATE email_gate_tracking 
-                        SET email = ?, email_captured_at = CURRENT_TIMESTAMP 
-                        WHERE tracking_key = ?
-                    """, (request_email, tracking_key))
-                conn.commit()
-            
-            return {
-                "status": "allowed",
-                "calculation_count": count,
-                "email_provided": bool(email),
-                "quota": {
-                    "limit": 6 if email else 3,
-                    "remaining": max(0, (6 if email else 3) - count)
-                }
-            }
-            
+            return JSONResponse(content={"history": history})
     except Exception as e:
-        print(f"⚠️ Error tracking calculation: {e}")
-        # Fail open
-        return {"status": "allowed", "error": str(e)}
+        logger.error(f"History DB Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(content={"history": []})
+
 
 @router.post("/api/v1/calculate-deadline")
-@limiter.limit("10/minute")
-async def calculate_deadline(
-    request: Request,
-    request_data: CalculateDeadlineRequest
-):
+async def track_calculation(request: Request, calc_req: CalculationRequest):
     """
-    Calculate deadline - now enforces server-side limits.
-    Frontend should call /api/v1/track-calculation first to check limits.
+    Calculates deadline. Path matches frontend: /api/v1/calculate-deadline
     """
-    invoice_date = request_data.invoice_date
-    state = request_data.state
-    role = request_data.role
-    project_type = request_data.project_type
-    state_code = state.upper()
-    
-    # Check if user is logged in with active/trialing subscription
-    logged_in_user = get_user_from_session(request)
-    quota = {'unlimited': False, 'remaining': 0, 'limit': 3}
-    
-    if logged_in_user and logged_in_user.get('unlimited'):
-        # Skip limit checks for logged-in active/trialing users
-        quota = {'unlimited': True}
-    else:
-        # Get client IP and tracking key
-        client_ip = get_client_ip(request)
-        user_agent_hash = get_user_agent_hash(request)
-        tracking_key = f"{client_ip}:{user_agent_hash}"
-        
-        # Check limits BEFORE processing calculation (server-side enforcement)
-        try:
-            with get_db() as conn:
-                cursor = get_db_cursor(conn)
-                
-                # Get current tracking
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        SELECT calculation_count, email 
-                        FROM email_gate_tracking 
-                        WHERE tracking_key = %s 
-                        ORDER BY last_calculation_at DESC 
-                        LIMIT 1
-                    """, (tracking_key,))
-                else:
-                    cursor.execute("""
-                        SELECT calculation_count, email 
-                        FROM email_gate_tracking 
-                        WHERE tracking_key = ? 
-                        ORDER BY last_calculation_at DESC 
-                        LIMIT 1
-                    """, (tracking_key,))
-                
-                tracking = cursor.fetchone()
-                
-                if tracking:
-                    if isinstance(tracking, dict):
-                        count = tracking.get('calculation_count', 0)
-                        email = tracking.get('email')
-                    elif hasattr(tracking, 'keys'):
-                        count = tracking['calculation_count'] if 'calculation_count' in tracking.keys() else tracking[0]
-                        email = tracking['email'] if 'email' in tracking.keys() else (tracking[1] if len(tracking) > 1 else None)
-                    else:
-                        count = tracking[0] if tracking else 0
-                        email = tracking[1] if tracking and len(tracking) > 1 else None
-                    
-                    # Admin/dev user bypass (check BEFORE broker check)
-                    DEV_EMAIL = "kartaginy1@gmail.com"
-                    is_dev_user = email and email.lower() == DEV_EMAIL.lower()
-                    
-                    if is_dev_user:
-                        print(f"✅ Admin/dev user detected in calculate_deadline: {email} - allowing unlimited calculations")
-                        quota = {'unlimited': True}
-                    else:
-                        # Check if user is a broker - brokers get same limits as customers
-                        is_broker = email and is_broker_email(email)
-                        if is_broker:
-                            print(f"⚠️ Broker attempting calculation: {email} - applying same limits as customers")
-                        
-                        limit = 6 if email else 3
-                        remaining = max(0, limit - count)
-                        quota = {'unlimited': False, 'remaining': remaining, 'limit': limit}
-                        
-                        # Enforce limits server-side (same for brokers and customers)
-                        if not email and count >= 3:
-                            raise HTTPException(
-                                status_code=403,
-                                detail="Free trial limit reached. Please provide your email for 3 more calculations."
-                            )
-                        
-                        if email and count >= 6:
-                            # Brokers get same limits - no unlimited access
-                            error_msg = "Free trial limit reached (6 calculations). Upgrade to unlimited for $299/month."
-                            if is_broker:
-                                error_msg += " Note: Brokers have the same calculation limits as customers."
-                            raise HTTPException(
-                                status_code=403,
-                                detail=error_msg
-                            )
-        except HTTPException:
-            raise
-        except Exception as e:
-            print(f"⚠️ Error checking limits in calculate_deadline: {e}")
-            # Continue with calculation if limit check fails (fail open for UX)
-    
-    # Validate state
-    if state_code not in VALID_STATES:
-        return {
-            "error": f"State {state_code} not supported",
-            "available_states": VALID_STATES,
-            "message": "Please select a valid US state or DC"
-        }
-    
-    # Parse date - handle both MM/DD/YYYY and YYYY-MM-DD formats
-    delivery_date = None
+    # 🟢 LAZY IMPORTS
+    from api.routers.auth import get_user_from_session
+    from api.calculators import calculate_state_deadline
+
+    # 1. Auth & Quota
+    user = get_user_from_session(request)
+    quota_remaining = 3  # Public users get 3 calculations
+    if user:
+        quota_remaining = 9999  # Admins get integer (not "Unlimited" string) to prevent JS math errors
+
+    # 2. Calculation
     try:
-        delivery_date = datetime.strptime(invoice_date, "%m/%d/%Y")
-    except ValueError:
-        try:
-            delivery_date = datetime.strptime(invoice_date, "%Y-%m-%d")
-        except ValueError:
-            try:
-                delivery_date = datetime.fromisoformat(invoice_date)
-            except ValueError:
-                return {"error": "Invalid date format. Use MM/DD/YYYY or YYYY-MM-DD"}
-    
-    # Convert notice_of_completion_date from string to datetime if provided
-    notice_of_completion_dt = None
-    if request_data.notice_of_completion_date:
-        try:
-            if isinstance(request_data.notice_of_completion_date, str):
-                try:
-                    notice_of_completion_dt = datetime.strptime(request_data.notice_of_completion_date, "%Y-%m-%d")
-                except ValueError:
-                    notice_of_completion_dt = datetime.strptime(request_data.notice_of_completion_date, "%m/%d/%Y")
+        inv_date = datetime.strptime(calc_req.invoice_date, "%Y-%m-%d")
+        noc_date = None
+        if calc_req.notice_date:
+             noc_date = datetime.strptime(calc_req.notice_date, "%Y-%m-%d")
+
+        # RUN MATH
+        result = calculate_state_deadline(
+            state_code=calc_req.state,
+            invoice_date=inv_date,
+            project_type=calc_req.project_type.lower() if calc_req.project_type else "commercial",
+            notice_of_completion_date=noc_date
+        )
+
+        # Extract raw values (keep as datetime if datetime, date if date)
+        raw_prelim = result.get("preliminary_deadline") or result.get("prelim_deadline")
+        raw_lien = result.get("lien_deadline")
+        warnings = result.get("warnings", [])
+
+        # For MATH: Convert to date objects for subtraction
+        prelim_date = raw_prelim.date() if isinstance(raw_prelim, datetime) else raw_prelim
+        lien_date = raw_lien.date() if isinstance(raw_lien, datetime) else raw_lien
+
+        # Calculate days remaining (using date objects)
+        today = datetime.now().date()
+        prelim_days = int((prelim_date - today).days) if prelim_date else 0
+        lien_days = int((lien_date - today).days) if lien_date else 0
+
+        # For RESPONSE: Use simple YYYY-MM-DD format (CRITICAL for frontend compatibility)
+        if raw_prelim:
+            if isinstance(raw_prelim, datetime):
+                prelim_deadline_str = raw_prelim.strftime("%Y-%m-%d")
+            elif hasattr(raw_prelim, 'strftime'):
+                prelim_deadline_str = raw_prelim.strftime("%Y-%m-%d")
             else:
-                notice_of_completion_dt = request_data.notice_of_completion_date
-        except Exception as e:
-            print(f"⚠️ Error parsing notice_of_completion_date: {e}")
-            notice_of_completion_dt = None
+                prelim_deadline_str = str(raw_prelim)
+        else:
+            prelim_deadline_str = None
             
-    # Get rules
-    rules = STATE_RULES.get(state_code, {})
+        if raw_lien:
+            if isinstance(raw_lien, datetime):
+                lien_deadline_str = raw_lien.strftime("%Y-%m-%d")
+            elif hasattr(raw_lien, 'strftime'):
+                lien_deadline_str = raw_lien.strftime("%Y-%m-%d")
+            else:
+                lien_deadline_str = str(raw_lien)
+        else:
+            lien_deadline_str = None
+
+        # 3. Construct response_data dictionary with ALL keys
+        response_data = {
+            # Echo fields from request
+            "state": calc_req.state,
+            "invoice_date": calc_req.invoice_date,
+            "project_type": calc_req.project_type,
+            # Quota
+            "quota_remaining": quota_remaining,
+            "quotaRemaining": quota_remaining,  # camelCase for React
+            # Warnings
+            "warnings": warnings,
+            # Deadlines (snake_case)
+            "preliminary_notice_deadline": prelim_deadline_str,
+            "prelim_deadline": prelim_deadline_str,
+            # Deadlines (camelCase)
+            "preliminaryNoticeDeadline": prelim_deadline_str,
+            "prelimDeadline": prelim_deadline_str,
+            # Days remaining (snake_case) - Frontend expects these keys (matching SaveRequest model)
+            "prelim_deadline_days": prelim_days,
+            "lien_deadline_days": lien_days,
+            "prelim_days_remaining": prelim_days,
+            "preliminary_days_remaining": prelim_days,
+            "days_until_prelim": prelim_days,
+            "lien_days_remaining": lien_days,
+            "days_remaining": lien_days,  # Fallback for the main deadline
+            # Days remaining (camelCase) - for React frontend
+            "prelimDeadlineDays": prelim_days,
+            "lienDeadlineDays": lien_days,
+            "prelimDaysRemaining": prelim_days,
+            "lienDaysRemaining": lien_days,
+            "daysRemaining": lien_days,  # camelCase fallback for the main deadline
+            # Nested objects (for Dashboard compatibility) - Comprehensive keys
+            "preliminary_notice": {
+                "deadline": prelim_deadline_str,
+                "required": True,
+                "days_from_now": prelim_days,  # Critical: Frontend expects this field
+                # snake_case keys (backward compatibility)
+                "days_remaining": prelim_days,
+                "deadline_days": prelim_days,
+                "days_count": prelim_days,
+                "days_diff": prelim_days,
+                "days_until": prelim_days,
+                "days": prelim_days,
+                # camelCase keys for React frontend
+                "daysRemaining": prelim_days,
+                "deadlineDays": prelim_days,
+                "daysCount": prelim_days,
+                "daysDiff": prelim_days,
+                "daysUntil": prelim_days
+            },
+            "lien_filing": {
+                "deadline": lien_deadline_str,
+                "days_from_now": lien_days,  # Critical: Frontend expects this field
+                # snake_case keys (backward compatibility)
+                "days_remaining": lien_days,
+                "deadline_days": lien_days,
+                "days_count": lien_days,
+                "days_diff": lien_days,
+                "days_until": lien_days,
+                "days": lien_days,
+                # camelCase keys for React frontend
+                "daysRemaining": lien_days,
+                "deadlineDays": lien_days,
+                "daysCount": lien_days,
+                "daysDiff": lien_days,
+                "daysUntil": lien_days
+            }
+        }
+
+        # 4. Return with "Triple Payload" strategy:
+        # - Wrapped in "data" for frontend expecting a wrapper
+        # - Wrapped in "result" for frontend expecting result wrapper
+        # - Spread at root level for backward compatibility
+        return JSONResponse(content={
+            "status": "success",
+            "data": response_data,  # <-- For frontend expecting a wrapper
+            "result": response_data,  # <-- For frontend expecting result wrapper
+            **response_data         # <-- For frontend expecting root keys (Fallback)
+        })
+    except Exception as e:
+        logger.error(f"Calculation Error: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+@router.post("/api/calculations/save")
+async def save_calculation(request: Request, body: SaveRequest):
+    """Save a calculation to the database"""
+    # 🟢 LAZY IMPORT
+    from api.routers.auth import get_user_from_session
+    from api.database import get_db
     
-    # Use unified calculation function
-    result = calculate_state_deadline(
-        state_code=state_code,
-        invoice_date=delivery_date,
-        role=role,
-        project_type=project_type,
-        notice_of_completion_date=notice_of_completion_dt,
-        notice_of_commencement_filed=request_data.notice_of_commencement_filed or False,
-        state_rules=rules
-    )
+    # Log the raw payload for debugging
+    print(f"📥 SAVE PAYLOAD RECEIVED: {body.dict()}")
     
-    # Extract deadlines from result
-    prelim_deadline = result.get("preliminary_deadline")
-    lien_deadline = result.get("lien_deadline")
-    warnings = result.get("warnings", [])
-    prelim_required = result.get("preliminary_required", rules.get("preliminary_notice", {}).get("required", False))
+    # 1. Auth Check
+    user = get_user_from_session(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
     
-    # Calculate days from now
-    today = datetime.now()
-    days_to_prelim = (prelim_deadline - today).days if prelim_deadline else None
-    days_to_lien = (lien_deadline - today).days if lien_deadline else None
+    user_id = user.get("id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid user")
     
-    # Track page view and calculation (non-blocking, PostgreSQL compatible)
+    # 2. Map camelCase to snake_case (support both formats)
+    p_name = body.project_name or body.projectName or ""
+    c_name = body.client_name or body.clientName
+    state_val = body.state or ""
+    state_code_val = body.state_code or body.stateCode or state_val
+    inv_date = body.invoice_date or body.invoiceDate or ""
+    inv_amount = body.invoice_amount or body.invoiceAmount
+    prelim_dead = body.prelim_deadline or body.prelimDeadline
+    prelim_days = body.prelim_deadline_days or body.prelimDeadlineDays
+    lien_dead = body.lien_deadline or body.lienDeadline or ""
+    lien_days = body.lien_deadline_days or body.lienDeadlineDays
+    project_type_val = body.project_type or body.projectType
+    
+    # Extract reminder values from nested object or direct fields
+    reminder_1day = False
+    reminder_7days = False
+    if body.reminders:
+        # Check if any prelim or lien reminder is checked for 1 day
+        reminder_1day = bool(
+            body.reminders.get('prelim1') or 
+            body.reminders.get('lien1') or
+            body.reminder_1day or 
+            body.reminder1day
+        )
+        # Check if any prelim or lien reminder is checked for 7 days
+        reminder_7days = bool(
+            body.reminders.get('prelim7') or 
+            body.reminders.get('lien7') or
+            body.reminder_7days or 
+            body.reminder7days
+        )
+    else:
+        # Use direct fields if reminders object not provided
+        reminder_1day = bool(body.reminder_1day or body.reminder1day)
+        reminder_7days = bool(body.reminder_7days or body.reminder7days)
+    
+    # 3. Save to database
+    try:
+        import json
+        from api.routers.auth import get_user_from_session
+        
+        # Get user email for the schema
+        user_email = user.get("email", "")
+        if not user_email:
+            raise HTTPException(status_code=400, detail="User email not found")
+        
+        # Ensure required fields have defaults
+        if not p_name:
+            p_name = "Untitled Project"
+        if not c_name:
+            c_name = "Unknown Client"
+        if not state_val:
+            state_val = "Unknown"
+        if not state_code_val:
+            state_code_val = state_val[:2].upper() if len(state_val) >= 2 else "XX"
+        if not inv_date:
+            inv_date = datetime.now().strftime("%Y-%m-%d")
+        if not lien_dead:
+            lien_dead = inv_date  # Default to invoice date if not provided
+        
+        # Ensure lien_deadline_days is set (required by schema)
+        if lien_days is None:
+            if lien_dead:
+                try:
+                    lien_date = datetime.strptime(lien_dead, "%Y-%m-%d").date()
+                    today = datetime.now().date()
+                    lien_days = int((lien_date - today).days)
+                except:
+                    lien_days = 0
+            else:
+                lien_days = 0
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Insert with reminder columns (migration adds these columns on startup)
+            if DB_TYPE == "postgresql":
+                cursor.execute("""
+                    INSERT INTO calculations (
+                        user_email, project_name, client_name, invoice_amount, notes,
+                        state, state_code, invoice_date, 
+                        prelim_deadline, prelim_deadline_days,
+                        lien_deadline, lien_deadline_days,
+                        reminder_1day, reminder_7days,
+                        created_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                    RETURNING id
+                """, (
+                    user_email,
+                    p_name,
+                    c_name or "",
+                    float(inv_amount) if inv_amount else None,
+                    body.notes or "",
+                    state_val,
+                    state_code_val,
+                    inv_date,
+                    prelim_dead,
+                    prelim_days,
+                    lien_dead,
+                    lien_days,
+                    reminder_1day,
+                    reminder_7days,
+                ))
+                result = cursor.fetchone()
+                if isinstance(result, dict):
+                    calculation_id = result.get('id')
+                else:
+                    calculation_id = result[0] if result else None
+            else:
+                cursor.execute("""
+                    INSERT INTO calculations (
+                        user_email, project_name, client_name, invoice_amount, notes,
+                        state, state_code, invoice_date,
+                        prelim_deadline, prelim_deadline_days,
+                        lien_deadline, lien_deadline_days,
+                        reminder_1day, reminder_7days,
+                        created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """, (
+                    user_email,
+                    p_name,
+                    c_name or "",
+                    float(inv_amount) if inv_amount else None,
+                    body.notes or "",
+                    state_val,
+                    state_code_val,
+                    inv_date,
+                    prelim_dead,
+                    prelim_days,
+                    lien_dead,
+                    lien_days,
+                    reminder_1day,
+                    reminder_7days,
+                ))
+                conn.commit()
+                calculation_id = cursor.lastrowid
+            
+            conn.commit()
+            
+            return JSONResponse(content={
+                "success": True,
+                "id": calculation_id,
+                "message": "Calculation saved successfully"
+            })
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Save calculation error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to save calculation: {str(e)}")
+
+# Add legacy public endpoint just in case
+@router.post("/api/calculate")
+async def public_calculate_legacy(request: Request, calc_req: CalculationRequest):
+    return await track_calculation(request, calc_req)
+
+@router.get("/api/calculations/{calculation_id}/pdf")
+async def generate_calculation_pdf(calculation_id: int, request: Request):
+    """Generate PDF for a specific saved calculation"""
+    from api.routers.auth import get_user_from_session
+    from fastapi.responses import Response
+    
+    # Check if ReportLab is available
+    try:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.units import inch
+        from reportlab.lib.colors import HexColor
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+        from io import BytesIO
+        REPORTLAB_AVAILABLE = True
+    except ImportError:
+        REPORTLAB_AVAILABLE = False
+    
+    if not REPORTLAB_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="PDF generation is temporarily unavailable. ReportLab library is not installed."
+        )
+    
+    # Auth check
+    user = get_user_from_session(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    user_email = user.get("email", "")
+    
+    # Fetch calculation from database
     try:
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Format dates for database
-            today_str = date.today().isoformat()
-            
-            # Create tables if they don't exist
-            if DB_TYPE == 'postgresql':
+            if DB_TYPE == "postgresql":
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS page_views (
-                        id SERIAL PRIMARY KEY,
-                        date VARCHAR NOT NULL,
-                        ip VARCHAR NOT NULL,
-                        created_at TIMESTAMP DEFAULT NOW()
-                    )
-                """)
-                
-                # Insert page view
-                client_ip = request.client.host if request and request.client else "unknown"
-                cursor.execute(
-                    "INSERT INTO page_views(date, ip) VALUES (%s, %s)",
-                    (today_str, client_ip)
-                )
+                    SELECT id, project_name, client_name, state, state_code, invoice_amount,
+                           invoice_date, prelim_deadline, prelim_deadline_days,
+                           lien_deadline, lien_deadline_days, notes, created_at, user_email
+                    FROM calculations 
+                    WHERE id = %s AND user_email = %s
+                """, (calculation_id, user_email))
             else:
                 cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS page_views (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        date TEXT NOT NULL,
-                        ip TEXT NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                
-                # Insert page view
-                client_ip = request.client.host if request and request.client else "unknown"
-                cursor.execute(
-                    "INSERT INTO page_views(date, ip) VALUES (?, ?)",
-                    (today_str, client_ip)
-                )
+                    SELECT id, project_name, client_name, state, state_code, invoice_amount,
+                           invoice_date, prelim_deadline, prelim_deadline_days,
+                           lien_deadline, lien_deadline_days, notes, created_at, user_email
+                    FROM calculations 
+                    WHERE id = ? AND user_email = ?
+                """, (calculation_id, user_email))
             
-            conn.commit()
+            calc_row = cursor.fetchone()
+            
+            if not calc_row:
+                raise HTTPException(status_code=404, detail="Calculation not found")
+            
+            # Extract calculation data
+            if isinstance(calc_row, dict):
+                calc = {
+                    'id': calc_row.get('id'),
+                    'project_name': calc_row.get('project_name') or 'Untitled Project',
+                    'client_name': calc_row.get('client_name') or 'Unknown Client',
+                    'state': calc_row.get('state') or '',
+                    'state_code': calc_row.get('state_code') or '',
+                    'invoice_amount': calc_row.get('invoice_amount') or 0,
+                    'invoice_date': calc_row.get('invoice_date') or '',
+                    'prelim_deadline': calc_row.get('prelim_deadline') or '',
+                    'prelim_deadline_days': calc_row.get('prelim_deadline_days'),
+                    'lien_deadline': calc_row.get('lien_deadline') or '',
+                    'lien_deadline_days': calc_row.get('lien_deadline_days') or 0,
+                    'notes': calc_row.get('notes') or '',
+                    'created_at': calc_row.get('created_at')
+                }
+            else:
+                calc = {
+                    'id': calc_row[0] if len(calc_row) > 0 else None,
+                    'project_name': calc_row[1] if len(calc_row) > 1 else 'Untitled Project',
+                    'client_name': calc_row[2] if len(calc_row) > 2 else 'Unknown Client',
+                    'state': calc_row[3] if len(calc_row) > 3 else '',
+                    'state_code': calc_row[4] if len(calc_row) > 4 else '',
+                    'invoice_amount': calc_row[5] if len(calc_row) > 5 else 0,
+                    'invoice_date': calc_row[6] if len(calc_row) > 6 else '',
+                    'prelim_deadline': calc_row[7] if len(calc_row) > 7 else '',
+                    'prelim_deadline_days': calc_row[8] if len(calc_row) > 8 else None,
+                    'lien_deadline': calc_row[9] if len(calc_row) > 9 else '',
+                    'lien_deadline_days': calc_row[10] if len(calc_row) > 10 else 0,
+                    'notes': calc_row[11] if len(calc_row) > 11 else '',
+                    'created_at': calc_row[12] if len(calc_row) > 12 else None
+                }
+            
+            # Generate PDF
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=letter,
+                                  rightMargin=0.75*inch, leftMargin=0.75*inch,
+                                  topMargin=0.75*inch, bottomMargin=0.75*inch)
+            
+            story = []
+            styles = getSampleStyleSheet()
+            navy = HexColor('#1e3a8a')
+            coral = HexColor('#f97316')
+            
+            # Title
+            title_style = ParagraphStyle(
+                'Title',
+                parent=styles['Heading1'],
+                fontSize=24,
+                textColor=navy,
+                spaceAfter=12,
+                alignment=TA_CENTER,
+                fontName='Helvetica-Bold'
+            )
+            story.append(Paragraph("Lien Deadline Report", title_style))
+            story.append(Spacer(1, 0.2*inch))
+            
+            # Project Information
+            heading_style = ParagraphStyle(
+                'Heading',
+                parent=styles['Heading2'],
+                fontSize=16,
+                textColor=navy,
+                spaceAfter=8,
+                spaceBefore=12,
+                fontName='Helvetica-Bold'
+            )
+            
+            story.append(Paragraph("Project Information", heading_style))
+            
+            # Format dates
+            def format_date(date_str):
+                if not date_str:
+                    return 'N/A'
+                try:
+                    if isinstance(date_str, str):
+                        dt = datetime.strptime(date_str[:10], '%Y-%m-%d')
+                    else:
+                        dt = date_str
+                    return dt.strftime('%B %d, %Y')
+                except:
+                    return str(date_str)
+            
+            # Create info table
+            info_data = [
+                ['Project Name:', calc['project_name']],
+                ['Client Name:', calc['client_name']],
+                ['State:', calc['state'] or calc['state_code']],
+                ['Invoice Date:', format_date(calc['invoice_date'])],
+                ['Invoice Amount:', f"${float(calc['invoice_amount']):,.2f}" if calc['invoice_amount'] else 'N/A'],
+            ]
+            
+            if calc['notes']:
+                info_data.append(['Notes:', calc['notes']])
+            
+            info_table = Table(info_data, colWidths=[2*inch, 4*inch])
+            info_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (0, -1), HexColor('#f3f4f6')),
+                ('TEXTCOLOR', (0, 0), (-1, -1), HexColor('#1f2937')),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 11),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#e5e7eb'))
+            ]))
+            story.append(info_table)
+            story.append(Spacer(1, 0.3*inch))
+            
+            # Deadline Information
+            story.append(Paragraph("Deadline Information", heading_style))
+            
+            deadline_data = []
+            
+            if calc['prelim_deadline']:
+                prelim_days = calc['prelim_deadline_days'] if calc['prelim_deadline_days'] is not None else 'N/A'
+                deadline_data.append(['Preliminary Notice Deadline:', format_date(calc['prelim_deadline']), f"{prelim_days} days remaining" if isinstance(prelim_days, int) else prelim_days])
+            else:
+                deadline_data.append(['Preliminary Notice Deadline:', 'Not Required', ''])
+            
+            if calc['lien_deadline']:
+                lien_days = calc['lien_deadline_days'] if calc['lien_deadline_days'] is not None else 'N/A'
+                deadline_data.append(['Lien Filing Deadline:', format_date(calc['lien_deadline']), f"{lien_days} days remaining" if isinstance(lien_days, int) else lien_days])
+            else:
+                deadline_data.append(['Lien Filing Deadline:', 'N/A', ''])
+            
+            deadline_table = Table(deadline_data, colWidths=[2.5*inch, 2.5*inch, 1*inch])
+            deadline_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (0, -1), HexColor('#f3f4f6')),
+                ('TEXTCOLOR', (0, 0), (-1, -1), HexColor('#1f2937')),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 11),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#e5e7eb'))
+            ]))
+            story.append(deadline_table)
+            
+            # Build PDF
+            doc.build(story)
+            buffer.seek(0)
+            
+            # Return PDF response
+            return Response(
+                content=buffer.read(),
+                media_type='application/pdf',
+                headers={
+                    'Content-Disposition': f'attachment; filename="lien-deadline-{calculation_id}.pdf"'
+                }
+            )
+            
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"⚠️ Could not save calculation: {e}")
-    
-    # Determine urgency
-    def get_urgency(days):
-        if days <= 7:
-            return "critical"
-        elif days <= 30:
-            return "warning"
-        else:
-            return "normal"
-    
-    # Get statute citations from rules
-    prelim_notice = rules.get("preliminary_notice", {})
-    lien_filing = rules.get("lien_filing", {})
-    special_rules = rules.get("special_rules", {})
-    statute_citations = []
-    if prelim_notice.get("statute"):
-        statute_citations.append(prelim_notice["statute"])
-    if lien_filing.get("statute"):
-        statute_citations.append(lien_filing["statute"])
-    
-    # Ensure state_name is always set
-    state_name = rules.get("state_name") or state_code
-    if state_name and len(state_name) == 2:
-        state_name = STATE_CODE_TO_NAME.get(state_name, state_name)
-
-    # Build response
-    response = {
-        "state": state_name,
-        "state_code": state_code,
-        "invoice_date": invoice_date,
-        "role": role,
-        "project_type": project_type,
-        "preliminary_notice": {
-            "required": prelim_required,
-            "deadline": prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None,
-            "days_from_now": days_to_prelim,
-            "urgency": get_urgency(days_to_prelim) if days_to_prelim else None,
-            "description": prelim_notice.get("description", prelim_notice.get("deadline_description", ""))
-        },
-        "lien_filing": {
-            "deadline": lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None,
-            "days_from_now": days_to_lien,
-            "urgency": get_urgency(days_to_lien) if days_to_lien else None,
-            "description": lien_filing.get("description", lien_filing.get("deadline_description", ""))
-        },
-        "serving_requirements": rules.get("serving_requirements", []),
-        "statute_citations": statute_citations,
-        "warnings": warnings,
-        "critical_warnings": warnings,  # Keep for backward compatibility
-        "notes": special_rules.get("notes", ""),
-        "disclaimer": "⚠️ This is general information only, NOT legal advice.",
-        "response_time_ms": 45,
-        "quota": quota
-    }
-    
-    return response
+        logger.error(f"Error generating calculation PDF: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")

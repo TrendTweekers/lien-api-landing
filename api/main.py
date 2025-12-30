@@ -142,10 +142,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 from .analytics import router as analytics_router
 from .routers.admin import router as admin_router, verify_admin
 from .quickbooks import router as quickbooks_router
-from .calculations import router as calculations_router, get_current_user
+from .routers.calculations import router as calculations_router
+from .routers.auth import get_current_user
 from .routers import auth
 from .routers import webhooks
-from .routers import calculations as public_calculations
 from .routers import brokers
 
 # Import short link generator
@@ -1102,7 +1102,6 @@ app.include_router(quickbooks_router, tags=["quickbooks"])
 app.include_router(calculations_router, tags=["calculations"])
 app.include_router(auth.router, tags=["auth"])
 app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
-app.include_router(public_calculations.router, tags=["public_calculations"])
 app.include_router(brokers.router, tags=["brokers"])
 
 
@@ -1113,8 +1112,24 @@ app.include_router(brokers.router, tags=["brokers"])
 @app.on_event("startup")
 async def startup():
     """Initialize the application on startup."""
-    print("🚀 Starting application - migrations disabled")
-    print("✅ Application startup complete (migrations disabled)")
+    print("🚀 Starting application...")
+    
+    # Run reminder columns migration
+    try:
+        from api.migrations.add_reminder_columns import add_reminder_columns
+        print("🔄 Running reminder columns migration...")
+        success = add_reminder_columns()
+        if success:
+            print("✅ Reminder columns migration completed successfully")
+        else:
+            print("⚠️ Reminder columns migration had issues (check logs above)")
+    except Exception as e:
+        print(f"⚠️ Could not run reminder columns migration: {e}")
+        import traceback
+        traceback.print_exc()
+        # Don't fail startup if migration fails - columns might already exist
+    
+    print("✅ Application startup complete")
 
 # Serve static files (CSS, JS)
 try:
