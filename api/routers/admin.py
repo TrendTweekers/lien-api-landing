@@ -1415,9 +1415,6 @@ async def get_broker_payment_info(broker_id: int, username: str = Depends(verify
 async def get_broker_ledger(broker_id: int, username: str = Depends(verify_admin)):
     """Get full payout ledger for a specific broker"""
     try:
-        if not PAYOUT_LEDGER_AVAILABLE:
-            raise HTTPException(status_code=503, detail="Payout ledger service not available")
-        
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             ledger = compute_broker_ledger(cursor, broker_id, DB_TYPE)
