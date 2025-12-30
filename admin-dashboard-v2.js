@@ -88,6 +88,12 @@ async function loadPartnerApplications() {
         
         const data = await response.json();
         let applications = data.applications || data || [];
+        
+        if (!Array.isArray(applications)) {
+             console.warn('[Admin V2] Applications data is not an array, resetting to empty');
+             applications = [];
+        }
+        
         applications = applications.filter(app => app.status === 'pending' || !app.status);
         
         if (!Array.isArray(applications) || applications.length === 0) {
@@ -174,6 +180,7 @@ async function loadPartnerApplications() {
 
 // Load active brokers (reuses V1 API)
 async function loadActiveBrokers() {
+    console.log('[Admin V2] Loading active brokers...');
     try {
         const response = await fetch('/api/admin/brokers', {
             credentials: "include",
@@ -182,14 +189,24 @@ async function loadActiveBrokers() {
             }
         });
         
+        console.log('[Admin V2] Brokers API response status:', response.status);
+
         if (!response.ok) {
             safe.html('v2-brokersList', '<tr><td colspan="8" class="text-center py-8 text-red-500">Error loading brokers</td></tr>');
             return;
         }
         
         const data = await response.json();
-        const brokers = data.brokers || data || [];
+        console.log('[Admin V2] Brokers API data:', data);
+
+        let brokers = data.brokers || data || [];
+        if (!Array.isArray(brokers)) {
+             console.warn('[Admin V2] Brokers data is not an array, resetting to empty');
+             brokers = [];
+        }
         
+        console.log('[Admin V2] Processed brokers list:', brokers);
+
         if (!brokers || brokers.length === 0) {
             safe.html('v2-brokersList', `
                 <tr>
@@ -239,6 +256,10 @@ async function loadActiveBrokers() {
             
             const totalPaid = broker.total_paid ? `$${parseFloat(broker.total_paid).toFixed(2)}` : '$0.00';
             
+            // Safe quotes for strings
+            const safeName = (broker.name || 'Unknown').replace(/'/g, "\\'");
+            const safeEmail = (broker.email || '').replace(/'/g, "\\'");
+            
             return `
                 <tr class="hover:bg-gray-50">
                     <td class="font-medium">${broker.name || 'Unknown'}</td>
@@ -250,10 +271,10 @@ async function loadActiveBrokers() {
                     <td class="font-semibold" style="color: var(--success);">${totalPaid}</td>
                     <td>
                         <div class="flex gap-2">
-                            <button onclick="viewBrokerPaymentInfo(${broker.id}, '${(broker.name || 'Unknown').replace(/'/g, "\\'")}', '${(broker.email || '').replace(/'/g, "\\'")}')" class="btn btn-outline btn-sm">
+                            <button onclick="viewBrokerPaymentInfo('${broker.id}', '${safeName}', '${safeEmail}')" class="btn btn-outline btn-sm">
                                 👁️ View
                             </button>
-                            <button onclick="deleteActiveBroker(${broker.id})" class="btn btn-danger btn-sm">
+                            <button onclick="deleteActiveBroker('${broker.id}')" class="btn btn-danger btn-sm">
                                 🗑️
                             </button>
                         </div>
@@ -289,7 +310,12 @@ async function loadReadyToPay() {
         
         const data = await response.json();
         // Handle both new ledger format (with brokers array) and legacy format
-        const brokers = data.brokers || data || [];
+        let brokers = data.brokers || data || [];
+        
+        if (!Array.isArray(brokers)) {
+             console.warn('[Admin V2] Ready-to-pay brokers data is not an array, resetting to empty');
+             brokers = [];
+        }
         
         // Filter brokers with total_due_now > 0 (from ledger)
         const brokersWithDue = brokers.filter(b => parseFloat(b.total_due_now || b.commission_owed || 0) > 0);
@@ -366,10 +392,10 @@ async function loadReadyToPay() {
                     </td>
                     <td>
                         <div class="flex gap-2 flex-wrap">
-                            <button onclick="viewBrokerLedger(${broker.id})" class="btn btn-outline btn-sm">
+                            <button onclick="viewBrokerLedger('${broker.id}')" class="btn btn-outline btn-sm">
                                 📊 Breakdown
                             </button>
-                            <button onclick="showMarkPaidModal(${broker.id}, ${dueAmount.toFixed(2)})" class="btn btn-success btn-sm">
+                            <button onclick="showMarkPaidModal('${broker.id}', ${dueAmount.toFixed(2)})" class="btn btn-success btn-sm">
                                 ✓ Mark Paid
                             </button>
                         </div>
@@ -413,7 +439,12 @@ async function loadOnHold() {
         }
         
         const data = await response.json();
-        const brokers = data.brokers || data || [];
+        let brokers = data.brokers || data || [];
+        
+        if (!Array.isArray(brokers)) {
+             console.warn('[Admin V2] On-hold brokers data is not an array, resetting to empty');
+             brokers = [];
+        }
         
         // Filter brokers with total_on_hold > 0
         const brokersOnHold = brokers.filter(b => parseFloat(b.total_on_hold || 0) > 0);
@@ -486,7 +517,7 @@ async function loadOnHold() {
                         Paid: $${paidTotal.toFixed(2)}
                     </td>
                     <td>
-                        <button onclick="viewBrokerLedger(${broker.id})" class="btn btn-outline btn-sm">
+                        <button onclick="viewBrokerLedger('${broker.id}')" class="btn btn-outline btn-sm">
                             📊 Breakdown
                         </button>
                     </td>
@@ -623,7 +654,12 @@ async function loadPaymentHistory() {
         }
         
         const data = await response.json();
-        const payments = data.payments || [];
+        let payments = data.payments || [];
+        
+        if (!Array.isArray(payments)) {
+             console.warn('[Admin V2] Payment history data is not an array, resetting to empty');
+             payments = [];
+        }
         
         if (payments.length === 0) {
             safe.html('v2-payment-history-table', `
