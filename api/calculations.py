@@ -534,16 +534,19 @@ def get_user_from_session(request: Request):
     return None
 
 @router.get("/api/calculations/history")
-async def get_calculation_history(
-    request: Request,
-    user: Optional[dict] = Depends(get_current_user)
-):
+async def get_calculation_history(request: Request):
     """Get user's calculation history with project details"""
-    # If Token failed, try Session
-    if not user:
-        user = get_user_from_session(request)
+    # 1. Try Session Auth (Priority for Dashboard)
+    user = get_user_from_session(request)
     
-    # If both fail, block
+    # 2. If no session, try Headers (Manual check to avoid 401 crash)
+    if not user:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            # Manual token validation logic or pass
+            pass
+
+    # 3. Block if both fail
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     

@@ -207,10 +207,14 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
 
     # Admin/dev user bypass (check BEFORE database lookup)
     DEV_EMAIL = "kartaginy1@gmail.com"
-    if request_email and request_email == DEV_EMAIL.lower():
-        print(f"✅ Admin/dev user detected from request: {request_email} - allowing unlimited calculations")
+    # Allow bypass if dev email OR user is logged in
+    if (request_email and request_email == DEV_EMAIL.lower()) or logged_in_user:
+        if logged_in_user:
+            print(f"✅ Logged-in user detected: {logged_in_user.get('email')} - allowing unlimited calculations")
+        else:
+            print(f"✅ Admin/dev user detected from request: {request_email} - allowing unlimited calculations")
     
-        # Calculate deadlines if data is provided (Admin bypass)
+        # Calculate deadlines if data is provided (Admin/Logged-in bypass)
         calculation_result = {}
         if request_data and request_data.state and request_data.notice_date:
             try:
