@@ -16,7 +16,7 @@ export const UsageStats = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <p className="text-sm text-muted-foreground mb-2">Total API Calls</p>
-          <p className="text-4xl font-bold text-primary">1,247</p>
+          <p className="text-4xl font-bold text-primary">{apiCalls}</p>
           <p className="text-xs text-muted-foreground mt-1">Last 30 days</p>
         </div>
 

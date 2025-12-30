@@ -1,6 +1,32 @@
 import { CheckCircle, CreditCard, Activity } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export const AccountOverview = () => {
+  const [apiCalls, setApiCalls] = useState<string>("0");
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('session_token');
+        if (!token) return;
+
+        const response = await fetch('/api/customer/stats', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            setApiCalls(data.api_calls.toLocaleString());
+        }
+      } catch (error) {
+        console.error("Failed to fetch stats", error);
+      }
+    };
+    fetchStats();
+  }, []);
+
   return (
     <div className="bg-card rounded-xl p-6 border border-border card-shadow">
       <h2 className="text-lg font-semibold text-foreground mb-6">Account Overview</h2>
@@ -34,7 +60,7 @@ export const AccountOverview = () => {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">API Calls This Month</p>
-            <p className="text-2xl font-bold text-foreground">1,247</p>
+            <p className="text-2xl font-bold text-foreground">{apiCalls}</p>
             <p className="text-xs text-muted-foreground mt-0.5">Unlimited plan</p>
           </div>
         </div>

@@ -180,12 +180,38 @@
 
         // Placeholder for dashboard loading function
 
-        function loadDashboard() {
+        async function loadDashboard() {
+            try {
+                const token = localStorage.getItem('session_token');
+                if (!token) return;
 
-            // Dashboard initialization code goes here
+                // Fetch customer stats
+                const response = await fetch('/api/customer/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
 
-            // This function can be expanded with other initialization logic
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update API usage in top bar
+                    const topApiUsage = document.getElementById('top-api-usage');
+                    if (topApiUsage) {
+                        topApiUsage.textContent = data.api_calls.toLocaleString();
+                    }
 
+                    // Update API usage in stats section
+                    const statsApiUsage = document.getElementById('stats-api-usage');
+                    if (statsApiUsage) {
+                        statsApiUsage.textContent = data.api_calls.toLocaleString();
+                    }
+                } else {
+                    console.error('Failed to load customer stats');
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
         }
 
 
@@ -3764,7 +3790,7 @@
 
                     <div class="text-sm text-gray-600 mb-2">Total API Calls</div>
 
-                    <div class="text-3xl font-bold text-gray-900">1,247</div>
+                    <div id="stats-api-usage" class="text-3xl font-bold text-gray-900">0</div>
 
                     <div class="text-sm text-gray-500 mt-1">Last 30 days</div>
 
