@@ -291,6 +291,10 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
                             "notice_of_intent_deadline": noi_deadline_str,
                             "prelim_deadline": prelim_deadline_str
                         }
+            except Exception as e:
+                print(f"Error in track_calculation: {str(e)}")
+                # If possible, return a fallback or re-raise 
+                raise HTTPException(status_code=500, detail=str(e))
 
         return JSONResponse(
             status_code=200,
