@@ -572,6 +572,11 @@ async def calculate_deadline(
     if state_name and len(state_name) == 2:
         state_name = STATE_CODE_TO_NAME.get(state_name, state_name)
 
+    # Format dates for response
+    prelim_deadline_str = prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None
+    lien_deadline_str = lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None
+    noi_deadline_str = result.get("notice_of_intent_deadline").strftime('%Y-%m-%d') if result.get("notice_of_intent_deadline") else None
+
     # Build response
     response = {
         "state": state_name,
@@ -579,23 +584,35 @@ async def calculate_deadline(
         "invoice_date": invoice_date,
         "role": role,
         "project_type": project_type,
+        
+        # Format 3: Nested Objects (likely the missing piece)
         "preliminary_notice": {
             "required": prelim_required,
-            "deadline": prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None,
+            "deadline": prelim_deadline_str,
+            "days": days_to_prelim,
             "days_from_now": days_to_prelim,
             "urgency": get_urgency(days_to_prelim) if days_to_prelim else None,
             "description": prelim_notice.get("description", prelim_notice.get("deadline_description", ""))
         },
         "lien_filing": {
-            "deadline": lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None,
+            "deadline": lien_deadline_str,
+            "days": days_to_lien,
             "days_from_now": days_to_lien,
             "urgency": get_urgency(days_to_lien) if days_to_lien else None,
             "description": lien_filing.get("description", lien_filing.get("deadline_description", ""))
         },
-        # Flat keys for frontend compatibility (Customer Dashboard)
-        "preliminary_notice_deadline": prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None,
-        "notice_of_intent_deadline": result.get("notice_of_intent_deadline").strftime('%Y-%m-%d') if result.get("notice_of_intent_deadline") else None,
-        "lien_deadline": lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None,
+        # User explicitly requested "lien_deadline" as an object in Format 3
+        "lien_deadline": {
+            "deadline": lien_deadline_str,
+            "days": days_to_lien
+        },
+
+        # Format 1: Top-level keys
+        "preliminary_notice_deadline": prelim_deadline_str,
+        "notice_of_intent_deadline": noi_deadline_str,
+        
+        # Format 2: Original "snake_case" keys (legacy)
+        "prelim_deadline": prelim_deadline_str,
         
         "serving_requirements": rules.get("serving_requirements", []),
         "statute_citations": statute_citations,
