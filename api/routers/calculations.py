@@ -169,13 +169,22 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
         return JSONResponse(content={
             "status": "success",
             "quota_remaining": quota_remaining,
+            "quotaRemaining": quota_remaining,  # camelCase for React
             "warnings": warnings,
             "preliminary_notice_deadline": prelim_deadline_str,
+            "preliminaryNoticeDeadline": prelim_deadline_str,  # camelCase for React
             "prelim_deadline": prelim_deadline_str,
-            # Frontend expects these keys (matching SaveRequest model)
+            "prelimDeadline": prelim_deadline_str,  # camelCase for React
+            # Frontend expects these keys (matching SaveRequest model) - snake_case
             "prelim_deadline_days": prelim_days,
             "lien_deadline_days": lien_days,
-            # Shotgun approach: Multiple variations of days remaining keys (keep for compatibility)
+            # camelCase keys for React frontend
+            "prelimDeadlineDays": prelim_days,
+            "lienDeadlineDays": lien_days,
+            "prelimDaysRemaining": prelim_days,
+            "lienDaysRemaining": lien_days,
+            "daysRemaining": lien_days,  # camelCase fallback for the main deadline
+            # Shotgun approach: Multiple variations of days remaining keys (keep for compatibility) - snake_case
             "prelim_days_remaining": prelim_days,
             "preliminary_days_remaining": prelim_days,
             "days_until_prelim": prelim_days,
@@ -185,21 +194,35 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
             "preliminary_notice": {
                 "deadline": prelim_deadline_str,
                 "required": True,
+                # snake_case keys (backward compatibility)
                 "days_remaining": prelim_days,
-                "deadline_days": prelim_days,  # Likely the missing key
+                "deadline_days": prelim_days,
                 "days_count": prelim_days,
                 "days_diff": prelim_days,
                 "days_until": prelim_days,
-                "days": prelim_days
+                "days": prelim_days,
+                # camelCase keys for React frontend
+                "daysRemaining": prelim_days,
+                "deadlineDays": prelim_days,
+                "daysCount": prelim_days,
+                "daysDiff": prelim_days,
+                "daysUntil": prelim_days
             },
             "lien_filing": {
                 "deadline": lien_deadline_str,
+                # snake_case keys (backward compatibility)
                 "days_remaining": lien_days,
-                "deadline_days": lien_days,  # Likely the missing key
+                "deadline_days": lien_days,
                 "days_count": lien_days,
                 "days_diff": lien_days,
                 "days_until": lien_days,
-                "days": lien_days
+                "days": lien_days,
+                # camelCase keys for React frontend
+                "daysRemaining": lien_days,
+                "deadlineDays": lien_days,
+                "daysCount": lien_days,
+                "daysDiff": lien_days,
+                "daysUntil": lien_days
             }
         })
     except Exception as e:
