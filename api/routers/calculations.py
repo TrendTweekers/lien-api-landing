@@ -198,6 +198,7 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
             "preliminary_notice": {
                 "deadline": prelim_deadline_str,
                 "required": True,
+                "days_from_now": prelim_days,  # Critical: Frontend expects this field
                 # snake_case keys (backward compatibility)
                 "days_remaining": prelim_days,
                 "deadline_days": prelim_days,
@@ -214,6 +215,7 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
             },
             "lien_filing": {
                 "deadline": lien_deadline_str,
+                "days_from_now": lien_days,  # Critical: Frontend expects this field
                 # snake_case keys (backward compatibility)
                 "days_remaining": lien_days,
                 "deadline_days": lien_days,
