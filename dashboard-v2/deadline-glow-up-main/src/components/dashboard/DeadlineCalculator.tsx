@@ -139,7 +139,7 @@ export const DeadlineCalculator = () => {
           invoice_date: date,
           project_name: projectName || "Unnamed Project",
           client_name: clientName || "Client",
-          amount: parseFloat(amount) || 0,
+          invoiceAmount: parseFloat(amount) || 0,
           description: notes,
           prelim_deadline: result.preliminary_notice.deadline,
           lien_deadline: result.lien_filing.deadline,

@@ -64,7 +64,10 @@ export const PartnerProgram = () => {
             ))}
           </div>
 
-          <Button className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 h-12 text-base">
+          <Button 
+            className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 h-12 text-base"
+            onClick={() => window.location.href = '/partners.html'}
+          >
             Join Partner Program
             <ArrowRight className="h-5 w-5 ml-2" />
           </Button>
