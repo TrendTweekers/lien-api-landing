@@ -1057,37 +1057,185 @@
         </section>
 
         <!-- Simple Pricing Teaser (replaces full pricing) -->
-        <section id="pricing" style="background: #FFFFFF; border-top: 1px solid #E5E7EB; border-bottom: 1px solid #E5E7EB; padding: 80px 24px; text-align: center;">
-            <div style="max-width: 800px; margin: 0 auto;">
-                <h2 style="font-size: 36px; margin-bottom: 16px; color: #1F2937; font-weight: 700;">
-                    Simple Pricing That Makes Sense
-                </h2>
-                <p style="font-size: 18px; color: #6B7280; margin-bottom: 24px;">
-                    One saved lien pays for 25+ years of service
-                </p>
-                
-                <!-- Price Highlight -->
-                <div style="background: white; border-radius: 12px; padding: 32px; max-width: 500px; margin: 0 auto 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                    <p style="font-size: 20px; color: #6B7280; margin-bottom: 8px;">Professional Plan</p>
-                    <p style="font-size: 48px; font-weight: 700; color: #F97316; margin-bottom: 8px;">
-                        $299<span style="font-size: 24px; color: #6B7280;">/month</span>
-                    </p>
-                    <p style="color: #10B981; font-weight: 600; margin-bottom: 16px;">
-                        or $2,390/year (save $1,198)
-                    </p>
-                    <p style="font-size: 14px; color: #6B7280; margin-bottom: 24px;">
-                        Unlimited calculations • All 50 states • Email reminders
-                    </p>
-                    <a href="/pricing.html" style="display: inline-block; background: #F97316; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; transition: background 0.2s;" onmouseover="this.style.background='#EA580C'" onmouseout="this.style.background='#F97316'">
-                        View Full Pricing →
-                    </a>
-                </div>
-                
-                <!-- Trust Elements -->
-                <p style="font-size: 14px; color: #6B7280;">
-                    ✓ 60% cheaper than Levelset • ✓ 3 free trials • ✓ Cancel anytime
-                </p>
+        <section id="pricing" class="py-20 lg:py-28 bg-gray-50">
+          <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Header -->
+            <div class="text-center max-w-2xl mx-auto mb-16">
+              <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-gray-900 mb-4">
+                Simple, <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600 italic">transparent</span> pricing
+              </h2>
+              <p class="text-lg text-gray-600">
+                One saved lien pays for 25 years of service. No hidden fees.
+              </p>
             </div>
+
+            <!-- Pricing cards -->
+            <div class="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
+              <!-- Starter -->
+              <div class="relative p-6 lg:p-8 rounded-2xl border border-gray-200 bg-white text-gray-900 shadow-lg hover:shadow-xl transition-all duration-300">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Starter</h3>
+                <div class="mb-4">
+                  <span class="text-4xl font-serif text-gray-900">Free</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-6">Try before you buy</p>
+                <ul class="space-y-3 mb-8 text-sm">
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-600">3 calculations</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-600">All 23 states</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-600">Instant results</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-600">Email support</span>
+                  </li>
+                </ul>
+                <a href="/calculator.html" class="block w-full text-center inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-12 px-8 text-base bg-white text-gray-900 border border-gray-200 hover:border-orange-500/30 hover:bg-gray-50 shadow-lg">
+                  Start Free
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </a>
+              </div>
+              
+              <!-- Professional (Highlighted) -->
+              <div class="relative p-6 lg:p-8 bg-slate-900 text-white rounded-2xl border border-slate-900 shadow-2xl scale-105 transition-all duration-300 z-10">
+                <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span class="bg-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                    Most Popular
+                  </span>
+                </div>
+                <h3 class="text-lg font-semibold text-white mb-2">Professional</h3>
+                <div class="mb-4">
+                  <span class="text-5xl font-serif text-white">$299</span>
+                  <span class="text-gray-300">/month</span>
+                </div>
+                <p class="text-sm text-gray-300 mb-6">For growing supply yards</p>
+                <ul class="space-y-3 mb-8 text-sm">
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-orange-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-100">Unlimited calculations</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-orange-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-100">All 23 states</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-orange-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-100">API access</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-orange-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-100">Document generation</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-orange-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-100">Unlimited team members</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-orange-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-100">Priority support</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-orange-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-100">Monthly law updates</span>
+                  </li>
+                </ul>
+                <a href="/calculator.html" class="block w-full text-center inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-12 px-8 text-base bg-orange-500 text-white hover:opacity-90 shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                  Start Free Trial
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </a>
+              </div>
+              
+              <!-- Enterprise -->
+              <div class="relative p-6 lg:p-8 rounded-2xl border border-gray-200 bg-white text-gray-900 shadow-lg hover:shadow-xl transition-all duration-300">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Enterprise</h3>
+                <div class="mb-4">
+                  <span class="text-4xl font-serif text-gray-900">Custom</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-6">For large operations</p>
+                <ul class="space-y-3 mb-8 text-sm">
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-600">Everything in Professional</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-600">Custom integrations</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-600">Dedicated account manager</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-600">SLA guarantee</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-600">On-premise option</span>
+                  </li>
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-gray-600">Custom training</span>
+                  </li>
+                </ul>
+                <button class="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-12 px-8 text-base bg-white text-gray-900 border border-gray-200 hover:border-orange-500/30 hover:bg-gray-50 shadow-lg">
+                  Contact Sales
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Trust note -->
+            <p class="text-center text-sm text-gray-600 mt-12">
+              All plans include a 30-day money-back guarantee. Cancel anytime.
+            </p>
+          </div>
         </section>
         
         <!-- FAQ Section -->
