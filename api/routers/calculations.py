@@ -79,371 +79,371 @@ def is_broker_email(email: str) -> bool:
             result = cursor.fetchone()
             return result is not None
         
-        except Exception as e:
-            print(f"⚠️ Error checking broker email: {e}")
-            return False  # Fail closed - assume not a broker if check fails
+    except Exception as e:
+        print(f"⚠️ Error checking broker email: {e}")
+        return False  # Fail closed - assume not a broker if check fails
 
-    def get_user_from_session(request: Request):
-        """Helper to get logged-in user from session token"""
-        authorization = request.headers.get('authorization', '')
-        if not authorization or not authorization.startswith('Bearer '):
-            return None
-    
-        token = authorization.replace('Bearer ', '')
-    
-        try:
-            with get_db() as conn:
-                cursor = get_db_cursor(conn)
-            
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("SELECT email, subscription_status FROM users WHERE session_token = %s", (token,))
-                else:
-                    cursor.execute("SELECT email, subscription_status FROM users WHERE session_token = ?", (token,))
-            
-                user = cursor.fetchone()
-            
-                if user:
-                    if isinstance(user, dict):
-                        email = user.get('email')
-                        subscription_status = user.get('subscription_status')
-                    elif hasattr(user, 'keys'):
-                        email = user['email'] if 'email' in user.keys() else (user[0] if len(user) > 0 else None)
-                        subscription_status = user['subscription_status'] if 'subscription_status' in user.keys() else (user[1] if len(user) > 1 else None)
-                    else:
-                        email = user[0] if user and len(user) > 0 else None
-                        subscription_status = user[1] if user and len(user) > 1 else None
-                
-                    if subscription_status in ['active', 'trialing']:
-                        return {'email': email, 'subscription_status': subscription_status, 'unlimited': True}
-        except Exception as e:
-            print(f"⚠️ Error checking session: {e}")
-    
+def get_user_from_session(request: Request):
+    """Helper to get logged-in user from session token"""
+    authorization = request.headers.get('authorization', '')
+    if not authorization or not authorization.startswith('Bearer '):
         return None
 
-    # --- Endpoints ---
+    token = authorization.replace('Bearer ', '')
 
-    @router.post("/v1/calculate")
-    def legacy_calculate(request: Request):
-        """
-        Legacy endpoint - mapped to get_user_from_session logic.
-        Originally in api/main.py as @app.post("/v1/calculate") decorating get_user_from_session.
-        """
-        return get_user_from_session(request)
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+        
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT email, subscription_status FROM users WHERE session_token = %s", (token,))
+            else:
+                cursor.execute("SELECT email, subscription_status FROM users WHERE session_token = ?", (token,))
+        
+            user = cursor.fetchone()
+        
+            if user:
+                if isinstance(user, dict):
+                    email = user.get('email')
+                    subscription_status = user.get('subscription_status')
+                elif hasattr(user, 'keys'):
+                    email = user['email'] if 'email' in user.keys() else (user[0] if len(user) > 0 else None)
+                    subscription_status = user['subscription_status'] if 'subscription_status' in user.keys() else (user[1] if len(user) > 1 else None)
+                else:
+                    email = user[0] if user and len(user) > 0 else None
+                    subscription_status = user[1] if user and len(user) > 1 else None
+            
+                if subscription_status in ['active', 'trialing']:
+                    return {'email': email, 'subscription_status': subscription_status, 'unlimited': True}
+    except Exception as e:
+        print(f"⚠️ Error checking session: {e}")
 
-    @router.get("/v1/states")
-    def get_states():
-        """Get list of supported states - returns all 51 states with code and name"""
-        try:
-            # Try to get states from database with names
-            with get_db() as conn:
-                cursor = get_db_cursor(conn)
+    return None
+
+# --- Endpoints ---
+
+@router.post("/v1/calculate")
+def legacy_calculate(request: Request):
+    """
+    Legacy endpoint - mapped to get_user_from_session logic.
+    Originally in api/main.py as @app.post("/v1/calculate") decorating get_user_from_session.
+    """
+    return get_user_from_session(request)
+
+@router.get("/v1/states")
+def get_states():
+    """Get list of supported states - returns all 51 states with code and name"""
+    try:
+        # Try to get states from database with names
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT state_code, state_name 
+                    FROM lien_deadlines 
+                    ORDER BY state_code
+                """)
+            else:
+                cursor.execute("""
+                    SELECT state_code, state_name 
+                    FROM lien_deadlines 
+                    ORDER BY state_code
+                """)
+            states = cursor.fetchall()
+        
+            if states:
+                result = []
+                for row in states:
+                    if isinstance(row, dict):
+                        result.append({
+                            "code": row.get("state_code"),
+                            "name": row.get("state_name")
+                        })
+                    else:
+                        result.append({
+                            "code": row[0],
+                            "name": row[1]
+                        })
+                return {
+                    "states": result,
+                    "count": len(result)
+                }
+    except Exception as e:
+        print(f"⚠️ Error querying database for states: {e}")
+
+    # Fallback: return state codes only if database query fails
+    return {
+        "states": [{"code": code, "name": code} for code in VALID_STATES],
+        "count": len(VALID_STATES)
+    }
+
+@router.post("/api/v1/track-calculation")
+@limiter.limit("20/minute")
+async def track_calculation(request: Request, request_data: Optional[TrackCalculationRequest] = None):
+    """
+    Track calculation attempt and enforce server-side limits.
+    Returns whether calculation is allowed and current count.
+    Also returns calculation results for authenticated users (Dashboard).
+    """
+    try:
+        client_ip = get_client_ip(request)
+        user_agent_hash = get_user_agent_hash(request)
+    
+        # Create composite key: IP + user agent hash (handles shared IPs better)
+        tracking_key = f"{client_ip}:{user_agent_hash}"
+    
+        # Get email from request first (for admin check before DB lookup)
+        request_email = None
+        if request_data and request_data.email:
+            request_email = request_data.email.strip().lower()
+
+    except Exception:
+        pass
+
+    # We use get_user_from_session to avoid breaking public site (which sends no token)
+    # This allows both authenticated (Dashboard) and public usage
+    logged_in_user = get_user_from_session(request)
+
+
+    # Admin/dev user bypass (check BEFORE database lookup)
+    DEV_EMAIL = "kartaginy1@gmail.com"
+    if request_email and request_email == DEV_EMAIL.lower():
+        print(f"✅ Admin/dev user detected from request: {request_email} - allowing unlimited calculations")
+    
+        # Calculate deadlines if data is provided (Admin bypass)
+        calculation_result = {}
+        if request_data and request_data.state and request_data.notice_date:
+             # Logic duplicated from below
+             pass
+
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "allowed",
+                "calculation_count": 0,
+                "remaining_calculations": 999999,
+                "email_provided": True,
+                "quota": {"unlimited": True},
+                **calculation_result # Empty if no data
+            }
+        )
+
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+    
+            # Ensure email_gate_tracking table exists with tracking_key column
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS email_gate_tracking (
+                        id SERIAL PRIMARY KEY,
+                        ip_address VARCHAR NOT NULL,
+                        tracking_key VARCHAR NOT NULL,
+                        email VARCHAR,
+                        calculation_count INTEGER DEFAULT 0,
+                        first_calculation_at TIMESTAMP DEFAULT NOW(),
+                        last_calculation_at TIMESTAMP DEFAULT NOW(),
+                        email_captured_at TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                # Add tracking_key column if it doesn't exist (migration)
+                try:
+                    cursor.execute("ALTER TABLE email_gate_tracking ADD COLUMN IF NOT EXISTS tracking_key VARCHAR")
+                except:
+                    pass  # Column might already exist
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_tracking_key ON email_gate_tracking(tracking_key)")
+        
+                # Get current tracking record
+                cursor.execute("""
+                    SELECT calculation_count, email, email_captured_at 
+                    FROM email_gate_tracking 
+                    WHERE tracking_key = %s 
+                    ORDER BY last_calculation_at DESC 
+                    LIMIT 1
+                """, (tracking_key,))
+            else:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS email_gate_tracking (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ip_address TEXT NOT NULL,
+                        tracking_key TEXT NOT NULL,
+                        email TEXT,
+                        calculation_count INTEGER DEFAULT 0,
+                        first_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        last_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        email_captured_at TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                # Add tracking_key column if it doesn't exist (migration)
+                try:
+                    cursor.execute("ALTER TABLE email_gate_tracking ADD COLUMN tracking_key TEXT")
+                except:
+                    pass  # Column might already exist
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_tracking_key ON email_gate_tracking(tracking_key)")
+        
+                cursor.execute("""
+                    SELECT calculation_count, email, email_captured_at 
+                    FROM email_gate_tracking 
+                    WHERE tracking_key = ? 
+                    ORDER BY last_calculation_at DESC 
+                    LIMIT 1
+                """, (tracking_key,))
+    
+            tracking = cursor.fetchone()
+    
+            # Parse tracking data
+            if tracking:
+                if isinstance(tracking, dict):
+                    count = tracking.get('calculation_count', 0)
+                    db_email = tracking.get('email')
+                    email_captured_at = tracking.get('email_captured_at')
+                elif hasattr(tracking, 'keys'):
+                    count = tracking['calculation_count'] if 'calculation_count' in tracking.keys() else tracking[0]
+                    db_email = tracking['email'] if 'email' in tracking.keys() else (tracking[1] if len(tracking) > 1 else None)
+                    email_captured_at = tracking['email_captured_at'] if 'email_captured_at' in tracking.keys() else (tracking[2] if len(tracking) > 2 else None)
+                else:
+                    count = tracking[0] if tracking else 0
+                    db_email = tracking[1] if tracking and len(tracking) > 1 else None
+                    email_captured_at = tracking[2] if tracking and len(tracking) > 2 else None
+            else:
+                count = 0
+                db_email = None
+                email_captured_at = None
+    
+            # Use email from request if provided, otherwise use DB email
+            email = request_email or (db_email.lower() if db_email else None)
+    
+            # Determine limits
+            CALCULATIONS_BEFORE_EMAIL = 3
+            TOTAL_FREE_CALCULATIONS = 6
+    
+            # Check if user is a broker
+            is_broker = email and is_broker_email(email)
+            if is_broker:
+                print(f"⚠️ Broker attempting calculation: {email} - applying same limits as customers")
+    
+            # Update email if provided
+            if request_email and request_email != db_email:
                 if DB_TYPE == 'postgresql':
                     cursor.execute("""
-                        SELECT state_code, state_name 
-                        FROM lien_deadlines 
-                        ORDER BY state_code
-                    """)
+                        UPDATE email_gate_tracking 
+                        SET email = %s, email_captured_at = NOW() 
+                        WHERE tracking_key = %s
+                    """, (request_email, tracking_key))
                 else:
                     cursor.execute("""
-                        SELECT state_code, state_name 
-                        FROM lien_deadlines 
-                        ORDER BY state_code
-                    """)
-                states = cursor.fetchall()
-            
-                if states:
-                    result = []
-                    for row in states:
-                        if isinstance(row, dict):
-                            result.append({
-                                "code": row.get("state_code"),
-                                "name": row.get("state_name")
-                            })
-                        else:
-                            result.append({
-                                "code": row[0],
-                                "name": row[1]
-                            })
-                    return {
-                        "states": result,
-                        "count": len(result)
-                    }
-        except Exception as e:
-            print(f"⚠️ Error querying database for states: {e}")
+                        UPDATE email_gate_tracking 
+                        SET email = ?, email_captured_at = CURRENT_TIMESTAMP 
+                        WHERE tracking_key = ?
+                    """, (request_email, tracking_key))
+                conn.commit()
     
-        # Fallback: return state codes only if database query fails
-        return {
-            "states": [{"code": code, "name": code} for code in VALID_STATES],
-            "count": len(VALID_STATES)
-        }
-
-    @router.post("/api/v1/track-calculation")
-    @limiter.limit("20/minute")
-    async def track_calculation(request: Request, request_data: Optional[TrackCalculationRequest] = None):
-        """
-        Track calculation attempt and enforce server-side limits.
-        Returns whether calculation is allowed and current count.
-        Also returns calculation results for authenticated users (Dashboard).
-        """
-        try:
-            client_ip = get_client_ip(request)
-            user_agent_hash = get_user_agent_hash(request)
-        
-            # Create composite key: IP + user agent hash (handles shared IPs better)
-            tracking_key = f"{client_ip}:{user_agent_hash}"
-        
-            # Get email from request first (for admin check before DB lookup)
-            request_email = None
-            if request_data and request_data.email:
-                request_email = request_data.email.strip().lower()
-
-        except Exception:
-            pass
-
-        # We use get_user_from_session to avoid breaking public site (which sends no token)
-        # This allows both authenticated (Dashboard) and public usage
-        logged_in_user = get_user_from_session(request)
-
-    
-        # Admin/dev user bypass (check BEFORE database lookup)
-        DEV_EMAIL = "kartaginy1@gmail.com"
-        if request_email and request_email == DEV_EMAIL.lower():
-            print(f"✅ Admin/dev user detected from request: {request_email} - allowing unlimited calculations")
-        
-            # Calculate deadlines if data is provided (Admin bypass)
+            # PERFORM CALCULATION IF DATA AVAILABLE
             calculation_result = {}
             if request_data and request_data.state and request_data.notice_date:
-                 # Logic duplicated from below
-                 pass
-
-            return JSONResponse(
-                status_code=200,
-                content={
-                    "status": "allowed",
-                    "calculation_count": 0,
-                    "remaining_calculations": 999999,
-                    "email_provided": True,
-                    "quota": {"unlimited": True},
-                    **calculation_result # Empty if no data
-                }
-            )
-    
-    try:
-            with get_db() as conn:
-                cursor = get_db_cursor(conn)
-        
-                # Ensure email_gate_tracking table exists with tracking_key column
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        CREATE TABLE IF NOT EXISTS email_gate_tracking (
-                            id SERIAL PRIMARY KEY,
-                            ip_address VARCHAR NOT NULL,
-                            tracking_key VARCHAR NOT NULL,
-                            email VARCHAR,
-                            calculation_count INTEGER DEFAULT 0,
-                            first_calculation_at TIMESTAMP DEFAULT NOW(),
-                            last_calculation_at TIMESTAMP DEFAULT NOW(),
-                            email_captured_at TIMESTAMP,
-                            created_at TIMESTAMP DEFAULT NOW()
-                        )
-                    """)
-                    # Add tracking_key column if it doesn't exist (migration)
-                    try:
-                        cursor.execute("ALTER TABLE email_gate_tracking ADD COLUMN IF NOT EXISTS tracking_key VARCHAR")
-                    except:
-                        pass  # Column might already exist
-                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_tracking_key ON email_gate_tracking(tracking_key)")
-            
-                    # Get current tracking record
-                    cursor.execute("""
-                        SELECT calculation_count, email, email_captured_at 
-                        FROM email_gate_tracking 
-                        WHERE tracking_key = %s 
-                        ORDER BY last_calculation_at DESC 
-                        LIMIT 1
-                    """, (tracking_key,))
-                else:
-                    cursor.execute("""
-                        CREATE TABLE IF NOT EXISTS email_gate_tracking (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            ip_address TEXT NOT NULL,
-                            tracking_key TEXT NOT NULL,
-                            email TEXT,
-                            calculation_count INTEGER DEFAULT 0,
-                            first_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            last_calculation_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            email_captured_at TIMESTAMP,
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                        )
-                    """)
-                    # Add tracking_key column if it doesn't exist (migration)
-                    try:
-                        cursor.execute("ALTER TABLE email_gate_tracking ADD COLUMN tracking_key TEXT")
-                    except:
-                        pass  # Column might already exist
-                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_gate_tracking_key ON email_gate_tracking(tracking_key)")
-            
-                    cursor.execute("""
-                        SELECT calculation_count, email, email_captured_at 
-                        FROM email_gate_tracking 
-                        WHERE tracking_key = ? 
-                        ORDER BY last_calculation_at DESC 
-                        LIMIT 1
-                    """, (tracking_key,))
-        
-                tracking = cursor.fetchone()
-        
-                # Parse tracking data
-                if tracking:
-                    if isinstance(tracking, dict):
-                        count = tracking.get('calculation_count', 0)
-                        db_email = tracking.get('email')
-                        email_captured_at = tracking.get('email_captured_at')
-                    elif hasattr(tracking, 'keys'):
-                        count = tracking['calculation_count'] if 'calculation_count' in tracking.keys() else tracking[0]
-                        db_email = tracking['email'] if 'email' in tracking.keys() else (tracking[1] if len(tracking) > 1 else None)
-                        email_captured_at = tracking['email_captured_at'] if 'email_captured_at' in tracking.keys() else (tracking[2] if len(tracking) > 2 else None)
-                    else:
-                        count = tracking[0] if tracking else 0
-                        db_email = tracking[1] if tracking and len(tracking) > 1 else None
-                        email_captured_at = tracking[2] if tracking and len(tracking) > 2 else None
-                else:
-                    count = 0
-                    db_email = None
-                    email_captured_at = None
-        
-                # Use email from request if provided, otherwise use DB email
-                email = request_email or (db_email.lower() if db_email else None)
-        
-                # Determine limits
-                CALCULATIONS_BEFORE_EMAIL = 3
-                TOTAL_FREE_CALCULATIONS = 6
-        
-                # Check if user is a broker
-                is_broker = email and is_broker_email(email)
-                if is_broker:
-                    print(f"⚠️ Broker attempting calculation: {email} - applying same limits as customers")
-        
-                # Update email if provided
-                if request_email and request_email != db_email:
-                    if DB_TYPE == 'postgresql':
-                        cursor.execute("""
-                            UPDATE email_gate_tracking 
-                            SET email = %s, email_captured_at = NOW() 
-                            WHERE tracking_key = %s
-                        """, (request_email, tracking_key))
-                    else:
-                        cursor.execute("""
-                            UPDATE email_gate_tracking 
-                            SET email = ?, email_captured_at = CURRENT_TIMESTAMP 
-                            WHERE tracking_key = ?
-                        """, (request_email, tracking_key))
-                    conn.commit()
-        
-                # PERFORM CALCULATION IF DATA AVAILABLE
-                calculation_result = {}
-                if request_data and request_data.state and request_data.notice_date:
-                    try:
-                        state_code = request_data.state.upper()
-                        if state_code in VALID_STATES:
-                            # Parse date
-                            invoice_date_str = request_data.notice_date
-                            invoice_date = None
+                try:
+                    state_code = request_data.state.upper()
+                    if state_code in VALID_STATES:
+                        # Parse date
+                        invoice_date_str = request_data.notice_date
+                        invoice_date = None
+                        try:
+                            invoice_date = datetime.strptime(invoice_date_str, "%m/%d/%Y")
+                        except ValueError:
                             try:
-                                invoice_date = datetime.strptime(invoice_date_str, "%m/%d/%Y")
+                                invoice_date = datetime.strptime(invoice_date_str, "%Y-%m-%d")
                             except ValueError:
                                 try:
-                                    invoice_date = datetime.strptime(invoice_date_str, "%Y-%m-%d")
+                                    invoice_date = datetime.fromisoformat(invoice_date_str)
                                 except ValueError:
-                                    try:
-                                        invoice_date = datetime.fromisoformat(invoice_date_str)
-                                    except ValueError:
-                                        pass
+                                    pass
+                
+                        if invoice_date:
+                            # Get rules
+                            rules = STATE_RULES.get(state_code, {})
                     
-                            if invoice_date:
-                                # Get rules
-                                rules = STATE_RULES.get(state_code, {})
-                        
-                                # Calculate
-                                result = calculate_state_deadline(
-                                    state_code=state_code,
-                                    invoice_date=invoice_date,
-                                    role="supplier",
-                                    project_type="commercial",
-                                    state_rules=rules
-                                )
-                        
-                                # Extract deadlines
-                                prelim_deadline = result.get("preliminary_deadline")
-                                lien_deadline = result.get("lien_deadline")
-                                prelim_required = result.get("preliminary_required", rules.get("preliminary_notice", {}).get("required", False))
-                        
-                                # Format dates
-                                prelim_deadline_str = prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None
-                                lien_deadline_str = lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None
-                                noi_deadline_str = result.get("notice_of_intent_deadline").strftime('%Y-%m-%d') if result.get("notice_of_intent_deadline") else None
-                        
-                                today = datetime.now()
-                                days_to_prelim = (prelim_deadline - today).days if prelim_deadline else None
-                                days_to_lien = (lien_deadline - today).days if lien_deadline else None
-                        
-                                # Urgency helper
-                                def get_urgency(days):
-                                    if days <= 7: return "critical"
-                                    elif days <= 30: return "warning"
-                                    else: return "normal"
-                        
-                                prelim_notice = rules.get("preliminary_notice", {})
-                                lien_filing = rules.get("lien_filing", {})
-                        
-                                # Build result with 3 formats
-                                calculation_result = {
-                                    "preliminary_notice": {
-                                        "required": prelim_required,
-                                        "deadline": prelim_deadline_str,
-                                        "days": days_to_prelim,
-                                        "days_from_now": days_to_prelim,
-                                        "urgency": get_urgency(days_to_prelim) if days_to_prelim else None,
-                                        "description": prelim_notice.get("description", prelim_notice.get("deadline_description", ""))
-                                    },
-                                    "lien_filing": {
-                                        "deadline": lien_deadline_str,
-                                        "days": days_to_lien,
-                                        "days_from_now": days_to_lien,
-                                        "urgency": get_urgency(days_to_lien) if days_to_lien else None,
-                                        "description": lien_filing.get("description", lien_filing.get("deadline_description", ""))
-                                    },
-                                    "lien_deadline": {
-                                        "deadline": lien_deadline_str,
-                                        "days": days_to_lien
-                                    },
-                                    "preliminary_notice_deadline": prelim_deadline_str,
-                                    "notice_of_intent_deadline": noi_deadline_str,
-                                    "prelim_deadline": prelim_deadline_str
-                                }
-                    except Exception as e:
-                        print(f"⚠️ Error calculating in track_calculation: {e}")
-        
-                # Determine quota based on login status
+                            # Calculate
+                            result = calculate_state_deadline(
+                                state_code=state_code,
+                                invoice_date=invoice_date,
+                                role="supplier",
+                                project_type="commercial",
+                                state_rules=rules
+                            )
+                    
+                            # Extract deadlines
+                            prelim_deadline = result.get("preliminary_deadline")
+                            lien_deadline = result.get("lien_deadline")
+                            prelim_required = result.get("preliminary_required", rules.get("preliminary_notice", {}).get("required", False))
+                    
+                            # Format dates
+                            prelim_deadline_str = prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None
+                            lien_deadline_str = lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None
+                            noi_deadline_str = result.get("notice_of_intent_deadline").strftime('%Y-%m-%d') if result.get("notice_of_intent_deadline") else None
+                    
+                            today = datetime.now()
+                            days_to_prelim = (prelim_deadline - today).days if prelim_deadline else None
+                            days_to_lien = (lien_deadline - today).days if lien_deadline else None
+                    
+                            # Urgency helper
+                            def get_urgency(days):
+                                if days <= 7: return "critical"
+                                elif days <= 30: return "warning"
+                                else: return "normal"
+                    
+                            prelim_notice = rules.get("preliminary_notice", {})
+                            lien_filing = rules.get("lien_filing", {})
+                    
+                            # Build result with 3 formats
+                            calculation_result = {
+                                "preliminary_notice": {
+                                    "required": prelim_required,
+                                    "deadline": prelim_deadline_str,
+                                    "days": days_to_prelim,
+                                    "days_from_now": days_to_prelim,
+                                    "urgency": get_urgency(days_to_prelim) if days_to_prelim else None,
+                                    "description": prelim_notice.get("description", prelim_notice.get("deadline_description", ""))
+                                },
+                                "lien_filing": {
+                                    "deadline": lien_deadline_str,
+                                    "days": days_to_lien,
+                                    "days_from_now": days_to_lien,
+                                    "urgency": get_urgency(days_to_lien) if days_to_lien else None,
+                                    "description": lien_filing.get("description", lien_filing.get("deadline_description", ""))
+                                },
+                                "lien_deadline": {
+                                    "deadline": lien_deadline_str,
+                                    "days": days_to_lien
+                                },
+                                "preliminary_notice_deadline": prelim_deadline_str,
+                                "notice_of_intent_deadline": noi_deadline_str,
+                                "prelim_deadline": prelim_deadline_str
+                            }
+                except Exception as e:
+                    print(f"⚠️ Error calculating in track_calculation: {e}")
+    
+            # Determine quota based on login status
+            quota_info = {
+                "limit": 6 if email else 3,
+                "remaining": max(0, (6 if email else 3) - count)
+            }
+    
+            if logged_in_user and logged_in_user.get('unlimited'):
                 quota_info = {
-                    "limit": 6 if email else 3,
-                    "remaining": max(0, (6 if email else 3) - count)
+                    "unlimited": True,
+                    "remaining": 999999
                 }
-        
-                if logged_in_user and logged_in_user.get('unlimited'):
-                    quota_info = {
-                        "unlimited": True,
-                        "remaining": 999999
-                    }
 
-                return {
-                    "status": "allowed",
-                    "calculation_count": count,
-                    "email_provided": bool(email),
-                    "quota": quota_info,
-                    **calculation_result
-                }
-        
+            return {
+                "status": "allowed",
+                "calculation_count": count,
+                "email_provided": bool(email),
+                "quota": quota_info,
+                **calculation_result
+            }
+    
     except Exception as e:
         print(f"⚠️ Error tracking calculation: {e}")
         # Fail open
