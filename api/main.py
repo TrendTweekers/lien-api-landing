@@ -142,7 +142,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 from .analytics import router as analytics_router
 from .routers.admin import router as admin_router, verify_admin
 from .quickbooks import router as quickbooks_router
-from .routers.calculations import router as calculations_router, get_current_user
+from .routers.calculations import router as calculations_router
+from .routers.auth import get_current_user
 from .routers import auth
 from .routers import webhooks
 from .routers import brokers
