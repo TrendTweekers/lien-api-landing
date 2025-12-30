@@ -1375,27 +1375,25 @@
                     }
                 }
             }
-            async function downloadProjectPDF(calculationId) {
-                console.log(`📄 Downloading PDF for calculation ID: ${calculationId}`);
-                const token = getSessionToken();
-                const headers = {};
-                if (token) {
-                    headers['Authorization'] = 'Bearer ' + token;
-                }
+                        async function downloadProjectPDF(calculationId) {
+                console.log('Downloading PDF for calculation:', calculationId);
                 
                 try {
-                    console.log(`📡 Fetching /api/calculations/${calculationId}/pdf...`);
+                    const token = localStorage.getItem('session_token');
                     const response = await fetch(`/api/calculations/${calculationId}/pdf`, {
-                        headers: headers
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
                     });
                     
                     if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({ detail: `HTTP ${response.status}` }));
-                        throw new Error(errorData.detail || `HTTP ${response.status}`);
+                        throw new Error(`Failed to download PDF: ${response.status}`);
                     }
                     
-                    console.log('✅ PDF received, creating download...');
+                    // Get the PDF blob
                     const blob = await response.blob();
+                    
+                    // Create download link
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -1404,10 +1402,11 @@
                     a.click();
                     document.body.removeChild(a);
                     window.URL.revokeObjectURL(url);
-                    console.log('✅ PDF download initiated');
+                    
+                    console.log('PDF downloaded successfully');
                 } catch (error) {
-                    console.error('❌ Error downloading PDF:', error);
-                    alert('Error generating PDF: ' + (error.message || 'Please try again.'));
+                    console.error('Error downloading PDF:', error);
+                    alert('Failed to download PDF. Please try again.');
                 }
             }
 
