@@ -200,6 +200,13 @@ async function loadActiveBrokers() {
         console.log('[Admin V2] Brokers API data:', data);
 
         let brokers = data.brokers || data || [];
+        
+        // Debug: Log all broker emails to help verify if the broker is present
+        if (Array.isArray(brokers)) {
+            console.log('[Admin V2] Received brokers count:', brokers.length);
+            console.log('[Admin V2] Broker emails:', brokers.map(b => b.email));
+        }
+
         if (!Array.isArray(brokers)) {
              console.warn('[Admin V2] Brokers data is not an array, resetting to empty');
              brokers = [];
@@ -224,63 +231,69 @@ async function loadActiveBrokers() {
         }
         
         const html = brokers.map(broker => {
-            const commissionBadge = broker.commission_model === 'bounty' || broker.model === 'bounty'
-                ? '<span class="badge badge-bounty">$500 Bounty</span>'
-                : '<span class="badge badge-monthly">$50/month</span>';
-            
-            const paymentMethod = broker.payment_method || '';
-            let paymentBadge = '<span class="badge badge-pending">Not Set</span>';
-            if (paymentMethod) {
-                const methodNames = {
-                    'paypal': 'PayPal',
-                    'wise': 'Wise',
-                    'revolut': 'Revolut',
-                    'sepa': 'SEPA',
-                    'swift': 'SWIFT',
-                    'crypto': 'Crypto'
-                };
-                const name = methodNames[paymentMethod.toLowerCase()] || paymentMethod;
-                paymentBadge = `<span class="badge badge-ready">${name}</span>`;
+            try {
+                const commissionBadge = broker.commission_model === 'bounty' || broker.model === 'bounty'
+                    ? '<span class="badge badge-bounty">$500 Bounty</span>'
+                    : '<span class="badge badge-monthly">$50/month</span>';
+                
+                const paymentMethod = broker.payment_method || '';
+                let paymentBadge = '<span class="badge badge-pending">Not Set</span>';
+                if (paymentMethod) {
+                    const methodNames = {
+                        'paypal': 'PayPal',
+                        'wise': 'Wise',
+                        'revolut': 'Revolut',
+                        'sepa': 'SEPA',
+                        'swift': 'SWIFT',
+                        'crypto': 'Crypto',
+                        'unlinked': 'Unlinked'
+                    };
+                    const name = methodNames[paymentMethod.toLowerCase()] || paymentMethod;
+                    paymentBadge = `<span class="badge badge-ready">${name}</span>`;
+                }
+                
+                let paymentStatusBadge = '<span class="badge badge-pending">Pending</span>';
+                if (broker.payment_status === 'active') {
+                    paymentStatusBadge = '<span class="badge badge-success">Active</span>';
+                } else if (broker.payment_status === 'suspended') {
+                    paymentStatusBadge = '<span class="badge badge-error">Suspended</span>';
+                }
+                
+                const lastPaymentDate = broker.last_payment_date 
+                    ? new Date(broker.last_payment_date).toLocaleDateString()
+                    : 'Never';
+                
+                const totalPaid = broker.total_paid ? `$${parseFloat(broker.total_paid).toFixed(2)}` : '$0.00';
+                
+                // Safe quotes for strings
+                const safeName = (broker.name || 'Unknown').replace(/'/g, "\\'");
+                const safeEmail = (broker.email || '').replace(/'/g, "\\'");
+                
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="font-medium">${broker.name || 'Unknown'}</td>
+                        <td style="color: var(--muted);">${broker.email || 'N/A'}</td>
+                        <td>${commissionBadge}</td>
+                        <td>${paymentBadge}</td>
+                        <td>${paymentStatusBadge}</td>
+                        <td style="color: var(--muted);">${lastPaymentDate}</td>
+                        <td class="font-semibold" style="color: var(--success);">${totalPaid}</td>
+                        <td>
+                            <div class="flex gap-2">
+                                <button onclick="viewBrokerPaymentInfo('${broker.id}', '${safeName}', '${safeEmail}')" class="btn btn-outline btn-sm">
+                                    👁️ View
+                                </button>
+                                <button onclick="deleteActiveBroker('${broker.id}')" class="btn btn-danger btn-sm">
+                                    🗑️
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } catch (err) {
+                console.error('[Admin V2] Error rendering broker row:', broker, err);
+                return `<tr><td colspan="8" class="text-red-500">Error rendering broker: ${broker.email || 'Unknown'}</td></tr>`;
             }
-            
-            let paymentStatusBadge = '<span class="badge badge-pending">Pending</span>';
-            if (broker.payment_status === 'active') {
-                paymentStatusBadge = '<span class="badge badge-success">Active</span>';
-            } else if (broker.payment_status === 'suspended') {
-                paymentStatusBadge = '<span class="badge badge-error">Suspended</span>';
-            }
-            
-            const lastPaymentDate = broker.last_payment_date 
-                ? new Date(broker.last_payment_date).toLocaleDateString()
-                : 'Never';
-            
-            const totalPaid = broker.total_paid ? `$${parseFloat(broker.total_paid).toFixed(2)}` : '$0.00';
-            
-            // Safe quotes for strings
-            const safeName = (broker.name || 'Unknown').replace(/'/g, "\\'");
-            const safeEmail = (broker.email || '').replace(/'/g, "\\'");
-            
-            return `
-                <tr class="hover:bg-gray-50">
-                    <td class="font-medium">${broker.name || 'Unknown'}</td>
-                    <td style="color: var(--muted);">${broker.email || 'N/A'}</td>
-                    <td>${commissionBadge}</td>
-                    <td>${paymentBadge}</td>
-                    <td>${paymentStatusBadge}</td>
-                    <td style="color: var(--muted);">${lastPaymentDate}</td>
-                    <td class="font-semibold" style="color: var(--success);">${totalPaid}</td>
-                    <td>
-                        <div class="flex gap-2">
-                            <button onclick="viewBrokerPaymentInfo('${broker.id}', '${safeName}', '${safeEmail}')" class="btn btn-outline btn-sm">
-                                👁️ View
-                            </button>
-                            <button onclick="deleteActiveBroker('${broker.id}')" class="btn btn-danger btn-sm">
-                                🗑️
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
         }).join('');
         
         safe.html('v2-brokersList', html);
