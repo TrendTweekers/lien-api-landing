@@ -13,6 +13,7 @@ import json
 import secrets
 import os
 import subprocess
+import sys
 import bcrypt
 import stripe
 import traceback
@@ -1130,6 +1131,19 @@ async def startup():
         import traceback
         traceback.print_exc()
         # Don't fail startup if migration fails - columns might already exist
+
+    # Run schema check (temporary for debugging production)
+    try:
+        print("🔍 Running production schema check...")
+        # Use python from current environment
+        result = subprocess.run([sys.executable, 'api/migrations/check_production_schema.py'], 
+                              capture_output=True, text=True)
+        # Print output to logs so it shows up in Railway logs
+        print(f"Schema check output:\n{result.stdout}")
+        if result.stderr:
+            print(f"Schema check errors:\n{result.stderr}")
+    except Exception as e:
+        print(f"❌ Schema check failed: {e}")
     
     print("✅ Application startup complete")
 
