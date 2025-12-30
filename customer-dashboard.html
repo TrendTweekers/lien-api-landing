@@ -1376,8 +1376,7 @@
                 }
             }
             async function downloadProjectPDF(calculationId) {
-                // TODO: Implement PDF download for specific project
-                // For now, redirect to state guide PDF
+                console.log(`📄 Downloading PDF for calculation ID: ${calculationId}`);
                 const token = getSessionToken();
                 const headers = {};
                 if (token) {
@@ -1385,23 +1384,30 @@
                 }
                 
                 try {
-                    const response = await fetch(`/api/calculations/history`, {
+                    console.log(`📡 Fetching /api/calculations/${calculationId}/pdf...`);
+                    const response = await fetch(`/api/calculations/${calculationId}/pdf`, {
                         headers: headers
                     });
-                    const data = await response.json();
-                    const calc = data.calculations?.find(c => c.id == calculationId);
                     
-                    if (calc) {
-                        const stateCode = calc.stateCode || calc.state;
-                        const stateName = calc.state || getStateNameFromCode(stateCode);
-                        const url = `/api/v1/guide/${stateCode}/pdf?invoice_date=${encodeURIComponent(calc.invoiceDate)}&state_name=${encodeURIComponent(stateName)}`;
-                        window.open(url, '_blank');
-                    } else {
-                        alert('Unable to generate PDF. Project not found.');
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ detail: `HTTP ${response.status}` }));
+                        throw new Error(errorData.detail || `HTTP ${response.status}`);
                     }
+                    
+                    console.log('✅ PDF received, creating download...');
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `lien-deadline-${calculationId}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    console.log('✅ PDF download initiated');
                 } catch (error) {
-                    console.error('Error downloading PDF:', error);
-                    alert('Error generating PDF. Please try again.');
+                    console.error('❌ Error downloading PDF:', error);
+                    alert('Error generating PDF: ' + (error.message || 'Please try again.'));
                 }
             }
 
