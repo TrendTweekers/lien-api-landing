@@ -25,30 +25,42 @@ export const UsageStats = () => {
         };
         if (token) headers["Authorization"] = `Bearer ${token}`;
 
-        const res = await fetch("/api/calculations/history", { headers });
-        if (!res.ok) throw new Error("Failed to fetch usage stats");
+        // Fetch stats and history in parallel
+        const [statsRes, historyRes] = await Promise.all([
+          fetch("/api/customer/stats", { headers }),
+          fetch("/api/calculations/history", { headers })
+        ]);
         
-        const data = await res.json();
-        const history: Calculation[] = data.history || [];
-        
-        // Filter for last 30 days
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
-        const recentCalculations = history.filter(item => {
-          if (!item.created_at) return false;
-          return new Date(item.created_at) > thirtyDaysAgo;
-        });
+        let apiCalls = 0;
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          apiCalls = statsData.api_calls || 0;
+        }
 
-        // Get unique states
-        const uniqueStates = Array.from(new Set(
-          recentCalculations
-            .map(item => item.state_code || item.state)
-            .filter(Boolean)
-        )) as string[];
+        let uniqueStates: string[] = [];
+        if (historyRes.ok) {
+          const data = await historyRes.json();
+          const history: Calculation[] = data.history || [];
+          
+          // Filter for last 30 days
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          
+          const recentCalculations = history.filter(item => {
+            if (!item.created_at) return false;
+            return new Date(item.created_at) > thirtyDaysAgo;
+          });
+
+          // Get unique states
+          uniqueStates = Array.from(new Set(
+            recentCalculations
+              .map(item => item.state_code || item.state)
+              .filter(Boolean)
+          )) as string[];
+        }
 
         setStats({
-          count: recentCalculations.length,
+          count: apiCalls,
           states: uniqueStates.slice(0, 5) // Limit to top 5 to fit UI
         });
       } catch (error) {

@@ -24,32 +24,18 @@ export const AccountOverview = () => {
         const headers = { 'Authorization': `Bearer ${token}` };
 
         // Parallel fetch for better performance
-        const [sessionRes, historyRes] = await Promise.all([
+        const [sessionRes, statsRes] = await Promise.all([
           fetch('/api/verify-session', { headers }),
-          fetch('/api/calculations/history', { headers })
+          fetch('/api/customer/stats', { headers })
         ]);
 
         if (sessionRes.ok) {
           const sessionData = await sessionRes.json();
-          const historyData = await historyRes.json();
-          
-          // Calculate API calls for current month
-          const now = new Date();
-          const currentMonth = now.getMonth();
-          const currentYear = now.getFullYear();
-          
-          let monthlyCalls = 0;
-          if (historyData && Array.isArray(historyData.history)) {
-            monthlyCalls = historyData.history.filter((item: any) => {
-              const date = new Date(item.created_at || item.date);
-              return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-            }).length;
-          } else if (Array.isArray(historyData)) {
-             // Handle case where API might return array directly
-             monthlyCalls = historyData.filter((item: any) => {
-              const date = new Date(item.created_at || item.date);
-              return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-            }).length;
+          let apiCalls = 0;
+
+          if (statsRes.ok) {
+            const statsData = await statsRes.json();
+            apiCalls = statsData.api_calls || 0;
           }
 
           // Determine status style and text
@@ -57,6 +43,7 @@ export const AccountOverview = () => {
           const statusFormatted = statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1);
           
           // Determine next billing text (mocked for now as not in API)
+          const now = new Date();
           const nextBillingText = statusRaw === 'active' 
             ? `Auto-renews ${new Date(now.getFullYear(), now.getMonth() + 1, 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` 
             : 'No active subscription';
@@ -66,7 +53,7 @@ export const AccountOverview = () => {
             planInterval: statusRaw === 'active' ? "month" : "month",
             status: statusFormatted,
             nextBilling: nextBillingText,
-            apiCalls: monthlyCalls,
+            apiCalls: apiCalls,
             isUnlimited: statusRaw === 'active'
           });
         }
