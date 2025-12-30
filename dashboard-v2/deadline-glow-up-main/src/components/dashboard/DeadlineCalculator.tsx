@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, MapPin, Calculator, Save, AlertCircle } from "lucide-react";
+import { Calendar, MapPin, Calculator, Save, AlertCircle, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,6 +70,7 @@ export const DeadlineCalculator = () => {
   const { toast } = useToast();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedState, setSelectedState] = useState("");
+  const [projectType, setProjectType] = useState("commercial");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [projectName, setProjectName] = useState("");
@@ -99,7 +100,7 @@ export const DeadlineCalculator = () => {
         body: JSON.stringify({
           state: selectedState,
           invoice_date: date,
-          project_type: "commercial"
+          project_type: projectType
         })
       });
       
@@ -227,6 +228,24 @@ export const DeadlineCalculator = () => {
               </SelectContent>
             </Select>
           </div>
+
+          {["TX", "CA", "FL", "AZ"].includes(selectedState) && (
+            <div className="space-y-2">
+              <Label className="text-sm text-foreground flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                Project Type
+              </Label>
+              <Select value={projectType} onValueChange={setProjectType}>
+                <SelectTrigger className="bg-background border-border focus:border-primary focus:ring-primary/20">
+                  <SelectValue placeholder="Select project type" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value="commercial">Commercial</SelectItem>
+                  <SelectItem value="residential">Residential</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <Button 

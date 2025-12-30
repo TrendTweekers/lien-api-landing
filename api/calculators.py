@@ -36,11 +36,17 @@ STATE_CODE_TO_NAME = {
 
 # Load state rules (fallback to JSON if database not available)
 try:
-    with open(BASE_DIR / "state_rules.json", 'r') as f:
+    # Try loading from api directory first
+    rules_path = BASE_DIR / "state_rules.json"
+    if not rules_path.exists():
+        # Try loading from project root
+        rules_path = BASE_DIR.parent / "state_rules.json"
+        
+    with open(rules_path, 'r') as f:
         STATE_RULES = json.load(f)
 except FileNotFoundError:
     STATE_RULES = {}
-    print("WARNING: state_rules.json not found")
+    print(f"WARNING: state_rules.json not found at {BASE_DIR} or {BASE_DIR.parent}")
 
 
 # Try to import optional dependencies

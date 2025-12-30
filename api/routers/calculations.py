@@ -320,11 +320,16 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
         }
 
         # 3.5. Increment Usage (api_calls)
+        logger.info(f"TRACKING DEBUG: User object: {user}")
         if user and user.get('email'):
             try:
                 user_email = user.get('email')
+                logger.info(f"TRACKING DEBUG: Attempting to increment for {user_email}")
+                
                 with get_db() as conn:
                     cursor = get_db_cursor(conn)
+                    logger.info(f"TRACKING DEBUG: DB_TYPE is {DB_TYPE}")
+                    
                     if DB_TYPE == 'postgresql':
                         # Upsert for PostgreSQL
                         cursor.execute("""
@@ -342,9 +347,13 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
                             DO UPDATE SET api_calls = api_calls + 1
                         """, (user_email,))
                     conn.commit()
-                    logger.info(f"Incremented API calls for {user_email}")
+                    logger.info(f"TRACKING DEBUG: Successfully incremented API calls for {user_email}")
             except Exception as e:
                 logger.error(f"Failed to increment API calls: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+        else:
+            logger.warning("TRACKING DEBUG: No user or email found in session, skipping tracking")
 
         # 4. Return with "Triple Payload" strategy:
         # - Wrapped in "data" for frontend expecting a wrapper

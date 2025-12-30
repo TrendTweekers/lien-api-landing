@@ -36,6 +36,11 @@ async def get_customer_stats(request: Request):
             if row:
                 if isinstance(row, dict):
                     api_calls = row.get('api_calls', 0)
+                elif hasattr(row, 'keys'): # Handle sqlite3.Row
+                    try:
+                        api_calls = row['api_calls']
+                    except KeyError:
+                        api_calls = 0
                 elif isinstance(row, tuple):
                     api_calls = row[0]
                 else:
