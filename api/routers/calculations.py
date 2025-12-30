@@ -130,12 +130,19 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
         prelim_days = int((prelim_date - today).days) if prelim_date else 0
         lien_days = int((lien_date - today).days) if lien_date else 0
 
-        # For RESPONSE: Use simple YYYY-MM-DD format (easier for frontend to parse)
+        # For RESPONSE: Use ISO format (YYYY-MM-DDTHH:MM:SS) for better frontend parsing
         if raw_prelim:
             if isinstance(raw_prelim, datetime):
-                prelim_deadline_str = raw_prelim.strftime("%Y-%m-%d")
+                prelim_deadline_str = raw_prelim.isoformat()
+            elif hasattr(raw_prelim, 'isoformat'):
+                prelim_deadline_str = raw_prelim.isoformat()
             elif hasattr(raw_prelim, 'strftime'):
-                prelim_deadline_str = raw_prelim.strftime("%Y-%m-%d")
+                # If it's a date object, convert to datetime first
+                from datetime import date as date_type
+                if isinstance(raw_prelim, date_type):
+                    prelim_deadline_str = datetime.combine(raw_prelim, datetime.min.time()).isoformat()
+                else:
+                    prelim_deadline_str = raw_prelim.strftime("%Y-%m-%d")
             else:
                 prelim_deadline_str = str(raw_prelim)
         else:
@@ -143,9 +150,16 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
             
         if raw_lien:
             if isinstance(raw_lien, datetime):
-                lien_deadline_str = raw_lien.strftime("%Y-%m-%d")
+                lien_deadline_str = raw_lien.isoformat()
+            elif hasattr(raw_lien, 'isoformat'):
+                lien_deadline_str = raw_lien.isoformat()
             elif hasattr(raw_lien, 'strftime'):
-                lien_deadline_str = raw_lien.strftime("%Y-%m-%d")
+                # If it's a date object, convert to datetime first
+                from datetime import date as date_type
+                if isinstance(raw_lien, date_type):
+                    lien_deadline_str = datetime.combine(raw_lien, datetime.min.time()).isoformat()
+                else:
+                    lien_deadline_str = raw_lien.strftime("%Y-%m-%d")
             else:
                 lien_deadline_str = str(raw_lien)
         else:
@@ -167,17 +181,25 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
             "days_until_prelim": prelim_days,
             "lien_days_remaining": lien_days,
             "days_remaining": lien_days,  # Fallback for the main deadline
-            # Nested objects (for Dashboard compatibility)
+            # Nested objects (for Dashboard compatibility) - Comprehensive keys
             "preliminary_notice": {
                 "deadline": prelim_deadline_str,
                 "required": True,
                 "days_remaining": prelim_days,
+                "deadline_days": prelim_days,  # Likely the missing key
+                "days_count": prelim_days,
+                "days_diff": prelim_days,
                 "days_until": prelim_days,
                 "days": prelim_days
             },
             "lien_filing": {
                 "deadline": lien_deadline_str,
-                "days_remaining": lien_days
+                "days_remaining": lien_days,
+                "deadline_days": lien_days,  # Likely the missing key
+                "days_count": lien_days,
+                "days_diff": lien_days,
+                "days_until": lien_days,
+                "days": lien_days
             }
         })
     except Exception as e:
