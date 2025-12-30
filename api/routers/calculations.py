@@ -85,7 +85,7 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
 
     # 🟢 LAZY IMPORTS
     from api.routers.auth import get_user_from_session
-    from api.calculators import calculate_deadlines_for_state
+    from api.calculators import calculate_state_deadline
 
     # 1. Auth & Quota
     user = get_user_from_session(request)
@@ -96,16 +96,16 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
 
     # 2. Calculation
     try:
-        inv_date = datetime.strptime(calc_req.invoice_date, "%Y-%m-%d").date()
+        inv_date = datetime.strptime(calc_req.invoice_date, "%Y-%m-%d")
         noc_date = None
         if calc_req.notice_date:
-             noc_date = datetime.strptime(calc_req.notice_date, "%Y-%m-%d").date()
+             noc_date = datetime.strptime(calc_req.notice_date, "%Y-%m-%d")
 
         # RUN MATH
-        result = calculate_deadlines_for_state(
-            state=calc_req.state,
+        result = calculate_state_deadline(
+            state_code=calc_req.state,
             invoice_date=inv_date,
-            project_type=calc_req.project_type,
+            project_type=calc_req.project_type.lower() if calc_req.project_type else "commercial",
             notice_of_completion_date=noc_date
         )
         print(f"🔍 DEBUG: Math Result: {result}")
