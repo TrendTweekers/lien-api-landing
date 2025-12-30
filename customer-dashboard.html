@@ -1248,7 +1248,8 @@
             }
 
             // Load calculation history from API
-            async function loadCalculationHistory() {
+                                    async function loadCalculationHistory() {
+                console.log('🔄 loadCalculationHistory() called');
                 try {
                     const token = getSessionToken();
                     const headers = {};
@@ -1256,6 +1257,7 @@
                         headers['Authorization'] = 'Bearer ' + token;
                     }
                     
+                    console.log('📡 Fetching /api/calculations/history...');
                     const response = await fetch('/api/calculations/history', {
                         headers: headers
                     });
@@ -1265,12 +1267,34 @@
                     }
                     
                     const data = await response.json();
+                    console.log('✅ API Response received:', data);
+                    console.log('📊 History array:', data.history);
+                    
                     const tbody = document.getElementById('history-tbody');
+                    if (!tbody) {
+                        console.error('❌ history-tbody element not found!');
+                        return;
+                    }
                     
-                    // Store globally so viewProject can access them
-                    window.loadedCalculations = data.calculations || [];
+                    // API returns {history: [...]} not {calculations: [...]}
+                    const history = data.history || [];
+                    console.log(`📋 Found ${history.length} calculations`);
                     
-                    if (!data.success || !data.calculations || data.calculations.length === 0) {
+                    // Store globally so viewProject can access them (convert snake_case to camelCase for compatibility)
+                    window.loadedCalculations = history.map(calc => ({
+                        id: calc.id,
+                        projectName: calc.project_name || '',
+                        clientName: calc.client_name || '',
+                        invoiceAmount: calc.amount || calc.invoice_amount || 0,
+                        prelimDeadline: calc.prelim_deadline || '',
+                        lienDeadline: calc.lien_deadline || '',
+                        state: calc.state || '',
+                        notes: calc.notes || '',
+                        activeReminders: 0 // TODO: Calculate from reminders table
+                    }));
+                    
+                    if (history.length === 0) {
+                        console.log('ℹ️ No calculations found, showing empty message');
                         tbody.innerHTML = `
                             <tr>
                                 <td colspan="8" style="text-align:center; padding:40px; color:#666;">
@@ -1281,30 +1305,41 @@
                         return;
                     }
                     
-                    tbody.innerHTML = data.calculations.map(calc => {
-                        const amount = calc.invoiceAmount ? `$${calc.invoiceAmount.toLocaleString()}` : '-';
-                        const prelimDate = calc.prelimDeadline ? formatDeadlineDate(calc.prelimDeadline) : 'Not Required';
-                        const lienDate = formatDeadlineDate(calc.lienDeadline);
+                    console.log('🎨 Rendering calculation rows...');
+                    tbody.innerHTML = history.map(calc => {
+                        // Map snake_case API fields to camelCase for display
+                        const projectName = calc.project_name || 'Untitled Project';
+                        const clientName = calc.client_name || 'Unknown Client';
+                        const invoiceAmount = calc.amount || calc.invoice_amount || 0;
+                        const prelimDeadline = calc.prelim_deadline || '';
+                        const lienDeadline = calc.lien_deadline || '';
+                        const state = calc.state || '';
+                        const notes = calc.notes || '';
+                        const activeReminders = 0; // TODO: Calculate from reminders table
+                        
+                        const amount = invoiceAmount ? `$${parseFloat(invoiceAmount).toLocaleString()}` : '-';
+                        const prelimDate = prelimDeadline ? formatDeadlineDate(prelimDeadline) : 'Not Required';
+                        const lienDate = lienDeadline ? formatDeadlineDate(lienDeadline) : '-';
                         
                         return `
                             <tr style="border-bottom:1px solid #eee;">
                                 <td style="padding:12px;">
-                                    <strong>${escapeHtml(calc.projectName)}</strong>
-                                    ${calc.notes ? `<br><small style="color:#666;">${escapeHtml(calc.notes).substring(0, 50)}...</small>` : ''}
+                                    <strong>${escapeHtml(projectName)}</strong>
+                                    ${notes ? `<br><small style="color:#666;">${escapeHtml(notes).substring(0, 50)}...</small>` : ''}
                                 </td>
-                                <td style="padding:12px;">${escapeHtml(calc.clientName)}</td>
+                                <td style="padding:12px;">${escapeHtml(clientName)}</td>
                                 <td style="padding:12px; text-align:right;">${amount}</td>
                                 <td style="padding:12px; text-align:center;">
                                     <span style="background:#e0e7ff; color:#3730a3; padding:4px 8px; border-radius:3px; font-size:12px;">
-                                        ${calc.state}
+                                        ${escapeHtml(state)}
                                     </span>
                                 </td>
                                 <td style="padding:12px; text-align:center;">${prelimDate}</td>
                                 <td style="padding:12px; text-align:center;">${lienDate}</td>
                                 <td style="padding:12px; text-align:center;">
-                                    ${calc.activeReminders > 0 ? 
+                                    ${activeReminders > 0 ? 
                                         `<span style="background:#dcfce7; color:#166534; padding:4px 8px; border-radius:3px; font-size:12px;">
-                                            📧 ${calc.activeReminders} active
+                                            📧 ${activeReminders} active
                                         </span>` : 
                                         `<span style="color:#999;">None</span>`
                                     }
@@ -1323,55 +1358,23 @@
                         `;
                     }).join('');
                     
+                    console.log('✅ History rendered successfully');
+                    
                 } catch (error) {
-                    console.error('Error loading calculation history:', error);
+                    console.error('❌ Error loading calculation history:', error);
+                    console.error('Error stack:', error.stack);
                     const tbody = document.getElementById('history-tbody');
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="8" style="text-align:center; padding:40px; color:#dc2626;">
-                                Error loading projects. Please refresh the page.
-                            </td>
-                        </tr>
-                    `;
+                    if (tbody) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="8" style="text-align:center; padding:40px; color:#dc2626;">
+                                    Error loading projects. Please refresh the page.
+                                </td>
+                            </tr>
+                        `;
+                    }
                 }
             }
-
-            function formatDeadlineDate(dateStr) {
-                if (!dateStr) return 'N/A';
-                
-                const date = new Date(dateStr);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                date.setHours(0, 0, 0, 0);
-                
-                const daysUntil = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
-                
-                const formatted = date.toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    day: 'numeric', 
-                    year: 'numeric' 
-                });
-                
-                let color = '#16a34a'; // green
-                if (daysUntil < 0) color = '#dc2626'; // red - overdue
-                else if (daysUntil < 7) color = '#ea580c'; // orange - urgent
-                else if (daysUntil < 30) color = '#f59e0b'; // yellow - soon
-                
-                return `
-                    <div>${formatted}</div>
-                    <small style="color:${color}; font-weight:600;">
-                        ${daysUntil < 0 ? 'OVERDUE' : `${daysUntil} days`}
-                    </small>
-                `;
-            }
-
-            function escapeHtml(text) {
-                if (!text) return '';
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            }
-
             async function downloadProjectPDF(calculationId) {
                 // TODO: Implement PDF download for specific project
                 // For now, redirect to state guide PDF
