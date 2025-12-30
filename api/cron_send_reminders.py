@@ -6,7 +6,7 @@ from datetime import datetime, date
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from api.services.email import send_email_sync
+from api.services.email import send_email_sync, RESEND_AVAILABLE
 
 def get_db_connection():
     """Get database connection (PostgreSQL or SQLite)"""
@@ -22,7 +22,7 @@ def get_db_connection():
         # SQLite fallback
         import sqlite3
         from api.database import BASE_DIR
-        db_path = BASE_DIR / "lien_deadline.db"
+        db_path = BASE_DIR / "liendeadline.db"
         conn = sqlite3.connect(str(db_path))
         conn.row_factory = sqlite3.Row
         return conn, None, 'sqlite'
@@ -407,6 +407,80 @@ def send_reminder_email(reminder):
         content=html_content
     )
 
+def update_referral_statuses():
+    """
+    Update referrals that have passed their hold period
+    Move from 'on_hold' to 'pending' (ready for payout)
+    """
+    print(f"\n{'='*60}")
+    print(f"💰 UPDATING REFERRAL STATUSES")
+    print(f"{'='*60}")
+    
+    try:
+        conn, cursor_factory, db_type = get_db_connection()
+        if db_type == 'postgresql':
+            cursor = conn.cursor(cursor_factory=cursor_factory)
+        else:
+            cursor = conn.cursor()
+            
+        today_str = date.today().isoformat()
+        
+        # Select referrals to update for logging
+        if db_type == 'postgresql':
+            cursor.execute("""
+                SELECT id, broker_id, customer_email 
+                FROM referrals 
+                WHERE status = 'on_hold' 
+                AND hold_until <= %s
+            """, (today_str,))
+        else:
+            cursor.execute("""
+                SELECT id, broker_id, customer_email 
+                FROM referrals 
+                WHERE status = 'on_hold' 
+                AND hold_until <= ?
+            """, (today_str,))
+            
+        referrals = cursor.fetchall()
+        
+        if not referrals:
+            print("No referrals to update.")
+            return
+            
+        print(f"Found {len(referrals)} referrals ready for release:")
+        for r in referrals:
+            print(f"- Referral {r['id']} (Broker: {r['broker_id']}, Customer: {r['customer_email']})")
+            
+        # Update status
+        if db_type == 'postgresql':
+            cursor.execute("""
+                UPDATE referrals 
+                SET status = 'pending' 
+                WHERE status = 'on_hold' 
+                AND hold_until <= %s
+            """, (today_str,))
+        else:
+            cursor.execute("""
+                UPDATE referrals 
+                SET status = 'pending' 
+                WHERE status = 'on_hold' 
+                AND hold_until <= ?
+            """, (today_str,))
+            
+        conn.commit()
+        print(f"✅ Successfully updated {cursor.rowcount} referrals to 'pending' status.")
+        
+    except Exception as e:
+        print(f"❌ Error updating referral statuses: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        try:
+            conn.close()
+        except:
+            pass
+
 if __name__ == "__main__":
     send_daily_reminders()
+    update_referral_statuses()
 

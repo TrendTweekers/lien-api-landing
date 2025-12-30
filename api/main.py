@@ -1371,7 +1371,7 @@ async def referral_redirect(short_code: str, request: Request):
                 key="ref_code",
                 value=referral_code,
                 max_age=cookie_age,
-                httponly=True,
+                httponly=False,  # Allow frontend to read this cookie
                 samesite="lax"
             )
             
@@ -5248,7 +5248,7 @@ class CheckoutRequest(BaseModel):
     plan: str
 
 @app.post("/api/create-checkout-session")
-async def create_checkout_session(request: CheckoutRequest):
+async def create_checkout_session(request: Request, checkout_request: CheckoutRequest):
     try:
         # Use environment variables for price IDs or default to test values
         # You should set these in your environment variables
@@ -5256,8 +5256,12 @@ async def create_checkout_session(request: CheckoutRequest):
         PRICE_ANNUAL = os.getenv("STRIPE_PRICE_ANNUAL", "price_1Qd5yPKg7t5Qd4mZ...")   # Replace with actual test price ID
         
         price_id = PRICE_MONTHLY
-        if request.plan == 'annual':
+        if checkout_request.plan == 'annual':
             price_id = PRICE_ANNUAL
+            
+        # Get referral code from cookies
+        referral_code = request.cookies.get('ref_code', 'direct')
+        print(f"Creating checkout session with referral code: {referral_code}")
             
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -5268,6 +5272,7 @@ async def create_checkout_session(request: CheckoutRequest):
                 },
             ],
             mode='subscription',
+            client_reference_id=referral_code,
             success_url='https://liendeadline.com/success.html?session_id={CHECKOUT_SESSION_ID}',
             cancel_url='https://liendeadline.com/pricing.html',
         )

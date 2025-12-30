@@ -45,19 +45,27 @@ con.execute("""
 """)
 
 # Referrals table (for tracking broker referrals and payouts)
+# Drop old table if exists to ensure schema update
+con.execute("DROP TABLE IF EXISTS referrals")
 con.execute("""
-    CREATE TABLE IF NOT EXISTS referrals(
+    CREATE TABLE IF NOT EXISTS referrals (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        broker_ref TEXT,
-        customer_email TEXT,
-        customer_id TEXT,
-        amount REAL,
-        status TEXT DEFAULT 'pending',
-        date TEXT DEFAULT CURRENT_TIMESTAMP,
-        paid_at TEXT,
-        stripe_transfer_id TEXT,
-        days_active INTEGER,
-        FOREIGN KEY (broker_ref) REFERENCES brokers(id)
+        broker_id TEXT NOT NULL,
+        broker_email TEXT NOT NULL,
+        customer_email TEXT NOT NULL,
+        customer_stripe_id TEXT,
+        amount REAL NOT NULL DEFAULT 299.00,
+        payout REAL NOT NULL,
+        payout_type TEXT NOT NULL,
+        status TEXT DEFAULT 'on_hold',
+        fraud_flags TEXT,
+        hold_until DATE,
+        clawback_until DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        paid_at TIMESTAMP,
+        payment_date TIMESTAMP,
+        payout_batch_id INTEGER,
+        FOREIGN KEY (broker_id) REFERENCES brokers(referral_code)
     )
 """)
 

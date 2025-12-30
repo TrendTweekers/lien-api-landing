@@ -2471,7 +2471,15 @@
     
     // Helper function to get referral code
     window.getReferralCode = function() {
-        return localStorage.getItem('referral_code') || 
+        // Read cookies set by /r/{code} route
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+            const [key, value] = cookie.trim().split('=');
+            acc[key] = value;
+            return acc;
+        }, {});
+        
+        return cookies.ref_code || 
+               localStorage.getItem('referral_code') || 
                sessionStorage.getItem('referral_code') || 
                'direct';
     };
