@@ -213,8 +213,84 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
         # Calculate deadlines if data is provided (Admin bypass)
         calculation_result = {}
         if request_data and request_data.state and request_data.notice_date:
-             # Logic duplicated from below
-             pass
+            try:
+                state_code = request_data.state.upper()
+                if state_code in VALID_STATES:
+                    # Parse date
+                    invoice_date_str = request_data.notice_date
+                    invoice_date = None
+                    try:
+                        invoice_date = datetime.strptime(invoice_date_str, "%m/%d/%Y")
+                    except ValueError:
+                        try:
+                            invoice_date = datetime.strptime(invoice_date_str, "%Y-%m-%d")
+                        except ValueError:
+                            try:
+                                invoice_date = datetime.fromisoformat(invoice_date_str)
+                            except ValueError:
+                                pass
+            
+                    if invoice_date:
+                        # Get rules
+                        rules = STATE_RULES.get(state_code, {})
+                
+                        # Calculate
+                        result = calculate_state_deadline(
+                            state_code=state_code,
+                            invoice_date=invoice_date,
+                            role="supplier",
+                            project_type="commercial",
+                            state_rules=rules
+                        )
+                
+                        # Extract deadlines
+                        prelim_deadline = result.get("preliminary_deadline")
+                        lien_deadline = result.get("lien_deadline")
+                        prelim_required = result.get("preliminary_required", rules.get("preliminary_notice", {}).get("required", False))
+                
+                        # Format dates
+                        prelim_deadline_str = prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None
+                        lien_deadline_str = lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None
+                        noi_deadline_str = result.get("notice_of_intent_deadline").strftime('%Y-%m-%d') if result.get("notice_of_intent_deadline") else None
+                
+                        today = datetime.now()
+                        days_to_prelim = (prelim_deadline - today).days if prelim_deadline else None
+                        days_to_lien = (lien_deadline - today).days if lien_deadline else None
+                
+                        # Urgency helper
+                        def get_urgency(days):
+                            if days <= 7: return "critical"
+                            elif days <= 30: return "warning"
+                            else: return "normal"
+                
+                        prelim_notice = rules.get("preliminary_notice", {})
+                        lien_filing = rules.get("lien_filing", {})
+                
+                        # Build result with 3 formats
+                        calculation_result = {
+                            "preliminary_notice": {
+                                "required": prelim_required,
+                                "deadline": prelim_deadline_str,
+                                "days": days_to_prelim,
+                                "days_from_now": days_to_prelim,
+                                "urgency": get_urgency(days_to_prelim) if days_to_prelim else None,
+                                "description": prelim_notice.get("description", prelim_notice.get("deadline_description", ""))
+                            },
+                            "lien_filing": {
+                                "deadline": lien_deadline_str,
+                                "days": days_to_lien,
+                                "days_from_now": days_to_lien,
+                                "urgency": get_urgency(days_to_lien) if days_to_lien else None,
+                                "description": lien_filing.get("description", lien_filing.get("deadline_description", ""))
+                            },
+                            "lien_deadline": {
+                                "deadline": lien_deadline_str,
+                                "days": days_to_lien
+                            },
+                            "preliminary_notice_deadline": prelim_deadline_str,
+                            "notice_of_intent_deadline": noi_deadline_str,
+                            "prelim_deadline": prelim_deadline_str
+                        }
 
         return JSONResponse(
             status_code=200,

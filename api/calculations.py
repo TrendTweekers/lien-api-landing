@@ -495,9 +495,50 @@ async def save_calculation(data: SaveCalculationRequest, current_user: dict = De
         print(f"=" * 60)
         raise HTTPException(status_code=500, detail=str(e))
 
+
+def get_user_from_session(request: Request):
+    """Helper to get logged-in user from session token"""
+    authorization = request.headers.get('authorization', '')
+    if not authorization or not authorization.startswith('Bearer '):
+        return None
+
+    token = authorization.replace('Bearer ', '')
+
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+        
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT email, subscription_status FROM users WHERE session_token = %s", (token,))
+            else:
+                cursor.execute("SELECT email, subscription_status FROM users WHERE session_token = ?", (token,))
+        
+            user = cursor.fetchone()
+        
+            if user:
+                if isinstance(user, dict):
+                    email = user.get('email')
+                    subscription_status = user.get('subscription_status')
+                elif hasattr(user, 'keys'):
+                    email = user['email'] if 'email' in user.keys() else (user[0] if len(user) > 0 else None)
+                    subscription_status = user['subscription_status'] if 'subscription_status' in user.keys() else (user[1] if len(user) > 1 else None)
+                else:
+                    email = user[0] if user and len(user) > 0 else None
+                    subscription_status = user[1] if user and len(user) > 1 else None
+            
+                if subscription_status in ['active', 'trialing']:
+                    return {'email': email, 'subscription_status': subscription_status, 'unlimited': True}
+    except Exception as e:
+        print(f"⚠️ Error checking session: {e}")
+
+    return None
+
 @router.get("/api/calculations/history")
-async def get_calculation_history(current_user: dict = Depends(get_current_user)):
+async def get_calculation_history(request: Request):
     """Get user's calculation history with project details"""
+    current_user = get_user_from_session(request)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
     
     try:
         with get_db() as conn:
