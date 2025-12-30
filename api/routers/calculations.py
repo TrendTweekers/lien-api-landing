@@ -436,3 +436,223 @@ async def save_calculation(request: Request, body: SaveRequest):
 @router.post("/api/calculate")
 async def public_calculate_legacy(request: Request, calc_req: CalculationRequest):
     return await track_calculation(request, calc_req)
+
+@router.get("/api/calculations/{calculation_id}/pdf")
+async def generate_calculation_pdf(calculation_id: int, request: Request):
+    """Generate PDF for a specific saved calculation"""
+    from api.routers.auth import get_user_from_session
+    from fastapi.responses import Response
+    
+    # Check if ReportLab is available
+    try:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.units import inch
+        from reportlab.lib.colors import HexColor
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+        from io import BytesIO
+        REPORTLAB_AVAILABLE = True
+    except ImportError:
+        REPORTLAB_AVAILABLE = False
+    
+    if not REPORTLAB_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="PDF generation is temporarily unavailable. ReportLab library is not installed."
+        )
+    
+    # Auth check
+    user = get_user_from_session(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    user_email = user.get("email", "")
+    
+    # Fetch calculation from database
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == "postgresql":
+                cursor.execute("""
+                    SELECT id, project_name, client_name, state, state_code, invoice_amount,
+                           invoice_date, prelim_deadline, prelim_deadline_days,
+                           lien_deadline, lien_deadline_days, notes, created_at, user_email
+                    FROM calculations 
+                    WHERE id = %s AND user_email = %s
+                """, (calculation_id, user_email))
+            else:
+                cursor.execute("""
+                    SELECT id, project_name, client_name, state, state_code, invoice_amount,
+                           invoice_date, prelim_deadline, prelim_deadline_days,
+                           lien_deadline, lien_deadline_days, notes, created_at, user_email
+                    FROM calculations 
+                    WHERE id = ? AND user_email = ?
+                """, (calculation_id, user_email))
+            
+            calc_row = cursor.fetchone()
+            
+            if not calc_row:
+                raise HTTPException(status_code=404, detail="Calculation not found")
+            
+            # Extract calculation data
+            if isinstance(calc_row, dict):
+                calc = {
+                    'id': calc_row.get('id'),
+                    'project_name': calc_row.get('project_name') or 'Untitled Project',
+                    'client_name': calc_row.get('client_name') or 'Unknown Client',
+                    'state': calc_row.get('state') or '',
+                    'state_code': calc_row.get('state_code') or '',
+                    'invoice_amount': calc_row.get('invoice_amount') or 0,
+                    'invoice_date': calc_row.get('invoice_date') or '',
+                    'prelim_deadline': calc_row.get('prelim_deadline') or '',
+                    'prelim_deadline_days': calc_row.get('prelim_deadline_days'),
+                    'lien_deadline': calc_row.get('lien_deadline') or '',
+                    'lien_deadline_days': calc_row.get('lien_deadline_days') or 0,
+                    'notes': calc_row.get('notes') or '',
+                    'created_at': calc_row.get('created_at')
+                }
+            else:
+                calc = {
+                    'id': calc_row[0] if len(calc_row) > 0 else None,
+                    'project_name': calc_row[1] if len(calc_row) > 1 else 'Untitled Project',
+                    'client_name': calc_row[2] if len(calc_row) > 2 else 'Unknown Client',
+                    'state': calc_row[3] if len(calc_row) > 3 else '',
+                    'state_code': calc_row[4] if len(calc_row) > 4 else '',
+                    'invoice_amount': calc_row[5] if len(calc_row) > 5 else 0,
+                    'invoice_date': calc_row[6] if len(calc_row) > 6 else '',
+                    'prelim_deadline': calc_row[7] if len(calc_row) > 7 else '',
+                    'prelim_deadline_days': calc_row[8] if len(calc_row) > 8 else None,
+                    'lien_deadline': calc_row[9] if len(calc_row) > 9 else '',
+                    'lien_deadline_days': calc_row[10] if len(calc_row) > 10 else 0,
+                    'notes': calc_row[11] if len(calc_row) > 11 else '',
+                    'created_at': calc_row[12] if len(calc_row) > 12 else None
+                }
+            
+            # Generate PDF
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=letter,
+                                  rightMargin=0.75*inch, leftMargin=0.75*inch,
+                                  topMargin=0.75*inch, bottomMargin=0.75*inch)
+            
+            story = []
+            styles = getSampleStyleSheet()
+            navy = HexColor('#1e3a8a')
+            coral = HexColor('#f97316')
+            
+            # Title
+            title_style = ParagraphStyle(
+                'Title',
+                parent=styles['Heading1'],
+                fontSize=24,
+                textColor=navy,
+                spaceAfter=12,
+                alignment=TA_CENTER,
+                fontName='Helvetica-Bold'
+            )
+            story.append(Paragraph("Lien Deadline Report", title_style))
+            story.append(Spacer(1, 0.2*inch))
+            
+            # Project Information
+            heading_style = ParagraphStyle(
+                'Heading',
+                parent=styles['Heading2'],
+                fontSize=16,
+                textColor=navy,
+                spaceAfter=8,
+                spaceBefore=12,
+                fontName='Helvetica-Bold'
+            )
+            
+            story.append(Paragraph("Project Information", heading_style))
+            
+            # Format dates
+            def format_date(date_str):
+                if not date_str:
+                    return 'N/A'
+                try:
+                    if isinstance(date_str, str):
+                        dt = datetime.strptime(date_str[:10], '%Y-%m-%d')
+                    else:
+                        dt = date_str
+                    return dt.strftime('%B %d, %Y')
+                except:
+                    return str(date_str)
+            
+            # Create info table
+            info_data = [
+                ['Project Name:', calc['project_name']],
+                ['Client Name:', calc['client_name']],
+                ['State:', calc['state'] or calc['state_code']],
+                ['Invoice Date:', format_date(calc['invoice_date'])],
+                ['Invoice Amount:', f"${float(calc['invoice_amount']):,.2f}" if calc['invoice_amount'] else 'N/A'],
+            ]
+            
+            if calc['notes']:
+                info_data.append(['Notes:', calc['notes']])
+            
+            info_table = Table(info_data, colWidths=[2*inch, 4*inch])
+            info_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (0, -1), HexColor('#f3f4f6')),
+                ('TEXTCOLOR', (0, 0), (-1, -1), HexColor('#1f2937')),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 11),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#e5e7eb'))
+            ]))
+            story.append(info_table)
+            story.append(Spacer(1, 0.3*inch))
+            
+            # Deadline Information
+            story.append(Paragraph("Deadline Information", heading_style))
+            
+            deadline_data = []
+            
+            if calc['prelim_deadline']:
+                prelim_days = calc['prelim_deadline_days'] if calc['prelim_deadline_days'] is not None else 'N/A'
+                deadline_data.append(['Preliminary Notice Deadline:', format_date(calc['prelim_deadline']), f"{prelim_days} days remaining" if isinstance(prelim_days, int) else prelim_days])
+            else:
+                deadline_data.append(['Preliminary Notice Deadline:', 'Not Required', ''])
+            
+            if calc['lien_deadline']:
+                lien_days = calc['lien_deadline_days'] if calc['lien_deadline_days'] is not None else 'N/A'
+                deadline_data.append(['Lien Filing Deadline:', format_date(calc['lien_deadline']), f"{lien_days} days remaining" if isinstance(lien_days, int) else lien_days])
+            else:
+                deadline_data.append(['Lien Filing Deadline:', 'N/A', ''])
+            
+            deadline_table = Table(deadline_data, colWidths=[2.5*inch, 2.5*inch, 1*inch])
+            deadline_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (0, -1), HexColor('#f3f4f6')),
+                ('TEXTCOLOR', (0, 0), (-1, -1), HexColor('#1f2937')),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 11),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#e5e7eb'))
+            ]))
+            story.append(deadline_table)
+            
+            # Build PDF
+            doc.build(story)
+            buffer.seek(0)
+            
+            # Return PDF response
+            return Response(
+                content=buffer.read(),
+                media_type='application/pdf',
+                headers={
+                    'Content-Disposition': f'attachment; filename="lien-deadline-{calculation_id}.pdf"'
+                }
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating calculation PDF: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
