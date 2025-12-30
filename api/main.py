@@ -1142,8 +1142,23 @@ async def startup():
         print(f"Schema check output:\n{result.stdout}")
         if result.stderr:
             print(f"Schema check errors:\n{result.stderr}")
+            
+        # Run schema fix migration (AFTER check)
+        print("🔧 Running production schema fix migration...")
+        fix_result = subprocess.run([sys.executable, 'api/migrations/fix_production_schema.py'], 
+                              capture_output=True, text=True, timeout=60)
+        
+        print(f"Schema fix output:\n{fix_result.stdout}")
+        if fix_result.stderr:
+            print(f"Schema fix errors:\n{fix_result.stderr}")
+        
+        if fix_result.returncode == 0:
+            print("✅ Schema fix migration completed")
+        else:
+            print(f"❌ Schema fix migration failed with code {fix_result.returncode}")
+            
     except Exception as e:
-        print(f"❌ Schema check failed: {e}")
+        print(f"❌ Schema check/fix failed: {e}")
     
     print("✅ Application startup complete")
 
