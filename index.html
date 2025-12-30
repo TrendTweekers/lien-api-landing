@@ -614,9 +614,9 @@
     
     <!-- Header -->
     <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <nav class="ld-nav">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
                 <!-- Logo -->
-            <a href="/" class="ld-brand" aria-label="LienDeadline home">
+            <a href="/" class="ld-brand flex items-center gap-2" aria-label="LienDeadline home">
                 <img class="ld-brand-icon" src="/images/liendeadline-icon-transparent.png" alt="LienDeadline" />
                 <img class="ld-brand-wordmark" src="/images/liendeadline-wordmark-transparent.png" alt="LienDeadline" />
             </a>
@@ -628,7 +628,7 @@
                 <a href="/#partners" style="text-decoration: none; color: #6B7280; font-weight: 500;">Partners</a>
                 <a href="/login.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Login</a>
                 <a href="/" style="background: #F97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">Try Free</a>
-                </div>
+            </div>
                 
             <!-- Mobile Hamburger (hidden on desktop) -->
             <button class="mobile-menu-btn" id="mobileMenuBtn" style="display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: #1F2937; padding: 4px;">
@@ -2289,20 +2289,7 @@
             max-height:none !important;
         }
         
-        /* Centered nav container */
-        .ld-nav{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            width:100%;
-            max-width:1200px;
-            margin:0 auto;
-            padding:0 16px;
-            box-sizing:border-box;
-        }
-        @media (max-width:768px){
-            .ld-nav{ padding:0 12px; }
-        }
+
     
         /* Partner Program Calculator Styles */
         .partner-model-btn {
