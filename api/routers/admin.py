@@ -373,6 +373,31 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
+            # Log database path for debugging
+            db_info = "Unknown"
+            if DB_TYPE != 'postgresql':
+                try:
+                    # Get list of attached databases
+                    db_list_rows = conn.execute("PRAGMA database_list").fetchall()
+                    # Convert row objects to list of dicts/tuples for readability
+                    db_list = []
+                    for row in db_list_rows:
+                        # Row object to tuple/dict
+                        if hasattr(row, 'keys'):
+                            db_list.append(dict(row))
+                        else:
+                            db_list.append(tuple(row))
+                            
+                    logger.info(f"Connected to databases: {db_list}")
+                    db_info = str(db_list)
+                    
+                    # Debug: check table count directly
+                    count_check = conn.execute("SELECT COUNT(*) FROM brokers").fetchone()
+                    logger.info(f"Direct count from brokers table: {count_check[0]}")
+                except Exception as e:
+                    logger.error(f"Could not get database list: {e}")
+                    db_info = f"Error: {str(e)}"
+
             # Get brokers with verified columns
             if DB_TYPE == 'postgresql':
                 # Assuming Postgres might have the fuller schema, but let's stick to common denominator or check
@@ -393,6 +418,8 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
                 """)
             
             rows = cursor.fetchall()
+            logger.info(f"Database query result: {rows}")
+            logger.info(f"Number of brokers found: {len(rows)}")
             
             brokers_list = []
             for row in rows:
@@ -436,11 +463,24 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
                     }
                 brokers_list.append(broker_dict)
             
-            return {"brokers": brokers_list}
+            return {
+                "brokers": brokers_list,
+                "debug_info": {
+                    "db_type": DB_TYPE,
+                    "connected_dbs": db_info,
+                    "rows_found": len(rows)
+                }
+            }
             
     except Exception as e:
-        print(f"Error in get_brokers_api: {e}")
-        return {"brokers": []}
+        logger.error(f"Error in get_brokers_api: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {
+            "brokers": [],
+            "error": str(e),
+            "trace": traceback.format_exc()
+        }
 
 @router.get("/api/admin/email-captures")
 async def get_email_captures_api(username: str = Depends(verify_admin)):

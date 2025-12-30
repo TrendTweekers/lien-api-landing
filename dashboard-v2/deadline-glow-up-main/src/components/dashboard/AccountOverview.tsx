@@ -14,9 +14,11 @@ export const AccountOverview = () => {
 
   useEffect(() => {
     const fetchAccountData = async () => {
+      console.log('[AccountOverview] Fetching account data...');
       try {
         const token = localStorage.getItem('session_token');
         if (!token) {
+          console.log('[AccountOverview] No session token found');
           setLoading(false);
           return;
         }
@@ -29,12 +31,16 @@ export const AccountOverview = () => {
           fetch('/api/customer/stats', { headers })
         ]);
 
+        console.log('[AccountOverview] Session res:', sessionRes.status);
+        console.log('[AccountOverview] Stats res:', statsRes.status);
+
         if (sessionRes.ok) {
           const sessionData = await sessionRes.json();
           let apiCalls = 0;
 
           if (statsRes.ok) {
             const statsData = await statsRes.json();
+            console.log('[AccountOverview] Stats data:', statsData);
             apiCalls = statsData.api_calls || 0;
           }
 

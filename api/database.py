@@ -6,6 +6,10 @@ that can be imported by both api/main.py and api/analytics.py
 import os
 from pathlib import Path
 from contextlib import contextmanager
+import logging
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 # Base directory
 BASE_DIR = Path(__file__).parent.parent
@@ -54,6 +58,15 @@ else:
             db_path = DATABASE_URL.replace('sqlite:///', '')
         else:
             db_path = os.getenv("DATABASE_PATH", BASE_DIR / "liendeadline.db")
+        
+        # Log DB path for debugging (only once per connection to avoid spam, but here we create new connection every time)
+        # Using print for visibility in console if logging not configured
+        try:
+            abs_path = os.path.abspath(db_path)
+            print(f"Connecting to SQLite DB: {abs_path}")
+            logger.info(f"Connecting to SQLite DB: {abs_path}")
+        except:
+            pass
         
         conn = sqlite3.connect(str(db_path))
         conn.row_factory = sqlite3.Row
