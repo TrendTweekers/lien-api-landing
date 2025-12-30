@@ -22,18 +22,30 @@ class CalculationRequest(BaseModel):
     notice_date: Optional[str] = None
 
 class SaveRequest(BaseModel):
-    project_name: str
+    # Snake Case Fields (all Optional for permissive parsing)
+    project_name: Optional[str] = None
     client_name: Optional[str] = None
-    state: str
+    state: Optional[str] = None
     state_code: Optional[str] = None
-    invoice_date: str
+    invoice_date: Optional[str] = None
     invoice_amount: Optional[float] = None
     prelim_deadline: Optional[str] = None
     prelim_deadline_days: Optional[int] = None
-    lien_deadline: str
-    lien_deadline_days: int
+    lien_deadline: Optional[str] = None
+    lien_deadline_days: Optional[int] = None
     notes: Optional[str] = None
     project_type: Optional[str] = None
+    # Camel Case Aliases (for React frontend)
+    projectName: Optional[str] = None
+    clientName: Optional[str] = None
+    stateCode: Optional[str] = None
+    invoiceDate: Optional[str] = None
+    invoiceAmount: Optional[float] = None
+    prelimDeadline: Optional[str] = None
+    prelimDeadlineDays: Optional[int] = None
+    lienDeadline: Optional[str] = None
+    lienDeadlineDays: Optional[int] = None
+    projectType: Optional[str] = None
 
 # --- Endpoints ---
 
@@ -218,12 +230,14 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
             }
         }
 
-        # 4. Return with "Double Payload" strategy:
+        # 4. Return with "Triple Payload" strategy:
         # - Wrapped in "data" for frontend expecting a wrapper
+        # - Wrapped in "result" for frontend expecting result wrapper
         # - Spread at root level for backward compatibility
         return JSONResponse(content={
             "status": "success",
             "data": response_data,  # <-- For frontend expecting a wrapper
+            "result": response_data,  # <-- For frontend expecting result wrapper
             **response_data         # <-- For frontend expecting root keys (Fallback)
         })
     except Exception as e:
@@ -237,6 +251,9 @@ async def save_calculation(request: Request, body: SaveRequest):
     from api.routers.auth import get_user_from_session
     from api.database import get_db
     
+    # Log the raw payload for debugging
+    print(f"📥 SAVE PAYLOAD RECEIVED: {body.dict()}")
+    
     # 1. Auth Check
     user = get_user_from_session(request)
     if not user:
@@ -246,7 +263,20 @@ async def save_calculation(request: Request, body: SaveRequest):
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid user")
     
-    # 2. Save to database
+    # 2. Map camelCase to snake_case (support both formats)
+    p_name = body.project_name or body.projectName or ""
+    c_name = body.client_name or body.clientName
+    state_val = body.state or ""
+    state_code_val = body.state_code or body.stateCode or state_val
+    inv_date = body.invoice_date or body.invoiceDate or ""
+    inv_amount = body.invoice_amount or body.invoiceAmount
+    prelim_dead = body.prelim_deadline or body.prelimDeadline
+    prelim_days = body.prelim_deadline_days or body.prelimDeadlineDays
+    lien_dead = body.lien_deadline or body.lienDeadline or ""
+    lien_days = body.lien_deadline_days or body.lienDeadlineDays
+    project_type_val = body.project_type or body.projectType
+    
+    # 3. Save to database
     try:
         import json
         with get_db() as conn:
@@ -254,14 +284,14 @@ async def save_calculation(request: Request, body: SaveRequest):
             
             # Prepare result JSON (store calculation data)
             result_data = {
-                "state": body.state,
-                "state_code": body.state_code or body.state,
-                "invoice_date": body.invoice_date,
-                "prelim_deadline": body.prelim_deadline,
-                "lien_deadline": body.lien_deadline,
-                "prelim_deadline_days": body.prelim_deadline_days,
-                "lien_deadline_days": body.lien_deadline_days,
-                "project_type": body.project_type
+                "state": state_val,
+                "state_code": state_code_val,
+                "invoice_date": inv_date,
+                "prelim_deadline": prelim_dead,
+                "lien_deadline": lien_dead,
+                "prelim_deadline_days": prelim_days,
+                "lien_deadline_days": lien_days,
+                "project_type": project_type_val
             }
             
             if DB_TYPE == "postgresql":
@@ -273,13 +303,13 @@ async def save_calculation(request: Request, body: SaveRequest):
                     RETURNING id
                 """, (
                     user_id,
-                    body.project_name,
-                    body.client_name,
-                    body.state,
-                    body.invoice_amount,
-                    body.invoice_date,
-                    body.prelim_deadline,
-                    body.lien_deadline,
+                    p_name,
+                    c_name,
+                    state_val,
+                    inv_amount,
+                    inv_date,
+                    prelim_dead,
+                    lien_dead,
                     json.dumps(result_data)
                 ))
                 calculation_id = cursor.fetchone()[0]
@@ -291,13 +321,13 @@ async def save_calculation(request: Request, body: SaveRequest):
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """, (
                     user_id,
-                    body.project_name,
-                    body.client_name,
-                    body.state,
-                    body.invoice_amount,
-                    body.invoice_date,
-                    body.prelim_deadline,
-                    body.lien_deadline,
+                    p_name,
+                    c_name,
+                    state_val,
+                    inv_amount,
+                    inv_date,
+                    prelim_dead,
+                    lien_dead,
                     json.dumps(result_data)
                 ))
                 calculation_id = cursor.lastrowid
