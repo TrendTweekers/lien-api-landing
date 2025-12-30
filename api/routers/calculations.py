@@ -43,7 +43,9 @@ async def get_history(request: Request):
     
     if not user:
         # Check raw cookies to debug 401
-        print(f"🔍 DEBUG: Cookies present: {request.cookies.keys()}")
+        print(f"🔍 DEBUG: Cookies present: {list(request.cookies.keys())}")
+        print(f"🔍 DEBUG: Full cookies dict: {dict(request.cookies)}")
+        print(f"🔍 DEBUG: Authorization header: {request.headers.get('authorization', 'NOT PRESENT')}")
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     # 2. Fetch History
@@ -113,6 +115,7 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
         # Extract and ensure we work with .date() objects
         raw_prelim = result.get("preliminary_deadline") or result.get("prelim_deadline")
         raw_lien = result.get("lien_deadline")
+        warnings = result.get("warnings", [])
 
         # Convert datetime to date if needed
         prelim_deadline = raw_prelim.date() if isinstance(raw_prelim, datetime) else raw_prelim
@@ -127,17 +130,22 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
         return JSONResponse(content={
             "status": "success",
             "quota_remaining": quota_remaining,
+            "warnings": warnings,  # Include warnings list
             "preliminary_notice_deadline": str(prelim_deadline) if prelim_deadline else None,
             "prelim_deadline": str(prelim_deadline) if prelim_deadline else None,
-            # Flat keys for days remaining (Frontend expects these)
+            # Shotgun approach: Multiple variations of days remaining keys
             "prelim_days_remaining": prelim_days,
+            "preliminary_days_remaining": prelim_days,
+            "days_until_prelim": prelim_days,
             "lien_days_remaining": lien_days,
             "days_remaining": lien_days,  # Fallback for the main deadline
             # Nested objects (for Dashboard compatibility)
             "preliminary_notice": {
                 "deadline": str(prelim_deadline) if prelim_deadline else None,
                 "required": True,
-                "days_remaining": prelim_days
+                "days_remaining": prelim_days,
+                "days_until": prelim_days,  # Additional key variation
+                "days": prelim_days  # Additional key variation
             },
             "lien_filing": {
                 "deadline": str(lien_deadline) if lien_deadline else None,
