@@ -35,6 +35,8 @@ class SaveRequest(BaseModel):
     lien_deadline_days: Optional[int] = None
     notes: Optional[str] = None
     project_type: Optional[str] = None
+    reminder_1day: Optional[bool] = False
+    reminder_7days: Optional[bool] = False
     # Camel Case Aliases (for React frontend)
     projectName: Optional[str] = None
     clientName: Optional[str] = None
@@ -46,6 +48,10 @@ class SaveRequest(BaseModel):
     lienDeadline: Optional[str] = None
     lienDeadlineDays: Optional[int] = None
     projectType: Optional[str] = None
+    reminder1day: Optional[bool] = False
+    reminder7days: Optional[bool] = False
+    # Nested reminders object (from frontend)
+    reminders: Optional[dict] = None
 
 # --- Endpoints ---
 
@@ -78,29 +84,68 @@ async def get_history(request: Request):
             cursor = get_db_cursor(conn)
             
             if DB_TYPE == "postgresql":
-                cursor.execute("""
-                    SELECT id, project_name, client_name, state, state_code, invoice_amount, 
-                           invoice_date, prelim_deadline, prelim_deadline_days,
-                           lien_deadline, lien_deadline_days, notes, created_at
-                    FROM calculations 
-                    WHERE user_email = %s 
-                    ORDER BY created_at DESC
-                """, (user_email,))
+                # Try to select with reminder columns, fallback if they don't exist
+                try:
+                    cursor.execute("""
+                        SELECT id, project_name, client_name, state, state_code, invoice_amount, 
+                               invoice_date, prelim_deadline, prelim_deadline_days,
+                               lien_deadline, lien_deadline_days, notes, 
+                               COALESCE(reminder_1day, false) as reminder_1day,
+                               COALESCE(reminder_7days, false) as reminder_7days,
+                               created_at
+                        FROM calculations 
+                        WHERE user_email = %s 
+                        ORDER BY created_at DESC
+                    """, (user_email,))
+                except Exception:
+                    # Fallback if reminder columns don't exist
+                    cursor.execute("""
+                        SELECT id, project_name, client_name, state, state_code, invoice_amount, 
+                               invoice_date, prelim_deadline, prelim_deadline_days,
+                               lien_deadline, lien_deadline_days, notes, created_at
+                        FROM calculations 
+                        WHERE user_email = %s 
+                        ORDER BY created_at DESC
+                    """, (user_email,))
             else:
-                cursor.execute("""
-                    SELECT id, project_name, client_name, state, state_code, invoice_amount,
-                           invoice_date, prelim_deadline, prelim_deadline_days,
-                           lien_deadline, lien_deadline_days, notes, created_at
-                    FROM calculations 
-                    WHERE user_email = ? 
-                    ORDER BY created_at DESC
-                """, (user_email,))
+                # Try to select with reminder columns, fallback if they don't exist
+                try:
+                    cursor.execute("""
+                        SELECT id, project_name, client_name, state, state_code, invoice_amount,
+                               invoice_date, prelim_deadline, prelim_deadline_days,
+                               lien_deadline, lien_deadline_days, notes,
+                               COALESCE(reminder_1day, 0) as reminder_1day,
+                               COALESCE(reminder_7days, 0) as reminder_7days,
+                               created_at
+                        FROM calculations 
+                        WHERE user_email = ? 
+                        ORDER BY created_at DESC
+                    """, (user_email,))
+                except Exception:
+                    # Fallback if reminder columns don't exist
+                    cursor.execute("""
+                        SELECT id, project_name, client_name, state, state_code, invoice_amount,
+                               invoice_date, prelim_deadline, prelim_deadline_days,
+                               lien_deadline, lien_deadline_days, notes, created_at
+                        FROM calculations 
+                        WHERE user_email = ? 
+                        ORDER BY created_at DESC
+                    """, (user_email,))
             
             rows = cursor.fetchall()
             
             history = []
             for row in rows:
                 if isinstance(row, dict):
+                    # Extract reminder values (handle both boolean and int)
+                    reminder_1day = row.get('reminder_1day', False)
+                    reminder_7days = row.get('reminder_7days', False)
+                    # Convert to boolean if needed
+                    if isinstance(reminder_1day, int):
+                        reminder_1day = bool(reminder_1day)
+                    if isinstance(reminder_7days, int):
+                        reminder_7days = bool(reminder_7days)
+                    
                     history.append({
                         "id": row.get('id'),
                         "project_name": row.get('project_name') or "",
@@ -114,10 +159,19 @@ async def get_history(request: Request):
                         "lien_deadline": str(row.get('lien_deadline') or ""),
                         "lien_deadline_days": row.get('lien_deadline_days'),
                         "notes": row.get('notes') or "",
+                        "reminder_1day": reminder_1day,
+                        "reminder_7days": reminder_7days,
                         "created_at": str(row.get('created_at') or "")
                     })
                 else:
-                    # Handle tuple/row format
+                    # Handle tuple/row format - check if reminder columns exist (index 13, 14)
+                    reminder_1day = False
+                    reminder_7days = False
+                    if len(row) > 13:
+                        reminder_1day = bool(row[13]) if row[13] is not None else False
+                    if len(row) > 14:
+                        reminder_7days = bool(row[14]) if row[14] is not None else False
+                    
                     history.append({
                         "id": row[0] if len(row) > 0 else None,
                         "project_name": row[1] if len(row) > 1 else "",
@@ -131,7 +185,9 @@ async def get_history(request: Request):
                         "lien_deadline": str(row[9]) if len(row) > 9 else "",
                         "lien_deadline_days": row[10] if len(row) > 10 else None,
                         "notes": row[11] if len(row) > 11 else "",
-                        "created_at": str(row[12]) if len(row) > 12 else ""
+                        "reminder_1day": reminder_1day,
+                        "reminder_7days": reminder_7days,
+                        "created_at": str(row[12] if len(row) > 12 else row[-1] if len(row) > 0 else "")
                     })
             
             return JSONResponse(content={"history": history})
@@ -322,6 +378,29 @@ async def save_calculation(request: Request, body: SaveRequest):
     lien_days = body.lien_deadline_days or body.lienDeadlineDays
     project_type_val = body.project_type or body.projectType
     
+    # Extract reminder values from nested object or direct fields
+    reminder_1day = False
+    reminder_7days = False
+    if body.reminders:
+        # Check if any prelim or lien reminder is checked for 1 day
+        reminder_1day = bool(
+            body.reminders.get('prelim1') or 
+            body.reminders.get('lien1') or
+            body.reminder_1day or 
+            body.reminder1day
+        )
+        # Check if any prelim or lien reminder is checked for 7 days
+        reminder_7days = bool(
+            body.reminders.get('prelim7') or 
+            body.reminders.get('lien7') or
+            body.reminder_7days or 
+            body.reminder7days
+        )
+    else:
+        # Use direct fields if reminders object not provided
+        reminder_1day = bool(body.reminder_1day or body.reminder1day)
+        reminder_7days = bool(body.reminder_7days or body.reminder7days)
+    
     # 3. Save to database
     try:
         import json
@@ -363,16 +442,48 @@ async def save_calculation(request: Request, body: SaveRequest):
             
             # Use the migration schema: user_email, project_name, client_name, invoice_amount, notes,
             # state, state_code, invoice_date, prelim_deadline, prelim_deadline_days, lien_deadline, lien_deadline_days
+            # reminder_1day, reminder_7days
             if DB_TYPE == "postgresql":
-                cursor.execute("""
-                    INSERT INTO calculations (
-                        user_email, project_name, client_name, invoice_amount, notes,
-                        state, state_code, invoice_date, 
-                        prelim_deadline, prelim_deadline_days,
-                        lien_deadline, lien_deadline_days,
-                        created_at
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
-                    RETURNING id
+                # Try to insert with reminder columns, fallback if they don't exist
+                try:
+                    cursor.execute("""
+                        INSERT INTO calculations (
+                            user_email, project_name, client_name, invoice_amount, notes,
+                            state, state_code, invoice_date, 
+                            prelim_deadline, prelim_deadline_days,
+                            lien_deadline, lien_deadline_days,
+                            reminder_1day, reminder_7days,
+                            created_at
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                        RETURNING id
+                    """, (
+                        user_email,
+                        p_name,
+                        c_name or "",
+                        float(inv_amount) if inv_amount else None,
+                        body.notes or "",
+                        state_val,
+                        state_code_val,
+                        inv_date,
+                        prelim_dead,
+                        prelim_days,
+                        lien_dead,
+                        lien_days,
+                        reminder_1day,
+                        reminder_7days,
+                    ))
+                except Exception as e:
+                    # If reminder columns don't exist, insert without them
+                    logger.warning(f"Reminder columns may not exist, inserting without them: {e}")
+                    cursor.execute("""
+                        INSERT INTO calculations (
+                            user_email, project_name, client_name, invoice_amount, notes,
+                            state, state_code, invoice_date, 
+                            prelim_deadline, prelim_deadline_days,
+                            lien_deadline, lien_deadline_days,
+                            created_at
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                        RETURNING id
                 """, (
                     user_email,
                     p_name,
@@ -393,14 +504,61 @@ async def save_calculation(request: Request, body: SaveRequest):
                 else:
                     calculation_id = result[0] if result else None
             else:
-                cursor.execute("""
-                    INSERT INTO calculations (
-                        user_email, project_name, client_name, invoice_amount, notes,
-                        state, state_code, invoice_date,
-                        prelim_deadline, prelim_deadline_days,
-                        lien_deadline, lien_deadline_days,
-                        created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                # Try to insert with reminder columns, fallback if they don't exist
+                try:
+                    cursor.execute("""
+                        INSERT INTO calculations (
+                            user_email, project_name, client_name, invoice_amount, notes,
+                            state, state_code, invoice_date,
+                            prelim_deadline, prelim_deadline_days,
+                            lien_deadline, lien_deadline_days,
+                            reminder_1day, reminder_7days,
+                            created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    """, (
+                        user_email,
+                        p_name,
+                        c_name or "",
+                        float(inv_amount) if inv_amount else None,
+                        body.notes or "",
+                        state_val,
+                        state_code_val,
+                        inv_date,
+                        prelim_dead,
+                        prelim_days,
+                        lien_dead,
+                        lien_days,
+                        reminder_1day,
+                        reminder_7days,
+                    ))
+                except Exception as e:
+                    # If reminder columns don't exist, insert without them
+                    logger.warning(f"Reminder columns may not exist, inserting without them: {e}")
+                    cursor.execute("""
+                        INSERT INTO calculations (
+                            user_email, project_name, client_name, invoice_amount, notes,
+                            state, state_code, invoice_date,
+                            prelim_deadline, prelim_deadline_days,
+                            lien_deadline, lien_deadline_days,
+                            created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    """, (
+                        user_email,
+                        p_name,
+                        c_name or "",
+                        float(inv_amount) if inv_amount else None,
+                        body.notes or "",
+                        state_val,
+                        state_code_val,
+                        inv_date,
+                        prelim_dead,
+                        prelim_days,
+                        lien_dead,
+                        lien_days,
+                    ))
+                conn.commit()
+                calculation_id = cursor.lastrowid
+            conn.commit()
                 """, (
                     user_email,
                     p_name,

@@ -1290,7 +1290,9 @@
                         lienDeadline: calc.lien_deadline || '',
                         state: calc.state || '',
                         notes: calc.notes || '',
-                        activeReminders: 0 // TODO: Calculate from reminders table
+                        activeReminders: (calc.reminder_1day ? 1 : 0) + (calc.reminder_7days ? 1 : 0),
+                        reminder_1day: calc.reminder_1day || false,
+                        reminder_7days: calc.reminder_7days || false
                     }));
                     
                     if (history.length === 0) {
@@ -1315,7 +1317,13 @@
                         const lienDeadline = calc.lien_deadline || '';
                         const state = calc.state || '';
                         const notes = calc.notes || '';
-                        const activeReminders = 0; // TODO: Calculate from reminders table
+                        // Calculate reminders display from reminder_1day and reminder_7days
+                        const reminder1day = calc.reminder_1day || false;
+                        const reminder7days = calc.reminder_7days || false;
+                        let reminders = [];
+                        if (reminder1day) reminders.push('1 day');
+                        if (reminder7days) reminders.push('7 days');
+                        const reminderText = reminders.length > 0 ? reminders.join(', ') : 'None';
                         
                         const amount = invoiceAmount ? `$${parseFloat(invoiceAmount).toLocaleString()}` : '-';
                         const prelimDate = prelimDeadline ? formatDeadlineDate(prelimDeadline) : 'Not Required';
@@ -1337,9 +1345,9 @@
                                 <td style="padding:12px; text-align:center;">${prelimDate}</td>
                                 <td style="padding:12px; text-align:center;">${lienDate}</td>
                                 <td style="padding:12px; text-align:center;">
-                                    ${activeReminders > 0 ? 
+                                    ${reminders.length > 0 ? 
                                         `<span style="background:#dcfce7; color:#166534; padding:4px 8px; border-radius:3px; font-size:12px;">
-                                            📧 ${activeReminders} active
+                                            📧 ${reminderText}
                                         </span>` : 
                                         `<span style="color:#999;">None</span>`
                                     }
