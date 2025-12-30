@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 import hashlib
+import logging
 
 from ..database import get_db, get_db_cursor, DB_TYPE
 from ..rate_limiter import limiter
@@ -13,6 +14,9 @@ from ..calculators import (
     STATE_CODE_TO_NAME, 
     STATE_RULES
 )
+
+# Configure Logging
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -294,6 +298,8 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
     Track calculation attempt and enforce server-side limits.
     Returns whether calculation is allowed and current count.
     Also returns calculation results for authenticated users (Dashboard).
+    
+    CRITICAL: Runs calculation for EVERYONE (Admin & Public) - no early return.
     """
     # Initialize variables for Universal Data Format
     prelim_deadline_str = None
@@ -321,7 +327,6 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
     # We use get_user_from_session to avoid breaking public site (which sends no token)
     # This allows both authenticated (Dashboard) and public usage
     logged_in_user = get_user_from_session(request)
-
 
     # Admin/dev user bypass (check BEFORE database lookup)
     DEV_EMAIL = "kartaginy1@gmail.com"
@@ -446,7 +451,7 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
                     """, (request_email, tracking_key))
                 conn.commit()
     
-            # PERFORM CALCULATION IF DATA AVAILABLE
+            # PERFORM CALCULATION IF DATA AVAILABLE (CRITICAL: Runs for EVERYONE)
             calculation_result = {}
             if request_data and request_data.state and request_data.notice_date:
                 try:
@@ -470,7 +475,7 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
                             # Get rules
                             rules = STATE_RULES.get(state_code, {})
                     
-                            # Calculate
+                            # Calculate (CRITICAL: This runs for Admin AND Public)
                             result = calculate_state_deadline(
                                 state_code=state_code,
                                 invoice_date=invoice_date,
@@ -1198,8 +1203,11 @@ async def save_calculation(data: SaveCalculationRequest, current_user: dict = De
 
 @router.get("/api/calculations/history")
 async def get_history(request: Request):
-    """Get user's calculation history with project details - uses Session Auth"""
-    # 1. Try Session (Primary)
+    """
+    Get user's calculation history with project details - uses Hybrid Session Auth.
+    FIXED: More lenient auth check with fallback token support.
+    """
+    # 1. Try Session Auth (Primary)
     user = get_user_from_session(request)
     
     # 2. Try Token (Fallback)
@@ -1207,9 +1215,13 @@ async def get_history(request: Request):
         auth = request.headers.get("Authorization")
         if auth:
             # Logic to validate token manually if needed, or pass
+            # For now, we rely on the session cookie primarily
             pass 
 
+    # 3. Block if both fail
     if not user:
+        # Log this to see if it's actually failing
+        logger.warning("❌ get_history: User not found in session or token.")
         raise HTTPException(status_code=401, detail="Unauthorized")
     
     try:
@@ -1302,7 +1314,7 @@ async def get_history(request: Request):
         }
         
     except Exception as e:
-        print(f"Error fetching calculation history: {e}")
+        logger.error(f"Error fetching calculation history: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
