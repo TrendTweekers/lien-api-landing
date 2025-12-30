@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status, Query
 from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from api.database import get_db, get_db_cursor, DB_TYPE, BASE_DIR
@@ -2230,7 +2230,11 @@ async def get_calculations_today(username: str = Depends(verify_admin)):
         return {"calculations_today": 0, "error": str(e)}
 
 @router.post("/api/admin/reset-password-emergency")
-async def reset_password_emergency(email: str, new_password: str = "TempPass123!", username: str = Depends(verify_admin)):
+async def reset_password_emergency(
+    email: str = Query(..., description="User email address"),
+    new_password: str = Query("TempPass123!", description="New temporary password"),
+    username: str = Depends(verify_admin)
+):
     """
     TEMPORARY EMERGENCY ENDPOINT - Remove after use!
     Resets a user's password without authentication.
