@@ -1344,4 +1344,3 @@ async def get_history(request: Request):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-
