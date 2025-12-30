@@ -534,11 +534,20 @@ def get_user_from_session(request: Request):
     return None
 
 @router.get("/api/calculations/history")
-async def get_calculation_history(request: Request):
+async def get_calculation_history(
+    request: Request,
+    user: Optional[dict] = Depends(get_current_user)
+):
     """Get user's calculation history with project details"""
-    current_user = get_user_from_session(request)
-    if not current_user:
+    # If Token failed, try Session
+    if not user:
+        user = get_user_from_session(request)
+    
+    # If both fail, block
+    if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    current_user = user
     
     try:
         with get_db() as conn:

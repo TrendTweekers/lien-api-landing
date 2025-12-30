@@ -296,17 +296,31 @@ async def track_calculation(request: Request, request_data: Optional[TrackCalcul
                 # If possible, return a fallback or re-raise 
                 raise HTTPException(status_code=500, detail=str(e))
 
-        return JSONResponse(
-            status_code=200,
-            content={
-                "status": "allowed",
-                "calculation_count": 0,
-                "remaining_calculations": 999999,
-                "email_provided": True,
-                "quota": {"unlimited": True},
-                **calculation_result # Empty if no data
-            }
-        )
+        # Universal Format return for Admin/Logged-in Users
+        return JSONResponse(content={
+            "id": None, # No ID for unsaved calculation
+            "status": "success",
+            "quota_remaining": "Unlimited",
+            
+            # 1. New Flat Keys
+            "preliminary_notice_deadline": prelim_deadline_str,
+            "lien_deadline": lien_deadline_str,
+            "notice_of_intent_deadline": noi_deadline_str,
+
+            # 2. Nested Objects (REQUIRED for Dashboard)
+            "preliminary_notice": {
+                "deadline": prelim_deadline_str,
+                "required": prelim_required,
+                "days_remaining": days_to_prelim if days_to_prelim is not None else 0
+            },
+            "lien_filing": {
+                "deadline": lien_deadline_str,
+                "days_remaining": days_to_lien if days_to_lien is not None else 0
+            },
+            
+            # 3. Legacy Keys
+            "prelim_deadline": prelim_deadline_str
+        })
 
     try:
         with get_db() as conn:
