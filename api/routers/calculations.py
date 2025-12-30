@@ -592,6 +592,11 @@ async def calculate_deadline(
             "urgency": get_urgency(days_to_lien) if days_to_lien else None,
             "description": lien_filing.get("description", lien_filing.get("deadline_description", ""))
         },
+        # Flat keys for frontend compatibility (Customer Dashboard)
+        "preliminary_notice_deadline": prelim_deadline.strftime('%Y-%m-%d') if prelim_deadline else None,
+        "notice_of_intent_deadline": result.get("notice_of_intent_deadline").strftime('%Y-%m-%d') if result.get("notice_of_intent_deadline") else None,
+        "lien_deadline": lien_deadline.strftime('%Y-%m-%d') if lien_deadline else None,
+        
         "serving_requirements": rules.get("serving_requirements", []),
         "statute_citations": statute_citations,
         "warnings": warnings,
