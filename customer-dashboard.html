@@ -93,148 +93,8 @@
             // Dashboard initialization code goes here
             // This function can be expanded with other initialization logic
         }
-            
-            try {
-                const response = await fetch('/api/verify-session', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    // Session invalid - redirect to login
-                    localStorage.removeItem('session_token');
-                    localStorage.removeItem('user_email');
-                    window.location.href = '/login.html';
-                    return;
-                }
-                
-                const data = await response.json();
-                
-                // Display user email
-                const userEmailEl = document.getElementById('user-email');
-                if (userEmailEl) {
-                    userEmailEl.textContent = data.email;
-                }
-                
-                // Check subscription status
-                if (data.subscription_status === 'cancelled') {
-                    // Show subscription warning (you can add UI for this)
-                    console.warn('Subscription cancelled');
-                }
-                
-            } catch (err) {
-                console.error('Auth check failed:', err);
-                window.location.href = '/dashboard';
-            }
-        }
-        });
-        }
-        
- - using event listener approach
 
-        // Run on page load
-        
-
-
-        
-
-        });
-        
         window.addEventListener('DOMContentLoaded', checkAuth);
-    </script>
-<style>
-        /* CSS Variables for consistent theming */
-        :root {
-            --navy: hsl(220 60% 20%);
-            --coral: #f97316;
-            --coral-dark: #ea580c;
-            --coral-light: #fb923c;
-        }
-
-        /* Beautiful visual design */
-        .dashboard-container {
-            background: linear-gradient(135deg, var(--navy), var(--coral));
-            min-height: 100vh;
-            padding: 2rem 0;
-        }
-
-        /* Beautiful calculator section */
-        #calculator {
-            margin: 2rem 0;
-        }
-
-        #calculator > div {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 3rem;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-            transition: all 0.3s ease;
-        }
-
-        #calculator > div:hover {
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
-            transform: translateY(-2px);
-        }
-
-        /* Beautiful heading */
-        #calculator h2 {
-            font-family: 'Instrument Serif', serif;
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--navy), var(--coral));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
-        }
-
-        /* Beautiful date input */
-        #dash_invoice_date {
-            width: 100%;
-            padding: 1rem;
-            border: 2px solid var(--coral);
-            border-radius: 12px;
-            font-size: 1.1rem;
-            background: white;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        #dash_invoice_date:hover {
-            border-color: var(--coral-dark);
-            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
-        }
-
-        #dash_invoice_date:focus {
-            border-color: var(--coral-dark);
-            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
-            outline: none;
-        }
-
-        /* Beautiful state select */
-        #dash_state {
-            width: 100%;
-            padding: 1rem;
-            border: 2px solid var(--coral);
-            border-radius: 12px;
-            font-size: 1.1rem;
-            background: white;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        #dash_state:hover {
-            border-color: var(--coral-dark);
-            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
-        }
-
-        #dash_state:focus {
-            border-color: var(--coral-dark);
-            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
-            outline: none;
-        }
 
         /* Beautiful button */
         #dash_calc_btn {
@@ -2238,8 +2098,6 @@
 
         function viewInvoices() {
             alert('Opening invoices...\n\nIn production, shows list of invoices from Stripe.');
-        }
-        }
             
             try {
                 // Pass token as query parameter for browser redirect
@@ -2988,11 +2846,11 @@
         // Force logo size via JavaScript as final fallback
         (function() {
             function enforceLogoSize() {
-                const logos = document.querySelectorAll('
+                const logos = document.querySelectorAll('img[src*="logo"], .logo-img');
+                logos.forEach(logo => {
+                    logo.style.maxWidth = '200px';
+                    logo.style.maxHeight = '60px';
                 });
-            }
-            
-            // Run on load
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', enforceLogoSize);
             } else {
