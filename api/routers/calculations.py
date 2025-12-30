@@ -4,13 +4,15 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 import logging
+import sys
 
-# We assume database imports are safe. If not, move them inside too.
+# We assume database imports are safe.
 from api.database import get_db_cursor, DB_TYPE
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/calculations", tags=["calculations"])
+# 🟢 CRITICAL CHANGE: No Prefix. We define full paths manually.
+router = APIRouter(tags=["calculations"])
 
 # --- Request Models ---
 class CalculationRequest(BaseModel):
@@ -21,34 +23,34 @@ class CalculationRequest(BaseModel):
 
 # --- Endpoints ---
 
-@router.get("/history")
+@router.get("/api/calculations/history")
 async def get_history(request: Request):
     """
-    Fetch history. Uses Lazy Import to avoid circular dependencies.
+    Fetch history. Path matches current frontend: /api/calculations/history
     """
-    try:
-        # 🟢 LAZY IMPORT: Fixes 'Could not import from api.routers.auth'
-        from api.routers.auth import get_user_from_session
-    except ImportError as e:
-        logger.error(f"CRITICAL: Auth Import Failed: {e}")
-        raise HTTPException(status_code=500, detail="Server Auth Config Error")
-
-    # 1. Auth Check
-    user = get_user_from_session(request)
+    print(f"🔍 DEBUG: /api/calculations/history hit!")
     
-    # Fallback to Header if Session is missing
-    if not user:
-        auth_header = request.headers.get("Authorization")
-        if auth_header: 
-            pass # (Add manual token logic here if needed)
+    # 🟢 LAZY IMPORT
+    try:
+        from api.routers.auth import get_user_from_session
+    except ImportError:
+        print("❌ CRITICAL: Could not import get_user_from_session from api.routers.auth")
+        raise HTTPException(status_code=500, detail="Auth Config Error")
 
+    # 1. Auth Check (Debug Logs included)
+    user = get_user_from_session(request)
+    print(f"🔍 DEBUG: Session User: {user.get('email') if user else 'None'}")
+    
     if not user:
+        # Check raw cookies to debug 401
+        print(f"🔍 DEBUG: Cookies present: {request.cookies.keys()}")
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     # 2. Fetch History
     try:
         if DB_TYPE == "postgresql":
             with get_db_cursor() as cur:
+                # Ensure your table/column names match your schema
                 cur.execute("""
                     SELECT id, project_name, state, amount, created_at, result 
                     FROM calculations 
@@ -74,20 +76,23 @@ async def get_history(request: Request):
         return JSONResponse(content={"history": []})
 
 
-@router.post("/v1/calculate-deadline")
+@router.post("/api/v1/calculate-deadline")
 async def track_calculation(request: Request, calc_req: CalculationRequest):
     """
-    Calculates deadline. Uses Lazy Import to avoid startup crashes.
+    Calculates deadline. Path matches frontend: /api/v1/calculate-deadline
     """
+    print(f"🔍 DEBUG: /api/v1/calculate-deadline hit for state: {calc_req.state}")
+
     # 🟢 LAZY IMPORTS
     from api.routers.auth import get_user_from_session
     from api.calculators import calculate_deadlines_for_state
 
-    # 1. Auth
+    # 1. Auth & Quota
     user = get_user_from_session(request)
     quota_remaining = 3
     if user:
         quota_remaining = "Unlimited"
+        print(f"✅ DEBUG: User {user.get('email')} detected.")
 
     # 2. Calculation
     try:
@@ -103,11 +108,12 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
             project_type=calc_req.project_type,
             notice_of_completion_date=noc_date
         )
+        print(f"🔍 DEBUG: Math Result: {result}")
 
         prelim_deadline = result.get("prelim_deadline")
         lien_deadline = result.get("lien_deadline")
 
-        # 3. Response
+        # 3. Response (Universal Format)
         return JSONResponse(content={
             "status": "success",
             "quota_remaining": quota_remaining,
@@ -125,5 +131,9 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
         })
     except Exception as e:
         logger.error(f"Calculation Error: {e}")
-        # Return a clean error so we see it in frontend console
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+# Add legacy public endpoint just in case
+@router.post("/api/calculate")
+async def public_calculate_legacy(request: Request, calc_req: CalculationRequest):
+    return await track_calculation(request, calc_req)
