@@ -165,31 +165,37 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
         else:
             lien_deadline_str = None
 
-        # 3. Response (Universal Format)
-        return JSONResponse(content={
-            "status": "success",
+        # 3. Construct response_data dictionary with ALL keys
+        response_data = {
+            # Echo fields from request
+            "state": calc_req.state,
+            "invoice_date": calc_req.invoice_date,
+            "project_type": calc_req.project_type,
+            # Quota
             "quota_remaining": quota_remaining,
             "quotaRemaining": quota_remaining,  # camelCase for React
+            # Warnings
             "warnings": warnings,
+            # Deadlines (snake_case)
             "preliminary_notice_deadline": prelim_deadline_str,
-            "preliminaryNoticeDeadline": prelim_deadline_str,  # camelCase for React
             "prelim_deadline": prelim_deadline_str,
-            "prelimDeadline": prelim_deadline_str,  # camelCase for React
-            # Frontend expects these keys (matching SaveRequest model) - snake_case
+            # Deadlines (camelCase)
+            "preliminaryNoticeDeadline": prelim_deadline_str,
+            "prelimDeadline": prelim_deadline_str,
+            # Days remaining (snake_case) - Frontend expects these keys (matching SaveRequest model)
             "prelim_deadline_days": prelim_days,
             "lien_deadline_days": lien_days,
-            # camelCase keys for React frontend
-            "prelimDeadlineDays": prelim_days,
-            "lienDeadlineDays": lien_days,
-            "prelimDaysRemaining": prelim_days,
-            "lienDaysRemaining": lien_days,
-            "daysRemaining": lien_days,  # camelCase fallback for the main deadline
-            # Shotgun approach: Multiple variations of days remaining keys (keep for compatibility) - snake_case
             "prelim_days_remaining": prelim_days,
             "preliminary_days_remaining": prelim_days,
             "days_until_prelim": prelim_days,
             "lien_days_remaining": lien_days,
             "days_remaining": lien_days,  # Fallback for the main deadline
+            # Days remaining (camelCase) - for React frontend
+            "prelimDeadlineDays": prelim_days,
+            "lienDeadlineDays": lien_days,
+            "prelimDaysRemaining": prelim_days,
+            "lienDaysRemaining": lien_days,
+            "daysRemaining": lien_days,  # camelCase fallback for the main deadline
             # Nested objects (for Dashboard compatibility) - Comprehensive keys
             "preliminary_notice": {
                 "deadline": prelim_deadline_str,
@@ -224,6 +230,15 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
                 "daysDiff": lien_days,
                 "daysUntil": lien_days
             }
+        }
+
+        # 4. Return with "Double Payload" strategy:
+        # - Wrapped in "data" for frontend expecting a wrapper
+        # - Spread at root level for backward compatibility
+        return JSONResponse(content={
+            "status": "success",
+            "data": response_data,  # <-- For frontend expecting a wrapper
+            **response_data         # <-- For frontend expecting root keys (Fallback)
         })
     except Exception as e:
         logger.error(f"Calculation Error: {e}")
