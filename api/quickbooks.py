@@ -12,7 +12,7 @@ from starlette.requests import Request
 import httpx
 from urllib.parse import urlencode
 from api.database import get_db, get_db_cursor, DB_TYPE
-from api.calculations import get_current_user
+from api.routers.calculations import get_current_user
 
 router = APIRouter()
 

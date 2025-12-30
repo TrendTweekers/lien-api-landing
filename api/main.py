@@ -146,7 +146,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 from .analytics import router as analytics_router
 from .admin import router as admin_router
 from .quickbooks import router as quickbooks_router
-from .calculations import router as calculations_router, get_current_user
+from .routers.calculations import router as calculations_router, get_current_user
 
 # Import short link generator
 from .short_link_system import ShortLinkGenerator
