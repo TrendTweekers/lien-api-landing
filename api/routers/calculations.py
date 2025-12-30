@@ -83,12 +83,15 @@ async def get_history(request: Request):
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # TEMPORARY: Removed reminder columns until database migration is complete
+            # Select with reminder columns (migration adds these columns on startup)
             if DB_TYPE == "postgresql":
                 cursor.execute("""
                     SELECT id, project_name, client_name, state, state_code, invoice_amount, 
                            invoice_date, prelim_deadline, prelim_deadline_days,
-                           lien_deadline, lien_deadline_days, notes, created_at
+                           lien_deadline, lien_deadline_days, notes,
+                           COALESCE(reminder_1day, false) as reminder_1day,
+                           COALESCE(reminder_7days, false) as reminder_7days,
+                           created_at
                     FROM calculations 
                     WHERE user_email = %s 
                     ORDER BY created_at DESC
@@ -97,7 +100,10 @@ async def get_history(request: Request):
                 cursor.execute("""
                     SELECT id, project_name, client_name, state, state_code, invoice_amount,
                            invoice_date, prelim_deadline, prelim_deadline_days,
-                           lien_deadline, lien_deadline_days, notes, created_at
+                           lien_deadline, lien_deadline_days, notes,
+                           COALESCE(reminder_1day, 0) as reminder_1day,
+                           COALESCE(reminder_7days, 0) as reminder_7days,
+                           created_at
                     FROM calculations 
                     WHERE user_email = ? 
                     ORDER BY created_at DESC
@@ -108,7 +114,15 @@ async def get_history(request: Request):
             history = []
             for row in rows:
                 if isinstance(row, dict):
-                    # TEMPORARY: Reminder columns removed until database migration
+                    # Extract reminder values (handle both boolean and int)
+                    reminder_1day = row.get('reminder_1day', False)
+                    reminder_7days = row.get('reminder_7days', False)
+                    # Convert to boolean if needed
+                    if isinstance(reminder_1day, int):
+                        reminder_1day = bool(reminder_1day)
+                    if isinstance(reminder_7days, int):
+                        reminder_7days = bool(reminder_7days)
+                    
                     history.append({
                         "id": row.get('id'),
                         "project_name": row.get('project_name') or "",
@@ -122,12 +136,19 @@ async def get_history(request: Request):
                         "lien_deadline": str(row.get('lien_deadline') or ""),
                         "lien_deadline_days": row.get('lien_deadline_days'),
                         "notes": row.get('notes') or "",
-                        "reminder_1day": False,  # TEMPORARY: Default to False until columns exist
-                        "reminder_7days": False,  # TEMPORARY: Default to False until columns exist
+                        "reminder_1day": reminder_1day,
+                        "reminder_7days": reminder_7days,
                         "created_at": str(row.get('created_at') or "")
                     })
                 else:
-                    # Handle tuple/row format
+                    # Handle tuple/row format - reminder columns are at index 12, 13
+                    reminder_1day = False
+                    reminder_7days = False
+                    if len(row) > 12:
+                        reminder_1day = bool(row[12]) if row[12] is not None else False
+                    if len(row) > 13:
+                        reminder_7days = bool(row[13]) if row[13] is not None else False
+                    
                     history.append({
                         "id": row[0] if len(row) > 0 else None,
                         "project_name": row[1] if len(row) > 1 else "",
@@ -141,9 +162,9 @@ async def get_history(request: Request):
                         "lien_deadline": str(row[9]) if len(row) > 9 else "",
                         "lien_deadline_days": row[10] if len(row) > 10 else None,
                         "notes": row[11] if len(row) > 11 else "",
-                        "reminder_1day": False,  # TEMPORARY: Default to False until columns exist
-                        "reminder_7days": False,  # TEMPORARY: Default to False until columns exist
-                        "created_at": str(row[12] if len(row) > 12 else row[-1] if len(row) > 0 else "")
+                        "reminder_1day": reminder_1day,
+                        "reminder_7days": reminder_7days,
+                        "created_at": str(row[14] if len(row) > 14 else row[-1] if len(row) > 0 else "")
                     })
             
             return JSONResponse(content={"history": history})
@@ -396,7 +417,7 @@ async def save_calculation(request: Request, body: SaveRequest):
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # TEMPORARY: Removed reminder columns from INSERT until database migration is complete
+            # Insert with reminder columns (migration adds these columns on startup)
             if DB_TYPE == "postgresql":
                 cursor.execute("""
                     INSERT INTO calculations (
@@ -404,8 +425,9 @@ async def save_calculation(request: Request, body: SaveRequest):
                         state, state_code, invoice_date, 
                         prelim_deadline, prelim_deadline_days,
                         lien_deadline, lien_deadline_days,
+                        reminder_1day, reminder_7days,
                         created_at
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
                     RETURNING id
                 """, (
                     user_email,
@@ -420,6 +442,8 @@ async def save_calculation(request: Request, body: SaveRequest):
                     prelim_days,
                     lien_dead,
                     lien_days,
+                    reminder_1day,
+                    reminder_7days,
                 ))
                 result = cursor.fetchone()
                 if isinstance(result, dict):
@@ -433,8 +457,9 @@ async def save_calculation(request: Request, body: SaveRequest):
                         state, state_code, invoice_date,
                         prelim_deadline, prelim_deadline_days,
                         lien_deadline, lien_deadline_days,
+                        reminder_1day, reminder_7days,
                         created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """, (
                     user_email,
                     p_name,
@@ -448,9 +473,10 @@ async def save_calculation(request: Request, body: SaveRequest):
                     prelim_days,
                     lien_dead,
                     lien_days,
+                    reminder_1day,
+                    reminder_7days,
                 ))
                 conn.commit()
-                calculation_id = cursor.lastrowid
                 calculation_id = cursor.lastrowid
             
             conn.commit()
