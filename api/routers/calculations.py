@@ -127,8 +127,8 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
 
         # Calculate days remaining (using date objects)
         today = datetime.now().date()
-        prelim_days = (prelim_date - today).days if prelim_date else 0
-        lien_days = (lien_date - today).days if lien_date else 0
+        prelim_days = int((prelim_date - today).days) if prelim_date else 0
+        lien_days = int((lien_date - today).days) if lien_date else 0
 
         # For RESPONSE: Use simple YYYY-MM-DD format (easier for frontend to parse)
         if raw_prelim:
@@ -158,7 +158,10 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
             "warnings": warnings,
             "preliminary_notice_deadline": prelim_deadline_str,
             "prelim_deadline": prelim_deadline_str,
-            # Shotgun approach: Multiple variations of days remaining keys
+            # Frontend expects these keys (matching SaveRequest model)
+            "prelim_deadline_days": prelim_days,
+            "lien_deadline_days": lien_days,
+            # Shotgun approach: Multiple variations of days remaining keys (keep for compatibility)
             "prelim_days_remaining": prelim_days,
             "preliminary_days_remaining": prelim_days,
             "days_until_prelim": prelim_days,
