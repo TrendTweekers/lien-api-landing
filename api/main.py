@@ -1142,6 +1142,11 @@ try:
     if dashboard_v2_assets.exists():
         app.mount("/dashboard-v2/assets", StaticFiles(directory=str(dashboard_v2_assets)), name="dashboard-v2-assets")
 
+    # Serve Broker Dashboard v2 Assets
+    broker_dashboard_v2_assets = BASE_DIR / "public" / "broker-dashboard-v2" / "assets"
+    if broker_dashboard_v2_assets.exists():
+        app.mount("/broker-dashboard-v2/assets", StaticFiles(directory=str(broker_dashboard_v2_assets)), name="broker-dashboard-v2-assets")
+
 except Exception as e:
     print(f"Warning: Could not mount static files: {e}")
 
@@ -1167,6 +1172,30 @@ async def serve_dashboard_v2(full_path: str):
     if index_path.exists():
         return FileResponse(index_path)
     return Response("Dashboard not found", status_code=404)
+
+
+# Serve Broker Dashboard v2 SPA
+@app.get("/broker-dashboard-v2")
+async def serve_broker_dashboard_v2_root():
+    """Serve Broker React App Root"""
+    file_path = BASE_DIR / "public" / "broker-dashboard-v2" / "index.html"
+    if file_path.exists():
+        return FileResponse(file_path)
+    return Response("Broker Dashboard not found", status_code=404)
+
+@app.get("/broker-dashboard-v2/{full_path:path}")
+async def serve_broker_dashboard_v2(full_path: str):
+    """Serve Broker React App Paths (SPA Routing)"""
+    # Check if file exists (e.g. favicon.ico, manifest.json)
+    file_path = BASE_DIR / "public" / "broker-dashboard-v2" / full_path
+    if file_path.exists() and file_path.is_file():
+        return FileResponse(file_path)
+    
+    # Fallback to index.html for SPA routing
+    index_path = BASE_DIR / "public" / "broker-dashboard-v2" / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    return Response("Broker Dashboard not found", status_code=404)
 
 # Images mount will be moved to right before the / mount to ensure proper order
 
