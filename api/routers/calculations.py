@@ -1199,7 +1199,16 @@ async def save_calculation(data: SaveCalculationRequest, current_user: dict = De
 @router.get("/api/calculations/history")
 async def get_history(request: Request):
     """Get user's calculation history with project details - uses Session Auth"""
+    # 1. Try Session (Primary)
     user = get_user_from_session(request)
+    
+    # 2. Try Token (Fallback)
+    if not user:
+        auth = request.headers.get("Authorization")
+        if auth:
+            # Logic to validate token manually if needed, or pass
+            pass 
+
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     
