@@ -100,7 +100,10 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="marketing" className="space-y-4">
-              <MarketingTools referralLink={data?.referral_link || ""} />
+              <MarketingTools 
+                referralLink={data?.referral_link || ""} 
+                brokerName={data?.broker_name || "Partner"}
+              />
             </TabsContent>
 
             <TabsContent value="settings" className="space-y-4">
