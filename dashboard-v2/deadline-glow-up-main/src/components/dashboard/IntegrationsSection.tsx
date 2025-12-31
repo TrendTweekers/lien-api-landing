@@ -14,6 +14,9 @@ const connectQuickBooks = () => {
   const state = Math.random().toString(36).substring(7);
   localStorage.setItem('qb_state', state);
   
+  // Store return URL to redirect back to V2 after callback
+  localStorage.setItem('qb_return_url', window.location.href);
+  
   // Construct OAuth URL
   const oauthUrl = `https://appcenter.intuit.com/connect/oauth2` +
       `?client_id=${CLIENT_ID}` +
