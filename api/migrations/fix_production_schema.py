@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+from fastapi.concurrency import run_in_threadpool
 
 # Add project root to path
 sys.path.append(os.getcwd())
@@ -66,6 +67,10 @@ def fix_schema():
             
         conn.commit()
         print("\n✅ Schema fix completed successfully!")
+
+# Async wrapper for FastAPI
+async def fix_postgres_schema():
+    await run_in_threadpool(fix_schema)
 
 def add_column(cursor, table, col_name, col_def):
     try:

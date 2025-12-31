@@ -17,6 +17,7 @@ import sys
 import bcrypt
 import stripe
 import traceback
+from api.migrations.fix_production_schema import fix_postgres_schema
 
 import httpx
 from urllib.parse import urlencode
@@ -1096,6 +1097,16 @@ def init_db():
 # Initialize Stripe
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
+
+@app.get("/api/force-db-fix")
+async def force_db_fix():
+    """Temporary endpoint to force database schema migration manually."""
+    try:
+        print("🔧 Manual trigger: Running schema fix...")
+        await fix_postgres_schema()
+        return {"status": "success", "message": "Schema fix executed. Check logs for details."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 # Include routers with full paths to match frontend calls
 app.include_router(analytics_router, prefix="/api/analytics", tags=["analytics"])
