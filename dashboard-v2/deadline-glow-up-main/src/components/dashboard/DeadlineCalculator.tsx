@@ -94,25 +94,31 @@ export const DeadlineCalculator = () => {
   const [reminder1Day, setReminder1Day] = useState(false);
   const [reminder7Days, setReminder7Days] = useState(false);
 
-  // Simplified logic to ensure dropdown appears for both full names and codes
-  const STATES_WITH_PROJECT_TYPE = [
-    'Texas', 'TX', 
-    'California', 'CA', 
-    'Florida', 'FL', 
-    'Arizona', 'AZ', 
-    'Nevada', 'NV', 
-    'Maryland', 'MD', 
-    'Georgia', 'GA', 
-    'Minnesota', 'MN', 
-    'Oregon', 'OR', 
-    'Washington', 'WA'
+  // Brute-force check for dropdown visibility
+  const STATES_WITH_DROPDOWN = [
+    "Texas", "TX", 
+    "California", "CA", 
+    "Florida", "FL", 
+    "Arizona", "AZ", 
+    "Nevada", "NV", 
+    "Maryland", "MD", 
+    "Georgia", "GA", 
+    "Minnesota", "MN", 
+    "Oregon", "OR", 
+    "Washington", "WA"
   ];
   
   // Resolve state abbreviation for API payload
   const stateAbbr = STATE_TO_ABBR[selectedState] || selectedState;
   
   // Check string directly for dropdown visibility
-  const showDropdown = STATES_WITH_PROJECT_TYPE.some(s => selectedState.includes(s));
+  const showDropdown = STATES_WITH_DROPDOWN.some(
+    s => s.toLowerCase() === selectedState?.toLowerCase()
+  );
+  
+  // Debug logging for state selection
+  console.log("Current State:", selectedState);
+  console.log("Show Dropdown:", showDropdown);
 
   const handleCalculate = async () => {
     if (!selectedState || !date) {
