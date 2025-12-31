@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { IntegrationCard } from "./IntegrationCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -40,33 +41,71 @@ const connectQuickBooks = () => {
   window.location.href = oauthUrl;
 };
 
-const integrations = [
-  {
-    name: "QuickBooks Integration",
-    description: (
-      <span className="text-foreground font-medium block min-h-[48px] pb-1">
-        Stop manually entering invoices. LienDeadline reads your QuickBooks invoices and calculates all deadlines automatically.
-      </span>
-    ),
-    icon: "Q",
-    gradient: "bg-gradient-to-br from-blue-500 to-blue-600",
-    onConnect: connectQuickBooks,
-  },
-  {
-    name: "Sage Integration",
-    description: "Import invoices from Sage accounting",
-    icon: "S",
-    gradient: "bg-gradient-to-br from-green-500 to-green-600",
-  },
-  {
-    name: "Procore Integration",
-    description: "Import projects and calculate lien deadlines",
-    icon: "P",
-    gradient: "bg-gradient-to-br from-orange-500 to-orange-600",
-  },
-];
-
 export const IntegrationsSection = () => {
+  const [isQBConnected, setIsQBConnected] = useState(false);
+
+  useEffect(() => {
+    const checkConnection = async () => {
+      // Check for URL param first (immediate feedback after redirect)
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('qb_connected') === 'true') {
+        setIsQBConnected(true);
+        return;
+      }
+
+      // Check backend status
+      try {
+        const token = localStorage.getItem('session_token');
+        const headers: HeadersInit = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        
+        // We can check if invoices endpoint returns 200 or 404
+        // Or check a dedicated status endpoint if available.
+        // For now, let's try the invoices endpoint as requested by user
+        // "If the invoices array exists (even if empty), force the badge status to Connected"
+        const res = await fetch("/api/quickbooks/invoices", { 
+            method: 'HEAD',
+            headers 
+        });
+        
+        if (res.ok) {
+            setIsQBConnected(true);
+        }
+      } catch (e) {
+        console.error("Failed to check QB status", e);
+      }
+    };
+
+    checkConnection();
+  }, []);
+
+  const integrations = [
+    {
+      name: "QuickBooks Integration",
+      description: (
+        <span className="text-foreground font-medium block min-h-[80px] pb-4">
+          Stop manually entering invoices. LienDeadline reads your QuickBooks invoices and calculates all deadlines automatically.
+        </span>
+      ),
+      icon: "Q",
+      gradient: "bg-gradient-to-br from-blue-500 to-blue-600",
+      onConnect: connectQuickBooks,
+      connected: isQBConnected,
+    },
+    {
+      name: "Sage Integration",
+      description: "Import invoices from Sage accounting",
+      icon: "S",
+      gradient: "bg-gradient-to-br from-green-500 to-green-600",
+    },
+    {
+      name: "Procore Integration",
+      description: "Import projects and calculate lien deadlines",
+      icon: "P",
+      gradient: "bg-gradient-to-br from-orange-500 to-orange-600",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-foreground">Accounting Integrations</h2>
@@ -88,6 +127,7 @@ export const IntegrationsSection = () => {
             icon={integration.icon}
             gradient={integration.gradient}
             onConnect={integration.onConnect}
+            connected={integration.connected}
           />
         ))}
       </div>

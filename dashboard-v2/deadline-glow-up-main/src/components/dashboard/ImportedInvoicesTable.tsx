@@ -83,7 +83,7 @@ export const ImportedInvoicesTable = () => {
     try {
       return new Date(dateString).toLocaleDateString("en-US", {
         month: "short",
-        day: "numeric",
+        day: "2-digit",
         year: "numeric",
       });
     } catch (e) {
