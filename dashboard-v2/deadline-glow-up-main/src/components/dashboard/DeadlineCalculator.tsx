@@ -94,27 +94,14 @@ export const DeadlineCalculator = () => {
   const [reminder1Day, setReminder1Day] = useState(false);
   const [reminder7Days, setReminder7Days] = useState(false);
 
-  // Brute-force check for dropdown visibility
-  const STATES_WITH_DROPDOWN = [
-    "Texas", "TX", 
-    "California", "CA", 
-    "Florida", "FL", 
-    "Arizona", "AZ", 
-    "Nevada", "NV", 
-    "Maryland", "MD", 
-    "Georgia", "GA", 
-    "Minnesota", "MN", 
-    "Oregon", "OR", 
-    "Washington", "WA"
-  ];
+  // States that require project type (Commercial/Residential)
+  const STATES_WITH_PROJECT_TYPE = ['TX', 'CA', 'FL', 'AZ', 'NV', 'MD', 'GA', 'MN', 'OR', 'WA'];
   
   // Resolve state abbreviation for API payload
   const stateAbbr = STATE_TO_ABBR[selectedState] || selectedState;
   
-  // Check string directly for dropdown visibility
-  const showDropdown = STATES_WITH_DROPDOWN.some(
-    s => s.toLowerCase() === selectedState?.toLowerCase()
-  );
+  // Check if project type dropdown should be shown
+  const showDropdown = STATES_WITH_PROJECT_TYPE.includes(selectedState);
   
   // Debug logging for state selection
   console.log("Current State:", selectedState);
