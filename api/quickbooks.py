@@ -5,6 +5,7 @@ Allows users to connect their QuickBooks account and import invoices
 import os
 import base64
 import secrets
+import time
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Request, Depends, Header
 from fastapi.responses import RedirectResponse
@@ -221,47 +222,94 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
         return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": "Missing company ID"}))
     
     # Verify state and get user ID
+    user_id = None
     try:
-        with get_db() as conn:
-            cursor = get_db_cursor(conn)
+        # Validate state against cookie if present (Frontend flow)
+        cookie_state = request.cookies.get('oauth_state')
+        
+        if cookie_state and cookie_state == state:
+            print(f"✅ State validated via Cookie: {state[:10]}...")
             
-            if DB_TYPE == 'postgresql':
-                cursor.execute("""
-                    SELECT user_id FROM quickbooks_oauth_states
-                    WHERE state = %s AND expires_at > NOW()
-                """, (state,))
+            # Try to get user from session_token cookie
+            session_token = request.cookies.get('session_token')
+            if session_token:
+                with get_db() as conn:
+                    cursor = get_db_cursor(conn)
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute("SELECT id FROM users WHERE session_token = %s", (session_token,))
+                    else:
+                        cursor.execute("SELECT id FROM users WHERE session_token = ?", (session_token,))
+                    
+                    user_res = cursor.fetchone()
+                    if user_res:
+                        if isinstance(user_res, dict):
+                            user_id = user_res.get('id')
+                        else:
+                            user_id = user_res[0] if len(user_res) > 0 else None
+                        print(f"✅ Found user_id from session cookie: {user_id}")
+                    else:
+                        print(f"❌ Session token found but no user matched")
             else:
-                cursor.execute("""
-                    SELECT user_id FROM quickbooks_oauth_states
-                    WHERE state = ? AND expires_at > datetime('now')
-                """, (state,))
-            
-            result = cursor.fetchone()
-            if not result:
-                error_msg = "Invalid or expired OAuth state"
-                print(f"❌ {error_msg}")
-                return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": error_msg}))
-            
-            # Extract user_id - handle both dict and tuple results
-            if isinstance(result, dict):
-                user_id = result.get('user_id')
-            else:
-                user_id = result[0] if len(result) > 0 else None
-            
-            print(f"✅ Found user_id: {user_id} for state: {state[:10]}...")
-            
-            # Delete used state
-            if DB_TYPE == 'postgresql':
-                cursor.execute("DELETE FROM quickbooks_oauth_states WHERE state = %s", (state,))
-            else:
-                cursor.execute("DELETE FROM quickbooks_oauth_states WHERE state = ?", (state,))
-            
-            conn.commit()
+                print(f"❌ No session_token cookie found in callback")
+                
+            if not user_id:
+                print("❌ Could not identify user from session cookie")
+                # We can't save tokens without a user, but maybe we shouldn't fail hard yet?
+                # Actually, we MUST fail or we can't save tokens.
+                return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": "Session expired or invalid"}))
+
+        else:
+            # Fallback to database validation (Backend flow)
+            with get_db() as conn:
+                cursor = get_db_cursor(conn)
+                
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT user_id FROM quickbooks_oauth_states
+                        WHERE state = %s AND expires_at > NOW()
+                    """, (state,))
+                else:
+                    cursor.execute("""
+                        SELECT user_id FROM quickbooks_oauth_states
+                        WHERE state = ? AND expires_at > datetime('now')
+                    """, (state,))
+                
+                result = cursor.fetchone()
+                if not result:
+                    # If cookie validation also failed (or wasn't attempted), then it's an error
+                    if not cookie_state:
+                        error_msg = "Invalid or expired OAuth state (No cookie, DB lookup failed)"
+                        print(f"❌ {error_msg}")
+                        return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": error_msg}))
+                    elif cookie_state != state:
+                        error_msg = f"OAuth state mismatch (Cookie: {cookie_state[:10]}..., Param: {state[:10]}...)"
+                        print(f"❌ {error_msg}")
+                        return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": error_msg}))
+                
+                if result:
+                    # Extract user_id - handle both dict and tuple results
+                    if isinstance(result, dict):
+                        user_id = result.get('user_id')
+                    else:
+                        user_id = result[0] if len(result) > 0 else None
+                    
+                    print(f"✅ Found user_id: {user_id} for state: {state[:10]}...")
+                    
+                    # Delete used state
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute("DELETE FROM quickbooks_oauth_states WHERE state = %s", (state,))
+                    else:
+                        cursor.execute("DELETE FROM quickbooks_oauth_states WHERE state = ?", (state,))
+                    
+                    conn.commit()
+
     except HTTPException:
         raise
     except Exception as e:
         print(f"Error verifying state: {e}")
-        raise HTTPException(status_code=500, detail="Error verifying OAuth state")
+        # Only raise if we really can't validate
+        if not (cookie_state and cookie_state == state):
+             raise HTTPException(status_code=500, detail="Error verifying OAuth state")
     
     # Exchange code for tokens
     try:

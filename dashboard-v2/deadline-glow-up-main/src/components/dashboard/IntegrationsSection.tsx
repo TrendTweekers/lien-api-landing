@@ -13,6 +13,15 @@ const connectQuickBooks = () => {
   // Generate state for CSRF protection
   const state = Math.random().toString(36).substring(7);
   localStorage.setItem('qb_state', state);
+
+  // Set state in cookie for backend validation
+  document.cookie = `oauth_state=${state}; path=/; max-age=600; secure; samesite=lax`;
+  
+  // Also set session_token in cookie so backend can identify user during callback
+  const sessionToken = localStorage.getItem('session_token');
+  if (sessionToken) {
+    document.cookie = `session_token=${sessionToken}; path=/; max-age=600; secure; samesite=lax`;
+  }
   
   // Store return URL to redirect back to V2 after callback
   localStorage.setItem('qb_return_url', window.location.href);
@@ -35,7 +44,7 @@ const integrations = [
   {
     name: "QuickBooks Integration",
     description: (
-      <span className="text-foreground font-medium">
+      <span className="text-foreground font-medium block min-h-[48px] pb-1">
         Stop manually entering invoices. LienDeadline reads your QuickBooks invoices and calculates all deadlines automatically.
       </span>
     ),
