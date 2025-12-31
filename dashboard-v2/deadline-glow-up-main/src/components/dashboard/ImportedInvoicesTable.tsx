@@ -118,12 +118,70 @@ export const ImportedInvoicesTable = () => {
     }));
   };
 
-  const handleSaveToProjects = (invoice: Invoice) => {
+  const handleSaveToProjects = async (invoice: Invoice) => {
     console.log("Saving to projects:", invoice);
-    toast({
-      title: "Saved to Projects",
-      description: `Invoice #${invoice.invoice_number} saved as ${invoice.project_type}.`,
-    });
+    
+    // Calculate deadlines to ensure we save accurate data
+    const { preliminaryNotice, lienFiling } = calculateStateDeadline(
+      invoice.project_state,
+      new Date(invoice.date),
+      invoice.project_type.toLowerCase() as "commercial" | "residential",
+      "supplier"
+    );
+
+    const payload = {
+      project_name: invoice.customer_name,
+      client_name: invoice.customer_name,
+      state: invoice.project_state,
+      state_code: invoice.project_state,
+      invoice_date: invoice.date,
+      invoice_amount: invoice.amount,
+      project_type: invoice.project_type,
+      status: "Active",
+      prelim_deadline: preliminaryNotice.deadline ? preliminaryNotice.deadline.toISOString().split('T')[0] : null,
+      lien_deadline: lienFiling.deadline ? lienFiling.deadline.toISOString().split('T')[0] : null,
+      reminder_1day: false,
+      reminder_7days: false,
+    };
+
+    try {
+      const token = localStorage.getItem('session_token');
+      const res = await fetch("/api/calculations/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Failed to save project");
+      }
+
+      toast({
+        title: "Project saved successfully!",
+        description: `Invoice #${invoice.invoice_number} saved as ${invoice.customer_name}.`,
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
+
+      // Remove the saved invoice from the list to prevent double-saving
+      setInvoices(prev => prev.filter(i => i.id !== invoice.id));
+
+      // Trigger refresh of the Projects table
+      if (onProjectSaved) {
+        onProjectSaved();
+      }
+
+    } catch (error) {
+      console.error("Save error:", error);
+      toast({
+        title: "Error saving project",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    }
   };
 
   const fetchInvoices = async () => {

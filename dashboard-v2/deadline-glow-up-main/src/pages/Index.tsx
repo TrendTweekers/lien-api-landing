@@ -61,11 +61,11 @@ const Index = () => {
           </div>
 
           {/* Imported Invoices Table */}
-          <ImportedInvoicesTable />
+          <ImportedInvoicesTable onProjectSaved={handleProjectSaved} />
 
           {/* Projects Table */}
           <div className="animate-slide-up" style={{ animationDelay: "0.25s" }}>
-            <ProjectsTable />
+            <ProjectsTable key={refreshProjectsTrigger} />
           </div>
 
           {/* Two Column Layout */}
