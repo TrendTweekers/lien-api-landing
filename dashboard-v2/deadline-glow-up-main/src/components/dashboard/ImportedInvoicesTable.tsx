@@ -209,11 +209,20 @@ export const ImportedInvoicesTable = ({ onProjectSaved }: { onProjectSaved?: () 
       const invoicesList = Array.isArray(data) ? data : [];
       
       // Add default project_type and ensure calculations match default
-      const processedList = invoicesList.map((inv: any) => ({
-        ...inv,
-        project_type: "Commercial",
-        project_state: "TX" // Default to Texas
-      }));
+      const processedList = invoicesList.map((inv: any) => {
+        const projectState = inv.project_state || "TX"; // Default to Texas if not present
+        const projectType = inv.project_type || "Commercial";
+        
+        // Ensure deadlines are calculated with the latest robust logic immediately on load
+        const calculated = calculateDeadlines(inv.date, projectType, projectState);
+        
+        return {
+          ...inv,
+          project_type: projectType,
+          project_state: projectState,
+          ...calculated
+        };
+      });
 
       setInvoices(processedList);
       setConnected(true);
