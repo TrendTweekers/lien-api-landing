@@ -7,7 +7,7 @@ const connectQuickBooks = () => {
   
   // Constants
   const CLIENT_ID = 'ABemmZS0yvUoHIlL06pbq2DhnpX0zM0RDS7bBtNADNzYPq3xui';
-  const REDIRECT_URI = 'https://liendeadline.com/api/quickbooks/callback';
+  const REDIRECT_URI = `${window.location.origin}/api/quickbooks/callback`;
   const SCOPE = 'com.intuit.quickbooks.accounting';
   
   // Generate state for CSRF protection
