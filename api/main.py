@@ -35,6 +35,7 @@ from api.services.email import (
     send_email_sync,
     send_password_reset_email
 )
+from api.cron_send_reminders import send_daily_reminders
 
 from io import BytesIO
 from .calculators import (
@@ -5337,6 +5338,12 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
             status_code=400,
             content={"message": str(e)}
         )
+
+@app.post("/api/admin/trigger-reminders")
+async def trigger_reminders_manual(background_tasks: BackgroundTasks):
+    """Manually trigger the daily reminder check."""
+    background_tasks.add_task(send_daily_reminders)
+    return {"status": "success", "message": "Reminder check started in background."}
 
 if __name__ == "__main__":
     import uvicorn

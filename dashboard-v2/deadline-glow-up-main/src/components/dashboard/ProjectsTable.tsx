@@ -17,6 +17,7 @@ interface Project {
   project_name: string;
   description?: string;
   client_name: string;
+  invoice_date?: string;
   amount: number;
   state: string;
   prelim_deadline: string;
@@ -126,6 +127,7 @@ export const ProjectsTable = () => {
             <TableRow className="border-border hover:bg-transparent bg-muted/50">
               <TableHead className="text-foreground font-semibold">Project</TableHead>
               <TableHead className="text-foreground font-semibold">Client</TableHead>
+              <TableHead className="text-foreground font-semibold">Invoice Date</TableHead>
               <TableHead className="text-foreground font-semibold">Amount</TableHead>
               <TableHead className="text-foreground font-semibold">State</TableHead>
               <TableHead className="text-foreground font-semibold">Prelim Deadline</TableHead>
@@ -153,6 +155,9 @@ export const ProjectsTable = () => {
                     </div>
                   </TableCell>
                   <TableCell className="text-foreground">{project.client_name}</TableCell>
+                  <TableCell className="text-foreground">
+                    {project.invoice_date ? new Date(project.invoice_date).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' }) : "-"}
+                  </TableCell>
                   <TableCell className="font-semibold text-foreground">
                     ${typeof project.amount === 'number' ? project.amount.toLocaleString() : project.amount}
                   </TableCell>
