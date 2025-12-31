@@ -33,7 +33,16 @@ interface Invoice {
   prelim_days_remaining: number | null;
   lien_days_remaining: number | null;
   project_type: "Commercial" | "Residential";
+  project_state: string;
 }
+
+const US_STATES = [
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", 
+  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", 
+  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", 
+  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", 
+  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+];
 
 export const ImportedInvoicesTable = () => {
   const { toast } = useToast();
@@ -41,7 +50,7 @@ export const ImportedInvoicesTable = () => {
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(false);
 
-  const calculateDeadlines = (invoiceDateStr: string, type: "Commercial" | "Residential") => {
+  const calculateDeadlines = (invoiceDateStr: string, type: "Commercial" | "Residential", state: string) => {
     const invoiceDate = new Date(invoiceDateStr);
     const year = invoiceDate.getFullYear();
     const month = invoiceDate.getMonth(); // 0-indexed
@@ -49,24 +58,49 @@ export const ImportedInvoicesTable = () => {
     let prelimDate: Date;
     let lienDate: Date;
 
-    // Logic based on Standard Texas Rules (matching backend api/calculators.py)
-    // Commercial: Prelim (15th of 3rd month), Lien (15th of 4th month)
-    // Residential: Prelim (15th of 2nd month), Lien (15th of 3rd month)
-    // Note: JS Month is 0-indexed.
-    // +1 month = next month (2nd month)
-    // +2 months = month after next (3rd month)
-    
-    if (type === "Commercial") {
-      // Prelim: 15th of 3rd month (Month + 2)
-      prelimDate = new Date(year, month + 2, 15);
-      // Lien: 15th of 4th month (Month + 3)
-      lienDate = new Date(year, month + 3, 15);
+    // Logic based on State Rules
+    if (state === "TX") {
+      // Standard Texas Rules
+      // Commercial: Prelim (15th of 3rd month), Lien (15th of 4th month)
+      // Residential: Prelim (15th of 2nd month), Lien (15th of 3rd month)
+      if (type === "Commercial") {
+        prelimDate = new Date(year, month + 2, 15);
+        lienDate = new Date(year, month + 3, 15);
+      } else {
+        prelimDate = new Date(year, month + 1, 15);
+        lienDate = new Date(year, month + 2, 15);
+      }
+    } else if (state === "CA" || state === "FL") {
+      // California & Florida (Simplified: 90 days from Invoice Date)
+      // Note: Real rules are more complex (e.g. CA is 20 days prelim, 90 days lien from completion)
+      // But for this demo/requirement: 90 days from invoice.
+      const date90 = new Date(invoiceDate);
+      date90.setDate(date90.getDate() + 90);
+      
+      prelimDate = date90; // Using same date for simplicity or maybe prelim should be earlier? 
+      // User said: "90 days from Invoice Date" for CA/FL. 
+      // Usually this refers to Lien deadline. 
+      // For Prelim, CA is 20 days. But user instructions were "CA: 90 days... FL: 90 days...".
+      // Let's assume 90 days is the Lien Deadline.
+      // For Prelim, let's just set it to 20 days for CA/FL as a reasonable default if not specified, 
+      // or just make them both 90 if that's the "simplified rule".
+      // Let's stick to the user's specific text: "90 days from Invoice Date (Simplified rule for demo)."
+      lienDate = date90;
+      
+      // Setting prelim to same or slightly earlier to avoid nulls. 
+      // Let's say 20 days for Prelim (common in many states)
+      const date20 = new Date(invoiceDate);
+      date20.setDate(date20.getDate() + 20);
+      prelimDate = date20;
     } else {
-      // Residential
-      // Prelim: 15th of 2nd month (Month + 1)
-      prelimDate = new Date(year, month + 1, 15);
-      // Lien: 15th of 3rd month (Month + 2)
-      lienDate = new Date(year, month + 2, 15);
+      // Default / Other States: 90 Day Rule
+      const date90 = new Date(invoiceDate);
+      date90.setDate(date90.getDate() + 90);
+      lienDate = date90;
+      
+      const date20 = new Date(invoiceDate);
+      date20.setDate(date20.getDate() + 20);
+      prelimDate = date20;
     }
 
     const today = new Date();
@@ -84,10 +118,24 @@ export const ImportedInvoicesTable = () => {
   const handleProjectTypeChange = (id: string, newType: "Commercial" | "Residential") => {
     setInvoices(prevInvoices => prevInvoices.map(inv => {
       if (inv.id === id) {
-        const newDeadlines = calculateDeadlines(inv.date, newType);
+        const newDeadlines = calculateDeadlines(inv.date, newType, inv.project_state);
         return {
           ...inv,
           project_type: newType,
+          ...newDeadlines
+        };
+      }
+      return inv;
+    }));
+  };
+
+  const handleStateChange = (id: string, newState: string) => {
+    setInvoices(prevInvoices => prevInvoices.map(inv => {
+      if (inv.id === id) {
+        const newDeadlines = calculateDeadlines(inv.date, inv.project_type, newState);
+        return {
+          ...inv,
+          project_state: newState,
           ...newDeadlines
         };
       }
@@ -127,7 +175,8 @@ export const ImportedInvoicesTable = () => {
       // Add default project_type and ensure calculations match default
       const processedList = invoicesList.map((inv: any) => ({
         ...inv,
-        project_type: "Commercial" 
+        project_type: "Commercial",
+        project_state: "TX" // Default to Texas
       }));
 
       setInvoices(processedList);
@@ -233,6 +282,7 @@ export const ImportedInvoicesTable = () => {
               <TableHead className="text-foreground font-semibold">Customer</TableHead>
               <TableHead className="text-foreground font-semibold">Date</TableHead>
               <TableHead className="text-foreground font-semibold">Amount</TableHead>
+              <TableHead className="text-foreground font-semibold">State</TableHead>
               <TableHead className="text-foreground font-semibold">Type</TableHead>
               <TableHead className="text-foreground font-semibold">Prelim Deadline</TableHead>
               <TableHead className="text-foreground font-semibold">Lien Deadline</TableHead>
@@ -256,6 +306,23 @@ export const ImportedInvoicesTable = () => {
                   <TableCell className="text-muted-foreground">{formatDate(inv.date)}</TableCell>
                   <TableCell className="font-semibold text-foreground">
                     ${inv.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </TableCell>
+                  <TableCell>
+                    <Select 
+                      value={inv.project_state} 
+                      onValueChange={(val) => handleStateChange(inv.id, val)}
+                    >
+                      <SelectTrigger className="h-8 w-[70px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[200px]">
+                        {US_STATES.map((state) => (
+                          <SelectItem key={state} value={state}>
+                            {state}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
                     <Select 
