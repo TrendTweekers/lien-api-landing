@@ -332,7 +332,6 @@ export const ImportedInvoicesTable = ({ onProjectSaved }: { onProjectSaved?: () 
               <TableHead className="text-foreground font-semibold">
                 <div className="flex items-center gap-1">
                   Date
-                  <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Info 
