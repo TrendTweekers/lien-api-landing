@@ -162,6 +162,12 @@ export const ImportedInvoicesTable = ({ onProjectSaved }: { onProjectSaved?: () 
       lien_deadline_days: lienDays,
       reminder_1day: true,
       reminder_7days: true,
+      reminders: {
+        prelim1: true,
+        prelim7: true,
+        lien1: true,
+        lien7: true
+      }
     };
 
     try {
