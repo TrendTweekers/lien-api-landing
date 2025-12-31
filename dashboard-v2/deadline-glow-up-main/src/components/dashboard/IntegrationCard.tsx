@@ -60,10 +60,13 @@ export const IntegrationCard = ({
         {connected ? "Manage" : `Connect ${name.split(" ")[0]}`}
       </Button>
 
-      <button className="w-full mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1">
+      <a 
+        href="mailto:admin@stackedboost.com?subject=Issue with QuickBooks Integration"
+        className="w-full mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1"
+      >
         <AlertCircle className="h-3 w-3" />
         Report Issue
-      </button>
+      </a>
     </div>
   );
 };
