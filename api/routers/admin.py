@@ -1488,32 +1488,38 @@ async def get_payout_debug_data(username: str = Depends(verify_admin)):
                     })
 
             # Get last 20 payments
-            if DB_TYPE == 'postgresql':
-                cursor.execute("SELECT * FROM broker_payments ORDER BY paid_at DESC LIMIT 20")
-            else:
-                cursor.execute("SELECT * FROM broker_payments ORDER BY paid_at DESC LIMIT 20")
-            
             payments = []
-            for row in cursor.fetchall():
-                 if isinstance(row, dict):
-                    payments.append(dict(row))
-                 else:
-                    # Simplify for tuple
-                    payments.append({"data": str(row)})
+            try:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT * FROM broker_payments ORDER BY paid_at DESC LIMIT 20")
+                else:
+                    cursor.execute("SELECT * FROM broker_payments ORDER BY paid_at DESC LIMIT 20")
+                
+                for row in cursor.fetchall():
+                     if isinstance(row, dict):
+                        payments.append(dict(row))
+                     else:
+                        # Simplify for tuple
+                        payments.append({"data": str(row)})
+            except Exception as e:
+                print(f"⚠️ Could not fetch broker_payments: {e}")
 
             # Get last 20 batches
-            if DB_TYPE == 'postgresql':
-                cursor.execute("SELECT * FROM broker_payout_batches ORDER BY created_at DESC LIMIT 20")
-            else:
-                cursor.execute("SELECT * FROM broker_payout_batches ORDER BY created_at DESC LIMIT 20")
-            
             batches = []
-            for row in cursor.fetchall():
-                 if isinstance(row, dict):
-                    batches.append(dict(row))
-                 else:
-                    # Simplify for tuple
-                    batches.append({"data": str(row)})
+            try:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT * FROM broker_payout_batches ORDER BY created_at DESC LIMIT 20")
+                else:
+                    cursor.execute("SELECT * FROM broker_payout_batches ORDER BY created_at DESC LIMIT 20")
+                
+                for row in cursor.fetchall():
+                     if isinstance(row, dict):
+                        batches.append(dict(row))
+                     else:
+                        # Simplify for tuple
+                        batches.append({"data": str(row)})
+            except Exception as e:
+                print(f"⚠️ Could not fetch broker_payout_batches: {e}")
             
             return {
                 "referrals": referrals,
