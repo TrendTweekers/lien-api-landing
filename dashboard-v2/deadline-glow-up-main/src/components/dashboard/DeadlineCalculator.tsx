@@ -94,11 +94,25 @@ export const DeadlineCalculator = () => {
   const [reminder1Day, setReminder1Day] = useState(false);
   const [reminder7Days, setReminder7Days] = useState(false);
 
-  const STATES_WITH_PROJECT_TYPE = ['TX', 'CA', 'FL', 'AZ', 'NV', 'MD', 'GA', 'MN', 'OR', 'WA'];
+  // Simplified logic to ensure dropdown appears for both full names and codes
+  const STATES_WITH_PROJECT_TYPE = [
+    'Texas', 'TX', 
+    'California', 'CA', 
+    'Florida', 'FL', 
+    'Arizona', 'AZ', 
+    'Nevada', 'NV', 
+    'Maryland', 'MD', 
+    'Georgia', 'GA', 
+    'Minnesota', 'MN', 
+    'Oregon', 'OR', 
+    'Washington', 'WA'
+  ];
   
-  // Resolve state abbreviation
+  // Resolve state abbreviation for API payload
   const stateAbbr = STATE_TO_ABBR[selectedState] || selectedState;
-  const showDropdown = STATES_WITH_PROJECT_TYPE.includes(stateAbbr);
+  
+  // Check string directly for dropdown visibility
+  const showDropdown = STATES_WITH_PROJECT_TYPE.some(s => selectedState.includes(s));
 
   const handleCalculate = async () => {
     if (!selectedState || !date) {
@@ -110,15 +124,23 @@ export const DeadlineCalculator = () => {
       return;
     }
     
+    // Debug logging
+    console.log("🚀 Sending Calculation Payload:", { 
+      invoice_date: date, 
+      state: selectedState, 
+      project_type: projectType 
+    });
+    
     setLoading(true);
     try {
-      const response = await fetch("/api/v1/calculate-deadline", {
+      // Switched to /api/calculate to match homepage logic and avoid 502 errors
+      const response = await fetch("/api/calculate", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          state: stateAbbr, // Use the abbreviation
+          state: stateAbbr, // Use the abbreviation for API safety
           invoice_date: date,
           project_type: projectType
         })
