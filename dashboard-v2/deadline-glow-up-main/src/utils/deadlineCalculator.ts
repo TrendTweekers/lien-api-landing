@@ -114,6 +114,10 @@ function getNextBusinessDay(date: Date): Date {
   return d;
 }
 
+export function adjustForBusinessDays(date: Date): Date {
+  return getNextBusinessDay(date);
+}
+
 // --- Specific State Logic ---
 
 function calculateTexas(invoiceDate: Date, projectType: "residential" | "commercial"): { prelim: Date; lien: Date } {

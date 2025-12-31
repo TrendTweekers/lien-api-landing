@@ -122,12 +122,15 @@ export const ImportedInvoicesTable = ({ onProjectSaved }: { onProjectSaved?: () 
     console.log("Saving to projects:", invoice);
     
     // Calculate deadlines to ensure we save accurate data
-    const { preliminaryNotice, lienFiling } = calculateStateDeadline(
+    const rawDeadlines = calculateStateDeadline(
       invoice.project_state,
       new Date(invoice.date),
       invoice.project_type.toLowerCase() as "commercial" | "residential",
       "supplier"
     );
+
+    const preliminaryNotice = adjustForBusinessDays(rawDeadlines.preliminaryNotice);
+    const lienFiling = adjustForBusinessDays(rawDeadlines.lienFiling);
 
     const payload = {
       project_name: invoice.customer_name,
