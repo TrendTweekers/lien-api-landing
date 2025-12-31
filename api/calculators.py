@@ -217,6 +217,10 @@ def calculate_state_deadline(
         dict with calculation results (preliminary_deadline, lien_deadline, etc.)
     """
     state_code = state_code.upper()
+
+    # Use global STATE_RULES if state_rules argument is missing
+    if state_rules is None:
+        state_rules = STATE_RULES.get(state_code)
     
     # State-specific calculation logic (single source of truth)
     if state_code == "TX":
@@ -250,7 +254,7 @@ def calculate_state_deadline(
     else:
         # Default calculation for simple states
         if not state_rules:
-            # Fallback to basic defaults if no rules provided
+            # Fallback to basic defaults if no rules provided (should not happen if JSON loaded)
             prelim_required = False
             prelim_days = 20
             lien_days = 120
@@ -260,9 +264,29 @@ def calculate_state_deadline(
             lien_filing = state_rules.get('lien_filing', {})
             special_rules = state_rules.get('special_rules', {})
             
-            prelim_required = prelim_notice.get('required', False)
-            prelim_days = prelim_notice.get('days') or prelim_notice.get('commercial_days') or 20
-            lien_days = lien_filing.get('days') or lien_filing.get('commercial_days') or 120
+            # Determine if preliminary notice is required
+            # Check for explicit days > 0
+            p_days = prelim_notice.get('days')
+            p_comm_days = prelim_notice.get('commercial_days')
+            
+            # Use whichever is present (priority to days if both?)
+            # Usually 'days' is generic, 'commercial_days' is specific.
+            prelim_days = p_days if p_days is not None else p_comm_days
+            if prelim_days is None:
+                prelim_days = 20 # Default
+            
+            # It is required if days > 0 and name is not "None Required"
+            # Some states have days=0 for "None Required"
+            prelim_required = (prelim_days > 0)
+            
+            # Allow JSON to explicitly set "required" if we add it later
+            if 'required' in prelim_notice:
+                prelim_required = prelim_notice['required']
+            
+            lien_days = (lien_filing.get('days') or 
+                         lien_filing.get('commercial_days') or 
+                         lien_filing.get('standard_days') or 
+                         120)
         
         return calculate_default(
             invoice_date,

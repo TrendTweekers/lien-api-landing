@@ -19,6 +19,9 @@ import subprocess
 import sys
 import sqlite3
 
+# Feature flags
+PAYOUT_LEDGER_AVAILABLE = False
+
 # Initialize router
 router = APIRouter()
 security = HTTPBasic()
@@ -295,76 +298,81 @@ async def get_admin_stats(username: str = Depends(verify_admin)):
              except:
                  pass
 
+@router.get("/api/admin/api-usage-stats")
+async def get_api_usage_stats(username: str = Depends(verify_admin)):
+    """Get API usage statistics"""
+    return {
+        "stats": {
+            "total_calls_today": 0,
+            "total_calls_week": 0,
+            "total_calls_month": 0,
+            "error_rate": 0,
+            "most_used_states": []
+        }
+    }
+
 @router.get("/api/admin/customers")
 async def get_customers_api(username: str = Depends(verify_admin)):
     """Return list of customers"""
-    db = None
     try:
-        db = get_db()
-        
-        # Check if table exists (SQLite only)
-        if DB_TYPE != 'postgresql':
-            tables = db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-            table_names = [t[0] for t in tables]
-            if 'customers' not in table_names:
-                return []
-        
-        # Try different column names for compatibility
-        try:
-            if DB_TYPE == 'postgresql':
-                 with db.cursor() as cursor:
-                    cursor.execute("""
-                        SELECT email, calls_used, status 
-                        FROM customers 
-                        ORDER BY created_at DESC
-                    """)
-                    columns = [desc[0] for desc in cursor.description]
-                    rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
-            else:
-                rows = db.execute("""
-                    SELECT email, calls_used, status 
-                    FROM customers 
-                    ORDER BY created_at DESC
-                """).fetchall()
-        except Exception:
-            # Fallback if created_at doesn't exist
+        with get_db() as db:
+            # Check if table exists (SQLite only)
+            if DB_TYPE != 'postgresql':
+                tables = db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+                table_names = [t[0] for t in tables]
+                if 'customers' not in table_names:
+                    return []
+            
+            # Try different column names for compatibility
             try:
                 if DB_TYPE == 'postgresql':
                      with db.cursor() as cursor:
                         cursor.execute("""
-                            SELECT email, api_calls, status 
+                            SELECT email, calls_used, status 
                             FROM customers 
-                            ORDER BY email
+                            ORDER BY created_at DESC
                         """)
                         columns = [desc[0] for desc in cursor.description]
                         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
                 else:
                     rows = db.execute("""
-                        SELECT email, api_calls, status 
+                        SELECT email, calls_used, status 
                         FROM customers 
-                        ORDER BY email
+                        ORDER BY created_at DESC
                     """).fetchall()
-            except Exception as e:
-                print(f"Error querying customers: {e}")
-                return []
-        
-        return [
-            {
-                "email": row['email'] if isinstance(row, dict) else (row['email'] if 'email' in row.keys() else row[0]),
-                "calls": (row.get('calls_used') if isinstance(row, dict) else row.get('calls_used')) or (row.get('api_calls') if isinstance(row, dict) else row.get('api_calls')) or 0,
-                "status": row.get('status') if isinstance(row, dict) else (row.get('status') or 'active')
-            }
-            for row in rows
-        ]
+            except Exception:
+                # Fallback if created_at doesn't exist
+                try:
+                    if DB_TYPE == 'postgresql':
+                         with db.cursor() as cursor:
+                            cursor.execute("""
+                                SELECT email, api_calls, status 
+                                FROM customers 
+                                ORDER BY email
+                            """)
+                            columns = [desc[0] for desc in cursor.description]
+                            rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+                    else:
+                        rows = db.execute("""
+                            SELECT email, api_calls, status 
+                            FROM customers 
+                            ORDER BY email
+                        """).fetchall()
+                except Exception as e:
+                    print(f"Error querying customers: {e}")
+                    return []
+            
+            return [
+                {
+                    "email": row['email'] if isinstance(row, dict) else (row['email'] if 'email' in row.keys() else row[0]),
+                    "calls": (row.get('calls_used') if isinstance(row, dict) else row.get('calls_used')) or (row.get('api_calls') if isinstance(row, dict) else row.get('api_calls')) or 0,
+                    "status": row.get('status') if isinstance(row, dict) else (row.get('status') or 'active')
+                }
+                for row in rows
+            ]
     except Exception as e:
         print(f"Error in get_customers_api: {e}")
         return []
-    finally:
-        if db and hasattr(db, 'close') and DB_TYPE != 'postgresql':
-            try:
-                db.close()
-            except:
-                pass
 
 @router.get("/api/admin/brokers")
 async def get_brokers_api(username: str = Depends(verify_admin)):
