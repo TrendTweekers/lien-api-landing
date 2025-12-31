@@ -5344,6 +5344,24 @@ async def debug_trigger_reminders(background_tasks: BackgroundTasks):
     background_tasks.add_task(send_daily_reminders)
     return {"status": "success", "message": "Reminders triggered! (Version 2)"}
 
+@app.get("/api/force-test-email")
+async def force_test_email(to: str):
+    """Forces a test email to verify SMTP delivery."""
+    from api.services.email import send_email_sync
+    try:
+        result = send_email_sync(
+            to_email=to,
+            subject="🔥 LienDeadline V2 Test",
+            content="<h1>It Works!</h1><p>Your email system is fully operational.</p>",
+            is_html=True
+        )
+        if result:
+            return {"status": "success", "message": f"Sent to {to}"}
+        else:
+            return {"status": "error", "message": "Email function returned False"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
 # Serve static files from public directory - MUST BE LAST
 if public_dir.exists():
     app.mount("/", StaticFiles(directory=str(public_dir), html=True), name="public")

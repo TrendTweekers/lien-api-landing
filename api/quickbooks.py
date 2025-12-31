@@ -342,7 +342,7 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
             
             # Redirect to customer dashboard with success message
             print(f"✅ Redirecting to dashboard with success")
-            return RedirectResponse(url="/dashboard-v2?qb_connected=true")
+            return RedirectResponse(url=f"/dashboard-v2?qb_connected=true&cache_bust={int(time.time())}")
             
     except httpx.HTTPError as e:
         error_msg = f"HTTP error during token exchange: {e}"
