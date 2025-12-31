@@ -1662,32 +1662,3 @@ window.generateTestKey = generateTestKey;
 window.runBackup = runBackup;
 window.logout = logout;
 
-// ==================== QUICKBOOKS INTEGRATION ====================
-function connectQuickBooks() {
-    console.log('[Admin] Initiating QuickBooks OAuth flow...');
-    
-    // Constants
-    const CLIENT_ID = 'ABemmZS0yvUoHIlL06pbq2DhnpX0zM0RDS7bBtNADNzYPq3xui';
-    const REDIRECT_URI = 'https://liendeadline.com/api/quickbooks/callback';
-    const SCOPE = 'com.intuit.quickbooks.accounting';
-    
-    // Generate state for CSRF protection
-    const state = Math.random().toString(36).substring(7);
-    localStorage.setItem('qb_state', state);
-    
-    // Construct OAuth URL
-    const oauthUrl = `https://appcenter.intuit.com/connect/oauth2` +
-        `?client_id=${CLIENT_ID}` +
-        `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-        `&scope=${SCOPE}` +
-        `&response_type=code` +
-        `&state=${state}`;
-        
-    console.log('[Admin] Redirecting to:', oauthUrl);
-    
-    // Redirect
-    window.location.href = oauthUrl;
-}
-
-window.connectQuickBooks = connectQuickBooks;
-
