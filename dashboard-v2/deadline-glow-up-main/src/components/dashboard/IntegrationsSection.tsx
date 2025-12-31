@@ -5,7 +5,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 const integrations = [
   {
     name: "QuickBooks Integration",
-    description: "Import invoices and auto-calculate lien deadlines",
+    description: (
+      <span className="text-foreground font-medium">
+        Stop manually entering invoices. LienDeadline reads your QuickBooks invoices and calculates all deadlines automatically.
+      </span>
+    ),
     icon: "Q",
     gradient: "bg-gradient-to-br from-blue-500 to-blue-600",
   },

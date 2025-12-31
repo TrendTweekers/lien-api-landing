@@ -396,30 +396,48 @@ async def refresh_access_token(user_id: int):
                 )
                 
                 if response.status_code != 200:
+                    print(f"❌ Failed to refresh token: {response.text}")
                     return None
                 
                 tokens = response.json()
+                
+                # 1. Capture the New Token
+                new_access_token = tokens.get('access_token')
+                new_refresh_token = tokens.get('refresh_token')
                 expires_in = tokens.get('expires_in', 3600)
+                
+                if not new_access_token:
+                    print("❌ Error: No access token in refresh response")
+                    return None
+
+                # Log rotation
+                if new_refresh_token:
+                    print("✅ QuickBooks rotated the refresh token. Saving new one.")
+                else:
+                    print("⚠️ No new refresh token provided. Keeping old one.")
+                
+                # Use new refresh token if provided, otherwise keep old one
+                final_refresh_token = new_refresh_token if new_refresh_token else refresh_token
+                
                 expires_at = datetime.now() + timedelta(seconds=expires_in)
                 
-                # Update tokens
+                # 2. Update Database (Access Token + Refresh Token + Expires At)
                 if DB_TYPE == 'postgresql':
                     cursor.execute("""
                         UPDATE quickbooks_tokens
                         SET access_token = %s, refresh_token = %s, expires_at = %s, updated_at = NOW()
                         WHERE user_id = %s
-                    """, (tokens['access_token'], tokens.get('refresh_token', refresh_token), 
-                          expires_at, user_id))
+                    """, (new_access_token, final_refresh_token, expires_at, user_id))
                 else:
                     cursor.execute("""
                         UPDATE quickbooks_tokens
                         SET access_token = ?, refresh_token = ?, expires_at = ?, updated_at = datetime('now')
                         WHERE user_id = ?
-                    """, (tokens['access_token'], tokens.get('refresh_token', refresh_token), 
-                          expires_at, user_id))
+                    """, (new_access_token, final_refresh_token, expires_at, user_id))
                 
                 conn.commit()
-                return tokens['access_token']
+                print(f"✅ Successfully updated QuickBooks tokens for user {user_id}")
+                return new_access_token
     except Exception as e:
         print(f"Error refreshing token: {e}")
         return None

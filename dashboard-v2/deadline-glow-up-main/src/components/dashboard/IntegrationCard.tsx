@@ -4,7 +4,7 @@ import { AlertCircle } from "lucide-react";
 
 interface IntegrationCardProps {
   name: string;
-  description: string;
+  description: string | React.ReactNode;
   icon: React.ReactNode;
   gradient: string;
   connected?: boolean;
@@ -29,9 +29,9 @@ export const IntegrationCard = ({
           <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
             {name}
           </h3>
-          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+          <div className="text-sm text-muted-foreground mt-1 line-clamp-2">
             {description}
-          </p>
+          </div>
         </div>
       </div>
 
