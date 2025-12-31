@@ -20,7 +20,7 @@ import sys
 import sqlite3
 
 # Feature flags
-PAYOUT_LEDGER_AVAILABLE = False
+PAYOUT_LEDGER_AVAILABLE = True
 
 # Initialize router
 router = APIRouter()
@@ -227,62 +227,62 @@ async def serve_admin_dashboard_clean(request: Request, username: str = Depends(
 @router.get("/api/admin/stats")
 async def get_admin_stats(username: str = Depends(verify_admin)):
     """Get admin dashboard statistics"""
-    db = None
     try:
-        db = get_db()
-        
-        # Check if tables exist
-        tables = db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-        table_names = [t[0] for t in tables]
-        
-        # Count active customers
-        customers_count = 0
-        if DB_TYPE == 'postgresql' or 'customers' in table_names:
-            try:
-                if DB_TYPE == 'postgresql':
-                     with db.cursor() as cursor:
-                        cursor.execute("SELECT COUNT(*) FROM customers WHERE status='active'")
-                        customers_count = cursor.fetchone()[0]
-                else:
-                    result = db.execute("SELECT COUNT(*) FROM customers WHERE status='active'").fetchone()
-                    customers_count = result[0] if result else 0
-            except Exception as e:
-                print(f"Error counting customers: {e}")
-        
-        # Count approved brokers
-        brokers_count = 0
-        if DB_TYPE == 'postgresql' or 'brokers' in table_names:
-            try:
-                if DB_TYPE == 'postgresql':
-                     with db.cursor() as cursor:
-                        cursor.execute("SELECT COUNT(*) FROM brokers")
-                        brokers_count = cursor.fetchone()[0]
-                else:
-                    result = db.execute("SELECT COUNT(*) FROM brokers").fetchone()
-                    brokers_count = result[0] if result else 0
-            except Exception as e:
-                print(f"Error counting brokers: {e}")
-        
-        # Calculate revenue
-        revenue_result = 0
-        if DB_TYPE == 'postgresql' or 'customers' in table_names:
-            try:
-                if DB_TYPE == 'postgresql':
-                     with db.cursor() as cursor:
-                        cursor.execute("SELECT SUM(amount) FROM customers WHERE status='active'")
-                        res = cursor.fetchone()
-                        revenue_result = float(res[0]) if res and res[0] else 0
-                else:
-                    result = db.execute("SELECT SUM(amount) FROM customers WHERE status='active'").fetchone()
-                    revenue_result = float(result[0]) if result and result[0] else 0
-            except Exception as e:
-                print(f"Error calculating revenue: {e}")
-        
-        return {
-            "customers": customers_count,
-            "brokers": brokers_count,
-            "revenue": float(revenue_result)
-        }
+        with get_db() as db:
+            # Check if tables exist
+            table_names = []
+            if DB_TYPE != 'postgresql':
+                tables = db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+                table_names = [t[0] for t in tables]
+            
+            # Count active customers
+            customers_count = 0
+            if DB_TYPE == 'postgresql' or 'customers' in table_names:
+                try:
+                    if DB_TYPE == 'postgresql':
+                         with db.cursor() as cursor:
+                            cursor.execute("SELECT COUNT(*) FROM customers WHERE status='active'")
+                            customers_count = cursor.fetchone()[0]
+                    else:
+                        result = db.execute("SELECT COUNT(*) FROM customers WHERE status='active'").fetchone()
+                        customers_count = result[0] if result else 0
+                except Exception as e:
+                    print(f"Error counting customers: {e}")
+            
+            # Count approved brokers
+            brokers_count = 0
+            if DB_TYPE == 'postgresql' or 'brokers' in table_names:
+                try:
+                    if DB_TYPE == 'postgresql':
+                         with db.cursor() as cursor:
+                            cursor.execute("SELECT COUNT(*) FROM brokers")
+                            brokers_count = cursor.fetchone()[0]
+                    else:
+                        result = db.execute("SELECT COUNT(*) FROM brokers").fetchone()
+                        brokers_count = result[0] if result else 0
+                except Exception as e:
+                    print(f"Error counting brokers: {e}")
+            
+            # Calculate revenue
+            revenue_result = 0
+            if DB_TYPE == 'postgresql' or 'customers' in table_names:
+                try:
+                    if DB_TYPE == 'postgresql':
+                         with db.cursor() as cursor:
+                            cursor.execute("SELECT SUM(amount) FROM customers WHERE status='active'")
+                            res = cursor.fetchone()
+                            revenue_result = float(res[0]) if res and res[0] else 0
+                    else:
+                        result = db.execute("SELECT SUM(amount) FROM customers WHERE status='active'").fetchone()
+                        revenue_result = float(result[0]) if result and result[0] else 0
+                except Exception as e:
+                    print(f"Error calculating revenue: {e}")
+            
+            return {
+                "customers": customers_count,
+                "brokers": brokers_count,
+                "revenue": float(revenue_result)
+            }
     except Exception as e:
         print(f"Error getting admin stats: {e}")
         return {
@@ -291,12 +291,6 @@ async def get_admin_stats(username: str = Depends(verify_admin)):
             "revenue": 0,
             "error": str(e)
         }
-    finally:
-        if db and hasattr(db, 'close') and DB_TYPE != 'postgresql':
-             try:
-                 db.close()
-             except:
-                 pass
 
 @router.get("/api/admin/api-usage-stats")
 async def get_api_usage_stats(username: str = Depends(verify_admin)):
@@ -1798,116 +1792,109 @@ async def export_payment_history(username: str = Depends(verify_admin)):
 @router.get("/api/admin/payouts/pending")
 async def get_pending_payouts_api(username: str = Depends(verify_admin)):
     """Return pending broker payouts"""
-    db = None
     try:
-        db = get_db()
-        
-        # Check if tables exist
-        if DB_TYPE == 'postgresql':
-             # PostgreSQL check
-             with db.cursor() as cursor:
-                 cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'referrals')")
-                 if not cursor.fetchone()[0]:
-                     print("Referrals table does not exist")
-                     return []
-        else:
-            # SQLite check
-            tables = db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-            table_names = [t[0] for t in tables]
+        with get_db() as db:
             
-            if 'referrals' not in table_names:
-                print("Referrals table does not exist")
-                return []
-        
-        # Try query with different column names for compatibility
-        try:
+            # Check if tables exist
             if DB_TYPE == 'postgresql':
-                with db.cursor() as cursor:
-                    cursor.execute("""
+                 # PostgreSQL check
+                 with db.cursor() as cursor:
+                     cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'referrals')")
+                     if not cursor.fetchone()[0]:
+                         print("Referrals table does not exist")
+                         return []
+            else:
+                # SQLite check
+                tables = db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+                table_names = [t[0] for t in tables]
+                
+                if 'referrals' not in table_names:
+                    print("Referrals table does not exist")
+                    return []
+            
+            # Try query with different column names for compatibility
+            try:
+                if DB_TYPE == 'postgresql':
+                    with db.cursor() as cursor:
+                        cursor.execute("""
+                            SELECT r.id, r.broker_id, r.customer_email, r.amount, r.payout, r.status,
+                                   b.name as broker_name
+                            FROM referrals r
+                            LEFT JOIN brokers b ON r.broker_id = b.id
+                            WHERE r.status = 'pending'
+                            ORDER BY r.created_at DESC
+                        """)
+                        columns = [desc[0] for desc in cursor.description]
+                        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+                else:
+                    rows = db.execute("""
                         SELECT r.id, r.broker_id, r.customer_email, r.amount, r.payout, r.status,
                                b.name as broker_name
                         FROM referrals r
                         LEFT JOIN brokers b ON r.broker_id = b.id
                         WHERE r.status = 'pending'
                         ORDER BY r.created_at DESC
-                    """)
-                    columns = [desc[0] for desc in cursor.description]
-                    rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
-            else:
-                rows = db.execute("""
-                    SELECT r.id, r.broker_id, r.customer_email, r.amount, r.payout, r.status,
-                           b.name as broker_name
-                    FROM referrals r
-                    LEFT JOIN brokers b ON r.broker_id = b.id
-                    WHERE r.status = 'pending'
-                    ORDER BY r.created_at DESC
-                """).fetchall()
-        except (sqlite3.OperationalError, Exception) as e:
-            # Fallback if columns don't match
-            try:
-                if DB_TYPE == 'postgresql':
-                    with db.cursor() as cursor:
-                        cursor.execute("""
+                    """).fetchall()
+            except (sqlite3.OperationalError, Exception) as e:
+                # Fallback if columns don't match
+                try:
+                    if DB_TYPE == 'postgresql':
+                        with db.cursor() as cursor:
+                            cursor.execute("""
+                                SELECT r.id, r.broker_ref, r.customer_email, r.amount, r.status,
+                                       b.name as broker_name, r.days_active
+                                FROM referrals r
+                                LEFT JOIN brokers b ON r.broker_ref = b.id
+                                WHERE r.status = 'ready'
+                                ORDER BY r.date ASC
+                            """)
+                            columns = [desc[0] for desc in cursor.description]
+                            rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+                    else:
+                        rows = db.execute("""
                             SELECT r.id, r.broker_ref, r.customer_email, r.amount, r.status,
                                    b.name as broker_name, r.days_active
                             FROM referrals r
                             LEFT JOIN brokers b ON r.broker_ref = b.id
                             WHERE r.status = 'ready'
                             ORDER BY r.date ASC
-                        """)
-                        columns = [desc[0] for desc in cursor.description]
-                        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+                        """).fetchall()
+                except Exception as e:
+                    print(f"Error querying pending payouts: {e}")
+                    return []
+            
+            result = []
+            for row in rows:
+                if isinstance(row, dict):
+                     result.append({
+                        "id": row.get('id') or 0,
+                        "broker_name": row.get('broker_name') or 'Unknown',
+                        "broker_id": row.get('broker_id') or row.get('broker_ref') or '',
+                        "customer_email": row.get('customer_email') or '',
+                        "amount": float(row.get('amount') or 0),
+                        "payout": float(row.get('payout') or row.get('amount') or 0),
+                        "status": row.get('status') or 'pending',
+                        "days_active": row.get('days_active') or 0
+                    })
                 else:
-                    rows = db.execute("""
-                        SELECT r.id, r.broker_ref, r.customer_email, r.amount, r.status,
-                               b.name as broker_name, r.days_active
-                        FROM referrals r
-                        LEFT JOIN brokers b ON r.broker_ref = b.id
-                        WHERE r.status = 'ready'
-                        ORDER BY r.date ASC
-                    """).fetchall()
-            except Exception as e:
-                print(f"Error querying pending payouts: {e}")
-                return []
-        
-        result = []
-        for row in rows:
-            if isinstance(row, dict):
-                 result.append({
-                    "id": row.get('id') or 0,
-                    "broker_name": row.get('broker_name') or 'Unknown',
-                    "broker_id": row.get('broker_id') or row.get('broker_ref') or '',
-                    "customer_email": row.get('customer_email') or '',
-                    "amount": float(row.get('amount') or 0),
-                    "payout": float(row.get('payout') or row.get('amount') or 0),
-                    "status": row.get('status') or 'pending',
-                    "days_active": row.get('days_active') or 0
-                })
-            else:
-                 # SQLite row
-                 result.append({
-                    "id": row['id'] if 'id' in row.keys() else row[0],
-                    "broker_name": row['broker_name'] if 'broker_name' in row.keys() else (row[5] if len(row) > 5 else 'Unknown'),
-                    "broker_id": row['broker_id'] if 'broker_id' in row.keys() else (row[1] if len(row) > 1 else ''),
-                    "customer_email": row['customer_email'] if 'customer_email' in row.keys() else (row[2] if len(row) > 2 else ''),
-                    "amount": float(row['amount'] if 'amount' in row.keys() else (row[3] if len(row) > 3 else 0)),
-                    "payout": float(row['payout'] if 'payout' in row.keys() else (row[4] if len(row) > 4 else 0)),
-                    "status": row['status'] if 'status' in row.keys() else (row[5] if len(row) > 5 else 'pending'),
-                    "days_active": 0
-                 })
-
-        return result
+                     # SQLite row
+                     result.append({
+                        "id": row['id'] if 'id' in row.keys() else row[0],
+                        "broker_name": row['broker_name'] if 'broker_name' in row.keys() else (row[5] if len(row) > 5 else 'Unknown'),
+                        "broker_id": row['broker_id'] if 'broker_id' in row.keys() else (row[1] if len(row) > 1 else ''),
+                        "customer_email": row['customer_email'] if 'customer_email' in row.keys() else (row[2] if len(row) > 2 else ''),
+                        "amount": float(row['amount'] if 'amount' in row.keys() else (row[3] if len(row) > 3 else 0)),
+                        "payout": float(row['payout'] if 'payout' in row.keys() else (row[4] if len(row) > 4 else 0)),
+                        "status": row['status'] if 'status' in row.keys() else (row[5] if len(row) > 5 else 'pending'),
+                        "days_active": 0
+                     })
+    
+            return result
     except Exception as e:
         print(f"Error in get_pending_payouts_api: {e}")
         import traceback
         traceback.print_exc()
         return []
-    finally:
-        if db and hasattr(db, 'close') and DB_TYPE != 'postgresql':
-            try:
-                db.close()
-            except:
-                pass
 
 @router.get("/api/admin/payout-batches")
 async def get_payout_batches(username: str = Depends(verify_admin)):
@@ -2389,22 +2376,19 @@ async def get_calculations_today(username: str = Depends(verify_admin)):
             
             # Count ALL calculations from today (UTC)
             if DB_TYPE == 'postgresql':
-                # PostgreSQL: calculation_date is DATE type, created_at is TIMESTAMP
-                # Compare calculation_date directly (it's already a date)
+                # PostgreSQL: created_at is TIMESTAMP
                 # Convert created_at TIMESTAMP to UTC date
                 cursor.execute('''
                     SELECT COUNT(*) as count 
                     FROM calculations 
-                    WHERE calculation_date = %s
-                       OR DATE(created_at AT TIME ZONE 'UTC') = %s
-                ''', (today_utc, today_utc))
+                    WHERE DATE(created_at AT TIME ZONE 'UTC') = %s
+                ''', (today_utc,))
             else:
                 # SQLite: Use DATE() function
                 cursor.execute('''
                     SELECT COUNT(*) as count 
                     FROM calculations 
-                    WHERE DATE(calculation_date) = DATE('now')
-                       OR DATE(created_at) = DATE('now')
+                    WHERE DATE(created_at) = DATE('now')
                 ''')
             
             result = cursor.fetchone()
