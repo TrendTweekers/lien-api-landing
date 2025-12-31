@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
-import { calculateStateDeadline } from "@/utils/deadlineCalculator";
+import { calculateStateDeadline, adjustForBusinessDays } from "@/utils/deadlineCalculator";
 
 interface Invoice {
   id: string;
@@ -62,12 +62,15 @@ export const ImportedInvoicesTable = ({ onProjectSaved }: { onProjectSaved?: () 
     const invoiceDate = new Date(invoiceDateStr);
     
     // Use the shared utility for Single Source of Truth
-    const { preliminaryNotice, lienFiling } = calculateStateDeadline(
+    const rawDeadlines = calculateStateDeadline(
       state, 
       invoiceDate, 
       type.toLowerCase() as "commercial" | "residential",
       "supplier" // Defaulting to supplier role for imported invoices
     );
+
+    const preliminaryNotice = adjustForBusinessDays(rawDeadlines.preliminaryNotice);
+    const lienFiling = adjustForBusinessDays(rawDeadlines.lienFiling);
 
     const today = new Date();
     // Normalize to start of day for accurate calculation
