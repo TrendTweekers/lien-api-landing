@@ -273,6 +273,7 @@ async function loadActiveBrokers() {
                     <tr class="hover:bg-gray-50">
                         <td class="font-medium">${broker.name || 'Unknown'}</td>
                         <td style="color: var(--muted);">${broker.email || 'N/A'}</td>
+                        <td class="text-center">${broker.total_referrals || 0}</td>
                         <td>${commissionBadge}</td>
                         <td>${paymentBadge}</td>
                         <td>${paymentStatusBadge}</td>
