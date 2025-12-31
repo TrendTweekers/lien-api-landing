@@ -176,6 +176,9 @@ export const ImportedInvoicesTable = ({ onProjectSaved }: { onProjectSaved?: () 
       if (onProjectSaved) {
         onProjectSaved();
       }
+      
+      // Also dispatch event for other listeners
+      window.dispatchEvent(new Event('project-saved'));
 
     } catch (error) {
       console.error("Save error:", error);
@@ -297,6 +300,7 @@ export const ImportedInvoicesTable = ({ onProjectSaved }: { onProjectSaved?: () 
   };
 
   return (
+    <TooltipProvider>
     <div className="bg-card rounded-xl overflow-hidden border border-border card-shadow mt-8 animate-slide-up" style={{ animationDelay: "0.22s" }}>
       <div className="p-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -340,7 +344,6 @@ export const ImportedInvoicesTable = ({ onProjectSaved }: { onProjectSaved?: () 
                         <p>Deadlines are calculated based on the Invoice Creation Date (Work Date), not the Payment Due Date. Most state lien laws begin counting from the date services were performed.</p>
                       </TooltipContent>
                     </Tooltip>
-                  </TooltipProvider>
                 </div>
               </TableHead>
               <TableHead className="text-foreground font-semibold">Amount</TableHead>

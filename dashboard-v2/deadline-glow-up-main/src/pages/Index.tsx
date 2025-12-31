@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { IntegrationsSection } from "@/components/dashboard/IntegrationsSection";
 import { AccountOverview } from "@/components/dashboard/AccountOverview";
@@ -12,6 +12,8 @@ import { ApiDocs } from "@/components/dashboard/ApiDocs";
 import { ImportedInvoicesTable } from "@/components/dashboard/ImportedInvoicesTable";
 
 const Index = () => {
+  const [refreshProjectsTrigger, setRefreshProjectsTrigger] = useState(0);
+
   useEffect(() => {
     // Check for session token and verify session
     const token = localStorage.getItem('session_token');
@@ -30,6 +32,10 @@ const Index = () => {
       window.location.href = '/';
     });
   }, []);
+
+  const handleProjectSaved = () => {
+    setRefreshProjectsTrigger(prev => prev + 1);
+  };
 
   return (
     <div className="min-h-screen bg-background">
