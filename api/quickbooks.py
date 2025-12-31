@@ -644,18 +644,24 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                 print(f"QuickBooks API error: {error_detail}")
                 raise HTTPException(status_code=500, detail=f"Failed to fetch invoices from QuickBooks: {error_detail}")
             
+            print(f"DEBUG_RAW_RESPONSE: {response.text}", flush=True)
+            
             data = response.json()
             invoices = data.get("QueryResponse", {}).get("Invoice", [])
             
             # If single invoice, convert to list
             if isinstance(invoices, dict):
                 invoices = [invoices]
+                
+            print(f"DEBUG_INVOICE_COUNT: Found {len(invoices)} invoices in QB response", flush=True)
             
             # Format invoices for frontend
             formatted_invoices = []
             today = datetime.now().date()
             
             for inv in invoices:
+                print(f"DEBUG_PROCESSING_INVOICE: ID={inv.get('Id')} Amount={inv.get('TotalAmt')}", flush=True)
+                
                 # Extract state from shipping or billing address
                 state = "TX"  # Default
                 
@@ -715,10 +721,7 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                     "lien_days_remaining": lien_days
                 })
             
-            return {
-                "invoices": formatted_invoices,
-                "count": len(formatted_invoices)
-            }
+            return formatted_invoices
             
     except httpx.HTTPError as e:
         print(f"HTTP error fetching invoices: {e}")
