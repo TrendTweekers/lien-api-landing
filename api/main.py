@@ -5339,7 +5339,7 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
             content={"message": str(e)}
         )
 
-@app.post("/api/admin/trigger-reminders")
+@app.post("/api/manual-trigger-reminders")
 async def trigger_reminders_manual(background_tasks: BackgroundTasks):
     """Manually trigger the daily reminder check."""
     background_tasks.add_task(send_daily_reminders)

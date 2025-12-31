@@ -342,20 +342,20 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
             
             # Redirect to customer dashboard with success message
             print(f"✅ Redirecting to dashboard with success")
-            return RedirectResponse(url="/customer-dashboard.html?qb_connected=true")
+            return RedirectResponse(url="/dashboard-v2?qb_connected=true")
             
     except httpx.HTTPError as e:
         error_msg = f"HTTP error during token exchange: {e}"
         print(f"❌ {error_msg}")
         import traceback
         traceback.print_exc()
-        return RedirectResponse(url="/customer-dashboard.html?error=" + urlencode({"error": "Network error connecting to QuickBooks"}))
+        return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": "Network error connecting to QuickBooks"}))
     except Exception as e:
         error_msg = f"Error during token exchange: {e}"
         print(f"❌ {error_msg}")
         import traceback
         traceback.print_exc()
-        return RedirectResponse(url="/customer-dashboard.html?error=" + urlencode({"error": "Unexpected error during OAuth"}))
+        return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": "Unexpected error during OAuth"}))
 
 
 async def refresh_access_token(user_id: int):
