@@ -132,8 +132,20 @@ export const ImportedInvoicesTable = ({ onProjectSaved }: { onProjectSaved?: () 
       "supplier"
     );
 
-    const preliminaryNotice = adjustForBusinessDays(rawDeadlines.preliminaryNotice);
-    const lienFiling = adjustForBusinessDays(rawDeadlines.lienFiling);
+    const preliminaryNoticeDate = adjustForBusinessDays(rawDeadlines.preliminaryNotice);
+    const lienFilingDate = adjustForBusinessDays(rawDeadlines.lienFiling);
+
+    // Calculate days remaining
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const pDate = new Date(preliminaryNoticeDate);
+    pDate.setHours(0, 0, 0, 0);
+    const prelimDays = Math.ceil((pDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    const lDate = new Date(lienFilingDate);
+    lDate.setHours(0, 0, 0, 0);
+    const lienDays = Math.ceil((lDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
     const payload = {
       project_name: invoice.customer_name,
@@ -144,10 +156,12 @@ export const ImportedInvoicesTable = ({ onProjectSaved }: { onProjectSaved?: () 
       invoice_amount: invoice.amount,
       project_type: invoice.project_type,
       status: "Active",
-      prelim_deadline: preliminaryNotice.deadline ? preliminaryNotice.deadline.toISOString().split('T')[0] : null,
-      lien_deadline: lienFiling.deadline ? lienFiling.deadline.toISOString().split('T')[0] : null,
-      reminder_1day: false,
-      reminder_7days: false,
+      prelim_deadline: preliminaryNoticeDate.toISOString().split('T')[0],
+      prelim_deadline_days: prelimDays,
+      lien_deadline: lienFilingDate.toISOString().split('T')[0],
+      lien_deadline_days: lienDays,
+      reminder_1day: true,
+      reminder_7days: true,
     };
 
     try {
