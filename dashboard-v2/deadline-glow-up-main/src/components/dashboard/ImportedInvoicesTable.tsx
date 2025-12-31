@@ -52,7 +52,7 @@ const US_STATES = [
   "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
 ];
 
-export const ImportedInvoicesTable = () => {
+export const ImportedInvoicesTable = ({ onProjectSaved }: { onProjectSaved?: () => void }) => {
   const { toast } = useToast();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -319,9 +319,9 @@ export const ImportedInvoicesTable = () => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                        <Info className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help" />
                       </TooltipTrigger>
-                      <TooltipContent className="max-w-[300px]">
+                      <TooltipContent className="max-w-[300px] z-50 bg-popover text-popover-foreground shadow-md border border-border">
                         <p>Deadlines are calculated based on the Invoice Creation Date (Work Date), not the Payment Due Date. Most state lien laws begin counting from the date services were performed.</p>
                       </TooltipContent>
                     </Tooltip>

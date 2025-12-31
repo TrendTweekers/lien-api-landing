@@ -101,7 +101,9 @@ function isHoliday(date: Date): boolean {
 }
 
 function isBusinessDay(date: Date): boolean {
-  return !isWeekend(date) && !isHoliday(date);
+  const day = date.getDay();
+  const isWeekend = day === 0 || day === 6; // 0=Sun, 6=Sat
+  return !isWeekend && !isHoliday(date);
 }
 
 function getNextBusinessDay(date: Date): Date {
@@ -116,16 +118,16 @@ function getNextBusinessDay(date: Date): Date {
 
 function calculateTexas(invoiceDate: Date, projectType: "residential" | "commercial"): { prelim: Date; lien: Date } {
   // Prelim:
-  // Commercial: 15th of 3rd month
-  // Residential: 15th of 2nd month
-  const prelimMonthOffset = projectType === "residential" ? 2 : 3;
+  // Commercial: 15th of 3rd month (Backend uses offset 2)
+  // Residential: 15th of 2nd month (Backend uses offset 1)
+  const prelimMonthOffset = projectType === "residential" ? 1 : 2;
   let prelim = setDate(addMonths(invoiceDate, prelimMonthOffset), 15);
   prelim = getNextBusinessDay(prelim);
 
   // Lien:
-  // Commercial: 15th of 4th month
-  // Residential: 15th of 3rd month
-  const lienMonthOffset = projectType === "residential" ? 3 : 4;
+  // Commercial: 15th of 4th month (Backend uses offset 3)
+  // Residential: 15th of 3rd month (Backend uses offset 2)
+  const lienMonthOffset = projectType === "residential" ? 2 : 3;
   let lien = setDate(addMonths(invoiceDate, lienMonthOffset), 15);
   lien = getNextBusinessDay(lien);
 
