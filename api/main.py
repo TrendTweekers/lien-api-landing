@@ -1288,6 +1288,18 @@ async def test_api():
         raise HTTPException(status_code=404, detail="test-api.html not found")
     return FileResponse(file_path, media_type="text/html")
 
+@app.get("/api/state-rules")
+async def get_state_rules():
+    """Return the state rules JSON configuration"""
+    if not STATE_RULES:
+        # Try reloading from disk if global dict is empty
+        try:
+            with open(BASE_DIR / "state_rules.json", 'r') as f:
+                return json.load(f)
+        except Exception:
+            raise HTTPException(status_code=404, detail="State rules not found")
+    return STATE_RULES
+
 @app.get("/health")
 def health():
     return {"status": "ok", "message": "API is running"}

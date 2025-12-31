@@ -3,6 +3,7 @@ import { Calendar, MapPin, Calculator, Save, AlertCircle, Building2 } from "luci
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { differenceInCalendarDays } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -80,6 +81,8 @@ export const DeadlineCalculator = () => {
   const [reminder1Day, setReminder1Day] = useState(false);
   const [reminder7Days, setReminder7Days] = useState(false);
 
+  const STATES_WITH_PROJECT_TYPE = ['TX', 'CA', 'FL', 'AZ', 'NV', 'MD', 'GA', 'MN', 'OR', 'WA'];
+
   const handleCalculate = async () => {
     if (!selectedState || !date) {
       toast({
@@ -109,15 +112,27 @@ export const DeadlineCalculator = () => {
       const data = await response.json();
       console.log("🔍 API Calculation Response:", data);
       
-      // Debug: Log the nested values we're trying to access
-      if (data.preliminary_notice) {
-        console.log("Prelim Days:", data.preliminary_notice.days_from_now);
-      }
-      if (data.lien_filing) {
-        console.log("Lien Days:", data.lien_filing.days_from_now);
-      }
+      // Normalize Data Mapping (Explicitly map Python snake_case to React expectations)
+      // CRITICAL: Do NOT calculate days client-side. Trust the API.
+      
+      const normalizedResult = {
+        preliminary_notice: {
+          deadline: data.preliminary_notice?.deadline || data.prelim_deadline || null,
+          days_from_now: data.preliminary_notice?.days_from_now ?? data.prelim_days_remaining ?? null,
+          required: !!(data.preliminary_notice?.deadline || data.prelim_deadline)
+        },
+        lien_filing: {
+          deadline: data.lien_filing?.deadline || data.lien_deadline || null,
+          days_from_now: data.lien_filing?.days_from_now ?? data.lien_days_remaining ?? null,
+          required: !!(data.lien_filing?.deadline || data.lien_deadline)
+        },
+        // Preserve original data for any other fields
+        ...data
+      };
+      
+      console.log("✅ Normalized Result:", normalizedResult);
 
-      setResult(data);
+      setResult(normalizedResult);
       toast({
         title: "Calculation Complete",
         description: "Deadlines have been updated.",
@@ -229,7 +244,7 @@ export const DeadlineCalculator = () => {
             </Select>
           </div>
 
-          {["TX", "CA", "FL", "AZ"].includes(selectedState) && (
+          {STATES_WITH_PROJECT_TYPE.includes(selectedState) && (
             <div className="space-y-2">
               <Label className="text-sm text-foreground flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -271,13 +286,21 @@ export const DeadlineCalculator = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 rounded-lg bg-accent/10 border border-accent/20">
                 <h3 className="font-semibold mb-1 text-accent-foreground">Preliminary Notice</h3>
-                <p className="text-2xl font-bold">{result.preliminary_notice.deadline}</p>
-                <p className="text-sm text-muted-foreground">{result.preliminary_notice.days_from_now} days remaining</p>
+                <p className="text-2xl font-bold">{result.preliminary_notice.deadline || "Not Required"}</p>
+                <p className="text-sm text-muted-foreground">
+                  {result.preliminary_notice.deadline 
+                    ? `${result.preliminary_notice.days_from_now !== null ? result.preliminary_notice.days_from_now : "N/A"} days remaining` 
+                    : "No notice required for this state"}
+                </p>
               </div>
               <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
                 <h3 className="font-semibold mb-1 text-destructive">Lien Filing</h3>
-                <p className="text-2xl font-bold">{result.lien_filing.deadline}</p>
-                <p className="text-sm text-muted-foreground">{result.lien_filing.days_from_now} days remaining</p>
+                <p className="text-2xl font-bold">{result.lien_filing.deadline || "Not Required"}</p>
+                <p className="text-sm text-muted-foreground">
+                  {result.lien_filing.deadline 
+                    ? `${result.lien_filing.days_from_now !== null ? result.lien_filing.days_from_now : "N/A"} days remaining` 
+                    : "Not required"}
+                </p>
               </div>
             </div>
 
