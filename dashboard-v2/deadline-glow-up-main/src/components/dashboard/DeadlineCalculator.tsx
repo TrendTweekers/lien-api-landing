@@ -313,18 +313,18 @@ export const DeadlineCalculator = () => {
                 <h3 className="font-semibold mb-1 text-accent-foreground">Preliminary Notice</h3>
                 <p className="text-2xl font-bold">{result.prelimDeadline || "Not Required"}</p>
                 <p className="text-sm text-muted-foreground">
-                  {result.prelimDeadline 
-                    ? `${result.prelimDays !== null ? result.prelimDays : "N/A"} days remaining` 
-                    : "No notice required for this state"}
+                  {result.prelimDays !== null && result.prelimDays !== undefined 
+                    ? `${result.prelimDays} days remaining` 
+                    : <span className="text-gray-400">Not Required</span>}
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
                 <h3 className="font-semibold mb-1 text-destructive">Lien Filing</h3>
                 <p className="text-2xl font-bold">{result.lienDeadline || "Not Required"}</p>
                 <p className="text-sm text-muted-foreground">
-                  {result.lienDeadline 
-                    ? `${result.lienDays !== null ? result.lienDays : "N/A"} days remaining` 
-                    : "Not required"}
+                  {result.lienDays !== null && result.lienDays !== undefined 
+                    ? `${result.lienDays} days remaining` 
+                    : <span className="text-gray-400">Not Required</span>}
                 </p>
               </div>
             </div>
