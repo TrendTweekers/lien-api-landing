@@ -121,7 +121,7 @@ export const ProjectsTable = () => {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent bg-muted/50">

@@ -200,12 +200,12 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
     if not code or not state:
         error_msg = f"Missing required parameters: code={bool(code)}, state={bool(state)}"
         print(f"❌ {error_msg}")
-        return RedirectResponse(url="/customer-dashboard.html?error=" + urlencode({"error": "Missing OAuth parameters"}))
+        return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": "Missing OAuth parameters"}))
     
     if not realm_id_value:
         error_msg = "Missing realmId parameter"
         print(f"❌ {error_msg}")
-        return RedirectResponse(url="/customer-dashboard.html?error=" + urlencode({"error": "Missing company ID"}))
+        return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": "Missing company ID"}))
     
     # Verify state and get user ID
     try:
@@ -227,7 +227,7 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
             if not result:
                 error_msg = "Invalid or expired OAuth state"
                 print(f"❌ {error_msg}")
-                return RedirectResponse(url="/customer-dashboard.html?error=" + urlencode({"error": error_msg}))
+                return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": error_msg}))
             
             # Extract user_id - handle both dict and tuple results
             if isinstance(result, dict):
@@ -272,7 +272,7 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
                 print(f"❌ QuickBooks token exchange failed:")
                 print(f"   Status: {response.status_code}")
                 print(f"   Response: {error_detail}")
-                return RedirectResponse(url="/customer-dashboard.html?error=" + urlencode({"error": "Failed to get access token"}))
+                return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": "Failed to get access token"}))
             
             tokens = response.json()
             print(f"✅ Token exchange successful")

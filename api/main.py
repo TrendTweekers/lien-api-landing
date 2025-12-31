@@ -5339,11 +5339,11 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
             content={"message": str(e)}
         )
 
-@app.post("/api/manual-trigger-reminders")
-async def trigger_reminders_manual(background_tasks: BackgroundTasks):
-    """Manually trigger the daily reminder check."""
+@app.get("/api/debug-trigger-reminders")
+async def debug_trigger_reminders(background_tasks: BackgroundTasks):
+    """Manually trigger daily reminders (GET for easy testing)."""
     background_tasks.add_task(send_daily_reminders)
-    return {"status": "success", "message": "Reminder check started in background."}
+    return {"status": "success", "message": "Reminders triggered!"}
 
 if __name__ == "__main__":
     import uvicorn
