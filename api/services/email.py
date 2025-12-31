@@ -34,6 +34,7 @@ def send_email_sync(to_email: str, subject: str, content: str, is_html: bool = T
     try:
         resend_key = os.environ.get("RESEND_API_KEY")
         if resend_key and RESEND_AVAILABLE:
+            print(f"📧 ATTEMPTING RESEND to {to_email}...")
             resend.api_key = resend_key
             from_email = os.environ.get("SMTP_FROM_EMAIL", "onboarding@resend.dev")
             
@@ -49,9 +50,11 @@ def send_email_sync(to_email: str, subject: str, content: str, is_html: bool = T
                 params["text"] = content
                 
             response = resend.Emails.send(params)
+            print(f"✅ RESEND SUCCESS: {response}")
             logger.info(f"✅ Email sent via Resend to {to_email}: {response.get('id', 'N/A')}")
             return True
     except Exception as e:
+        print(f"⚠️ RESEND FAILED: {e}. Falling back to SMTP...")
         logger.warning(f"⚠️ Resend failed, trying SMTP: {e}")
 
     # 2. Fallback to SMTP
@@ -60,13 +63,19 @@ def send_email_sync(to_email: str, subject: str, content: str, is_html: bool = T
         smtp_port = int(os.getenv("SMTP_PORT", "587"))
         smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_EMAIL")
         smtp_password = (os.getenv("SMTP_PASSWORD") or "").replace(" ", "")
+        
+        # Use explicit From address if set, otherwise default to user
+        smtp_from = os.getenv("SMTP_FROM_EMAIL") or smtp_user
+
+        print(f"📧 ATTEMPTING SMTP to {to_email} via {smtp_server}:{smtp_port}...")
+        print(f"📧 From: {smtp_from}")
 
         if not smtp_user or not smtp_password:
             logger.warning("⚠️ SMTP credentials not configured")
             return False
 
         msg = MIMEMultipart('alternative')
-        msg["From"] = smtp_user
+        msg["From"] = smtp_from
         msg["To"] = to_email
         msg["Subject"] = subject
         
@@ -75,14 +84,20 @@ def send_email_sync(to_email: str, subject: str, content: str, is_html: bool = T
         else:
             msg.attach(MIMEText(content, "plain"))
 
-        # timeout=10 prevents hangs
-        with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
+        print("📧 Connecting to SMTP server...")
+        with smtplib.SMTP(smtp_server, smtp_port, timeout=20) as server:
             server.ehlo()
+            print("📧 SMTP EHLO success.")
             server.starttls(context=ssl.create_default_context())
+            print("📧 SMTP STARTTLS success.")
             server.ehlo()
+            print(f"📧 Logging in as {smtp_user}...")
             server.login(smtp_user, smtp_password)
+            print("📧 SMTP Login success. Sending message...")
             server.send_message(msg)
+            print("✅ SMTP SEND_MESSAGE success.")
             
+        print("✅ EMAIL SENT SUCCESSFULLY.")
         logger.info(f"✅ Email sent via SMTP to {to_email}")
         return True
         
