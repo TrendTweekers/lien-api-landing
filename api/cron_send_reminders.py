@@ -355,7 +355,7 @@ def send_reminder_email(reminder):
                                 <table width="100%" cellpadding="0" cellspacing="0">
                                     <tr>
                                         <td align="center" style="padding:20px 0;">
-                                            <a href="https://liendeadline.com/customer-dashboard" 
+                                            <a href="https://liendeadline.com/dashboard-v2" 
                                                style="display:inline-block; background-color:#f97316; color:white; text-decoration:none; padding:14px 28px; border-radius:6px; font-weight:600; font-size:16px; margin:0 5px;">
                                                 View Dashboard
                                             </a>
@@ -379,7 +379,7 @@ def send_reminder_email(reminder):
                                 </p>
                                 <p style="margin:0; font-size:11px; color:#9ca3af; text-align:center;">
                                     You're receiving this because you set a reminder at LienDeadline.com<br>
-                                    <a href="https://liendeadline.com/customer-dashboard" style="color:#9ca3af;">Manage your reminders</a>
+                                    <a href="https://liendeadline.com/dashboard-v2" style="color:#9ca3af;">Manage your reminders</a>
                                 </p>
                             </td>
                         </tr>

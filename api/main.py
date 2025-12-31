@@ -5136,7 +5136,7 @@ async def procore_callback(code: str, state: str):
                 conn.commit()
             
             # Redirect to customer dashboard with success message
-            return RedirectResponse(url="/customer-dashboard.html?procore_connected=true")
+            return RedirectResponse(url="/dashboard-v2?procore_connected=true")
             
     except httpx.HTTPError as e:
         print(f"HTTP error during Procore token exchange: {e}")
@@ -5294,8 +5294,7 @@ async def serve_state_guide(state: str):
             return FileResponse(str(index_file))
     raise HTTPException(status_code=404, detail="State guide not found")
 
-if public_dir.exists():
-    app.mount("/", StaticFiles(directory=str(public_dir), html=True), name="public")
+
 
 
 # Stripe Checkout Session Endpoint
@@ -5341,9 +5340,18 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
 
 @app.get("/api/debug-trigger-reminders")
 async def debug_trigger_reminders(background_tasks: BackgroundTasks):
-    """Manually trigger daily reminders (GET for easy testing)."""
+    from api.cron_send_reminders import send_daily_reminders
     background_tasks.add_task(send_daily_reminders)
-    return {"status": "success", "message": "Reminders triggered!"}
+    return {"status": "success", "message": "Reminders triggered! (Version 2)"}
+
+# Serve static files from public directory - MUST BE LAST
+if public_dir.exists():
+    app.mount("/", StaticFiles(directory=str(public_dir), html=True), name="public")
+
+# Log startup
+import logging
+logger = logging.getLogger("uvicorn")
+logger.info("🚀 SERVER RESTART: Patch V2 Applied")
 
 if __name__ == "__main__":
     import uvicorn
