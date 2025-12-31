@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { RefreshCw, Save } from "lucide-react";
+import { RefreshCw, Save, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,6 +11,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -18,6 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+
+import { calculateStateDeadline } from "@/utils/deadlineCalculator";
 
 interface Invoice {
   id: string;
@@ -52,64 +60,31 @@ export const ImportedInvoicesTable = () => {
 
   const calculateDeadlines = (invoiceDateStr: string, type: "Commercial" | "Residential", state: string) => {
     const invoiceDate = new Date(invoiceDateStr);
-    const year = invoiceDate.getFullYear();
-    const month = invoiceDate.getMonth(); // 0-indexed
-
-    let prelimDate: Date;
-    let lienDate: Date;
-
-    // Logic based on State Rules
-    if (state === "TX") {
-      // Standard Texas Rules
-      // Commercial: Prelim (15th of 3rd month), Lien (15th of 4th month)
-      // Residential: Prelim (15th of 2nd month), Lien (15th of 3rd month)
-      if (type === "Commercial") {
-        prelimDate = new Date(year, month + 2, 15);
-        lienDate = new Date(year, month + 3, 15);
-      } else {
-        prelimDate = new Date(year, month + 1, 15);
-        lienDate = new Date(year, month + 2, 15);
-      }
-    } else if (state === "CA" || state === "FL") {
-      // California & Florida (Simplified: 90 days from Invoice Date)
-      // Note: Real rules are more complex (e.g. CA is 20 days prelim, 90 days lien from completion)
-      // But for this demo/requirement: 90 days from invoice.
-      const date90 = new Date(invoiceDate);
-      date90.setDate(date90.getDate() + 90);
-      
-      prelimDate = date90; // Using same date for simplicity or maybe prelim should be earlier? 
-      // User said: "90 days from Invoice Date" for CA/FL. 
-      // Usually this refers to Lien deadline. 
-      // For Prelim, CA is 20 days. But user instructions were "CA: 90 days... FL: 90 days...".
-      // Let's assume 90 days is the Lien Deadline.
-      // For Prelim, let's just set it to 20 days for CA/FL as a reasonable default if not specified, 
-      // or just make them both 90 if that's the "simplified rule".
-      // Let's stick to the user's specific text: "90 days from Invoice Date (Simplified rule for demo)."
-      lienDate = date90;
-      
-      // Setting prelim to same or slightly earlier to avoid nulls. 
-      // Let's say 20 days for Prelim (common in many states)
-      const date20 = new Date(invoiceDate);
-      date20.setDate(date20.getDate() + 20);
-      prelimDate = date20;
-    } else {
-      // Default / Other States: 90 Day Rule
-      const date90 = new Date(invoiceDate);
-      date90.setDate(date90.getDate() + 90);
-      lienDate = date90;
-      
-      const date20 = new Date(invoiceDate);
-      date20.setDate(date20.getDate() + 20);
-      prelimDate = date20;
-    }
+    
+    // Use the shared utility for Single Source of Truth
+    const { preliminaryNotice, lienFiling } = calculateStateDeadline(
+      state, 
+      invoiceDate, 
+      type.toLowerCase() as "commercial" | "residential",
+      "supplier" // Defaulting to supplier role for imported invoices
+    );
 
     const today = new Date();
-    const prelimDays = Math.ceil((prelimDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    const lienDays = Math.ceil((lienDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    // Normalize to start of day for accurate calculation
+    today.setHours(0, 0, 0, 0);
+    
+    const pDate = new Date(preliminaryNotice);
+    pDate.setHours(0, 0, 0, 0);
+    
+    const lDate = new Date(lienFiling);
+    lDate.setHours(0, 0, 0, 0);
+
+    const prelimDays = Math.ceil((pDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const lienDays = Math.ceil((lDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
     return {
-      preliminary_deadline: prelimDate.toISOString(),
-      lien_deadline: lienDate.toISOString(),
+      preliminary_deadline: preliminaryNotice.toISOString(),
+      lien_deadline: lienFiling.toISOString(),
       prelim_days_remaining: prelimDays,
       lien_days_remaining: lienDays
     };
@@ -280,7 +255,21 @@ export const ImportedInvoicesTable = () => {
             <TableRow className="border-border hover:bg-transparent bg-muted/50">
               <TableHead className="text-foreground font-semibold">Invoice #</TableHead>
               <TableHead className="text-foreground font-semibold">Customer</TableHead>
-              <TableHead className="text-foreground font-semibold">Date</TableHead>
+              <TableHead className="text-foreground font-semibold">
+                <div className="flex items-center gap-1">
+                  Date
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[300px]">
+                        <p>Deadlines are calculated based on the Invoice Creation Date (Work Date), not the Payment Due Date. Most state lien laws begin counting from the date services were performed.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </TableHead>
               <TableHead className="text-foreground font-semibold">Amount</TableHead>
               <TableHead className="text-foreground font-semibold">State</TableHead>
               <TableHead className="text-foreground font-semibold">Type</TableHead>
