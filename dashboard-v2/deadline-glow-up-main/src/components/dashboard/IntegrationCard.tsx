@@ -8,6 +8,7 @@ interface IntegrationCardProps {
   icon: React.ReactNode;
   gradient: string;
   connected?: boolean;
+  onConnect?: () => void;
 }
 
 export const IntegrationCard = ({
@@ -16,6 +17,7 @@ export const IntegrationCard = ({
   icon,
   gradient,
   connected = false,
+  onConnect,
 }: IntegrationCardProps) => {
   return (
     <div className="bg-card rounded-xl p-6 border border-border hover-lift card-shadow group">
@@ -47,6 +49,7 @@ export const IntegrationCard = ({
       <Button
         className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
         size="sm"
+        onClick={onConnect}
       >
         {connected ? "Manage" : `Connect ${name.split(" ")[0]}`}
       </Button>

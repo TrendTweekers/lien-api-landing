@@ -1535,7 +1535,7 @@ async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
             cursor = get_db_cursor(conn)
             if PAYOUT_LEDGER_AVAILABLE:
                 ledgers = compute_all_brokers_ledgers(cursor, DB_TYPE)
-                return [l.to_dict() for l in ledgers.values() if l.total_due_now > 0]
+                return [l.to_dict() for l in ledgers if l.total_due_now > 0]
             else:
                 return []
     except Exception as e:

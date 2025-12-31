@@ -13,6 +13,7 @@ import httpx
 from urllib.parse import urlencode
 from api.database import get_db, get_db_cursor, DB_TYPE
 from api.routers.auth import get_current_user
+from api.calculators import calculate_state_deadline
 
 router = APIRouter()
 
@@ -591,7 +592,53 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
             
             # Format invoices for frontend
             formatted_invoices = []
+            today = datetime.now().date()
+            
             for inv in invoices:
+                # Extract state from shipping or billing address
+                state = "TX"  # Default
+                
+                # Try ShipAddr first (job site)
+                if inv.get("ShipAddr") and inv.get("ShipAddr", {}).get("CountrySubDivisionCode"):
+                    state = inv.get("ShipAddr", {}).get("CountrySubDivisionCode")
+                # Fallback to BillAddr
+                elif inv.get("BillAddr") and inv.get("BillAddr", {}).get("CountrySubDivisionCode"):
+                    state = inv.get("BillAddr", {}).get("CountrySubDivisionCode")
+                
+                # Calculate deadlines
+                try:
+                    invoice_date_str = inv.get("TxnDate")
+                    invoice_date = datetime.strptime(invoice_date_str, "%Y-%m-%d")
+                    
+                    deadlines = calculate_state_deadline(
+                        state_code=state,
+                        invoice_date=invoice_date
+                    )
+                    
+                    prelim_deadline = deadlines.get("preliminary_deadline")
+                    lien_deadline = deadlines.get("lien_deadline")
+                    
+                    # Calculate days remaining
+                    prelim_days = None
+                    if prelim_deadline:
+                        prelim_days = (prelim_deadline.date() - today).days
+                        
+                    lien_days = None
+                    if lien_deadline:
+                        lien_days = (lien_deadline.date() - today).days
+                        
+                    # Format dates for JSON
+                    prelim_str = prelim_deadline.strftime("%Y-%m-%d") if prelim_deadline else None
+                    lien_str = lien_deadline.strftime("%Y-%m-%d") if lien_deadline else None
+                    
+                except Exception as e:
+                    print(f"Error calculating deadlines for invoice {inv.get('DocNumber')}: {e}")
+                    prelim_str = None
+                    lien_str = None
+                    prelim_days = None
+                    lien_days = None
+                    state = "Unknown"
+
                 formatted_invoices.append({
                     "id": inv.get("Id"),
                     "invoice_number": inv.get("DocNumber"),
@@ -599,7 +646,12 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                     "customer_name": inv.get("CustomerRef", {}).get("name", "Unknown"),
                     "amount": float(inv.get("TotalAmt", 0)),
                     "balance": float(inv.get("Balance", 0)),
-                    "status": "Unpaid" if float(inv.get("Balance", 0)) > 0 else "Paid"
+                    "status": "Unpaid" if float(inv.get("Balance", 0)) > 0 else "Paid",
+                    "state": state,
+                    "preliminary_deadline": prelim_str,
+                    "lien_deadline": lien_str,
+                    "prelim_days_remaining": prelim_days,
+                    "lien_days_remaining": lien_days
                 })
             
             return {

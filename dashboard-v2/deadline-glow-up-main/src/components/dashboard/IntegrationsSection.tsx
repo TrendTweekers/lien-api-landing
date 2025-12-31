@@ -12,6 +12,7 @@ const integrations = [
     ),
     icon: "Q",
     gradient: "bg-gradient-to-br from-blue-500 to-blue-600",
+    onConnect: () => window.location.href = '/api/quickbooks/connect',
   },
   {
     name: "Sage Integration",
@@ -48,6 +49,7 @@ export const IntegrationsSection = () => {
             description={integration.description}
             icon={integration.icon}
             gradient={integration.gradient}
+            onConnect={integration.onConnect}
           />
         ))}
       </div>

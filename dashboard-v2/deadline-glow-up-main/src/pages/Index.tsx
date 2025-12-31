@@ -9,6 +9,7 @@ import { UsageStats } from "@/components/dashboard/UsageStats";
 import { BillingSection } from "@/components/dashboard/BillingSection";
 import { PartnerProgram } from "@/components/dashboard/PartnerProgram";
 import { ApiDocs } from "@/components/dashboard/ApiDocs";
+import { ImportedInvoicesTable } from "@/components/dashboard/ImportedInvoicesTable";
 
 const Index = () => {
   useEffect(() => {
@@ -58,6 +59,9 @@ const Index = () => {
           <div className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
             <IntegrationsSection />
           </div>
+
+          {/* Imported Invoices Table */}
+          <ImportedInvoicesTable />
 
           {/* Projects Table */}
           <div className="animate-slide-up" style={{ animationDelay: "0.25s" }}>
