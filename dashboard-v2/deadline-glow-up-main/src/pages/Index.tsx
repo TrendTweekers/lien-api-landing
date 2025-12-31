@@ -16,7 +16,7 @@ const Index = () => {
     // Check for session token and verify session
     const token = localStorage.getItem('session_token');
     if (!token) {
-      window.location.href = '/login.html';
+      window.location.href = '/';
       return;
     }
     
@@ -24,10 +24,10 @@ const Index = () => {
       headers: { 'Authorization': `Bearer ${token}` }
     }).then(res => {
       if (!res.ok) {
-        window.location.href = '/login.html';
+        window.location.href = '/';
       }
     }).catch(() => {
-      window.location.href = '/login.html';
+      window.location.href = '/';
     });
   }, []);
 

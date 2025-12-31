@@ -2590,7 +2590,7 @@ async def serve_calculator_embed():
 async def serve_dashboard():
     """Redirect old dashboard to new customer dashboard"""
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/customer-dashboard.html", status_code=301)
+    return RedirectResponse(url="/dashboard-v2", status_code=301)
 
 @app.get("/index.html")
 async def serve_index():
@@ -2768,22 +2768,10 @@ async def serve_terms_html():
 @app.get("/customer-dashboard.html")
 async def serve_customer_dashboard_html(request: Request):
     """
-    Customer dashboard HTML - block brokers from accessing.
+    Legacy Customer dashboard HTML - Redirect to V2
     """
-    # Check if user is a broker (via email in query params)
-    email = request.query_params.get('email', '').strip()
-    
-    # Block brokers from accessing customer dashboard
-    if email and is_broker_email(email):
-        raise HTTPException(
-            status_code=403,
-            detail="Brokers cannot access customer dashboard. Please use /broker-dashboard"
-        )
-    
-    file_path = BASE_DIR / "customer-dashboard.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="customer-dashboard.html not found in project root")
-    return FileResponse(file_path)
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/dashboard-v2", status_code=301)
 
 @app.get("/comparison.html")
 async def serve_comparison_html():
@@ -2886,10 +2874,10 @@ async def serve_calculator_clean():
 @app.get("/dashboard")
 async def serve_dashboard_clean(request: Request):
     """
-    Clean URL: /dashboard → redirects to /customer-dashboard
+    Clean URL: /dashboard → redirects to /dashboard-v2
     """
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/customer-dashboard", status_code=301)
+    return RedirectResponse(url="/dashboard-v2", status_code=301)
 
 
 @app.get("/broker-dashboard")
@@ -5536,6 +5524,19 @@ async def force_test_email(to: str):
         return {"status": "success", "message": f"Sent real template preview to {to}"}
     else:
         return {"status": "error", "message": "Email function returned False"}
+
+# Serve static files from public directory - MUST BE LAST
+if public_dir.exists():
+    app.mount("/", StaticFiles(directory=str(public_dir), html=True), name="public")
+
+# Log startup
+import logging
+logger = logging.getLogger("uvicorn")
+logger.info("🚀 SERVER RESTART: Patch V2 Applied")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 
 # Serve static files from public directory - MUST BE LAST
 if public_dir.exists():
