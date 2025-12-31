@@ -67,6 +67,19 @@ const US_STATES = [
   { name: "Wyoming", code: "WY" }
 ];
 
+const STATE_TO_ABBR: Record<string, string> = {
+  "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR", "California": "CA",
+  "Colorado": "CO", "Connecticut": "CT", "Delaware": "DE", "Florida": "FL", "Georgia": "GA",
+  "Hawaii": "HI", "Idaho": "ID", "Illinois": "IL", "Indiana": "IN", "Iowa": "IA",
+  "Kansas": "KS", "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME", "Maryland": "MD",
+  "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN", "Mississippi": "MS", "Missouri": "MO",
+  "Montana": "MT", "Nebraska": "NE", "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ",
+  "New Mexico": "NM", "New York": "NY", "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH",
+  "Oklahoma": "OK", "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI", "South Carolina": "SC",
+  "South Dakota": "SD", "Tennessee": "TN", "Texas": "TX", "Utah": "UT", "Vermont": "VT",
+  "Virginia": "VA", "Washington": "WA", "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY"
+};
+
 export const DeadlineCalculator = () => {
   const { toast } = useToast();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -82,6 +95,10 @@ export const DeadlineCalculator = () => {
   const [reminder7Days, setReminder7Days] = useState(false);
 
   const STATES_WITH_PROJECT_TYPE = ['TX', 'CA', 'FL', 'AZ', 'NV', 'MD', 'GA', 'MN', 'OR', 'WA'];
+  
+  // Resolve state abbreviation
+  const stateAbbr = STATE_TO_ABBR[selectedState] || selectedState;
+  const showDropdown = STATES_WITH_PROJECT_TYPE.includes(stateAbbr);
 
   const handleCalculate = async () => {
     if (!selectedState || !date) {
@@ -101,7 +118,7 @@ export const DeadlineCalculator = () => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          state: selectedState,
+          state: stateAbbr, // Use the abbreviation
           invoice_date: date,
           project_type: projectType
         })
@@ -112,27 +129,13 @@ export const DeadlineCalculator = () => {
       const data = await response.json();
       console.log("🔍 API Calculation Response:", data);
       
-      // Normalize Data Mapping (Explicitly map Python snake_case to React expectations)
-      // CRITICAL: Do NOT calculate days client-side. Trust the API.
+      setResult({
+        prelimDeadline: data.preliminary_notice.deadline,
+        prelimDays: data.preliminary_notice.days_from_now,
+        lienDeadline: data.lien_filing.deadline,
+        lienDays: data.lien_filing.days_from_now
+      });
       
-      const normalizedResult = {
-        preliminary_notice: {
-          deadline: data.preliminary_notice?.deadline || data.prelim_deadline || null,
-          days_from_now: data.preliminary_notice?.days_from_now ?? data.prelim_days_remaining ?? null,
-          required: !!(data.preliminary_notice?.deadline || data.prelim_deadline)
-        },
-        lien_filing: {
-          deadline: data.lien_filing?.deadline || data.lien_deadline || null,
-          days_from_now: data.lien_filing?.days_from_now ?? data.lien_days_remaining ?? null,
-          required: !!(data.lien_filing?.deadline || data.lien_deadline)
-        },
-        // Preserve original data for any other fields
-        ...data
-      };
-      
-      console.log("✅ Normalized Result:", normalizedResult);
-
-      setResult(normalizedResult);
       toast({
         title: "Calculation Complete",
         description: "Deadlines have been updated.",
@@ -161,14 +164,14 @@ export const DeadlineCalculator = () => {
         method: "POST",
         headers,
         body: JSON.stringify({
-          state: selectedState,
+          state: stateAbbr, // Use abbreviation
           invoice_date: date,
           project_name: projectName || "Unnamed Project",
           client_name: clientName || "Client",
           invoiceAmount: parseFloat(amount) || 0,
           description: notes,
-          prelim_deadline: result.preliminary_notice.deadline,
-          lien_deadline: result.lien_filing.deadline,
+          prelim_deadline: result.prelimDeadline,
+          lien_deadline: result.lienDeadline,
           reminder_1day: reminder1Day ? 1 : 0,
           reminder_7days: reminder7Days ? 1 : 0
         })
@@ -244,7 +247,7 @@ export const DeadlineCalculator = () => {
             </Select>
           </div>
 
-          {STATES_WITH_PROJECT_TYPE.includes(selectedState) && (
+          {showDropdown && (
             <div className="space-y-2">
               <Label className="text-sm text-foreground flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -286,19 +289,19 @@ export const DeadlineCalculator = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 rounded-lg bg-accent/10 border border-accent/20">
                 <h3 className="font-semibold mb-1 text-accent-foreground">Preliminary Notice</h3>
-                <p className="text-2xl font-bold">{result.preliminary_notice.deadline || "Not Required"}</p>
+                <p className="text-2xl font-bold">{result.prelimDeadline || "Not Required"}</p>
                 <p className="text-sm text-muted-foreground">
-                  {result.preliminary_notice.deadline 
-                    ? `${result.preliminary_notice.days_from_now !== null ? result.preliminary_notice.days_from_now : "N/A"} days remaining` 
+                  {result.prelimDeadline 
+                    ? `${result.prelimDays !== null ? result.prelimDays : "N/A"} days remaining` 
                     : "No notice required for this state"}
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
                 <h3 className="font-semibold mb-1 text-destructive">Lien Filing</h3>
-                <p className="text-2xl font-bold">{result.lien_filing.deadline || "Not Required"}</p>
+                <p className="text-2xl font-bold">{result.lienDeadline || "Not Required"}</p>
                 <p className="text-sm text-muted-foreground">
-                  {result.lien_filing.deadline 
-                    ? `${result.lien_filing.days_from_now !== null ? result.lien_filing.days_from_now : "N/A"} days remaining` 
+                  {result.lienDeadline 
+                    ? `${result.lienDays !== null ? result.lienDays : "N/A"} days remaining` 
                     : "Not required"}
                 </p>
               </div>
