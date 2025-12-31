@@ -1112,7 +1112,7 @@ async def force_db_fix():
 # Include routers with full paths to match frontend calls
 app.include_router(analytics_router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(admin_router, tags=["admin"])
-app.include_router(quickbooks_router, tags=["quickbooks"])
+app.include_router(quickbooks_router, prefix="/api/quickbooks", tags=["quickbooks"])
 app.include_router(calculations_router, tags=["calculations"])
 app.include_router(auth.router, tags=["auth"])
 app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
@@ -5346,21 +5346,196 @@ async def debug_trigger_reminders(background_tasks: BackgroundTasks):
 
 @app.get("/api/force-test-email")
 async def force_test_email(to: str):
-    """Forces a test email to verify SMTP delivery."""
+    """
+    Force send a test email with the REAL reminder template.
+    """
     from api.services.email import send_email_sync
-    try:
-        result = send_email_sync(
-            to_email=to,
-            subject="🔥 LienDeadline V2 Test",
-            content="<h1>It Works!</h1><p>Your email system is fully operational.</p>",
-            is_html=True
-        )
-        if result:
-            return {"status": "success", "message": f"Sent to {to}"}
-        else:
-            return {"status": "error", "message": "Email function returned False"}
-    except Exception as e:
-        return {"status": "error", "error": str(e)}
+    from datetime import date, timedelta
+    
+    # Dummy data for preview
+    project_name = "Test Construction Project"
+    client_name = "Acme Builders Inc."
+    amount = 15450.00
+    state = "Texas"
+    deadline_type_display = "Preliminary Notice"
+    deadline_date = date.today() + timedelta(days=3)
+    formatted_deadline = deadline_date.strftime('%B %d, %Y')
+    day_of_week = deadline_date.strftime('%A')
+    days_until = 3
+    urgency = "🟡 SOON"
+    urgency_color = "#f59e0b"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color:#f3f4f6;">
+        
+        <!-- Main Container -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6; padding:20px 0;">
+            <tr>
+                <td align="center">
+                    
+                    <!-- Email Card -->
+                    <table width="600" cellpadding="0" cellspacing="0" style="background-color:white; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1); overflow:hidden;">
+                        
+                        <!-- Header -->
+                        <tr>
+                            <td style="background-color:#1e3a8a; padding:30px; text-align:center;">
+                                <h1 style="margin:0; color:white; font-size:24px; font-weight:600;">
+                                    ⚠️ Lien Deadline Reminder
+                                </h1>
+                                <p style="margin:10px 0 0 0; color:#e0e7ff; font-size:14px;">
+                                    {{urgency}} - {{days_until}} days remaining
+                                </p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Body -->
+                        <tr>
+                            <td style="padding:40px 30px;">
+                                
+                                <!-- Greeting -->
+                                <p style="margin:0 0 20px 0; font-size:16px; color:#374151;">
+                                    Your <strong>{{deadline_type_display}}</strong> deadline is coming up:
+                                </p>
+                                
+                                <!-- Project Details Box -->
+                                <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb; border:2px solid #e5e7eb; border-radius:8px; margin-bottom:30px;">
+                                    <tr>
+                                        <td style="padding:20px;">
+                                            <h2 style="margin:0 0 15px 0; font-size:18px; color:#1e3a8a;">
+                                                📋 Project Details
+                                            </h2>
+                                            
+                                            <table width="100%" cellpadding="8" cellspacing="0">
+                                                <tr>
+                                                    <td style="color:#6b7280; font-weight:600; width:140px;">Project:</td>
+                                                    <td style="color:#111827; font-weight:600;">{{project_name}}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="color:#6b7280; font-weight:600;">Client:</td>
+                                                    <td style="color:#111827;">{{client_name}}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="color:#6b7280; font-weight:600;">Amount:</td>
+                                                    <td style="color:#111827;">${{amount:,.2f}}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="color:#6b7280; font-weight:600;">State:</td>
+                                                    <td style="color:#111827;">{{state}}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                                
+                                <!-- Deadline Info Box -->
+                                <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#fef2f2; border:2px solid {{urgency_color}}; border-radius:8px; margin-bottom:30px;">
+                                    <tr>
+                                        <td style="padding:20px;">
+                                            <h2 style="margin:0 0 15px 0; font-size:18px; color:{{urgency_color}};">
+                                                ⏰ Deadline Information
+                                            </h2>
+                                            
+                                            <table width="100%" cellpadding="8" cellspacing="0">
+                                                <tr>
+                                                    <td style="color:#6b7280; font-weight:600; width:140px;">Deadline Type:</td>
+                                                    <td style="color:#111827; font-weight:600;">{{deadline_type_display}}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="color:#6b7280; font-weight:600;">Due Date:</td>
+                                                    <td style="color:{{urgency_color}}; font-weight:700; font-size:18px;">
+                                                        {{formatted_deadline}} ({{day_of_week}})
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="color:#6b7280; font-weight:600;">Days Left:</td>
+                                                    <td style="color:{{urgency_color}}; font-weight:700; font-size:18px;">
+                                                        {{days_until}} days
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                                
+                                <!-- Notes -->
+                                <div style="background-color:#fffbeb; border-left:4px solid #f59e0b; padding:15px; margin-bottom:30px;">
+                                    <p style="margin:0; color:#92400e; font-size:14px;">
+                                        <strong>📝 Your Notes:</strong><br>
+                                        This is a test reminder email to verify the template layout.
+                                    </p>
+                                </div>
+                                
+                                <!-- Action Buttons -->
+                                <table width="100%" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td align="center" style="padding:20px 0;">
+                                            <a href="https://liendeadline.com/dashboard-v2" 
+                                               style="display:inline-block; background-color:#f97316; color:white; text-decoration:none; padding:14px 28px; border-radius:6px; font-weight:600; font-size:16px; margin:0 5px;">
+                                                View Dashboard
+                                            </a>
+                                            <a href="#" 
+                                               style="display:inline-block; background-color:#3b82f6; color:white; text-decoration:none; padding:14px 28px; border-radius:6px; font-weight:600; font-size:16px; margin:0 5px;">
+                                                Download PDF Guide
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                                
+                            </td>
+                        </tr>
+                        
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color:#f9fafb; padding:20px 30px; border-top:1px solid #e5e7eb;">
+                                <p style="margin:0 0 10px 0; font-size:12px; color:#6b7280; text-align:center;">
+                                    Questions? Reply to this email or visit 
+                                    <a href="https://liendeadline.com/help" style="color:#f97316;">our help center</a>
+                                </p>
+                                <p style="margin:0; font-size:11px; color:#9ca3af; text-align:center;">
+                                    You're receiving this because you set a reminder at LienDeadline.com<br>
+                                    <a href="https://liendeadline.com/dashboard-v2" style="color:#9ca3af;">Manage your reminders</a>
+                                </p>
+                            </td>
+                        </tr>
+                        
+                    </table>
+                    
+                </td>
+            </tr>
+        </table>
+        
+    </body>
+    </html>
+    """.format(
+        urgency=urgency,
+        days_until=days_until,
+        deadline_type_display=deadline_type_display,
+        project_name=project_name,
+        client_name=client_name,
+        amount=amount,
+        state=state,
+        urgency_color=urgency_color,
+        formatted_deadline=formatted_deadline,
+        day_of_week=day_of_week
+    )
+    
+    result = send_email_sync(
+        to_email=to,
+        subject="[PREVIEW] Lien Deadline Reminder",
+        content=html_content,
+        is_html=True
+    )
+    
+    if result:
+        return {"status": "success", "message": f"Sent real template preview to {to}"}
+    else:
+        return {"status": "error", "message": "Email function returned False"}
 
 # Serve static files from public directory - MUST BE LAST
 if public_dir.exists():

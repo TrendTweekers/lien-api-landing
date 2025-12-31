@@ -72,7 +72,7 @@ def get_user_from_session(authorization: str = Header(None)):
     return None
 
 
-@router.get("/api/quickbooks/connect")
+@router.get("/connect")
 async def quickbooks_connect(request: Request):
     """
     Initiate QuickBooks OAuth flow
@@ -123,6 +123,19 @@ async def quickbooks_connect(request: Request):
                 return RedirectResponse(url="/dashboard?error=Subscription expired")
             
             user = {"id": user_id, "email": user_email}
+
+            # Check if already connected
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT expires_at FROM quickbooks_tokens WHERE user_id = %s", (user_id,))
+            else:
+                cursor.execute("SELECT expires_at FROM quickbooks_tokens WHERE user_id = ?", (user_id,))
+            
+            existing_token = cursor.fetchone()
+            if existing_token:
+                # User is already connected, redirect to dashboard
+                print(f"ℹ️ User {user_id} already connected to QuickBooks. Redirecting.")
+                return RedirectResponse(url=f"/dashboard-v2?qb_connected=true&already_connected=true")
+
     except Exception as e:
         print(f"Error looking up user: {e}")
         return RedirectResponse(url="/dashboard?error=Authentication failed")
@@ -176,7 +189,7 @@ async def quickbooks_connect(request: Request):
     return RedirectResponse(url=auth_url)
 
 
-@router.get("/api/quickbooks/callback")
+@router.get("/callback")
 async def quickbooks_callback(request: Request, code: str = None, state: str = None, realmId: str = None, realm_id: str = None):
     """
     Handle OAuth callback from QuickBooks
@@ -482,7 +495,7 @@ async def get_valid_access_token(user_id: int):
         return None
 
 
-@router.get("/api/quickbooks/invoices")
+@router.get("/invoices")
 async def get_quickbooks_invoices(request: Request, current_user: dict = Depends(get_current_user)):
     """
     Fetch invoices from QuickBooks for the logged-in user
@@ -669,7 +682,7 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
         raise HTTPException(status_code=500, detail="Unexpected error fetching invoices")
 
 
-@router.get("/api/quickbooks/status")
+@router.get("/status")
 async def get_quickbooks_status(request: Request, authorization: str = Header(None)):
     """Check if user has QuickBooks connected"""
     user = get_user_from_session(authorization)
@@ -700,7 +713,7 @@ async def get_quickbooks_status(request: Request, authorization: str = Header(No
     return {"connected": False}
 
 
-@router.post("/api/quickbooks/disconnect")
+@router.post("/disconnect")
 async def disconnect_quickbooks(request: Request, current_user: dict = Depends(get_current_user)):
     """Disconnect QuickBooks account"""
     user = current_user
