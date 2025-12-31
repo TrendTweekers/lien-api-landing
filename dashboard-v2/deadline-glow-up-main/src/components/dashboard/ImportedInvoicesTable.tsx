@@ -431,5 +431,6 @@ export const ImportedInvoicesTable = ({ onProjectSaved }: { onProjectSaved?: () 
         </Table>
       </div>
     </div>
+    </TooltipProvider>
   );
 };
