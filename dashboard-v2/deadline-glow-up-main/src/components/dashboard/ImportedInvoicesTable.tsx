@@ -51,7 +51,9 @@ export const ImportedInvoicesTable = () => {
       if (!res.ok) throw new Error("Failed to fetch invoices");
       
       const data = await res.json();
-      setInvoices(data || []);
+      // Ensure data is an array before setting it
+      const invoicesList = Array.isArray(data) ? data : [];
+      setInvoices(invoicesList);
       setConnected(true);
     } catch (e) {
       console.error(e);
@@ -63,6 +65,8 @@ export const ImportedInvoicesTable = () => {
             variant: "destructive",
         });
       }
+      // Ensure invoices is an array on error
+      setInvoices([]);
     } finally {
       setLoading(false);
     }
@@ -76,11 +80,15 @@ export const ImportedInvoicesTable = () => {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    try {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch (e) {
+      return "Invalid Date";
+    }
   };
 
   const getDaysBadge = (days: number | null) => {
@@ -158,7 +166,7 @@ export const ImportedInvoicesTable = () => {
                <TableRow>
                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading invoices...</TableCell>
                </TableRow>
-            ) : invoices.length === 0 ? (
+            ) : (!invoices || invoices.length === 0) ? (
                <TableRow>
                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No invoices found in the last 90 days.</TableCell>
                </TableRow>
