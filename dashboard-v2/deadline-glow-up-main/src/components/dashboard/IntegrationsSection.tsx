@@ -2,6 +2,32 @@ import { AlertTriangle } from "lucide-react";
 import { IntegrationCard } from "./IntegrationCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+const connectQuickBooks = () => {
+  console.log('[Dashboard V2] Initiating QuickBooks OAuth flow...');
+  
+  // Constants
+  const CLIENT_ID = 'ABemmZS0yvUoHIlL06pbq2DhnpX0zM0RDS7bBtNADNzYPq3xui';
+  const REDIRECT_URI = 'https://liendeadline.com/api/quickbooks/callback';
+  const SCOPE = 'com.intuit.quickbooks.accounting';
+  
+  // Generate state for CSRF protection
+  const state = Math.random().toString(36).substring(7);
+  localStorage.setItem('qb_state', state);
+  
+  // Construct OAuth URL
+  const oauthUrl = `https://appcenter.intuit.com/connect/oauth2` +
+      `?client_id=${CLIENT_ID}` +
+      `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+      `&scope=${SCOPE}` +
+      `&response_type=code` +
+      `&state=${state}`;
+      
+  console.log('[Dashboard V2] Redirecting to:', oauthUrl);
+  
+  // Redirect
+  window.location.href = oauthUrl;
+};
+
 const integrations = [
   {
     name: "QuickBooks Integration",
@@ -12,7 +38,7 @@ const integrations = [
     ),
     icon: "Q",
     gradient: "bg-gradient-to-br from-blue-500 to-blue-600",
-    onConnect: () => window.location.href = '/api/quickbooks/connect',
+    onConnect: connectQuickBooks,
   },
   {
     name: "Sage Integration",
