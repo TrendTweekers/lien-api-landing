@@ -295,15 +295,207 @@ async def get_admin_stats(username: str = Depends(verify_admin)):
 @router.get("/api/admin/api-usage-stats")
 async def get_api_usage_stats(username: str = Depends(verify_admin)):
     """Get API usage statistics"""
-    return {
-        "stats": {
-            "total_calls_today": 0,
-            "total_calls_week": 0,
-            "total_calls_month": 0,
-            "error_rate": 0,
-            "most_used_states": []
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Initialize stats
+            stats = {
+                "total_calls_today": 0,
+                "total_calls_week": 0,
+                "total_calls_month": 0,
+                "error_rate": 0,
+                "most_used_states": []
+            }
+            
+            # Date ranges
+            now = datetime.now()
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            week_start = now - timedelta(days=7)
+            month_start = now - timedelta(days=30)
+            
+            # 1. Count calls by period (using calculations table)
+            # Check if calculations table exists
+            table_check = "SELECT name FROM sqlite_master WHERE type='table' AND name='calculations'"
+            if DB_TYPE == 'postgresql':
+                table_check = "SELECT to_regclass('public.calculations')"
+            
+            cursor.execute(table_check)
+            if cursor.fetchone():
+                # Today
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) FROM calculations WHERE created_at >= %s", (today_start,))
+                else:
+                    cursor.execute("SELECT COUNT(*) FROM calculations WHERE created_at >= ?", (today_start,))
+                result = cursor.fetchone()
+                stats["total_calls_today"] = result[0] if result else 0
+                
+                # Week
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) FROM calculations WHERE created_at >= %s", (week_start,))
+                else:
+                    cursor.execute("SELECT COUNT(*) FROM calculations WHERE created_at >= ?", (week_start,))
+                result = cursor.fetchone()
+                stats["total_calls_week"] = result[0] if result else 0
+                
+                # Month
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) FROM calculations WHERE created_at >= %s", (month_start,))
+                else:
+                    cursor.execute("SELECT COUNT(*) FROM calculations WHERE created_at >= ?", (month_start,))
+                result = cursor.fetchone()
+                stats["total_calls_month"] = result[0] if result else 0
+                
+                # Most used states
+                cursor.execute("""
+                    SELECT state, COUNT(*) as count 
+                    FROM calculations 
+                    GROUP BY state 
+                    ORDER BY count DESC 
+                    LIMIT 5
+                """)
+                rows = cursor.fetchall()
+                for row in rows:
+                    if isinstance(row, dict):
+                        stats["most_used_states"].append({"state": row.get('state') or 'Unknown', "count": row.get('count')})
+                    else:
+                        stats["most_used_states"].append({"state": row[0] or 'Unknown', "count": row[1]})
+            
+            # 2. Error rate (using error_logs table)
+            # Check if error_logs table exists
+            table_check = "SELECT name FROM sqlite_master WHERE type='table' AND name='error_logs'"
+            if DB_TYPE == 'postgresql':
+                table_check = "SELECT to_regclass('public.error_logs')"
+            
+            cursor.execute(table_check)
+            if cursor.fetchone():
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT COUNT(*) FROM error_logs WHERE created_at >= %s", (month_start,))
+                else:
+                    cursor.execute("SELECT COUNT(*) FROM error_logs WHERE created_at >= ?", (month_start,))
+                result = cursor.fetchone()
+                error_count = result[0] if result else 0
+                
+                total_calls = stats["total_calls_month"]
+                if total_calls > 0:
+                    stats["error_rate"] = round((error_count / total_calls) * 100, 2)
+            
+            return {"stats": stats}
+            
+    except Exception as e:
+        logger.error(f"Error getting API usage stats: {e}")
+        # Return empty stats on error so frontend doesn't crash
+        return {
+            "stats": {
+                "total_calls_today": 0,
+                "total_calls_week": 0,
+                "total_calls_month": 0,
+                "error_rate": 0,
+                "most_used_states": []
+            }
         }
-    }
+
+@router.get("/api/admin/analytics/comprehensive")
+async def get_comprehensive_analytics(username: str = Depends(verify_admin)):
+    """Get comprehensive analytics for charts"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # 1. Daily Usage (Last 30 days)
+            daily_usage = []
+            month_start = datetime.now() - timedelta(days=30)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT DATE(created_at) as date, COUNT(*) as count 
+                    FROM calculations 
+                    WHERE created_at >= %s 
+                    GROUP BY DATE(created_at) 
+                    ORDER BY date
+                """, (month_start,))
+            else:
+                cursor.execute("""
+                    SELECT DATE(created_at) as date, COUNT(*) as count 
+                    FROM calculations 
+                    WHERE created_at >= ? 
+                    GROUP BY DATE(created_at) 
+                    ORDER BY date
+                """, (month_start,))
+            
+            rows = cursor.fetchall()
+            for row in rows:
+                if isinstance(row, dict):
+                    daily_usage.append({"date": str(row['date']), "count": row['count']})
+                else:
+                    daily_usage.append({"date": str(row[0]), "count": row[1]})
+            
+            # 2. State Distribution (All time)
+            state_distribution = []
+            cursor.execute("""
+                SELECT state, COUNT(*) as count 
+                FROM calculations 
+                GROUP BY state 
+                ORDER BY count DESC
+            """)
+            rows = cursor.fetchall()
+            for row in rows:
+                if isinstance(row, dict):
+                    state_distribution.append({"name": row.get('state') or "Unknown", "value": row.get('count')})
+                else:
+                    state_distribution.append({"name": row[0] or "Unknown", "value": row[1]})
+            
+            # 3. Top Users (All time)
+            user_activity = []
+            try:
+                cursor.execute("""
+                    SELECT user_email, COUNT(*) as count 
+                    FROM calculations 
+                    WHERE user_email IS NOT NULL AND user_email != ''
+                    GROUP BY user_email 
+                    ORDER BY count DESC 
+                    LIMIT 10
+                """)
+                rows = cursor.fetchall()
+                for row in rows:
+                    if isinstance(row, dict):
+                        user_activity.append({"email": row.get('user_email'), "calls": row.get('count')})
+                    else:
+                        user_activity.append({"email": row[0], "calls": row[1]})
+            except Exception as e:
+                logger.warning(f"Could not fetch user activity (schema mismatch?): {e}")
+                # Try fallback to user_id if available (for local testing support)
+                try:
+                     cursor.execute("""
+                        SELECT user_id, COUNT(*) as count 
+                        FROM calculations 
+                        WHERE user_id IS NOT NULL
+                        GROUP BY user_id 
+                        ORDER BY count DESC 
+                        LIMIT 10
+                    """)
+                     rows = cursor.fetchall()
+                     for row in rows:
+                        uid = row.get('user_id') if isinstance(row, dict) else row[0]
+                        count = row.get('count') if isinstance(row, dict) else row[1]
+                        user_activity.append({"email": f"User {uid}", "calls": count})
+                except:
+                    pass
+            
+            return {
+                "daily_usage": daily_usage,
+                "state_distribution": state_distribution,
+                "user_activity": user_activity
+            }
+            
+    except Exception as e:
+        logger.error(f"Error getting comprehensive analytics: {e}")
+        return {
+            "daily_usage": [],
+            "state_distribution": [],
+            "user_activity": [],
+            "error": str(e)
+        }
 
 @router.get("/api/admin/customers")
 async def get_customers_api(username: str = Depends(verify_admin)):

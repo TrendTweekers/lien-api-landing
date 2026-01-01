@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 import sys
 
@@ -52,6 +52,41 @@ class SaveRequest(BaseModel):
     reminder7days: Optional[bool] = False
     # Nested reminders object (from frontend)
     reminders: Optional[dict] = None
+
+# --- Helper Functions ---
+
+def increment_api_calls(user_email: str):
+    """
+    Increment API calls for a user.
+    Handles both PostgreSQL (UPSERT) and SQLite.
+    """
+    try:
+        logger.info(f"TRACKING: Incrementing API calls for {user_email}")
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                # Upsert for PostgreSQL
+                cursor.execute("""
+                    INSERT INTO customers (email, api_calls, status)
+                    VALUES (%s, 1, 'active')
+                    ON CONFLICT (email) 
+                    DO UPDATE SET api_calls = customers.api_calls + 1
+                """, (user_email,))
+            else:
+                # SQLite Upsert
+                cursor.execute("""
+                    INSERT INTO customers (email, api_calls, status)
+                    VALUES (?, 1, 'active')
+                    ON CONFLICT(email) 
+                    DO UPDATE SET api_calls = api_calls + 1
+                """, (user_email,))
+            conn.commit()
+            return True
+    except Exception as e:
+        logger.error(f"TRACKING ERROR: Failed to increment for {user_email}: {e}")
+        # Don't raise, just log - we don't want to fail the calculation
+        return False
 
 # --- Endpoints ---
 
@@ -322,36 +357,7 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
         # 3.5. Increment Usage (api_calls)
         logger.info(f"TRACKING DEBUG: User object: {user}")
         if user and user.get('email'):
-            try:
-                user_email = user.get('email')
-                logger.info(f"TRACKING DEBUG: Attempting to increment for {user_email}")
-                
-                with get_db() as conn:
-                    cursor = get_db_cursor(conn)
-                    logger.info(f"TRACKING DEBUG: DB_TYPE is {DB_TYPE}")
-                    
-                    if DB_TYPE == 'postgresql':
-                        # Upsert for PostgreSQL
-                        cursor.execute("""
-                            INSERT INTO customers (email, api_calls, status)
-                            VALUES (%s, 1, 'active')
-                            ON CONFLICT (email) 
-                            DO UPDATE SET api_calls = customers.api_calls + 1
-                        """, (user_email,))
-                    else:
-                        # SQLite Upsert
-                        cursor.execute("""
-                            INSERT INTO customers (email, api_calls, status)
-                            VALUES (?, 1, 'active')
-                            ON CONFLICT(email) 
-                            DO UPDATE SET api_calls = api_calls + 1
-                        """, (user_email,))
-                    conn.commit()
-                    logger.info(f"TRACKING DEBUG: Successfully incremented API calls for {user_email}")
-            except Exception as e:
-                logger.error(f"Failed to increment API calls: {e}")
-                import traceback
-                logger.error(traceback.format_exc())
+            increment_api_calls(user.get('email'))
         else:
             logger.warning("TRACKING DEBUG: No user or email found in session, skipping tracking")
 
@@ -525,64 +531,10 @@ async def save_calculation(request: Request, body: SaveRequest):
                 conn.commit()
                 calculation_id = cursor.lastrowid
             
-            # 4. Schedule Email Reminders (CRITICAL for Notification Engine)
-            if calculation_id and (reminder_1day or reminder_7days):
-                try:
-                    reminder_configs = []
-                    if reminder_1day: reminder_configs.append(1)
-                    if reminder_7days: reminder_configs.append(7)
-                    
-                    deadlines = []
-                    if prelim_dead: deadlines.append(('preliminary', prelim_dead))
-                    if lien_dead: deadlines.append(('lien', lien_dead))
-                    
-                    for days_before in reminder_configs:
-                        for dead_type, dead_date_str in deadlines:
-                            # Calculate send_date
-                            if isinstance(dead_date_str, str):
-                                try:
-                                    d_date = datetime.strptime(dead_date_str, "%Y-%m-%d").date()
-                                except ValueError:
-                                    continue # Skip invalid dates
-                            else:
-                                d_date = dead_date_str
-                                
-                            send_date = d_date - timedelta(days=days_before)
-                            
-                            if DB_TYPE == 'postgresql':
-                                cursor.execute("""
-                                    INSERT INTO email_reminders (
-                                        calculation_id, user_email, project_name, client_name,
-                                        invoice_amount, state, notes,
-                                        deadline_type, deadline_date, days_before,
-                                        send_date, alert_sent, created_at
-                                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, FALSE, NOW())
-                                """, (
-                                    calculation_id, user_email, p_name, c_name,
-                                    float(inv_amount) if inv_amount else None, state_val, body.notes or "",
-                                    dead_type, dead_date_str, days_before,
-                                    send_date
-                                ))
-                            else:
-                                cursor.execute("""
-                                    INSERT INTO email_reminders (
-                                        calculation_id, user_email, project_name, client_name,
-                                        invoice_amount, state, notes,
-                                        deadline_type, deadline_date, days_before,
-                                        send_date, alert_sent, created_at
-                                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
-                                """, (
-                                    calculation_id, user_email, p_name, c_name,
-                                    float(inv_amount) if inv_amount else None, state_val, body.notes or "",
-                                    dead_type, dead_date_str, days_before,
-                                    send_date.isoformat()
-                                ))
-                except Exception as e:
-                    logger.error(f"Failed to schedule reminder: {e}")
-                    import traceback
-                    traceback.print_exc()
-
             conn.commit()
+            
+            # Increment API usage
+            increment_api_calls(user_email)
             
             return JSONResponse(content={
                 "success": True,
