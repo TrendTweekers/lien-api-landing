@@ -1,627 +1,439 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Partner Program | Earn Recurring Commission | LienDeadline</title>
-  <meta name="description" content="Refer construction suppliers & contractors to LienDeadline. Earn recurring commission or one-time bounty. Built for construction attorneys, CPAs, consultants, and software partners." />
-
-  <!-- Open Graph -->
-  <meta property="og:title" content="Partner Program | LienDeadline" />
-  <meta property="og:description" content="Earn recurring commission by helping construction suppliers avoid missed lien deadlines." />
-  <meta property="og:url" content="https://liendeadline.com/partners.html" />
-  <meta property="og:type" content="website" />
-
-  <!-- Canonical URL -->
-  <link rel="canonical" href="https://liendeadline.com/partners.html" />
-
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-KYZG0TN07Z"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-KYZG0TN07Z');
-  </script>
-  <!-- Umami Analytics -->
-  <script defer src="https://cloud.umami.is/script.js" data-website-id="02250d35-ee17-41be-845d-2fe0f7f15e63"></script>
-  <!-- Favicon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
-
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              orange: '#FF6B35',
-              orange2: '#FFB085',
-              blue: '#00A6FB',
-              navy: '#0B1220',
-              slate: '#0F1A2B',
-              ink: '#0A0F1A',
-            }
-          },
-          boxShadow: {
-            glow: '0 0 0 1px rgba(255,255,255,0.08), 0 20px 60px rgba(0,0,0,0.45)',
-            soft: '0 10px 30px rgba(0,0,0,0.18)'
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partner Program | LienDeadline</title>
+    <meta name="description" content="Join the LienDeadline Partner Program and earn up to $500 per referral or 30% recurring commissions. We handle onboarding, billing, and support— you focus on sharing.">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Partner Program | LienDeadline" />
+    <meta property="og:description" content="Earn recurring commission by helping construction suppliers avoid missed lien deadlines." />
+    <meta property="og:url" content="https://liendeadline.com/partners.html" />
+    <meta property="og:type" content="website" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://liendeadline.com/partners.html" />
+    
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KYZG0TN07Z"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-KYZG0TN07Z');
+    </script>
+    <!-- Umami Analytics -->
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="02250d35-ee17-41be-845d-2fe0f7f15e63"></script>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+    <style>
+        /* Styles from main site for logo and nav */
+        header, nav { overflow: visible; }
+        .ld-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            flex: 0 0 auto;
+            white-space: nowrap;
+            min-width: max-content;
         }
-      }
-    }
-  </script>
-
-  <style>
-    /* Subtle animated background grain + gradient blobs (no images needed) */
-    .noise {
-      background-image:
-        radial-gradient(circle at 20% 10%, rgba(255,107,53,.25), transparent 40%),
-        radial-gradient(circle at 80% 30%, rgba(0,166,251,.20), transparent 45%),
-        radial-gradient(circle at 50% 90%, rgba(255,176,133,.18), transparent 55%),
-        linear-gradient(180deg, rgba(11,18,32,1) 0%, rgba(10,15,26,1) 60%, rgba(11,18,32,1) 100%);
-    }
-    .grid-mask {
-      background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-      background-size: 44px 44px;
-      mask-image: radial-gradient(circle at 50% 20%, black 0%, transparent 70%);
-      -webkit-mask-image: radial-gradient(circle at 50% 20%, black 0%, transparent 70%);
-      opacity: .35;
-    }
-    .glass {
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.10);
-      backdrop-filter: blur(10px);
-    }
-    html { scroll-behavior: smooth; }
-  </style>
+        .ld-brand-icon {
+            height: 32px;
+            width: auto;
+            display: block;
+            object-fit: contain;
+            flex: 0 0 auto;
+        }
+        .ld-brand-wordmark {
+            height: 28px;
+            width: auto;
+            display: block;
+            object-fit: contain;
+            flex: 0 0 auto;
+        }
+        /* Make header a bit taller/cleaner */
+        header {
+            padding: 18px 0;
+        }
+        @media (max-width: 768px) {
+            header { padding: 14px 0; }
+            .ld-brand { gap: 8px; }
+            .ld-brand-icon { height: 28px; }
+            .ld-brand-wordmark { height: 24px; }
+        }
+        /* Safety: if any global img rules cap height, override just for brand */
+        header img.ld-brand-icon,
+        header img.ld-brand-wordmark {
+            max-height: none !important;
+        }
+        /* Additional matching styles */
+        body { font-family: 'Inter', sans-serif; background-color: white; color: black; }
+        .orange-btn { background-color: #F97316; color: white; }
+        .orange-btn:hover { background-color: #E66A00; }
+        .orange-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    </style>
 </head>
+<body class="min-h-screen flex flex-col">
 
-<body class="bg-brand-ink text-white">
-
-  <!-- Header -->
-  <header class="sticky top-0 z-50 border-b border-white/10 bg-brand-ink/70 backdrop-blur">
-    <div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-      <a href="/" class="flex items-center gap-2 font-bold tracking-tight">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 border border-white/10">LD</span>
-        <span>LienDeadline</span>
-      </a>
-
-      <nav class="hidden md:flex items-center gap-6 text-sm text-white/80">
-        <a href="#why" class="hover:text-white">Why Partner</a>
-        <a href="#calculator" class="hover:text-white">Earnings</a>
-        <a href="#applicationForm" class="hover:text-white">Apply</a>
-        <a href="#faq" class="hover:text-white">FAQ</a>
-      </nav>
-
-      <div class="flex items-center gap-3">
-        <a href="#applicationForm" class="hidden sm:inline-flex px-4 py-2 rounded-lg bg-white/10 border border-white/10 hover:bg-white/15 transition">
-          Apply
-        </a>
-        <button onclick="scrollToForm()" class="inline-flex px-4 py-2 rounded-lg bg-brand-orange hover:opacity-90 transition font-semibold">
-          Apply → 
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- HERO (redesigned) -->
-  <section class="noise relative overflow-hidden">
-    <div class="absolute inset-0 grid-mask"></div>
-
-    <div class="mx-auto max-w-6xl px-4 py-16 md:py-20 relative">
-      <div class="grid lg:grid-cols-12 gap-10 items-center">
-
-        <div class="lg:col-span-7">
-          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass text-xs text-white/80 shadow-soft">
-            <span class="h-2 w-2 rounded-full bg-brand-orange"></span>
-            Partner Program • Recurring commission or one-time bounty
-          </div>
-
-          <h1 class="mt-5 text-4xl md:text-5xl font-extrabold leading-tight tracking-tight">
-            Turn your client relationships into
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-orange to-brand-orange2">recurring revenue</span>
-          </h1>
-
-          <p class="mt-5 text-lg md:text-xl text-white/80 leading-relaxed">
-            LienDeadline helps suppliers & contractors track lien deadlines fast — fewer missed notices,
-            fewer disputes, fewer "we should've filed" moments. You refer. We onboard, bill, and support.
-          </p>
-
-          <div class="mt-7 flex flex-col sm:flex-row gap-3">
-            <button onclick="scrollToForm()" class="px-6 py-3 rounded-xl bg-brand-orange font-semibold hover:opacity-90 transition">
-              Apply to Partner Program →
-            </button>
-            <a href="#calculator" class="px-6 py-3 rounded-xl bg-white/10 border border-white/10 hover:bg-white/15 transition text-center">
-              See earning potential
+    <!-- Exact header from main site, with Partners highlighted -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
+            <!-- Logo -->
+            <a href="/" class="ld-brand flex items-center gap-2" aria-label="LienDeadline home">
+                <img class="ld-brand-icon" src="/images/liendeadline-icon-transparent.png" alt="LienDeadline" />
+                <img class="ld-brand-wordmark" src="/images/liendeadline-wordmark-transparent.png" alt="LienDeadline" />
             </a>
-          </div>
-
-          <div class="mt-8 grid sm:grid-cols-3 gap-3">
-            <div class="glass rounded-xl p-4 shadow-soft">
-              <p class="text-sm text-white/70">Commission</p>
-              <p class="text-2xl font-bold">30% recurring</p>
-              <p class="text-xs text-white/60 mt-1">Or choose bounty model</p>
+            
+            <!-- Desktop Nav Links -->
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#calculator" style="text-decoration: none; color: #6B7280; font-weight: 500;">Calculator</a>
+                <a href="/pricing.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Pricing</a>
+                <a href="/partners.html" style="text-decoration: none; color: #1F2937; font-weight: 600;">Partners</a>
+                <a href="/login.html" style="text-decoration: none; color: #6B7280; font-weight: 500;">Login</a>
+                <a href="/" class="orange-btn px-5 py-2 rounded-md text-sm font-medium" style="text-decoration: none;">Try Free</a>
             </div>
-            <div class="glass rounded-xl p-4 shadow-soft">
-              <p class="text-sm text-white/70">Typical impact</p>
-              <p class="text-2xl font-bold">Fewer misses</p>
-              <p class="text-xs text-white/60 mt-1">Deadlines in one place</p>
-            </div>
-            <div class="glass rounded-xl p-4 shadow-soft">
-              <p class="text-sm text-white/70">You do</p>
-              <p class="text-2xl font-bold">Only referrals</p>
-              <p class="text-xs text-white/60 mt-1">We handle onboarding</p>
-            </div>
-          </div>
-
-          <div class="mt-6 flex flex-wrap gap-2 text-xs text-white/70">
-            <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10">Construction attorneys</span>
-            <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10">CPAs</span>
-            <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10">Consultants</span>
-            <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10">Software partners</span>
-          </div>
-        </div>
-
-        <div class="lg:col-span-5">
-          <!-- Right-side "preview" card (no screenshots, just a premium-looking mock panel) -->
-          <div class="rounded-2xl glass shadow-glow overflow-hidden">
-            <div class="p-5 border-b border-white/10 flex items-center justify-between">
-              <p class="font-semibold">Partner Snapshot</p>
-              <span class="text-xs text-white/60">Realtime</span>
-            </div>
-
-            <div class="p-5 space-y-4">
-              <div class="rounded-xl bg-white/5 border border-white/10 p-4">
-                <p class="text-sm text-white/70">Monthly recurring (example)</p>
-                <p class="mt-1 text-3xl font-extrabold">$1,500<span class="text-base font-semibold text-white/60">/mo</span></p>
-                <p class="text-xs text-white/60 mt-1">30 active clients • $50/mo each</p>
-              </div>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div class="rounded-xl bg-white/5 border border-white/10 p-4">
-                  <p class="text-xs text-white/60">Referrals</p>
-                  <p class="mt-1 text-2xl font-bold">48</p>
-                  <p class="text-xs text-white/60">this quarter</p>
-                </div>
-                <div class="rounded-xl bg-white/5 border border-white/10 p-4">
-                  <p class="text-xs text-white/60">Conversion</p>
-                  <p class="mt-1 text-2xl font-bold">32%</p>
-                  <p class="text-xs text-white/60">avg partners</p>
-                </div>
-              </div>
-
-              <div class="rounded-xl bg-white/5 border border-white/10 p-4">
-                <p class="text-sm font-semibold">What you get</p>
-                <ul class="mt-2 space-y-2 text-sm text-white/75">
-                  <li class="flex gap-2"><span class="text-brand-orange">✓</span> Tracked referral links</li>
-                  <li class="flex gap-2"><span class="text-brand-orange">✓</span> Partner collateral (PDF + email copy)</li>
-                  <li class="flex gap-2"><span class="text-brand-orange">✓</span> Priority onboarding for your clients</li>
-                </ul>
-              </div>
-
-              <button onclick="scrollToForm()" class="w-full px-5 py-3 rounded-xl bg-gradient-to-r from-brand-orange to-brand-orange2 font-semibold hover:opacity-90 transition">
-                Apply now →
-              </button>
-              <p class="text-xs text-white/55 text-center">No long contracts • Fast approval</p>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- WHY / WHO IT'S FOR (replaces "basic" section) -->
-  <section id="why" class="bg-brand-ink">
-    <div class="mx-auto max-w-6xl px-4 py-14">
-      <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-        <div>
-          <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight">Built for people who influence construction outcomes</h2>
-          <p class="mt-3 text-white/75 max-w-2xl">
-            If your clients send notices, manage receivables, or fight payment disputes — this fits naturally into your workflow.
-            You're not "selling software." You're preventing expensive misses.
-          </p>
-        </div>
-        <div class="glass rounded-xl p-4 border border-white/10 text-sm text-white/75 shadow-soft">
-          <p class="font-semibold text-white">Partner promise</p>
-          <p class="mt-1">We support, bill, and onboard — you stay the trusted advisor.</p>
-        </div>
-      </div>
-
-      <div class="mt-10 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="rounded-2xl glass p-5 shadow-soft">
-          <p class="text-sm text-white/70">For</p>
-          <p class="mt-1 font-bold text-lg">Construction attorneys</p>
-          <p class="mt-2 text-sm text-white/70">Reduce deadline misses and "emergency filings."</p>
-        </div>
-        <div class="rounded-2xl glass p-5 shadow-soft">
-          <p class="text-sm text-white/70">For</p>
-          <p class="mt-1 font-bold text-lg">CPAs & CFO services</p>
-          <p class="mt-2 text-sm text-white/70">Cleaner AR process, fewer surprises, better cash planning.</p>
-        </div>
-        <div class="rounded-2xl glass p-5 shadow-soft">
-          <p class="text-sm text-white/70">For</p>
-          <p class="mt-1 font-bold text-lg">Consultants</p>
-          <p class="mt-2 text-sm text-white/70">Add a concrete tool to your advisory value.</p>
-        </div>
-        <div class="rounded-2xl glass p-5 shadow-soft">
-          <p class="text-sm text-white/70">For</p>
-          <p class="mt-1 font-bold text-lg">Software partners</p>
-          <p class="mt-2 text-sm text-white/70">Attach to your stack without building deadline logic.</p>
-        </div>
-      </div>
-
-      <div class="mt-10 rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 to-transparent p-6 md:p-8">
-        <div class="grid md:grid-cols-3 gap-6">
-          <div>
-            <p class="text-sm text-white/70">Why it converts</p>
-            <p class="mt-2 font-bold text-xl">Simple value prop</p>
-            <p class="mt-2 text-white/75 text-sm">"Don't miss deadlines. Save money. File on time."</p>
-          </div>
-          <div>
-            <p class="text-sm text-white/70">Why it sticks</p>
-            <p class="mt-2 font-bold text-xl">Recurring use</p>
-            <p class="mt-2 text-white/75 text-sm">Clients return every project, every state, every notice window.</p>
-          </div>
-          <div>
-            <p class="text-sm text-white/70">Why it scales</p>
-            <p class="mt-2 font-bold text-xl">We do the work</p>
-            <p class="mt-2 text-white/75 text-sm">Onboarding + billing + support handled by LienDeadline.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- HOW IT WORKS -->
-  <section class="bg-brand-ink">
-    <div class="mx-auto max-w-6xl px-4 pb-6">
-      <div class="rounded-3xl bg-white/3 border border-white/10 p-8 md:p-10">
-        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
-          <div>
-            <h3 class="text-2xl md:text-3xl font-extrabold">How partnering works</h3>
-            <p class="mt-2 text-white/75 max-w-2xl">A clean process that doesn't add friction to your day.</p>
-          </div>
-          <a href="#applicationForm" class="text-sm text-white/75 hover:text-white underline underline-offset-4">
-            Jump to application →
-          </a>
-        </div>
-
-        <div class="mt-8 grid md:grid-cols-3 gap-4">
-          <div class="rounded-2xl glass p-6">
-            <div class="flex items-center gap-3">
-              <span class="h-10 w-10 rounded-xl bg-brand-orange/15 border border-brand-orange/30 inline-flex items-center justify-center font-bold text-brand-orange">1</span>
-              <p class="font-bold text-lg">Share your link</p>
-            </div>
-            <p class="mt-3 text-sm text-white/75">Use your tracked referral link in emails, proposals, or onboarding checklists.</p>
-          </div>
-
-          <div class="rounded-2xl glass p-6">
-            <div class="flex items-center gap-3">
-              <span class="h-10 w-10 rounded-xl bg-brand-orange/15 border border-brand-orange/30 inline-flex items-center justify-center font-bold text-brand-orange">2</span>
-              <p class="font-bold text-lg">We onboard</p>
-            </div>
-            <p class="mt-3 text-sm text-white/75">Your client signs up, gets set up, and starts tracking deadlines immediately.</p>
-          </div>
-
-          <div class="rounded-2xl glass p-6">
-            <div class="flex items-center gap-3">
-              <span class="h-10 w-10 rounded-xl bg-brand-orange/15 border border-brand-orange/30 inline-flex items-center justify-center font-bold text-brand-orange">3</span>
-              <p class="font-bold text-lg">You get paid</p>
-            </div>
-            <p class="mt-3 text-sm text-white/75">Recurring or bounty — tracked automatically inside your partner dashboard.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Commission Calculator (kept, upgraded styling) -->
-  <section id="calculator" class="py-12 bg-brand-ink">
-    <div class="container mx-auto px-4 max-w-4xl">
-      <h2 class="text-3xl font-extrabold text-center mb-3">Calculate your earning potential</h2>
-      <p class="text-center text-white/75 mb-8">Quick math. Real upside if you work with recurring suppliers/contractors.</p>
-
-      <div class="bg-white/5 border border-white/10 p-8 rounded-2xl shadow-glow">
-        <div class="mb-6">
-          <label class="block text-white/80 font-semibold mb-2">How many contractor/supplier clients do you have?</label>
-          <input
-            type="number"
-            id="clientCount"
-            class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-brand-orange/60"
-            placeholder="10"
-            value="10"
-            oninput="calculateEarnings()"
-          />
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-6 mb-6">
-          <div class="text-center p-5 bg-white/5 border border-white/10 rounded-2xl">
-            <p class="text-white/70 mb-2">One-Time Bounty</p>
-            <p class="text-3xl font-extrabold text-brand-orange" id="oneTimeEarnings">$5,000</p>
-            <p class="text-sm text-white/60">$500 per client</p>
-          </div>
-          <div class="text-center p-5 bg-white/5 border border-white/10 rounded-2xl">
-            <p class="text-white/70 mb-2">Monthly Recurring</p>
-            <p class="text-3xl font-extrabold text-brand-orange" id="recurringEarnings">$500/month</p>
-            <p class="text-sm text-white/60">$50 per client / month</p>
-          </div>
-        </div>
-
-        <p class="text-center text-white/75">
-          That's <strong id="annualEarnings" class="text-white">$6,000/year</strong> in passive income.
-        </p>
-
-        <div class="mt-6 flex justify-center">
-          <button onclick="scrollToForm()" class="px-6 py-3 rounded-xl bg-brand-orange font-semibold hover:opacity-90 transition">
-            Apply and get your referral link →
-          </button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Application Form (kept, upgraded styling) -->
-  <section id="applicationForm" class="py-12 bg-brand-ink">
-    <div class="container mx-auto px-4 max-w-2xl">
-      <h2 class="text-3xl font-extrabold text-center mb-3">Apply to Partner Program</h2>
-      <p class="text-center text-white/75 mb-8">Tell us who you serve — we'll get you approved fast.</p>
-
-      <!-- Success Message (hidden initially) -->
-      <div id="successMessage" class="hidden bg-green-50 border-2 border-green-200 rounded-2xl p-8 text-center mb-8">
-        <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-          <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-          </svg>
-        </div>
-        <h2 class="text-2xl font-bold text-gray-900 mb-2" id="successTitle">Application Submitted! 🎉</h2>
-        <p class="text-gray-600 mb-6" id="successMessageText">
-          We'll review your application and send you an email within 24 hours with your unique referral link.
-        </p>
-        <a href="/" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors">
-          Back to Home
-        </a>
-      </div>
-
-      <form id="partnerApplicationForm" class="bg-white/5 border border-white/10 p-8 rounded-2xl shadow-glow">
-        <div class="grid md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <label class="block text-white/80 font-semibold mb-2">Full Name *</label>
-            <input type="text" name="name" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-brand-orange/60" required />
-          </div>
-          <div>
-            <label class="block text-white/80 font-semibold mb-2">Email Address *</label>
-            <input type="email" name="email" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-brand-orange/60" required />
-          </div>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <label class="block text-white/80 font-semibold mb-2">Company Name *</label>
-            <input type="text" name="company" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-brand-orange/60" required />
-          </div>
-          <div>
-            <label class="block text-white/80 font-semibold mb-2">Number of Clients *</label>
-            <select name="client_count" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-brand-orange/60" required>
-              <option class="bg-brand-ink" value="">Select...</option>
-              <option class="bg-brand-ink" value="1-10">1-10 clients</option>
-              <option class="bg-brand-ink" value="11-50">11-50 clients</option>
-              <option class="bg-brand-ink" value="51-200">51-200 clients</option>
-              <option class="bg-brand-ink" value="200+">200+ clients</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="mb-6">
-          <label class="block text-white/80 font-semibold mb-4">Choose Your Commission Model *</label>
-          <div class="space-y-4">
-            <label class="flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition">
-              <input type="radio" name="commission_model" value="bounty" class="mt-1" />
-              <div>
-                <p class="font-bold">$500 One-Time Bounty</p>
-                <p class="text-sm text-white/65">Paid after 30 days • Best for 1-10 clients</p>
-              </div>
-            </label>
-
-            <label class="flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition">
-              <input type="radio" name="commission_model" value="recurring" class="mt-1" checked />
-              <div>
-                <p class="font-bold">$50/month Recurring Revenue</p>
-                <p class="text-sm text-white/65">Passive income • Best for 10+ clients</p>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <div class="mb-6">
-          <label class="block text-white/80 font-semibold mb-2">Tell Us About Your Business (Optional)</label>
-          <textarea name="message" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 h-28 focus:outline-none focus:ring-2 focus:ring-brand-orange/60" placeholder="I work with construction material suppliers..."></textarea>
-        </div>
-
-        <!-- Auto-Approval Checkbox -->
-        <div class="mb-8 p-4 bg-white/5 border border-white/10 rounded-xl">
-          <label class="flex items-start cursor-pointer">
-            <input type="checkbox" name="works_with_suppliers" required class="mt-1 mr-3 w-5 h-5 text-brand-orange border-white/20 rounded focus:ring-brand-orange" />
-            <div class="flex-1">
-              <span class="block text-sm font-semibold text-white">
-                I work with construction material suppliers or contractors
-              </span>
-              <span class="block text-xs text-white/60 mt-1 font-medium">
-                ✓ Auto-approved instantly
-              </span>
-            </div>
-          </label>
-        </div>
-
-        <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-brand-orange to-brand-orange2 text-white py-4 rounded-xl font-extrabold text-lg hover:opacity-90 transition">
-          Submit Application →
-        </button>
-
-        <div class="mt-5 text-center text-sm text-white/60">
-          <p>✓ Auto-approved if you work with construction suppliers</p>
-          <p>🔒 Fast review — usually within 24 hours</p>
-        </div>
-      </form>
-    </div>
-  </section>
-
-  <!-- FAQ (restyled) -->
-  <section id="faq" class="py-14 bg-brand-ink">
-    <div class="container mx-auto px-4 max-w-3xl">
-      <h2 class="text-3xl font-extrabold text-center mb-10">FAQ</h2>
-
-      <div class="space-y-4">
-        <details class="rounded-2xl bg-white/5 border border-white/10 p-6 open:shadow-soft transition-all">
-          <summary class="font-bold text-lg cursor-pointer">How do I track my referrals?</summary>
-          <p class="mt-4 text-white/75">You'll get a dedicated partner dashboard showing referrals, sign-ups, and commissions.</p>
-        </details>
-
-        <details class="rounded-2xl bg-white/5 border border-white/10 p-6 open:shadow-soft transition-all">
-          <summary class="font-bold text-lg cursor-pointer">When do I get paid?</summary>
-          <p class="mt-4 text-white/75">Recurring commissions pay monthly. One-time bounties pay 30 days after your referral signs up.</p>
-        </details>
-
-        <details class="rounded-2xl bg-white/5 border border-white/10 p-6 open:shadow-soft transition-all">
-          <summary class="font-bold text-lg cursor-pointer">What if a client cancels?</summary>
-          <p class="mt-4 text-white/75">Recurring commissions pay as long as the client stays subscribed. If they cancel, commissions stop.</p>
-        </details>
-      </div>
-
-      <div class="mt-10 flex justify-center">
-        <button onclick="scrollToForm()" class="px-6 py-3 rounded-xl bg-brand-orange font-semibold hover:opacity-90 transition">
-          Apply now →
-        </button>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer class="border-t border-white/10 bg-brand-ink">
-    <div class="mx-auto max-w-6xl px-4 py-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-      <div>
-        <p class="font-bold">LienDeadline</p>
-        <p class="text-sm text-white/60 mt-1">Partner Program • Built for construction workflows</p>
-      </div>
-      <div class="text-sm text-white/60 flex gap-5">
-        <a class="hover:text-white" href="/">Home</a>
-        <a class="hover:text-white" href="/privacy.html">Privacy</a>
-        <a class="hover:text-white" href="/terms.html">Terms</a>
-        <a class="hover:text-white" href="#calculator">Earnings</a>
-        <a class="hover:text-white" href="#applicationForm">Apply</a>
-      </div>
-    </div>
-  </footer>
-
-  <script>
-    function calculateEarnings() {
-      const clients = Number(document.getElementById('clientCount').value || 0);
-      const oneTime = clients * 500;
-      const recurring = clients * 50;
-      const annual = recurring * 12;
-
-      document.getElementById('oneTimeEarnings').textContent = `$${oneTime.toLocaleString()}`;
-      document.getElementById('recurringEarnings').textContent = `$${recurring.toLocaleString()}/month`;
-      document.getElementById('annualEarnings').textContent = `$${annual.toLocaleString()}/year`;
-    }
-
-    function scrollToForm() {
-      document.getElementById('applicationForm').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    // Form submission handler
-    document.getElementById('partnerApplicationForm')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const submitBtn = document.getElementById('submitBtn');
-      const form = document.getElementById('partnerApplicationForm');
-      const successMessage = document.getElementById('successMessage');
-      const successTitle = document.getElementById('successTitle');
-      const successMessageText = document.getElementById('successMessageText');
-      
-      // Get form data
-      const formData = new FormData(e.target);
-      const data = {
-        name: formData.get('name'),
-        email: formData.get('email'),
-        company: formData.get('company'),
-        client_count: formData.get('client_count') || '',
-        commission_model: formData.get('commission_model'),
-        message: formData.get('message') || '',
-        works_with_suppliers: formData.get('works_with_suppliers') === 'on'
-      };
-      
-      // Validate commission model selected
-      if (!data.commission_model) {
-        alert('Please select a commission model');
-        return;
-      }
-      
-      // Show loading
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = `
-        <svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-      `;
-      
-      try {
-        console.log('Submitting partner application:', data);
-        console.log('Posting to: /api/v1/apply-partner');
+                
+            <!-- Mobile Hamburger (hidden on desktop) -->
+            <button class="mobile-menu-btn" id="mobileMenuBtn" style="display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: #1F2937; padding: 4px;">
+                Menu
+            </button>
+        </nav>
         
-        const response = await fetch('/api/v1/apply-partner', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+        <!-- Mobile Menu (hidden by default) -->
+        <div id="mobileMenu" class="mobile-menu" style="display: none; background: white; border-top: 1px solid #E5E7EB; padding: 16px 24px;">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <a href="#calculator" style="text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Calculator</a>
+                <a href="/pricing.html" style="text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Pricing</a>
+                <a href="/partners.html" style="text-decoration: none; color: #1F2937; font-weight: 600; padding: 8px 0;">Partners</a>
+                <a href="/login.html" style="text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Login</a>
+                <a href="/" class="orange-btn px-5 py-2 rounded-md text-sm font-medium text-center mt-2" style="text-decoration: none;">Try Free</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero section: Matches main site's bold, benefit-focused style -->
+    <section class="py-20 px-6 text-center bg-gray-50">
+        <h1 class="text-4xl font-bold mb-4">Turn Your Network into Recurring Revenue</h1>
+        <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">Join the LienDeadline Partner Program and earn up to $500 per referral or 30% recurring commissions. We handle onboarding, billing, and support— you focus on sharing.</p>
+        <a href="#apply" class="orange-btn px-6 py-3 rounded-md text-lg font-medium inline-block" style="text-decoration: none;">Apply Now</a>
+    </section>
+
+    <!-- Overview/Features: Bullet lists with icons, like main site's features -->
+    <section class="py-16 px-6 max-w-4xl mx-auto">
+        <h2 class="text-3xl font-bold mb-8 text-center">Why Partner with LienDeadline?</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="p-6 border rounded-lg">
+                <span class="text-3xl mb-4 block">💰</span>
+                <h3 class="text-xl font-semibold mb-2">Lucrative Earnings</h3>
+                <p class="text-gray-600">Choose $500 bounty per client or $50/month recurring. Potential for $6,000+ annual passive income from 10 clients.</p>
+            </div>
+            <div class="p-6 border rounded-lg">
+                <span class="text-3xl mb-4 block">🤝</span>
+                <h3 class="text-xl font-semibold mb-2">Easy Referrals</h3>
+                <p class="text-gray-600">Share your unique link. We onboard, train, and support your referrals—no extra work for you.</p>
+            </div>
+            <div class="p-6 border rounded-lg">
+                <span class="text-3xl mb-4 block">📈</span>
+                <h3 class="text-xl font-semibold mb-2">Track Everything</h3>
+                <p class="text-gray-600">Real-time dashboard shows referrals, commissions, and payouts. Transparent and automated.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works: Step-by-step, matching main site's process explanations -->
+    <section class="py-16 px-6 bg-white max-w-4xl mx-auto">
+        <h2 class="text-3xl font-bold mb-8 text-center">How Partnering Works</h2>
+        <div class="space-y-8">
+            <div class="flex items-start">
+                <span class="text-2xl mr-4 font-bold text-orange-600">1</span>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2">Share Your Link</h3>
+                    <p class="text-gray-600">Send your unique referral link to clients in construction, supply, or related fields.</p>
+                </div>
+            </div>
+            <div class="flex items-start">
+                <span class="text-2xl mr-4 font-bold text-orange-600">2</span>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2">We Onboard & Support</h3>
+                    <p class="text-gray-600">Our team handles setup, training, and ongoing help—your referrals get white-glove service.</p>
+                </div>
+            </div>
+            <div class="flex items-start">
+                <span class="text-2xl mr-4 font-bold text-orange-600">3</span>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2">You Get Paid</h3>
+                    <p class="text-gray-600">Earn commissions monthly via direct deposit. Track everything in your partner dashboard.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Calculator Section -->
+    <section id="calculator" class="py-16 px-6 bg-gray-50 max-w-4xl mx-auto">
+        <h2 class="text-3xl font-bold mb-8 text-center">Calculate Your Earning Potential</h2>
+        <div class="p-6 border rounded-lg bg-white">
+            <label class="block text-gray-700 font-semibold mb-4">How many contractor/supplier clients do you have?</label>
+            <input type="number" id="clientCount" class="w-full p-3 border rounded mb-6" value="10" min="1" oninput="calculateEarnings()">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="p-4 bg-gray-50 rounded-lg text-center">
+                    <p class="text-gray-600 mb-2 text-sm">One-Time Bounty</p>
+                    <p class="text-3xl font-bold text-orange-600" id="bountyAmount">$5,000</p>
+                    <p class="text-gray-500 text-sm mt-1">$500 per client</p>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-lg text-center">
+                    <p class="text-gray-600 mb-2 text-sm">Monthly Recurring</p>
+                    <p class="text-3xl font-bold text-orange-600" id="monthlyAmount">$500/mo</p>
+                    <p class="text-gray-500 text-sm mt-1">$50 per client/month</p>
+                </div>
+            </div>
+            
+            <div class="text-center p-4 bg-orange-50 rounded-lg border-2 border-dashed border-orange-300">
+                <p class="text-gray-700">That's <strong class="text-orange-600 text-xl" id="annualAmount">$6,000/year</strong> in passive income</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Application Form -->
+    <section id="apply" class="py-16 px-6 max-w-4xl mx-auto">
+        <h2 class="text-3xl font-bold mb-4 text-center">Apply to Partner Program</h2>
+        <p class="text-xl text-gray-600 mb-6 text-center">Tell us who you serve — we'll get you approved fast</p>
+        
+        <!-- Success Message -->
+        <div id="successMessage" style="display: none; background: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; padding: 32px; text-align: center; margin-bottom: 24px;">
+            <div style="width: 64px; height: 64px; background: #86efac; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 2rem;">✓</div>
+            <h2 class="text-2xl font-bold mb-2" id="successTitle">Application Submitted! 🎉</h2>
+            <p class="text-gray-600 mb-4" id="successMessageText">We'll review your application and send you an email within 24 hours with your unique referral link.</p>
+            <a href="/" class="orange-btn px-6 py-3 rounded-md text-lg font-medium inline-block" style="text-decoration: none;">Back to Home</a>
+        </div>
+        
+        <form id="partnerApplicationForm" class="p-6 border rounded-lg bg-white space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Full Name *</label>
+                    <input type="text" name="name" placeholder="John Smith" class="w-full p-3 border rounded" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Email Address *</label>
+                    <input type="email" name="email" placeholder="john@company.com" class="w-full p-3 border rounded" required>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Company Name *</label>
+                    <input type="text" name="company" placeholder="Your Company LLC" class="w-full p-3 border rounded" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Number of Clients *</label>
+                    <select name="client_count" class="w-full p-3 border rounded" required>
+                        <option value="">Select range</option>
+                        <option value="1-10">1-10 clients</option>
+                        <option value="11-50">11-50 clients</option>
+                        <option value="51-200">51-200 clients</option>
+                        <option value="200+">200+ clients</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 font-semibold mb-3">Choose Your Commission Model *</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <label class="p-4 border-2 rounded-lg cursor-pointer hover:border-orange-500 hover:bg-orange-50 transition">
+                        <input type="radio" name="commission_model" value="bounty" class="mr-2">
+                        <span class="font-bold">$500 One-Time Bounty</span>
+                        <p class="text-sm text-gray-600 mt-1">Paid after 30 days • Best for 1-10 clients</p>
+                    </label>
+                    <label class="p-4 border-2 rounded-lg cursor-pointer hover:border-orange-500 hover:bg-orange-50 transition">
+                        <input type="radio" name="commission_model" value="recurring" checked class="mr-2">
+                        <span class="font-bold">$50/month Recurring</span>
+                        <p class="text-sm text-gray-600 mt-1">Passive income • Best for 10+ clients</p>
+                    </label>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 font-semibold mb-2">Tell Us About Your Business (Optional)</label>
+                <textarea name="message" placeholder="I work with construction material suppliers..." class="w-full p-3 border rounded h-32"></textarea>
+            </div>
+            
+            <div class="p-4 bg-orange-50 rounded-lg border-2 border-orange-300">
+                <label class="flex items-start cursor-pointer">
+                    <input type="checkbox" name="works_with_suppliers" required class="mt-1 mr-3">
+                    <div>
+                        <span class="block font-semibold text-gray-900">I work with construction material suppliers or contractors</span>
+                        <span class="block text-sm text-gray-600 mt-1">✓ Auto-approved instantly</span>
+                    </div>
+                </label>
+            </div>
+            
+            <button type="submit" id="submitBtn" class="orange-btn w-full py-3 rounded-md text-lg font-medium">Submit Application</button>
+            
+            <p class="text-center text-gray-600 text-sm mt-4">
+                ✓ Auto-approved if you work with construction suppliers<br>
+                🔒 We'll review your application within 24 hours
+            </p>
+        </form>
+    </section>
+
+    <!-- FAQ: Matching main site's FAQ style with expandable or simple list -->
+    <section class="py-16 px-6 bg-white max-w-4xl mx-auto">
+        <h2 class="text-3xl font-bold mb-8 text-center">Frequently Asked Questions</h2>
+        <div class="space-y-6">
+            <div>
+                <h3 class="text-xl font-semibold mb-2">How do I track referrals?</h3>
+                <p class="text-gray-600">Use your partner dashboard for real-time updates on referrals, sign-ups, and commissions.</p>
+            </div>
+            <div>
+                <h3 class="text-xl font-semibold mb-2">When do I get paid?</h3>
+                <p class="text-gray-600">Recurring commissions pay monthly. One-time bounties pay 30 days after your referral signs up.</p>
+            </div>
+            <div>
+                <h3 class="text-xl font-semibold mb-2">What if a client cancels?</h3>
+                <p class="text-gray-600">Recurring commissions pay as long as the client stays subscribed. If they cancel, commissions stop.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA: Matches main site's upgrade prompts -->
+    <section class="py-20 px-6 text-center bg-gray-50">
+        <h2 class="text-3xl font-bold mb-4">Ready to Start Earning?</h2>
+        <p class="text-xl text-gray-600 mb-8">Apply today and get your referral link in minutes.</p>
+        <a href="#apply" class="orange-btn px-6 py-3 rounded-md text-lg font-medium inline-block" style="text-decoration: none;">Apply Now</a>
+    </section>
+
+    <!-- Footer matching main site: Links, privacy, copyright -->
+    <footer class="bg-white border-t border-gray-200 py-6 px-6 text-center text-gray-600 text-sm mt-auto">
+        <p>We respect your privacy. <a href="/privacy.html" class="underline">Privacy Policy</a> | <a href="/terms.html" class="underline">Terms</a></p>
+        <p>&copy; 2026 LienDeadline. All rights reserved.</p>
+    </footer>
+
+    <!-- Mobile menu script from main site -->
+    <script>
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        
+        function checkMobile() {
+            if (window.innerWidth < 768) {
+                mobileMenuBtn.style.display = 'block';
+            } else {
+                mobileMenuBtn.style.display = 'none';
+                mobileMenu.style.display = 'none';
+            }
+        }
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.style.display = mobileMenu.style.display === 'block' ? 'none' : 'block';
         });
         
-        console.log('Response status:', response.status);
-        
-        const result = await response.json();
-        console.log('Response data:', result);
-        
-        if (response.ok && (result.status === 'success' || result.status === 'pending' || result.status === 'approved')) {
-          // Hide form, show success
-          form.classList.add('hidden');
-          successMessage.classList.remove('hidden');
-          
-          // Check if auto-approved
-          if (result.status === 'approved' && result.referral_link) {
-            successTitle.textContent = '✅ Approved! Check email for your link.';
-            successMessageText.innerHTML = `
-              <p class="text-gray-700 mb-4">Your referral link has been sent to your email!</p>
-              <p class="text-sm text-gray-600 mb-4">Referral Link: <a href="${result.referral_link}" class="text-blue-600 hover:underline font-mono" target="_blank">${result.referral_link}</a></p>
-              <p class="text-xs text-gray-500">Check your email for login credentials and dashboard access.</p>
-            `;
-          } else {
-            // Manual review message
-            successTitle.textContent = 'Application Submitted! 🎉';
-            successMessageText.innerHTML = `
-              <p class="text-gray-600">We'll review your application and send you an email within 24 hours with your unique referral link.</p>
-            `;
-          }
-          
-          // Scroll to top
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          
-          console.log('✅ Application submitted successfully!');
-        } else {
-          throw new Error(result.message || 'Application failed');
+        // Calculator function
+        function calculateEarnings() {
+            const clients = parseInt(document.getElementById('clientCount').value) || 0;
+            const bounty = clients * 500;
+            const monthly = clients * 50;
+            const annual = monthly * 12;
+            
+            document.getElementById('bountyAmount').textContent = '$' + bounty.toLocaleString();
+            document.getElementById('monthlyAmount').textContent = '$' + monthly.toLocaleString() + '/mo';
+            document.getElementById('annualAmount').textContent = '$' + annual.toLocaleString() + '/year';
         }
         
-      } catch (error) {
-        console.error('❌ Application error:', error);
-        alert('❌ Application failed: ' + error.message);
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = 'Submit Application →';
-      }
-    });
+        // Form submission handler
+        document.getElementById('partnerApplicationForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const form = document.getElementById('partnerApplicationForm');
+            const successMessage = document.getElementById('successMessage');
+            const successTitle = document.getElementById('successTitle');
+            const successMessageText = document.getElementById('successMessageText');
+            
+            // Get form data
+            const formData = new FormData(e.target);
+            const data = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                company: formData.get('company'),
+                client_count: formData.get('client_count') || '',
+                commission_model: formData.get('commission_model'),
+                message: formData.get('message') || '',
+                works_with_suppliers: formData.get('works_with_suppliers') === 'on'
+            };
+            
+            // Validate commission model selected
+            if (!data.commission_model) {
+                alert('Please select a commission model');
+                return;
+            }
+            
+            // Show loading
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            
+            try {
+                console.log('Submitting partner application:', data);
+                console.log('Posting to: /api/v1/apply-partner');
+                
+                const response = await fetch('/api/v1/apply-partner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                console.log('Response status:', response.status);
+                
+                const result = await response.json();
+                console.log('Response data:', result);
+                
+                if (response.ok && (result.status === 'success' || result.status === 'pending' || result.status === 'approved')) {
+                    // Hide form, show success
+                    form.style.display = 'none';
+                    successMessage.style.display = 'block';
+                    
+                    // Check if auto-approved
+                    if (result.status === 'approved' && result.referral_link) {
+                        successTitle.textContent = '✅ Approved! Check email for your link.';
+                        successMessageText.innerHTML = `
+                            <p style="color: #666; margin-bottom: 16px;">Your referral link has been sent to your email!</p>
+                            <p style="font-size: 0.9375rem; color: #666; margin-bottom: 16px;">
+                                Referral Link: <a href="${result.referral_link}" style="color: #F97316; text-decoration: underline; font-family: monospace;" target="_blank">${result.referral_link}</a>
+                            </p>
+                            <p style="font-size: 0.875rem; color: #9ca3af;">Check your email for login credentials and dashboard access.</p>
+                        `;
+                    } else {
+                        // Manual review message
+                        successTitle.textContent = 'Application Submitted! 🎉';
+                        successMessageText.innerHTML = `
+                            <p style="color: #666;">We'll review your application and send you an email within 24 hours with your unique referral link.</p>
+                        `;
+                    }
+                    
+                    // Scroll to top
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    
+                    console.log('✅ Application submitted successfully!');
+                } else {
+                    throw new Error(result.message || 'Application failed');
+                }
+                
+            } catch (error) {
+                console.error('❌ Application error:', error);
+                alert('❌ Application failed: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Application';
+            }
+        });
+        
+        // Initialize calculator
+        calculateEarnings();
+    </script>
 
-    calculateEarnings();
-  </script>
 </body>
 </html>
