@@ -1,305 +1,337 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Learn how LienDeadline protects your data with enterprise-grade security, encryption, and compliance measures for API users.">
     <meta name="keywords" content="API security, data protection, encryption, SOC 2, PCI compliance, lien deadline security">
-    <title>Security & Data Protection | LienDeadline API</title>
+    <title>Security & Data Protection | LienDeadline</title>
     
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="Security & Data Protection | LienDeadline API">
-    <meta property="og:description" content="Learn how LienDeadline protects your data with enterprise-grade security, encryption, and compliance measures for API users.">
+    <meta property="og:title" content="Security & Data Protection | LienDeadline">
+    <meta property="og:description" content="Learn how LienDeadline protects your data with enterprise-grade security, encryption, and compliance measures.">
     <meta property="og:image" content="https://liendeadline.com/images/lien-deadline-preview.jpg">
     <meta property="og:url" content="https://liendeadline.com/security.html">
     <meta property="og:type" content="website">
     
-    <!-- Twitter Card Tags -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Security & Data Protection | LienDeadline API">
-    <meta name="twitter:description" content="Learn how LienDeadline protects your data with enterprise-grade security, encryption, and compliance measures.">
-    <meta name="twitter:image" content="https://liendeadline.com/images/lien-deadline-preview.jpg">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://liendeadline.com/security.html">
-    
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KYZG0TN07Z"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-KYZG0TN07Z');
-    </script>
-    <!-- Umami Analytics -->
-    <script defer src="https://cloud.umami.is/script.js" data-website-id="02250d35-ee17-41be-845d-2fe0f7f15e63"></script>
-    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/lovable-scale.css">
-    
     <script>
         tailwind.config = {
+            darkMode: ["class"],
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        serif: ['"Playfair Display"', 'serif'],
+                    },
                     colors: {
-                        background: 'hsl(40 33% 98%)',
-                        foreground: 'hsl(220 20% 15%)',
-                        accent: 'hsl(16 85% 55%)',
-                        muted: 'hsl(40 20% 92%)',
-                        'muted-foreground': 'hsl(220 10% 45%)',
-                        border: 'hsl(40 20% 88%)',
-                    }
+                        border: "hsl(214 20% 88%)",
+                        background: "hsl(210 20% 98%)",
+                        foreground: "hsl(222 47% 11%)",
+                        primary: {
+                            DEFAULT: "hsl(24 95% 53%)",
+                            foreground: "hsl(0 0% 100%)",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(210 40% 96.1%)",
+                            foreground: "hsl(215.4 16.3% 46.9%)",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(24 95% 53%)",
+                            foreground: "hsl(0 0% 100%)",
+                        },
+                    },
                 }
             }
         }
     </script>
+
+    <style>
+        .toc-link.active {
+            color: hsl(24 95% 53%);
+            border-left-color: hsl(24 95% 53%);
+            font-weight: 600;
+        }
+    </style>
 </head>
-<body class="bg-background text-foreground">
+<body class="bg-background text-foreground antialiased">
     <!-- Header -->
-    <header class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <a href="/" class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                    </div>
-                    <span class="font-serif text-lg font-semibold">LienDeadline</span>
-                </a>
-                <nav class="hidden md:flex items-center gap-8">
-                    <a href="/#calculator" class="text-muted-foreground hover:text-foreground">Calculator</a>
-                    <a href="/api.html" class="text-muted-foreground hover:text-foreground">API</a>
-                    <a href="/#pricing" class="text-muted-foreground hover:text-foreground">Pricing</a>
-                    <a href="/partners.html" class="text-muted-foreground hover:text-foreground">Partners</a>
-                    <a href="/#calculator" class="bg-accent text-white px-6 py-2 rounded-lg font-semibold">Start Free Trial</a>
-                </nav>
-                <button id="mobileMenuBtn" class="md:hidden p-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+    <header class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border h-16 transition-all duration-200">
+        <div class="container mx-auto px-4 h-full flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2 group">
+                <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
-                </button>
-            </div>
+                </div>
+                <span class="font-serif text-xl font-bold tracking-tight">LienDeadline</span>
+            </a>
+
+            <!-- Desktop Nav -->
+            <nav class="hidden md:flex items-center gap-8">
+                <a href="/#calculator" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Calculator</a>
+                <a href="/api.html" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">API</a>
+                <a href="/#pricing" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+                <a href="/partners.html" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Partners</a>
+                <a href="/#calculator" class="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm">Start Free Trial</a>
+            </nav>
+
+            <!-- Mobile Menu Button -->
+            <button id="mobileMenuBtn" class="md:hidden p-2 text-foreground" aria-label="Toggle menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
         </div>
     </header>
 
     <!-- Mobile Menu -->
-    <div id="mobileMenu" class="hidden fixed inset-0 z-40 bg-background md:hidden">
-        <div class="flex justify-end p-4">
-            <button id="closeMobileMenu" class="p-2">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
+    <div id="mobileMenu" class="fixed inset-0 z-40 bg-background/95 backdrop-blur-sm transform translate-x-full transition-transform duration-300 md:hidden">
+        <div class="flex flex-col h-full pt-20 px-6 gap-6">
+            <a href="/#calculator" class="text-lg font-medium border-b border-border pb-4">Calculator</a>
+            <a href="/api.html" class="text-lg font-medium border-b border-border pb-4">API</a>
+            <a href="/#pricing" class="text-lg font-medium border-b border-border pb-4">Pricing</a>
+            <a href="/partners.html" class="text-lg font-medium border-b border-border pb-4">Partners</a>
+            <a href="/#calculator" class="bg-primary text-primary-foreground py-3 rounded-lg text-center font-semibold mt-4">Start Free Trial</a>
         </div>
-        <div class="flex flex-col p-6 gap-6">
-            <a href="/#calculator" class="py-3 border-b border-border text-lg font-medium">Calculator</a>
-            <a href="/api.html" class="py-3 border-b border-border text-lg font-medium">API</a>
-            <a href="/#pricing" class="py-3 border-b border-border text-lg font-medium">Pricing</a>
-            <a href="/partners.html" class="py-3 border-b border-border text-lg font-medium">Partners</a>
-            <a href="/#calculator" class="bg-accent text-white px-6 py-3 rounded-lg text-center font-semibold mt-4">Start Free Trial</a>
-        </div>
+        <button id="closeMobileMenu" class="absolute top-4 right-4 p-2 text-foreground" aria-label="Close menu">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
     </div>
 
     <!-- Main Content -->
-    <main class="pt-24 pb-16">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <h1 class="text-4xl md:text-5xl font-serif font-bold mb-4">Security & Data Protection</h1>
-            <p class="text-muted-foreground mb-8">Enterprise-grade security measures to protect your data and API access</p>
-            
-            <div class="prose prose-lg max-w-none">
-                <!-- API Security -->
-                <section class="mb-12">
-                    <h2 class="text-2xl font-serif font-semibold mb-4">API Security</h2>
-                    
-                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
-                        <h3 class="text-xl font-semibold mb-3">🔐 HTTPS Encryption</h3>
-                        <p class="text-muted-foreground">All API requests and responses are encrypted using TLS 1.2+ (HTTPS). This ensures that data transmitted between your application and our servers cannot be intercepted or modified.</p>
+    <main class="pt-32 pb-24">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                
+                <!-- Sidebar TOC -->
+                <aside class="hidden lg:block lg:col-span-3">
+                    <div class="sticky top-28 space-y-8">
+                        <div>
+                            <h5 class="font-serif font-semibold text-foreground mb-4 pl-4">Contents</h5>
+                            <nav class="space-y-1 border-l border-border" id="toc">
+                                <a href="#api-security" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">API Security</a>
+                                <a href="#data-protection" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">Data Protection</a>
+                                <a href="#payment-security" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">Payment Security</a>
+                                <a href="#compliance" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">Compliance & Certifications</a>
+                            </nav>
+                        </div>
+                        
+                        <div class="bg-muted/50 p-6 rounded-xl border border-border">
+                            <h5 class="font-serif font-semibold text-foreground mb-2">Report a Vulnerability</h5>
+                            <p class="text-sm text-muted-foreground mb-4">If you found a security issue, please report it to our security team.</p>
+                            <a href="mailto:security@liendeadline.com" class="text-sm font-semibold text-primary hover:underline">Contact Security →</a>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Content -->
+                <article class="lg:col-span-8 lg:col-start-5 prose prose-slate prose-lg max-w-none">
+                    <div class="mb-12 border-b border-border pb-8">
+                        <h1 class="font-serif text-4xl font-bold text-foreground mb-4">Security & Data Protection</h1>
+                        <p class="text-xl text-muted-foreground">Enterprise-grade security measures to protect your data and API access</p>
                     </div>
 
-                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
-                        <h3 class="text-xl font-semibold mb-3">🔑 API Key Authentication</h3>
-                        <p class="text-muted-foreground mb-3">Every API request requires a valid API key in the Authorization header:</p>
-                        <code class="block bg-gray-100 p-3 rounded-lg text-sm mb-3">Authorization: Bearer YOUR_API_KEY</code>
-                        <p class="text-muted-foreground">API keys are cryptographically secure, unique per customer, and can be regenerated or revoked at any time through your dashboard.</p>
-                    </div>
+                    <section id="api-security" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-6">API Security</h2>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                                <h3 class="flex items-center text-xl font-semibold mb-3 text-foreground">
+                                    <span class="mr-2">🔐</span> HTTPS Encryption
+                                </h3>
+                                <p class="text-muted-foreground">All API requests and responses are encrypted using TLS 1.2+ (HTTPS). This ensures that data transmitted between your application and our servers cannot be intercepted or modified.</p>
+                            </div>
 
-                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
-                        <h3 class="text-xl font-semibold mb-3">⚡ Rate Limiting</h3>
-                        <p class="text-muted-foreground">API requests are rate-limited to prevent abuse and ensure fair usage. Limits are generous for paid plans and can be adjusted for enterprise customers.</p>
-                    </div>
+                            <div class="bg-white p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                                <h3 class="flex items-center text-xl font-semibold mb-3 text-foreground">
+                                    <span class="mr-2">🔑</span> API Key Authentication
+                                </h3>
+                                <p class="text-muted-foreground mb-3">Every API request requires a valid API key in the Authorization header:</p>
+                                <code class="block bg-muted p-3 rounded-lg text-sm mb-3 font-mono text-foreground">Authorization: Bearer YOUR_API_KEY</code>
+                                <p class="text-muted-foreground">API keys are cryptographically secure, unique per customer, and can be regenerated or revoked at any time through your dashboard.</p>
+                            </div>
 
-                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
-                        <h3 class="text-xl font-semibold mb-3">🚫 No PII Storage</h3>
-                        <p class="text-muted-foreground">We don't store personally identifiable information (PII) in calculation requests. Only invoice dates, states, and calculation results are stored—no names, addresses, or project details.</p>
-                    </div>
+                            <div class="bg-white p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                                <h3 class="flex items-center text-xl font-semibold mb-3 text-foreground">
+                                    <span class="mr-2">⚡</span> Rate Limiting
+                                </h3>
+                                <p class="text-muted-foreground">API requests are rate-limited to prevent abuse and ensure fair usage. Limits are generous for paid plans and can be adjusted for enterprise customers.</p>
+                            </div>
 
-                    <div class="bg-white p-6 rounded-xl border border-border">
-                        <h3 class="text-xl font-semibold mb-3">📊 Request Logging</h3>
-                        <p class="text-muted-foreground">API requests are logged for security monitoring and debugging. Logs include timestamps, API keys (masked), endpoints accessed, and response codes. Logs are retained for 90 days.</p>
-                    </div>
-                </section>
+                            <div class="bg-white p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                                <h3 class="flex items-center text-xl font-semibold mb-3 text-foreground">
+                                    <span class="mr-2">🚫</span> No PII Storage
+                                </h3>
+                                <p class="text-muted-foreground">We don't store personally identifiable information (PII) in calculation requests. Only invoice dates, states, and calculation results are stored—no names, addresses, or project details.</p>
+                            </div>
 
-                <!-- Data Protection -->
-                <section class="mb-12">
-                    <h2 class="text-2xl font-serif font-semibold mb-4">Data Protection</h2>
-                    
-                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
-                        <h3 class="text-xl font-semibold mb-3">💾 Encrypted Database</h3>
-                        <p class="text-muted-foreground">All data is stored in a PostgreSQL database hosted on Railway with encryption at rest. Database access is restricted to authorized personnel only.</p>
-                    </div>
+                            <div class="bg-white p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                                <h3 class="flex items-center text-xl font-semibold mb-3 text-foreground">
+                                    <span class="mr-2">📊</span> Request Logging
+                                </h3>
+                                <p class="text-muted-foreground">API requests are logged for security monitoring and debugging. Logs include timestamps, API keys (masked), endpoints accessed, and response codes. Logs are retained for 90 days.</p>
+                            </div>
+                        </div>
+                    </section>
 
-                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
-                        <h3 class="text-xl font-semibold mb-3">🔒 Password Security</h3>
-                        <p class="text-muted-foreground">User passwords are hashed using bcrypt before storage. We never store passwords in plain text and cannot retrieve your password if forgotten (password reset required).</p>
-                    </div>
+                    <section id="data-protection" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-6">Data Protection</h2>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                                <h3 class="flex items-center text-xl font-semibold mb-3 text-foreground">
+                                    <span class="mr-2">💾</span> Encrypted Database
+                                </h3>
+                                <p class="text-muted-foreground">All data is stored in a PostgreSQL database hosted on Railway with encryption at rest. Database access is restricted to authorized personnel only.</p>
+                            </div>
 
-                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
-                        <h3 class="text-xl font-semibold mb-3">💿 Regular Backups</h3>
-                        <p class="text-muted-foreground">Automated daily backups with 30-day retention. Backups are encrypted and stored separately from production data. We can restore data to any point within the retention period.</p>
-                    </div>
+                            <div class="bg-white p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                                <h3 class="flex items-center text-xl font-semibold mb-3 text-foreground">
+                                    <span class="mr-2">🔒</span> Password Security
+                                </h3>
+                                <p class="text-muted-foreground">User passwords are hashed using bcrypt before storage. We never store passwords in plain text and cannot retrieve your password if forgotten (password reset required).</p>
+                            </div>
 
-                    <div class="bg-white p-6 rounded-xl border border-border">
-                        <h3 class="text-xl font-semibold mb-3">🏗️ Infrastructure Security</h3>
-                        <p class="text-muted-foreground mb-3">Our infrastructure is hosted on Railway, which provides:</p>
-                        <ul class="list-disc ml-6 space-y-2 text-muted-foreground">
-                            <li>DDoS protection and mitigation</li>
-                            <li>Automatic security updates</li>
-                            <li>Network isolation and firewalls</li>
-                            <li>24/7 monitoring and incident response</li>
-                        </ul>
-                    </div>
-                </section>
+                            <div class="bg-white p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                                <h3 class="flex items-center text-xl font-semibold mb-3 text-foreground">
+                                    <span class="mr-2">💿</span> Regular Backups
+                                </h3>
+                                <p class="text-muted-foreground">Automated daily backups with 30-day retention. Backups are encrypted and stored separately from production data. We can restore data to any point within the retention period.</p>
+                            </div>
 
-                <!-- Payment Security -->
-                <section class="mb-12">
-                    <h2 class="text-2xl font-serif font-semibold mb-4">Payment Security</h2>
-                    
-                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
-                        <h3 class="text-xl font-semibold mb-3">💳 Stripe PCI Compliance</h3>
-                        <p class="text-muted-foreground">All payments are processed through Stripe, which is PCI DSS Level 1 compliant (the highest level of payment security). We never see, store, or process your credit card information directly.</p>
-                    </div>
+                            <div class="bg-white p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                                <h3 class="flex items-center text-xl font-semibold mb-3 text-foreground">
+                                    <span class="mr-2">🏗️</span> Infrastructure Security
+                                </h3>
+                                <p class="text-muted-foreground mb-3">Our infrastructure is hosted on Railway, which provides:</p>
+                                <ul class="list-disc ml-6 space-y-2 text-muted-foreground">
+                                    <li>DDoS protection and mitigation</li>
+                                    <li>Automatic security updates</li>
+                                    <li>Network isolation and firewalls</li>
+                                    <li>24/7 monitoring and incident response</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
 
-                    <div class="bg-white p-6 rounded-xl border border-border">
-                        <h3 class="text-xl font-semibold mb-3">🚫 No Credit Card Storage</h3>
-                        <p class="text-muted-foreground">We do not store credit card numbers, CVV codes, or billing addresses. All payment data is handled securely by Stripe's infrastructure.</p>
-                    </div>
-                </section>
+                    <section id="payment-security" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-6">Payment Security</h2>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                                <h3 class="flex items-center text-xl font-semibold mb-3 text-foreground">
+                                    <span class="mr-2">💳</span> Stripe PCI Compliance
+                                </h3>
+                                <p class="text-muted-foreground">All payments are processed through Stripe, which is PCI DSS Level 1 compliant (the highest level of payment security). We never see, store, or process your credit card information directly.</p>
+                            </div>
 
-                <!-- Compliance -->
-                <section class="mb-12">
-                    <h2 class="text-2xl font-serif font-semibold mb-4">Compliance & Certifications</h2>
-                    
-                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
-                        <h3 class="text-xl font-semibold mb-3">📋 SOC 2 Compliance</h3>
-                        <p class="text-muted-foreground">We are working toward SOC 2 Type II certification. Our security practices align with SOC 2 requirements for security, availability, and confidentiality.</p>
-                    </div>
+                            <div class="bg-white p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                                <h3 class="flex items-center text-xl font-semibold mb-3 text-foreground">
+                                    <span class="mr-2">🚫</span> No Credit Card Storage
+                                </h3>
+                                <p class="text-muted-foreground">We do not store credit card numbers, CVV codes, or billing addresses. All payment data is handled securely by Stripe's infrastructure.</p>
+                            </div>
+                        </div>
+                    </section>
 
-                    <div class="bg-white p-6 rounded-xl border border-border mb-4">
-                        <h3 class="text-xl font-semibold mb-3">🌍 GDPR & CCPA Compliance</h3>
-                        <p class="text-muted-foreground">We comply with GDPR (EU) and CCPA (California) privacy regulations. Users can request access, deletion, or export of their data. See our <a href="/privacy.html" class="text-accent hover:underline">Privacy Policy</a> for details.</p>
-                    </div>
+                    <section id="compliance" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-6">Compliance & Certifications</h2>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                                <h3 class="flex items-center text-xl font-semibold mb-3 text-foreground">
+                                    <span class="mr-2">📋</span> SOC 2 Compliance
+                                </h3>
+                                <p class="text-muted-foreground">We are working toward SOC 2 Type II certification. Our security practices align with SOC 2 requirements for security, availability, and confidentiality.</p>
+                            </div>
 
-                    <div class="bg-white p-6 rounded-xl border border-border">
-                        <h3 class="text-xl font-semibold mb-3">🔍 Security Audits</h3>
-                        <p class="text-muted-foreground">We conduct regular security audits and vulnerability assessments. Third-party security reviews are performed annually.</p>
-                    </div>
-                </section>
+                            <div class="bg-white p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                                <h3 class="flex items-center text-xl font-semibold mb-3 text-foreground">
+                                    <span class="mr-2">🌍</span> GDPR & CCPA Compliance
+                                </h3>
+                                <p class="text-muted-foreground">We comply with GDPR (EU) and CCPA (California) privacy regulations. Users can request access, deletion, or export of their data. See our <a href="/privacy.html" class="text-primary hover:underline">Privacy Policy</a> for details.</p>
+                            </div>
+                        </div>
+                    </section>
 
-                <!-- Incident Response -->
-                <section class="mb-12">
-                    <h2 class="text-2xl font-serif font-semibold mb-4">Incident Response</h2>
-                    
-                    <div class="bg-white p-6 rounded-xl border border-border">
-                        <p class="text-muted-foreground mb-4">In the event of a security incident:</p>
-                        <ul class="list-disc ml-6 space-y-2 text-muted-foreground">
-                            <li>We will notify affected users within 72 hours</li>
-                            <li>We will provide details about what data was affected</li>
-                            <li>We will take immediate steps to contain and remediate the issue</li>
-                            <li>We will conduct a post-incident review and implement improvements</li>
-                        </ul>
+                    <div class="mt-12 pt-8 border-t border-border">
+                        <a href="/" class="inline-flex items-center text-primary font-medium hover:underline">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                            Back to Home
+                        </a>
                     </div>
-                </section>
-
-                <!-- Security Contact -->
-                <section class="mb-12 bg-accent/10 p-8 rounded-xl border border-accent/20">
-                    <h2 class="text-2xl font-serif font-semibold mb-4">Security Contact</h2>
-                    <p class="text-muted-foreground mb-4">If you discover a security vulnerability or have security concerns:</p>
-                    <ul class="list-none ml-0 space-y-2">
-                        <li><strong>Email:</strong> <a href="mailto:security@liendeadline.com" class="text-accent hover:underline">security@liendeadline.com</a></li>
-                        <li><strong>Response Time:</strong> We aim to respond to security reports within 24 hours</li>
-                    </ul>
-                    <p class="text-muted-foreground mt-4 text-sm">Please do not publicly disclose vulnerabilities until we've had a chance to address them.</p>
-                </section>
-
-                <!-- Best Practices -->
-                <section class="mb-12">
-                    <h2 class="text-2xl font-serif font-semibold mb-4">Security Best Practices for API Users</h2>
-                    <div class="bg-white p-6 rounded-xl border border-border">
-                        <ul class="list-disc ml-6 space-y-2 text-muted-foreground">
-                            <li><strong>Protect Your API Key:</strong> Never commit API keys to version control or share them publicly</li>
-                            <li><strong>Use HTTPS:</strong> Always make API requests over HTTPS (never HTTP)</li>
-                            <li><strong>Rotate Keys Regularly:</strong> Regenerate API keys periodically or if compromised</li>
-                            <li><strong>Monitor Usage:</strong> Review API usage logs regularly for suspicious activity</li>
-                            <li><strong>Implement Rate Limiting:</strong> Add client-side rate limiting to prevent accidental abuse</li>
-                            <li><strong>Validate Input:</strong> Validate all input before sending to our API</li>
-                        </ul>
-                    </div>
-                </section>
+                </article>
             </div>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-900 text-gray-300 py-12">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid md:grid-cols-4 gap-8">
-                <div>
-                    <h3 class="font-serif text-lg font-semibold text-white mb-4">LienDeadline</h3>
-                    <p class="text-sm">Calculate mechanics lien deadlines across all 50 states + DC. Fast, accurate, affordable.</p>
+    <footer class="bg-white border-t border-border py-12">
+        <div class="container mx-auto px-4 text-center">
+            <div class="flex items-center justify-center gap-2 mb-6">
+                <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
                 </div>
-                <div>
-                    <h4 class="font-semibold text-white mb-4">Product</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="/#calculator" class="hover:text-white">Calculator</a></li>
-                        <li><a href="/api.html" class="hover:text-white">API</a></li>
-                        <li><a href="/#pricing" class="hover:text-white">Pricing</a></li>
-                        <li><a href="/comparison.html" class="hover:text-white">Comparison</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-white mb-4">Company</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="/about.html" class="hover:text-white">About</a></li>
-                        <li><a href="/help.html" class="hover:text-white">Help</a></li>
-                        <li><a href="/contact.html" class="hover:text-white">Contact</a></li>
-                        <li><a href="/partners.html" class="hover:text-white">Partners</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-white mb-4">Legal</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="/privacy.html" class="hover:text-white">Privacy</a></li>
-                        <li><a href="/terms.html" class="hover:text-white">Terms</a></li>
-                        <li><a href="/security.html" class="hover:text-white">Security</a></li>
-                        <li><a href="/cookies.html" class="hover:text-white">Cookies</a></li>
-                    </ul>
-                </div>
+                <span class="font-serif text-xl font-bold tracking-tight">LienDeadline</span>
             </div>
-            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
-                <p>Serving all 50 US states + DC • Updated December 2025</p>
-                <p class="mt-2">© 2025 LienDeadline. All rights reserved.</p>
+            <div class="flex flex-wrap justify-center gap-6 mb-8 text-sm text-muted-foreground">
+                <a href="/privacy.html" class="hover:text-foreground">Privacy Policy</a>
+                <a href="/terms.html" class="hover:text-foreground">Terms of Service</a>
+                <a href="/security.html" class="hover:text-foreground">Security</a>
+                <a href="/cookies.html" class="hover:text-foreground">Cookie Policy</a>
+                <a href="/contact.html" class="hover:text-foreground">Contact</a>
             </div>
+            <p class="text-sm text-muted-foreground">&copy; 2025 LienDeadline.com. All rights reserved.</p>
         </div>
     </footer>
-
     <script>
-        // Mobile menu toggle
-        document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
-            document.getElementById('mobileMenu')?.classList.remove('hidden');
-        });
-        document.getElementById('closeMobileMenu')?.addEventListener('click', () => {
-            document.getElementById('mobileMenu')?.classList.add('hidden');
+        // Mobile Menu Toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const closeMobileMenu = document.getElementById('closeMobileMenu');
+        const mobileMenu = document.getElementById('mobileMenu');
+
+        function toggleMenu() {
+            mobileMenu.classList.toggle('translate-x-full');
+            document.body.classList.toggle('overflow-hidden');
+        }
+
+        mobileMenuBtn.addEventListener('click', toggleMenu);
+        closeMobileMenu.addEventListener('click', toggleMenu);
+
+        // Sticky TOC Active State
+        const observerOptions = {
+            root: null,
+            rootMargin: '-100px 0px -60% 0px',
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    document.querySelectorAll('.toc-link').forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === `#${id}`) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('section[id]').forEach(section => {
+            observer.observe(section);
         });
     </script>
 </body>

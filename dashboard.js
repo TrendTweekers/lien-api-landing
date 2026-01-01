@@ -66,7 +66,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             localStorage.setItem('user_email', data.email);
             
             // Redirect to customer dashboard
-            window.location.href = '/dashboard-v2';
+            window.location.href = '/customer-dashboard';
         } else {
             const error = await response.json();
             errorDiv.textContent = error.detail || 'Invalid email or password';

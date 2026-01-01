@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,135 +14,359 @@
     <meta property="og:url" content="https://liendeadline.com/terms.html">
     <meta property="og:type" content="website">
     
-    <!-- Twitter Card Tags -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Terms of Service | LienDeadline">
-    <meta name="twitter:description" content="LienDeadline Terms of Service. Read our terms and conditions for using the lien deadline calculator.">
-    <meta name="twitter:image" content="https://liendeadline.com/images/lien-deadline-preview.jpg">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://liendeadline.com/terms.html">
-    
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KYZG0TN07Z"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-KYZG0TN07Z');
-    </script>
-    <!-- Umami Analytics -->
-    <script defer src="https://cloud.umami.is/script.js" data-website-id="02250d35-ee17-41be-845d-2fe0f7f15e63"></script>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: ["class"],
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        serif: ['"Playfair Display"', 'serif'],
+                    },
+                    colors: {
+                        border: "hsl(214 20% 88%)",
+                        background: "hsl(210 20% 98%)",
+                        foreground: "hsl(222 47% 11%)",
+                        primary: {
+                            DEFAULT: "hsl(24 95% 53%)",
+                            foreground: "hsl(0 0% 100%)",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(210 40% 96.1%)",
+                            foreground: "hsl(215.4 16.3% 46.9%)",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(24 95% 53%)",
+                            foreground: "hsl(0 0% 100%)",
+                        },
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .toc-link.active {
+            color: hsl(24 95% 53%);
+            border-left-color: hsl(24 95% 53%);
+            font-weight: 600;
+        }
+    </style>
 </head>
-<body class="bg-gray-50">
-    <div class="max-w-4xl mx-auto px-6 py-12">
-        <h1 class="text-4xl font-bold mb-8">Terms of Service</h1>
-        <p class="text-sm text-gray-600 mb-8">Last Updated: January 15, 2025</p>
-        
-        <div class="prose prose-lg">
-            <h2 class="text-2xl font-bold mt-8 mb-4">1. Service Description</h2>
-            <p>LienDeadline.com provides mechanics lien deadline calculations based on state statutes. We offer:</p>
-            <ul class="list-disc ml-6 mb-4">
-                <li>10 free trial calculations (3 without email, 7 more with email)</li>
-                <li>Unlimited calculations for $299/month subscription</li>
-            </ul>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">2. NOT LEGAL ADVICE</h2>
-            <p class="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-4">
-                <strong>IMPORTANT:</strong> LienDeadline is a calculation tool based on state statutes. 
-                It is NOT legal advice. Always consult a licensed attorney for legal guidance on filing mechanics liens.
-            </p>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">3. Accuracy Disclaimer</h2>
-            <p>While we strive for accuracy:</p>
-            <ul class="list-disc ml-6 mb-4">
-                <li>State laws can change without notice</li>
-                <li>We update our rules quarterly</li>
-                <li>We are not liable for missed deadlines</li>
-                <li>You should verify critical deadlines with your attorney</li>
-            </ul>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">4. Subscription Terms</h2>
-            <ul class="list-disc ml-6 mb-4">
-                <li><strong>Price:</strong> $299/month for unlimited calculations</li>
-                <li><strong>Billing:</strong> Automatic monthly renewal via Stripe</li>
-                <li><strong>Cancellation:</strong> Cancel anytime, no penalties</li>
-                <li><strong>Refunds:</strong> Pro-rated refunds on request within 7 days</li>
-            </ul>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">5. Acceptable Use</h2>
-            <p>You may NOT:</p>
-            <ul class="list-disc ml-6 mb-4">
-                <li>Share your account credentials</li>
-                <li>Scrape or copy our calculation logic</li>
-                <li>Use automated tools to abuse free trials</li>
-                <li>Resell access to our service</li>
-            </ul>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">6. Limitation of Liability</h2>
-            <p>LienDeadline.com is not liable for:</p>
-            <ul class="list-disc ml-6 mb-4">
-                <li>Financial losses from missed deadlines</li>
-                <li>Errors in calculations</li>
-                <li>Service downtime or interruptions</li>
-            </ul>
-            <p>Maximum liability is limited to one month's subscription fee ($299).</p>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">7. Broker/Partner Payout Terms</h2>
-            <p class="mb-4">If you participate in our Partner Program as a broker:</p>
-            <ul class="list-disc ml-6 mb-4">
-                <li><strong>Commission Models:</strong> You choose one of two models:
-                    <ul class="list-disc ml-6 mt-2">
-                        <li>$500 one-time per referred customer (paid once, after the hold period)</li>
-                        <li>$50/month recurring per active referred customer (paid monthly, after the hold period for each payment)</li>
-                    </ul>
-                </li>
-                <li><strong>60-Day Hold Period:</strong> All commissions are held for 60 days after the FIRST successful customer payment date before becoming eligible for payout. For recurring commissions, each monthly invoice has its own 60-day hold period. This protects against chargebacks, refunds, and disputes.</li>
-                <li><strong>Eligibility:</strong> Commissions become eligible ("Due to Pay") only after:
-                    <ul class="list-disc ml-6 mt-2">
-                        <li>The 60-day hold period has passed from the payment date</li>
-                        <li>The customer's payment has not been refunded or charged back</li>
-                        <li>The customer's subscription is still active (for recurring commissions)</li>
-                    </ul>
-                    <p class="mt-2"><strong>Payout eligibility is determined by LienDeadline's internal tracking and payment processor events.</strong></p>
-                </li>
-                <li><strong>Refunds & Chargebacks:</strong> If a customer refunds, disputes, or charges back a payment, the associated commission does not become eligible for payout. Failed payments also void unpaid earnings. If a subscription cancels or becomes past-due, recurring commissions stop for that customer until payments resume.</li>
-                <li><strong>Payout Processing:</strong> Admin processes payouts in batches. Each batch contains one or more eligible commission events and is marked paid together with a timestamp and optional transaction reference.</li>
-                <li><strong>Payment Methods:</strong> We support PayPal, Wise (TransferWise), Revolut, SEPA Transfer, SWIFT/Wire Transfer, and Cryptocurrency. You must provide valid payment information in your broker dashboard.</li>
-                <li><strong>Tax Obligations:</strong> You are responsible for reporting and paying taxes on all commissions received. We may request tax identification information (W9, VAT, etc.) for payments over $600/year (US) or equivalent.</li>
-            </ul>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">8. Governing Law & Venue</h2>
-            <p class="mb-4">These Terms are governed by the laws of [Your State/Country], without regard to conflict of law principles.</p>
-            <p class="mb-4">Any disputes arising from these Terms or your use of LienDeadline shall be resolved exclusively in the state or federal courts located in [Your City, State], and you consent to the personal jurisdiction of such courts.</p>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">9. Termination & Data Retention</h2>
-            <ul class="list-disc ml-6 mb-4">
-                <li><strong>Termination:</strong> Either party may terminate this agreement at any time. You may cancel your subscription through your dashboard. We may terminate accounts that violate these Terms.</li>
-                <li><strong>Effect of Termination:</strong> Upon termination, your access to the service will cease. You will not be entitled to refunds for unused subscription time, except as provided in Section 4.</li>
-                <li><strong>Data Retention:</strong> We retain your data for as long as necessary to provide the service and comply with legal obligations. You may request deletion of your data at any time by contacting support@liendeadline.com.</li>
-                <li><strong>Broker Data:</strong> Broker payment information and commission records are retained for accounting and tax purposes as required by law.</li>
-            </ul>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">10. Changes to Terms</h2>
-            <p>We may update these terms. Continued use after changes constitutes acceptance. Material changes will be communicated via email or dashboard notification.</p>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">11. Links to Other Policies</h2>
-            <p class="mb-4">These Terms should be read together with our:</p>
-            <ul class="list-disc ml-6 mb-4">
-                <li><a href="/privacy.html" class="text-blue-600 hover:underline">Privacy Policy</a> - How we collect, use, and protect your data</li>
-                <li><a href="/security.html" class="text-blue-600 hover:underline">Security Policy</a> - Our security practices and data protection</li>
-            </ul>
-            
-            <h2 class="text-2xl font-bold mt-8 mb-4">12. Contact</h2>
-            <p>For questions about these Terms: support@liendeadline.com</p>
-            <p class="mt-2">For legal inquiries: legal@liendeadline.com</p>
+<body class="bg-background text-foreground antialiased">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border h-16 transition-all duration-200">
+        <div class="container mx-auto px-4 h-full flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2 group">
+                <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <span class="font-serif text-xl font-bold tracking-tight">LienDeadline</span>
+            </a>
+
+            <!-- Desktop Nav -->
+            <nav class="hidden md:flex items-center gap-8">
+                <a href="/#calculator" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Calculator</a>
+                <a href="/api.html" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">API</a>
+                <a href="/#pricing" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+                <a href="/partners.html" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Partners</a>
+                <a href="/#calculator" class="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm">Start Free Trial</a>
+            </nav>
+
+            <!-- Mobile Menu Button -->
+            <button id="mobileMenuBtn" class="md:hidden p-2 text-foreground" aria-label="Toggle menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
         </div>
-        
-        <div class="mt-12">
-            <a href="/" class="text-blue-600 hover:underline">← Back to Home</a>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="fixed inset-0 z-40 bg-background/95 backdrop-blur-sm transform translate-x-full transition-transform duration-300 md:hidden">
+        <div class="flex flex-col h-full pt-20 px-6 gap-6">
+            <a href="/#calculator" class="text-lg font-medium border-b border-border pb-4">Calculator</a>
+            <a href="/api.html" class="text-lg font-medium border-b border-border pb-4">API</a>
+            <a href="/#pricing" class="text-lg font-medium border-b border-border pb-4">Pricing</a>
+            <a href="/partners.html" class="text-lg font-medium border-b border-border pb-4">Partners</a>
+            <a href="/#calculator" class="bg-primary text-primary-foreground py-3 rounded-lg text-center font-semibold mt-4">Start Free Trial</a>
         </div>
+        <button id="closeMobileMenu" class="absolute top-4 right-4 p-2 text-foreground" aria-label="Close menu">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
     </div>
+
+    <!-- Main Content -->
+    <main class="pt-32 pb-24">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                
+                <!-- Sidebar TOC -->
+                <aside class="hidden lg:block lg:col-span-3">
+                    <div class="sticky top-28 space-y-8">
+                        <div>
+                            <h5 class="font-serif font-semibold text-foreground mb-4 pl-4">Contents</h5>
+                            <nav class="space-y-1 border-l border-border" id="toc">
+                                <a href="#service-description" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">1. Service Description</a>
+                                <a href="#not-legal-advice" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">2. NOT LEGAL ADVICE</a>
+                                <a href="#accuracy-disclaimer" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">3. Accuracy Disclaimer</a>
+                                <a href="#subscription-terms" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">4. Subscription Terms</a>
+                                <a href="#acceptable-use" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">5. Acceptable Use</a>
+                                <a href="#limitation-liability" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">6. Limitation of Liability</a>
+                                <a href="#broker-terms" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">7. Broker/Partner Terms</a>
+                                <a href="#governing-law" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">8. Governing Law</a>
+                                <a href="#termination" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">9. Termination</a>
+                                <a href="#changes" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">10. Changes to Terms</a>
+                                <a href="#contact" class="toc-link block py-2 pl-4 text-sm text-muted-foreground hover:text-foreground hover:border-l-foreground -ml-px border-l border-transparent transition-all">12. Contact</a>
+                            </nav>
+                        </div>
+                        
+                        <div class="bg-muted/50 p-6 rounded-xl border border-border">
+                            <h5 class="font-serif font-semibold text-foreground mb-2">Need Help?</h5>
+                            <p class="text-sm text-muted-foreground mb-4">Contact our support team for questions about these terms.</p>
+                            <a href="mailto:support@liendeadline.com" class="text-sm font-semibold text-primary hover:underline">Contact Support →</a>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Content -->
+                <article class="lg:col-span-8 lg:col-start-5 prose prose-slate prose-lg max-w-none">
+                    <div class="mb-12 border-b border-border pb-8">
+                        <h1 class="font-serif text-4xl font-bold text-foreground mb-4">Terms of Service</h1>
+                        <p class="text-muted-foreground">Last Updated: January 15, 2025</p>
+                    </div>
+
+                    <section id="service-description" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-4">1. Service Description</h2>
+                        <div class="bg-white p-6 rounded-xl border border-border shadow-sm">
+                            <p class="mb-4">LienDeadline.com provides mechanics lien deadline calculations based on state statutes. We offer:</p>
+                            <ul class="list-disc ml-6 space-y-2 text-muted-foreground">
+                                <li>10 free trial calculations (3 without email, 7 more with email)</li>
+                                <li>Unlimited calculations for $299/month subscription</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section id="not-legal-advice" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-4">2. NOT LEGAL ADVICE</h2>
+                        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded-r-xl">
+                            <div class="flex gap-4">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <strong class="block text-yellow-800 mb-1">IMPORTANT DISCLAIMER</strong>
+                                    <p class="text-yellow-700">LienDeadline is a calculation tool based on state statutes. It is NOT legal advice. Always consult a licensed attorney for legal guidance on filing mechanics liens.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="accuracy-disclaimer" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-4">3. Accuracy Disclaimer</h2>
+                        <div class="bg-white p-6 rounded-xl border border-border shadow-sm">
+                            <p class="mb-4 text-muted-foreground">While we strive for accuracy:</p>
+                            <ul class="list-disc ml-6 space-y-2 text-muted-foreground">
+                                <li>State laws can change without notice</li>
+                                <li>We update our rules quarterly</li>
+                                <li>We are not liable for missed deadlines</li>
+                                <li>You should verify critical deadlines with your attorney</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section id="subscription-terms" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-4">4. Subscription Terms</h2>
+                        <div class="bg-white p-6 rounded-xl border border-border shadow-sm">
+                            <ul class="space-y-4">
+                                <li class="flex items-start gap-3">
+                                    <span class="bg-primary/10 text-primary p-1 rounded">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    </span>
+                                    <div>
+                                        <strong>Price:</strong>
+                                        <p class="text-muted-foreground">$299/month for unlimited calculations</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <span class="bg-primary/10 text-primary p-1 rounded">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    </span>
+                                    <div>
+                                        <strong>Billing:</strong>
+                                        <p class="text-muted-foreground">Automatic monthly renewal via Stripe</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <span class="bg-primary/10 text-primary p-1 rounded">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </span>
+                                    <div>
+                                        <strong>Cancellation:</strong>
+                                        <p class="text-muted-foreground">Cancel anytime, no penalties</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <span class="bg-primary/10 text-primary p-1 rounded">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                    </span>
+                                    <div>
+                                        <strong>Refunds:</strong>
+                                        <p class="text-muted-foreground">Pro-rated refunds on request within 7 days</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section id="acceptable-use" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-4">5. Acceptable Use</h2>
+                        <div class="bg-white p-6 rounded-xl border border-border shadow-sm">
+                            <p class="mb-4 text-muted-foreground">You may NOT:</p>
+                            <ul class="list-disc ml-6 space-y-2 text-muted-foreground">
+                                <li>Share your account credentials</li>
+                                <li>Scrape or copy our calculation logic</li>
+                                <li>Use automated tools to abuse free trials</li>
+                                <li>Resell access to our service</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section id="limitation-liability" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-4">6. Limitation of Liability</h2>
+                        <div class="bg-white p-6 rounded-xl border border-border shadow-sm">
+                            <p class="mb-4 text-muted-foreground">LienDeadline.com is not liable for:</p>
+                            <ul class="list-disc ml-6 space-y-2 text-muted-foreground">
+                                <li>Financial losses from missed deadlines</li>
+                                <li>Errors in calculations</li>
+                                <li>Service downtime or interruptions</li>
+                            </ul>
+                            <p class="mt-4 pt-4 border-t border-border font-medium text-foreground">Maximum liability is limited to one month's subscription fee ($299).</p>
+                        </div>
+                    </section>
+
+                    <section id="broker-terms" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-4">7. Broker/Partner Payout Terms</h2>
+                        <div class="bg-white p-6 rounded-xl border border-border shadow-sm">
+                            <p class="mb-4 text-muted-foreground">If you participate in our Partner Program as a broker:</p>
+                            <ul class="list-disc ml-6 space-y-4 text-muted-foreground">
+                                <li>
+                                    <strong class="text-foreground">Commission Models:</strong> You choose one of two models:
+                                    <ul class="list-circle ml-6 mt-2 space-y-1">
+                                        <li>$500 one-time per referred customer (paid once, after the hold period)</li>
+                                        <li>$50/month recurring per active referred customer (paid monthly, after the hold period for each payment)</li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <strong class="text-foreground">60-Day Hold Period:</strong> All commissions are held for 60 days after the FIRST successful customer payment date before becoming eligible for payout. For recurring commissions, each monthly invoice has its own 60-day hold period. This protects against chargebacks, refunds, and disputes.
+                                </li>
+                                <li>
+                                    <strong class="text-foreground">Payment Method:</strong> Payouts are made via ACH or PayPal. You must provide valid payout information.
+                                </li>
+                                <li>
+                                    <strong class="text-foreground">Clawbacks:</strong> If a referred customer requests a refund or initiates a chargeback, any pending commissions for that customer will be voided. If commission was already paid, it will be deducted from future payouts.
+                                </li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section id="governing-law" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-4">8. Governing Law</h2>
+                        <p class="text-muted-foreground">These terms are governed by the laws of the State of Delaware, without regard to its conflict of law principles.</p>
+                    </section>
+
+                    <section id="termination" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-4">9. Termination</h2>
+                        <p class="text-muted-foreground">We reserve the right to terminate or suspend your account at any time for violation of these terms, without prior notice.</p>
+                    </section>
+
+                    <section id="changes" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-4">10. Changes to Terms</h2>
+                        <p class="text-muted-foreground">We may modify these terms at any time. We will notify you of material changes via email or a prominent notice on our website.</p>
+                    </section>
+
+                    <section id="contact" class="scroll-mt-28 mb-12">
+                        <h2 class="font-serif text-2xl font-bold text-foreground mb-4">12. Contact</h2>
+                        <p class="text-muted-foreground">For questions about these terms, contact us at <a href="mailto:support@liendeadline.com" class="text-primary hover:underline">support@liendeadline.com</a>.</p>
+                    </section>
+                </article>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-border py-12">
+        <div class="container mx-auto px-4 text-center">
+            <div class="flex items-center justify-center gap-2 mb-6">
+                <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <span class="font-serif text-xl font-bold tracking-tight">LienDeadline</span>
+            </div>
+            <div class="flex flex-wrap justify-center gap-6 mb-8 text-sm text-muted-foreground">
+                <a href="/privacy.html" class="hover:text-foreground">Privacy Policy</a>
+                <a href="/terms.html" class="hover:text-foreground">Terms of Service</a>
+                <a href="/security.html" class="hover:text-foreground">Security</a>
+                <a href="/cookies.html" class="hover:text-foreground">Cookie Policy</a>
+                <a href="/contact.html" class="hover:text-foreground">Contact</a>
+            </div>
+            <p class="text-sm text-muted-foreground">&copy; 2025 LienDeadline.com. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile Menu Toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const closeMobileMenu = document.getElementById('closeMobileMenu');
+        const mobileMenu = document.getElementById('mobileMenu');
+
+        function toggleMenu() {
+            mobileMenu.classList.toggle('translate-x-full');
+            document.body.classList.toggle('overflow-hidden');
+        }
+
+        mobileMenuBtn.addEventListener('click', toggleMenu);
+        closeMobileMenu.addEventListener('click', toggleMenu);
+
+        // Sticky TOC Active State
+        const observerOptions = {
+            root: null,
+            rootMargin: '-100px 0px -60% 0px',
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    document.querySelectorAll('.toc-link').forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === `#${id}`) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('section[id]').forEach(section => {
+            observer.observe(section);
+        });
+    </script>
 </body>
 </html>

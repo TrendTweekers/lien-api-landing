@@ -46,27 +46,27 @@ export const IntegrationCard = ({
         </Badge>
       </div>
 
-      <Button
-        className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-        size="sm"
-        onClick={(e) => {
-          if (onConnect) {
-            e.preventDefault();
-            e.stopPropagation();
-            onConnect();
-          }
-        }}
-      >
-        {connected ? "Manage" : `Connect ${name.split(" ")[0]}`}
-      </Button>
+      {name === "QuickBooks Integration" ? (
+        <a 
+          href="/api/quickbooks/connect"
+          className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3 mt-4"
+        >
+          {connected ? "Manage" : "Connect QuickBooks"}
+        </a>
+      ) : (
+        <Button
+          className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+          size="sm"
+          onClick={onConnect}
+        >
+          {connected ? "Manage" : `Connect ${name.split(" ")[0]}`}
+        </Button>
+      )}
 
-      <a 
-        href="mailto:admin@stackedboost.com?subject=Issue with QuickBooks Integration"
-        className="w-full mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1"
-      >
+      <button className="w-full mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1">
         <AlertCircle className="h-3 w-3" />
         Report Issue
-      </a>
+      </button>
     </div>
   );
 };

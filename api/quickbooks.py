@@ -5,7 +5,6 @@ Allows users to connect their QuickBooks account and import invoices
 import os
 import base64
 import secrets
-import time
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Request, Depends, Header
 from fastapi.responses import RedirectResponse
@@ -222,94 +221,47 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
         return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": "Missing company ID"}))
     
     # Verify state and get user ID
-    user_id = None
     try:
-        # Validate state against cookie if present (Frontend flow)
-        cookie_state = request.cookies.get('oauth_state')
-        
-        if cookie_state and cookie_state == state:
-            print(f"✅ State validated via Cookie: {state[:10]}...")
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
             
-            # Try to get user from session_token cookie
-            session_token = request.cookies.get('session_token')
-            if session_token:
-                with get_db() as conn:
-                    cursor = get_db_cursor(conn)
-                    if DB_TYPE == 'postgresql':
-                        cursor.execute("SELECT id FROM users WHERE session_token = %s", (session_token,))
-                    else:
-                        cursor.execute("SELECT id FROM users WHERE session_token = ?", (session_token,))
-                    
-                    user_res = cursor.fetchone()
-                    if user_res:
-                        if isinstance(user_res, dict):
-                            user_id = user_res.get('id')
-                        else:
-                            user_id = user_res[0] if len(user_res) > 0 else None
-                        print(f"✅ Found user_id from session cookie: {user_id}")
-                    else:
-                        print(f"❌ Session token found but no user matched")
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT user_id FROM quickbooks_oauth_states
+                    WHERE state = %s AND expires_at > NOW()
+                """, (state,))
             else:
-                print(f"❌ No session_token cookie found in callback")
-                
-            if not user_id:
-                print("❌ Could not identify user from session cookie")
-                # We can't save tokens without a user, but maybe we shouldn't fail hard yet?
-                # Actually, we MUST fail or we can't save tokens.
-                return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": "Session expired or invalid"}))
-
-        else:
-            # Fallback to database validation (Backend flow)
-            with get_db() as conn:
-                cursor = get_db_cursor(conn)
-                
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        SELECT user_id FROM quickbooks_oauth_states
-                        WHERE state = %s AND expires_at > NOW()
-                    """, (state,))
-                else:
-                    cursor.execute("""
-                        SELECT user_id FROM quickbooks_oauth_states
-                        WHERE state = ? AND expires_at > datetime('now')
-                    """, (state,))
-                
-                result = cursor.fetchone()
-                if not result:
-                    # If cookie validation also failed (or wasn't attempted), then it's an error
-                    if not cookie_state:
-                        error_msg = "Invalid or expired OAuth state (No cookie, DB lookup failed)"
-                        print(f"❌ {error_msg}")
-                        return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": error_msg}))
-                    elif cookie_state != state:
-                        error_msg = f"OAuth state mismatch (Cookie: {cookie_state[:10]}..., Param: {state[:10]}...)"
-                        print(f"❌ {error_msg}")
-                        return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": error_msg}))
-                
-                if result:
-                    # Extract user_id - handle both dict and tuple results
-                    if isinstance(result, dict):
-                        user_id = result.get('user_id')
-                    else:
-                        user_id = result[0] if len(result) > 0 else None
-                    
-                    print(f"✅ Found user_id: {user_id} for state: {state[:10]}...")
-                    
-                    # Delete used state
-                    if DB_TYPE == 'postgresql':
-                        cursor.execute("DELETE FROM quickbooks_oauth_states WHERE state = %s", (state,))
-                    else:
-                        cursor.execute("DELETE FROM quickbooks_oauth_states WHERE state = ?", (state,))
-                    
-                    conn.commit()
-
+                cursor.execute("""
+                    SELECT user_id FROM quickbooks_oauth_states
+                    WHERE state = ? AND expires_at > datetime('now')
+                """, (state,))
+            
+            result = cursor.fetchone()
+            if not result:
+                error_msg = "Invalid or expired OAuth state"
+                print(f"❌ {error_msg}")
+                return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": error_msg}))
+            
+            # Extract user_id - handle both dict and tuple results
+            if isinstance(result, dict):
+                user_id = result.get('user_id')
+            else:
+                user_id = result[0] if len(result) > 0 else None
+            
+            print(f"✅ Found user_id: {user_id} for state: {state[:10]}...")
+            
+            # Delete used state
+            if DB_TYPE == 'postgresql':
+                cursor.execute("DELETE FROM quickbooks_oauth_states WHERE state = %s", (state,))
+            else:
+                cursor.execute("DELETE FROM quickbooks_oauth_states WHERE state = ?", (state,))
+            
+            conn.commit()
     except HTTPException:
         raise
     except Exception as e:
         print(f"Error verifying state: {e}")
-        # Only raise if we really can't validate
-        if not (cookie_state and cookie_state == state):
-             raise HTTPException(status_code=500, detail="Error verifying OAuth state")
+        raise HTTPException(status_code=500, detail="Error verifying OAuth state")
     
     # Exchange code for tokens
     try:
@@ -644,24 +596,18 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                 print(f"QuickBooks API error: {error_detail}")
                 raise HTTPException(status_code=500, detail=f"Failed to fetch invoices from QuickBooks: {error_detail}")
             
-            print(f"DEBUG_RAW_RESPONSE: {response.text}", flush=True)
-            
             data = response.json()
             invoices = data.get("QueryResponse", {}).get("Invoice", [])
             
             # If single invoice, convert to list
             if isinstance(invoices, dict):
                 invoices = [invoices]
-                
-            print(f"DEBUG_INVOICE_COUNT: Found {len(invoices)} invoices in QB response", flush=True)
             
             # Format invoices for frontend
             formatted_invoices = []
             today = datetime.now().date()
             
             for inv in invoices:
-                print(f"DEBUG_PROCESSING_INVOICE: ID={inv.get('Id')} Amount={inv.get('TotalAmt')}", flush=True)
-                
                 # Extract state from shipping or billing address
                 state = "TX"  # Default
                 
@@ -721,7 +667,10 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                     "lien_days_remaining": lien_days
                 })
             
-            return formatted_invoices
+            return {
+                "invoices": formatted_invoices,
+                "count": len(formatted_invoices)
+            }
             
     except httpx.HTTPError as e:
         print(f"HTTP error fetching invoices: {e}")

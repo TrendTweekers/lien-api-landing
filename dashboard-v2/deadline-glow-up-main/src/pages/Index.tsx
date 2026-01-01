@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { IntegrationsSection } from "@/components/dashboard/IntegrationsSection";
 import { AccountOverview } from "@/components/dashboard/AccountOverview";
@@ -12,13 +12,11 @@ import { ApiDocs } from "@/components/dashboard/ApiDocs";
 import { ImportedInvoicesTable } from "@/components/dashboard/ImportedInvoicesTable";
 
 const Index = () => {
-  const [refreshProjectsTrigger, setRefreshProjectsTrigger] = useState(0);
-
   useEffect(() => {
     // Check for session token and verify session
     const token = localStorage.getItem('session_token');
     if (!token) {
-      window.location.href = '/';
+      window.location.href = '/login.html';
       return;
     }
     
@@ -26,16 +24,12 @@ const Index = () => {
       headers: { 'Authorization': `Bearer ${token}` }
     }).then(res => {
       if (!res.ok) {
-        window.location.href = '/';
+        window.location.href = '/login.html';
       }
     }).catch(() => {
-      window.location.href = '/';
+      window.location.href = '/login.html';
     });
   }, []);
-
-  const handleProjectSaved = () => {
-    setRefreshProjectsTrigger(prev => prev + 1);
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -67,11 +61,11 @@ const Index = () => {
           </div>
 
           {/* Imported Invoices Table */}
-          <ImportedInvoicesTable onProjectSaved={handleProjectSaved} />
+          <ImportedInvoicesTable />
 
           {/* Projects Table */}
           <div className="animate-slide-up" style={{ animationDelay: "0.25s" }}>
-            <ProjectsTable key={refreshProjectsTrigger} />
+            <ProjectsTable />
           </div>
 
           {/* Two Column Layout */}

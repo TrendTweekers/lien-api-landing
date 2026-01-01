@@ -61,6 +61,9 @@ def increment_api_calls(user_email: str):
     Handles both PostgreSQL (UPSERT) and SQLite.
     """
     try:
+        if user_email:
+            user_email = user_email.lower().strip()
+            
         logger.info(f"TRACKING: Incrementing API calls for {user_email}")
         with get_db() as conn:
             cursor = get_db_cursor(conn)

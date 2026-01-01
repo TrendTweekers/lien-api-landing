@@ -3,549 +3,367 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Partner With LienDeadline | Recurring Revenue for Construction Professionals</title>
-    <meta name="description" content="Help construction professionals protect their payment rights while earning recurring revenue. Join the LienDeadline Partner Program.">
+    <meta name="description" content="Join LienDeadline Partner Program. Earn $500 per referral or $50/month recurring. Help construction professionals protect their receivables.">
+    <meta name="keywords" content="lien deadline partner program, construction referral program, mechanics lien affiliate, broker program">
+    <title>Partner Program | Refer & Earn | LienDeadline</title>
     
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Partner Program | Refer & Earn | LienDeadline">
+    <meta property="og:description" content="Join LienDeadline Partner Program. Earn $500 per referral or $50/month recurring. Help construction professionals protect their receivables.">
+    <meta property="og:image" content="https://liendeadline.com/images/lien-deadline-preview.jpg">
+    <meta property="og:url" content="https://liendeadline.com/partners.html">
+    <meta property="og:type" content="website">
+    
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Partner Program | Refer & Earn | LienDeadline">
+    <meta name="twitter:description" content="Join LienDeadline Partner Program. Earn $500 per referral or $50/month recurring.">
+    <meta name="twitter:image" content="https://liendeadline.com/images/lien-deadline-preview.jpg">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://liendeadline.com/partners.html">
+    
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KYZG0TN07Z"></script>
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                    },
-                    colors: {
-                        border: "hsl(214 20% 88%)",
-                        input: "hsl(214 20% 88%)",
-                        ring: "hsl(24 95% 53%)",
-                        background: "hsl(210 20% 98%)",
-                        foreground: "hsl(222 47% 11%)",
-                        primary: {
-                            DEFAULT: "hsl(24 95% 53%)",
-                            foreground: "hsl(0 0% 100%)",
-                        },
-                        secondary: {
-                            DEFAULT: "hsl(210 20% 96%)",
-                            foreground: "hsl(222 47% 11%)",
-                        },
-                        muted: {
-                            DEFAULT: "hsl(210 15% 93%)",
-                            foreground: "hsl(215 16% 47%)",
-                        },
-                        card: {
-                            DEFAULT: "hsl(0 0% 100%)",
-                            foreground: "hsl(222 47% 11%)",
-                        },
-                    },
-                    backgroundImage: {
-                        'gradient-primary': 'linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(32 95% 55%) 100%)',
-                    }
-                }
-            }
-        }
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-KYZG0TN07Z');
     </script>
+    <!-- Umami Analytics -->
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="02250d35-ee17-41be-845d-2fe0f7f15e63"></script>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
     
-    <style>
-        /* Custom Styles to match Dashboard UI components */
-        body {
-            background-color: hsl(210 20% 98%);
-            color: hsl(222 47% 11%);
-        }
-        
-        .btn-primary {
-            background-image: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(32 95% 55%) 100%);
-            color: white;
-            transition: all 0.2s;
-        }
-        .btn-primary:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-        
-        .input-range {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 6px;
-            background: #e2e8f0;
-            border-radius: 5px;
-            outline: none;
-        }
-        .input-range::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: hsl(24 95% 53%);
-            cursor: pointer;
-            border: 2px solid white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        /* Toast Notification */
-        #toast-container {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            z-index: 50;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        
-        .toast {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.75rem;
-            padding: 1rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            transform: translateX(100%);
-            transition: transform 0.3s ease-out;
-            max-width: 320px;
-        }
-        
-        .toast.show {
-            transform: translateX(0);
-        }
-    </style>
+    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind Config to suppress production warning -->
+    <script>
+        // Suppress Tailwind warnings
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
+            darkMode: false,
+            theme: {
+                extend: {}
+            },
+            plugins: []
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="antialiased min-h-screen flex flex-col">
-
-    <!-- Header -->
-    <header class="sticky top-0 z-50 w-full border-b border-white/10 bg-white/95 backdrop-blur-sm shadow-sm">
-        <div class="container mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <div class="h-8 w-8 rounded-lg bg-orange-600 flex items-center justify-center">
-                    <span class="text-white font-bold text-sm">L</span>
-                </div>
-                <span class="text-xl font-bold text-gray-900">LienDeadline</span>
-            </div>
-            <a href="/" class="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-                Back to Dashboard
+<body class="bg-gray-50 min-h-screen">
+    
+    <!-- Simplified Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-6 py-4 flex justify-between items-center">
+            <!-- Logo + Back Button -->
+            <a href="/" class="flex items-center gap-2 md:gap-3 text-gray-700 hover:text-gray-900 transition-colors group">
+                <svg class="w-5 h-5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                <span class="font-semibold text-sm md:text-base">Back to Home</span>
             </a>
+            
+            <!-- Simple branding -->
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <span class="text-white font-bold text-sm">LD</span>
+                </div>
+                <span class="font-semibold text-gray-900 hidden sm:block">LienDeadline</span>
+            </div>
         </div>
     </header>
 
-    <main class="flex-grow">
-        <!-- Hero Section -->
-        <section class="relative py-20 overflow-hidden bg-gradient-to-br from-orange-50 to-white">
-            <div class="container mx-auto px-4 relative z-10">
-                <div class="max-w-3xl mx-auto text-center space-y-6">
-                    <div class="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-800">
-                        <span class="flex h-2 w-2 rounded-full bg-orange-600 mr-2"></span>
-                        Accepting New Partners
-                    </div>
-                    <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 leading-tight">
-                        Partner With LienDeadline
-                    </h1>
-                    <p class="text-xl text-muted-foreground max-w-2xl mx-auto">
-                        Help construction professionals protect their payment rights while earning recurring revenue. Join accountants, attorneys, and consultants in our network.
-                    </p>
-                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                        <a href="#apply" class="btn-primary h-11 px-8 rounded-lg flex items-center justify-center font-medium w-full sm:w-auto">
-                            Apply Now
-                        </a>
-                        <a href="#calculator" class="h-11 px-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 flex items-center justify-center font-medium transition-colors w-full sm:w-auto">
-                            Calculate Earnings
-                        </a>
-                    </div>
+    <!-- Main Content -->
+    <main>
+        <form id="partnerApplicationForm" class="max-w-2xl mx-auto px-6 py-12">
+            <!-- Progress indicator -->
+            <div class="mb-8">
+                <div class="flex items-center justify-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">1</div>
+                    <span class="text-sm text-gray-600">Partner Application</span>
                 </div>
             </div>
-        </section>
 
-        <!-- Benefits Section -->
-        <section class="py-20 bg-white">
-            <div class="container mx-auto px-4">
-                <div class="grid md:grid-cols-3 gap-8">
-                    <!-- Benefit 1 -->
-                    <div class="p-6 rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow">
-                        <div class="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        </div>
-                        <h3 class="text-xl font-bold mb-2">Add Value to Clients</h3>
-                        <p class="text-muted-foreground">Help your clients avoid costly missed deadlines and protect their receivables automatically.</p>
-                    </div>
-                    <!-- Benefit 2 -->
-                    <div class="p-6 rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow">
-                        <div class="h-12 w-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        </div>
-                        <h3 class="text-xl font-bold mb-2">Recurring Revenue</h3>
-                        <p class="text-muted-foreground">Earn ongoing commissions for every active subscription you refer. Build a passive income stream.</p>
-                    </div>
-                    <!-- Benefit 3 -->
-                    <div class="p-6 rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow">
-                        <div class="h-12 w-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        </div>
-                        <h3 class="text-xl font-bold mb-2">Trusted Partnership</h3>
-                        <p class="text-muted-foreground">We handle all support, billing, and product updates. You focus on your client relationships.</p>
-                    </div>
-                </div>
+            <!-- Hero -->
+            <div class="text-center mb-12">
+                <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+                    Become a Partner
+                </h1>
+                <p class="text-lg md:text-xl text-gray-600">
+                    Earn up to $500 per referral. Apply in 2 minutes.
+                </p>
             </div>
-        </section>
 
-        <!-- Calculator Section -->
-        <section id="calculator" class="py-20 bg-gray-50">
-            <div class="container mx-auto px-4">
-                <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                    <div class="p-8 md:p-12">
-                        <div class="text-center mb-10">
-                            <h2 class="text-3xl font-bold mb-4">Commission Calculator</h2>
-                            <p class="text-muted-foreground">See how much you can earn by partnering with us.</p>
-                        </div>
-
-                        <div class="grid md:grid-cols-2 gap-12 items-center">
-                            <!-- Controls -->
-                            <div class="space-y-8">
-                                <div>
-                                    <label class="block text-sm font-medium mb-4 flex justify-between">
-                                        <span>Number of Clients</span>
-                                        <span class="text-primary font-bold" id="client-count-display">10</span>
-                                    </label>
-                                    <input type="range" id="client-slider" min="1" max="100" value="10" class="input-range">
-                                    <div class="flex justify-between text-xs text-muted-foreground mt-2">
-                                        <span>1</span>
-                                        <span>25</span>
-                                        <span>50</span>
-                                        <span>100+</span>
-                                    </div>
-                                </div>
-
-                                <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                    <label class="block text-sm font-medium mb-3">Commission Model</label>
-                                    <div class="flex p-1 bg-white border border-gray-200 rounded-lg">
-                                        <button class="flex-1 py-2 text-sm font-medium rounded-md bg-primary text-white shadow-sm transition-all" id="btn-recurring">Recurring</button>
-                                        <button class="flex-1 py-2 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900 transition-all" id="btn-bounty">Bounty</button>
-                                    </div>
-                                    <p class="text-xs text-muted-foreground mt-3" id="model-description">
-                                        Earn 20% commission monthly for the lifetime of the customer.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <!-- Result -->
-                            <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 text-white text-center">
-                                <div class="mb-2 text-gray-400 text-sm font-medium">Estimated Annual Earnings</div>
-                                <div class="text-5xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-200" id="earnings-display">$6,000</div>
-                                <div class="text-sm text-gray-400" id="earnings-subtitle">Based on $50/mo per client</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Preview Section -->
-        <section class="py-20 bg-white">
-            <div class="container mx-auto px-4 text-center">
-                <div class="max-w-3xl mx-auto mb-12">
-                    <h2 class="text-3xl font-bold mb-4">Partner Dashboard</h2>
-                    <p class="text-muted-foreground">Get full visibility into your referrals and earnings with our dedicated partner portal.</p>
-                </div>
-                <div class="relative max-w-5xl mx-auto rounded-xl shadow-2xl border border-gray-200 bg-gray-50 overflow-hidden aspect-[16/9] flex items-center justify-center">
-                    <!-- Placeholder for Dashboard Screenshot -->
-                    <div class="text-gray-400 flex flex-col items-center">
-                        <svg class="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                        <span class="font-medium">Partner Dashboard Preview</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Application Form -->
-        <section id="apply" class="py-20 bg-gray-50">
-            <div class="container mx-auto px-4">
-                <div class="max-w-xl mx-auto">
-                    <div class="text-center mb-10">
-                        <h2 class="text-3xl font-bold mb-4">Apply for Partnership</h2>
-                        <p class="text-muted-foreground">Join our program today. Approval typically takes less than 24 hours.</p>
-                    </div>
-
-                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                        <form id="partner-form" class="space-y-6">
-                            <div class="grid md:grid-cols-2 gap-6">
-                                <div class="space-y-2">
-                                    <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" for="fullName">Full Name</label>
-                                    <input type="text" id="fullName" name="fullName" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                                </div>
-                                <div class="space-y-2">
-                                    <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" for="email">Email Address</label>
-                                    <input type="email" id="email" name="email" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                                </div>
-                            </div>
-                            
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" for="companyName">Company Name</label>
-                                <input type="text" id="companyName" name="companyName" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                            </div>
-
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" for="website">Website URL</label>
-                                <input type="url" id="website" name="website" placeholder="https://" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                            </div>
-
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" for="role">Primary Role</label>
-                                <select id="role" name="role" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                                    <option value="" disabled selected>Select your role...</option>
-                                    <option value="accountant">Accountant / CPA</option>
-                                    <option value="attorney">Construction Attorney</option>
-                                    <option value="consultant">Business Consultant</option>
-                                    <option value="contractor">General Contractor</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-
-                            <button type="submit" id="submit-btn" class="btn-primary w-full h-11 rounded-lg font-medium flex items-center justify-center">
-                                <span id="btn-text">Submit Application</span>
-                                <svg id="btn-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Social Proof -->
-        <section class="py-12 bg-white border-t border-gray-100">
-            <div class="container mx-auto px-4 text-center">
-                <p class="text-sm font-medium text-muted-foreground mb-6 uppercase tracking-wider">Trusted by Industry Professionals</p>
-                <div class="flex flex-wrap justify-center gap-8 md:gap-16 opacity-50 grayscale">
-                    <!-- Placeholders for logos -->
-                    <div class="font-bold text-xl">CONSTRUCT<span class="text-primary">PRO</span></div>
-                    <div class="font-bold text-xl">BUILD<span class="text-primary">RIGHT</span></div>
-                    <div class="font-bold text-xl">LEGAL<span class="text-primary">GUARD</span></div>
-                    <div class="font-bold text-xl">SAFE<span class="text-primary">PAY</span></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- FAQ -->
-        <section class="py-20 bg-gray-50">
-            <div class="container mx-auto px-4 max-w-3xl">
-                <div class="text-center mb-12">
-                    <h2 class="text-3xl font-bold mb-4">Frequently Asked Questions</h2>
-                </div>
+            <!-- Form Card -->
+            <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 md:p-10">
                 
-                <div class="space-y-4">
-                    <!-- FAQ Item 1 -->
-                    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                        <button class="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none faq-toggle">
-                            <span class="font-medium">Who is this program for?</span>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </button>
-                        <div class="px-6 pb-4 text-muted-foreground hidden">
-                            This program is designed for accountants, construction attorneys, business consultants, and anyone who advises construction professionals on financial or legal matters.
-                        </div>
+                <!-- Basic Info -->
+                <div class="space-y-6 mb-8">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-900 mb-2">
+                            Full Name *
+                        </label>
+                        <input type="text" name="name" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="John Smith">
                     </div>
-                    <!-- FAQ Item 2 -->
-                    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                        <button class="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none faq-toggle">
-                            <span class="font-medium">Do I need to be a business to join?</span>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </button>
-                        <div class="px-6 pb-4 text-muted-foreground hidden">
-                            No, individuals can also join the partner program. You just need to be able to receive payments via bank transfer or PayPal.
-                        </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-900 mb-2">
+                            Email Address *
+                        </label>
+                        <input type="email" name="email" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="john@company.com">
                     </div>
-                    <!-- FAQ Item 3 -->
-                    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                        <button class="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none faq-toggle">
-                            <span class="font-medium">How do payouts work?</span>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </button>
-                        <div class="px-6 pb-4 text-muted-foreground hidden">
-                            Payouts are processed monthly for the previous month's earnings. We support direct deposit and PayPal. The minimum payout threshold is $50.
-                        </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-900 mb-2">
+                            Company Name *
+                        </label>
+                        <input type="text" name="company" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Your Insurance Agency">
+                    </div>
+
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-900 mb-2">
+                            Number of Clients *
+                        </label>
+                        <input type="number" name="client_count" required min="1"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="50">
+                        <p class="text-sm text-gray-500 mt-1">How many contractor/supplier clients do you have?</p>
                     </div>
                 </div>
+
+                <!-- Commission Model Selection -->
+                <div class="mb-8">
+                    <label class="block text-sm font-semibold text-gray-900 mb-4">
+                        Choose Your Commission Model *
+                    </label>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Bounty Option -->
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="commission_model" value="bounty" required class="peer sr-only">
+                            <div class="border-2 border-gray-300 rounded-xl p-6 transition-all peer-checked:border-blue-600 peer-checked:bg-blue-50 hover:border-gray-400">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div>
+                                        <div class="text-2xl font-bold text-gray-900 mb-1">$500</div>
+                                        <div class="text-sm text-gray-600">One-Time Bounty</div>
+                                    </div>
+                                    <div class="w-5 h-5 border-2 border-gray-400 rounded-full peer-checked:border-blue-600 peer-checked:bg-blue-600 flex items-center justify-center">
+                                        <svg class="w-3 h-3 text-white hidden peer-checked:block" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <ul class="space-y-2 text-sm text-gray-600">
+                                    <li class="flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Paid after 30 days
+                                    </li>
+                                    <li class="flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Best for &lt;10 clients
+                                    </li>
+                                </ul>
+                            </div>
+                        </label>
+
+                        <!-- Recurring Option -->
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="commission_model" value="recurring" class="peer sr-only">
+                            <div class="border-2 border-gray-300 rounded-xl p-6 transition-all peer-checked:border-blue-600 peer-checked:bg-blue-50 hover:border-gray-400">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div>
+                                        <div class="text-2xl font-bold text-gray-900 mb-1">$50/mo</div>
+                                        <div class="text-sm text-gray-600">Recurring Revenue</div>
+                                    </div>
+                                    <div class="w-5 h-5 border-2 border-gray-400 rounded-full peer-checked:border-blue-600 peer-checked:bg-blue-600 flex items-center justify-center">
+                                        <svg class="w-3 h-3 text-white hidden peer-checked:block" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <ul class="space-y-2 text-sm text-gray-600">
+                                    <li class="flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Passive income
+                                    </li>
+                                    <li class="flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Best for 10+ clients
+                                    </li>
+                                </ul>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Message -->
+                <div class="mb-8">
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Tell Us About Your Business (Optional)
+                    </label>
+                    <textarea name="message" rows="4"
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                              placeholder="What type of clients do you work with? Insurance, construction credit, etc."></textarea>
+                </div>
+
+                <!-- Auto-Approval Checkbox -->
+                <div class="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <label class="flex items-start cursor-pointer">
+                        <input type="checkbox" name="works_with_suppliers" required
+                               class="mt-1 mr-3 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <div class="flex-1">
+                            <span class="block text-sm font-semibold text-gray-900">
+                                I work with construction material suppliers or contractors
+                            </span>
+                            <span class="block text-xs text-blue-700 mt-1 font-medium">
+                                ✓ Auto-approved instantly
+                            </span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="submitBtn"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg transition-colors text-lg shadow-lg hover:shadow-xl">
+                    Get My Link in 1 Hour →
+                </button>
+
+                <!-- Trust Badge -->
+                <p class="text-center text-sm text-gray-500 mt-6">
+                    🔒 We'll review your application within 24 hours
+                </p>
             </div>
-        </section>
+
+            <!-- Success Message (hidden initially) -->
+            <div id="successMessage" class="hidden bg-green-50 border-2 border-green-200 rounded-2xl p-8 text-center mt-8">
+                <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2" id="successTitle">Application Submitted! 🎉</h2>
+                <p class="text-gray-600 mb-6" id="successMessage">
+                    We'll review your application and send you an email within 24 hours with your unique referral link.
+                </p>
+                <a href="/" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors">
+                    Back to Home
+                </a>
+            </div>
+        </form>
     </main>
 
-    <footer class="bg-white border-t border-gray-100 py-12">
-        <div class="container mx-auto px-4 text-center text-muted-foreground">
-            <p>&copy; 2026 LienDeadline. All rights reserved.</p>
+    <!-- Simple Footer -->
+    <footer class="bg-gray-50 border-t border-gray-200 py-8 mt-20">
+        <div class="max-w-4xl mx-auto px-6 text-center text-sm text-gray-600">
+            <p class="mb-2">© 2025 LienDeadline.com - Partner Program</p>
+            <div class="flex justify-center gap-6">
+                <a href="/privacy.html" class="hover:text-gray-900">Privacy</a>
+                <a href="/terms.html" class="hover:text-gray-900">Terms</a>
+                <a href="/" class="hover:text-gray-900">Home</a>
+            </div>
         </div>
     </footer>
 
-    <!-- Toast Container -->
-    <div id="toast-container"></div>
-
     <script>
-        // --- Calculator Logic ---
-        const slider = document.getElementById('client-slider');
-        const countDisplay = document.getElementById('client-count-display');
-        const earningsDisplay = document.getElementById('earnings-display');
-        const earningsSubtitle = document.getElementById('earnings-subtitle');
-        const modelDesc = document.getElementById('model-description');
-        const btnRecurring = document.getElementById('btn-recurring');
-        const btnBounty = document.getElementById('btn-bounty');
-
-        let currentModel = 'recurring'; // 'recurring' or 'bounty'
-        const MONTHLY_REVENUE_PER_CLIENT = 250; // Assumption for calculation
-        const RECURRING_RATE = 0.20; // 20%
-        const BOUNTY_RATE = 500; // Flat fee
-
-        function updateCalculator() {
-            const clients = parseInt(slider.value);
-            countDisplay.textContent = clients;
-
-            let annualEarnings = 0;
-            if (currentModel === 'recurring') {
-                // Monthly: Clients * $250 * 20% = $50/client/mo
-                // Annual: $50 * 12 * Clients
-                const monthlyComm = clients * 50;
-                annualEarnings = monthlyComm * 12;
-                earningsSubtitle.textContent = `Based on $50/mo recurring commission per client`;
-            } else {
-                // Bounty: Clients * $500 one-time
-                annualEarnings = clients * 500;
-                earningsSubtitle.textContent = `Based on $500 one-time bounty per client`;
-            }
-
-            earningsDisplay.textContent = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                maximumFractionDigits: 0
-            }).format(annualEarnings);
-        }
-
-        slider.addEventListener('input', updateCalculator);
-
-        btnRecurring.addEventListener('click', () => {
-            currentModel = 'recurring';
-            btnRecurring.classList.replace('text-gray-600', 'text-white');
-            btnRecurring.classList.replace('hover:text-gray-900', 'bg-primary');
-            btnRecurring.classList.add('bg-primary');
-            
-            btnBounty.classList.replace('bg-primary', 'hover:text-gray-900');
-            btnBounty.classList.replace('text-white', 'text-gray-600');
-            btnBounty.classList.remove('bg-primary');
-            
-            modelDesc.textContent = "Earn 20% commission monthly for the lifetime of the customer.";
-            updateCalculator();
-        });
-
-        btnBounty.addEventListener('click', () => {
-            currentModel = 'bounty';
-            btnBounty.classList.replace('text-gray-600', 'text-white');
-            btnBounty.classList.replace('hover:text-gray-900', 'bg-primary');
-            btnBounty.classList.add('bg-primary');
-
-            btnRecurring.classList.replace('bg-primary', 'hover:text-gray-900');
-            btnRecurring.classList.replace('text-white', 'text-gray-600');
-            btnRecurring.classList.remove('bg-primary');
-
-            modelDesc.textContent = "Earn a one-time flat fee of $500 for every new customer referred.";
-            updateCalculator();
-        });
-
-        // Initialize
-        updateCalculator();
-
-
-        // --- FAQ Logic ---
-        const faqToggles = document.querySelectorAll('.faq-toggle');
-        faqToggles.forEach(toggle => {
-            toggle.addEventListener('click', () => {
-                const content = toggle.nextElementSibling;
-                const icon = toggle.querySelector('svg');
-                
-                content.classList.toggle('hidden');
-                icon.classList.toggle('rotate-180');
-            });
-        });
-
-
-        // --- Form Submission ---
-        const form = document.getElementById('partner-form');
-        const submitBtn = document.getElementById('submit-btn');
-        const btnText = document.getElementById('btn-text');
-        const btnSpinner = document.getElementById('btn-spinner');
-
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            
-            // Icon
-            let icon = '';
-            if (type === 'success') {
-                icon = `<svg class="w-6 h-6 text-green-500 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
-            } else {
-                icon = `<svg class="w-6 h-6 text-red-500 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
-            }
-
-            toast.innerHTML = `
-                <div class="flex items-start gap-3">
-                    ${icon}
-                    <div>
-                        <h4 class="font-bold text-sm text-gray-900">${type === 'success' ? 'Success' : 'Error'}</h4>
-                        <p class="text-sm text-gray-500">${message}</p>
-                    </div>
-                </div>
-            `;
-
-            container.appendChild(toast);
-            
-            // Trigger animation
-            requestAnimationFrame(() => {
-                toast.classList.add('show');
-            });
-
-            // Remove after 3s
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        form.addEventListener('submit', async (e) => {
+        document.getElementById('partnerApplicationForm')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Loading state
+            const submitBtn = document.getElementById('submitBtn');
+            const formCard = document.querySelector('.bg-white.rounded-2xl');
+            const successMessage = document.getElementById('successMessage');
+            
+            // Get form data
+            const formData = new FormData(e.target);
+            const data = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                company: formData.get('company'),
+                client_count: parseInt(formData.get('client_count')) || 0,
+                commission_model: formData.get('commission_model'),
+                message: formData.get('message') || '',
+                works_with_suppliers: formData.get('works_with_suppliers') === 'on'
+            };
+            
+            // Validate commission model selected
+            if (!data.commission_model) {
+                alert('Please select a commission model');
+                return;
+            }
+            
+            // Show loading
             submitBtn.disabled = true;
-            submitBtn.classList.add('opacity-75');
-            btnText.textContent = 'Submitting...';
-            btnSpinner.classList.remove('hidden');
-
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
-
+            submitBtn.innerHTML = `
+                <svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            `;
+            
             try {
+                console.log('Submitting partner application:', data);
+                console.log('Posting to: /api/v1/apply-partner');
+                
                 const response = await fetch('/api/v1/apply-partner', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-
-                if (response.ok) {
-                    showToast('Application submitted successfully! We will contact you soon.');
-                    form.reset();
+                
+                console.log('Response status:', response.status);
+                
+                const result = await response.json();
+                console.log('Response data:', result);
+                
+                if (response.ok && (result.status === 'success' || result.status === 'pending' || result.status === 'approved')) {
+                    // Hide form, show success
+                    formCard.classList.add('hidden');
+                    successMessage.classList.remove('hidden');
+                    
+                    // Check if auto-approved
+                    if (result.status === 'approved' && result.referral_link) {
+                        document.getElementById('successTitle').textContent = '✅ Approved! Check email for your link.';
+                        document.getElementById('successMessage').innerHTML = `
+                            <p class="text-gray-700 mb-4">Your referral link has been sent to your email!</p>
+                            <p class="text-sm text-gray-600 mb-4">Referral Link: <a href="${result.referral_link}" class="text-blue-600 hover:underline font-mono" target="_blank">${result.referral_link}</a></p>
+                            <p class="text-xs text-gray-500">Check your email for login credentials and dashboard access.</p>
+                        `;
+                    } else {
+                        // Manual review message
+                        document.getElementById('successTitle').textContent = 'Application Submitted! 🎉';
+                        document.getElementById('successMessage').innerHTML = `
+                            <p class="text-gray-600">We'll review your application and send you an email within 24 hours with your unique referral link.</p>
+                        `;
+                    }
+                    
+                    // Scroll to top
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    
+                    console.log('✅ Application submitted successfully!');
                 } else {
-                    throw new Error('Submission failed');
+                    throw new Error(result.message || 'Application failed');
                 }
+                
             } catch (error) {
-                showToast('Failed to submit application. Please try again.', 'error');
-            } finally {
-                // Reset state
+                console.error('❌ Application error:', error);
+                alert('❌ Application failed: ' + error.message);
                 submitBtn.disabled = false;
-                submitBtn.classList.remove('opacity-75');
-                btnText.textContent = 'Submit Application';
-                btnSpinner.classList.add('hidden');
+                submitBtn.innerHTML = 'Submit Application';
             }
         });
     </script>

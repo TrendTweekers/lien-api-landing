@@ -149,13 +149,13 @@ def calculate_texas(invoice_date: datetime, project_type: str = "commercial") ->
     is_residential = project_type.lower() in ["residential", "res", "single-family"]
     
     if is_residential:
-        # Residential: 15th of 2nd month following (prelim), 15th of 3rd month following (lien)
+        # Residential: 15th of 2nd month (prelim), 15th of 3rd month (lien)
+        prelim_deadline = month_plus_day(invoice_date, months=1, day=15, extend_for_weekend=True)
+        lien_deadline = month_plus_day(invoice_date, months=2, day=15, extend_for_weekend=True)
+    else:
+        # Commercial: 15th of 3rd month (prelim), 15th of 4th month (lien)
         prelim_deadline = month_plus_day(invoice_date, months=2, day=15, extend_for_weekend=True)
         lien_deadline = month_plus_day(invoice_date, months=3, day=15, extend_for_weekend=True)
-    else:
-        # Commercial: 15th of 3rd month following (prelim), 15th of 4th month following (lien)
-        prelim_deadline = month_plus_day(invoice_date, months=3, day=15, extend_for_weekend=True)
-        lien_deadline = month_plus_day(invoice_date, months=4, day=15, extend_for_weekend=True)
     
     return {
         "preliminary_deadline": prelim_deadline,
