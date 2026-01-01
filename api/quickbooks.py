@@ -5,6 +5,7 @@ Allows users to connect their QuickBooks account and import invoices
 import os
 import base64
 import secrets
+import time
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Request, Depends, Header
 from fastapi.responses import RedirectResponse
@@ -805,4 +806,3 @@ async def disconnect_quickbooks(request: Request, current_user: dict = Depends(g
     except Exception as e:
         print(f"Error disconnecting QuickBooks: {e}")
         raise HTTPException(status_code=500, detail="Error disconnecting QuickBooks account")
-
