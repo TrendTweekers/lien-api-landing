@@ -10,7 +10,67 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+
+const US_STATES = [
+  { name: "Alabama", code: "AL" },
+  { name: "Alaska", code: "AK" },
+  { name: "Arizona", code: "AZ" },
+  { name: "Arkansas", code: "AR" },
+  { name: "California", code: "CA" },
+  { name: "Colorado", code: "CO" },
+  { name: "Connecticut", code: "CT" },
+  { name: "Delaware", code: "DE" },
+  { name: "Florida", code: "FL" },
+  { name: "Georgia", code: "GA" },
+  { name: "Hawaii", code: "HI" },
+  { name: "Idaho", code: "ID" },
+  { name: "Illinois", code: "IL" },
+  { name: "Indiana", code: "IN" },
+  { name: "Iowa", code: "IA" },
+  { name: "Kansas", code: "KS" },
+  { name: "Kentucky", code: "KY" },
+  { name: "Louisiana", code: "LA" },
+  { name: "Maine", code: "ME" },
+  { name: "Maryland", code: "MD" },
+  { name: "Massachusetts", code: "MA" },
+  { name: "Michigan", code: "MI" },
+  { name: "Minnesota", code: "MN" },
+  { name: "Mississippi", code: "MS" },
+  { name: "Missouri", code: "MO" },
+  { name: "Montana", code: "MT" },
+  { name: "Nebraska", code: "NE" },
+  { name: "Nevada", code: "NV" },
+  { name: "New Hampshire", code: "NH" },
+  { name: "New Jersey", code: "NJ" },
+  { name: "New Mexico", code: "NM" },
+  { name: "New York", code: "NY" },
+  { name: "North Carolina", code: "NC" },
+  { name: "North Dakota", code: "ND" },
+  { name: "Ohio", code: "OH" },
+  { name: "Oklahoma", code: "OK" },
+  { name: "Oregon", code: "OR" },
+  { name: "Pennsylvania", code: "PA" },
+  { name: "Rhode Island", code: "RI" },
+  { name: "South Carolina", code: "SC" },
+  { name: "South Dakota", code: "SD" },
+  { name: "Tennessee", code: "TN" },
+  { name: "Texas", code: "TX" },
+  { name: "Utah", code: "UT" },
+  { name: "Vermont", code: "VT" },
+  { name: "Virginia", code: "VA" },
+  { name: "Washington", code: "WA" },
+  { name: "West Virginia", code: "WV" },
+  { name: "Wisconsin", code: "WI" },
+  { name: "Wyoming", code: "WY" },
+];
 
 interface Invoice {
   id: string;
@@ -20,6 +80,7 @@ interface Invoice {
   amount: number;
   balance: number;
   status: string;
+  is_saved?: boolean;  // Indicates if invoice has been saved as a project
   state: string;
   preliminary_deadline: string | null;
   lien_deadline: string | null;
@@ -31,6 +92,8 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
   const { toast } = useToast();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
+  // Track selected state and type for each invoice
+  const [invoiceSelections, setInvoiceSelections] = useState<Record<string, { state: string; type: string }>>({});
 
   const fetchInvoices = async () => {
     setLoading(true);
@@ -173,6 +236,8 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
               <TableHead className="text-foreground font-semibold">Customer</TableHead>
               <TableHead className="text-foreground font-semibold">Date</TableHead>
               <TableHead className="text-foreground font-semibold">Amount</TableHead>
+              <TableHead className="text-foreground font-semibold">State</TableHead>
+              <TableHead className="text-foreground font-semibold">Type</TableHead>
               <TableHead className="text-foreground font-semibold">Prelim Deadline</TableHead>
               <TableHead className="text-foreground font-semibold">Lien Deadline</TableHead>
               <TableHead className="text-foreground font-semibold">Status</TableHead>
@@ -181,41 +246,103 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
           <TableBody>
             {loading ? (
                <TableRow>
-                 <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading invoices...</TableCell>
+                 <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading invoices...</TableCell>
                </TableRow>
             ) : invoices.length === 0 ? (
                <TableRow>
-                 <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No invoices found in the last 90 days.</TableCell>
+                 <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No invoices found in the last 90 days.</TableCell>
                </TableRow>
             ) : (
-              invoices.map((inv) => (
-                <TableRow key={inv.id} className="border-border hover:bg-muted/30">
-                  <TableCell className="font-medium text-foreground">{inv.invoice_number}</TableCell>
-                  <TableCell className="text-foreground">{inv.customer_name}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatDate(inv.date)}</TableCell>
-                  <TableCell className="font-semibold text-foreground">
-                    ${inv.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                        <span className="text-foreground">{formatDate(inv.preliminary_deadline)}</span>
-                        {getDaysBadge(inv.prelim_days_remaining)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                        <span className="text-foreground">{formatDate(inv.lien_deadline)}</span>
-                        {getDaysBadge(inv.lien_days_remaining)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={inv.status === "Paid" ? "default" : "secondary"} 
-                        className={inv.status === "Paid" ? "bg-success/15 text-success border-success/30" : "bg-muted text-muted-foreground"}>
-                        {inv.status === "Paid" ? "Paid" : "Imported"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))
+              invoices.map((inv) => {
+                const isSaved = inv.is_saved === true;
+                const selection = invoiceSelections[inv.id] || { state: inv.state || "", type: "Commercial" };
+                
+                return (
+                  <TableRow key={inv.id} className="border-border hover:bg-muted/30">
+                    <TableCell className="font-medium text-foreground">{inv.invoice_number}</TableCell>
+                    <TableCell className="text-foreground">{inv.customer_name}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDate(inv.date)}</TableCell>
+                    <TableCell className="font-semibold text-foreground">
+                      ${inv.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell>
+                      {isSaved ? (
+                        <Badge className="bg-muted text-muted-foreground">{inv.state}</Badge>
+                      ) : (
+                        <Select
+                          value={selection.state}
+                          onValueChange={(value) => {
+                            setInvoiceSelections(prev => ({
+                              ...prev,
+                              [inv.id]: { ...selection, state: value }
+                            }));
+                          }}
+                        >
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Select state" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {US_STATES.map((state) => (
+                              <SelectItem key={state.code} value={state.code}>
+                                {state.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {isSaved ? (
+                        <Badge className="bg-muted text-muted-foreground">Commercial</Badge>
+                      ) : (
+                        <Select
+                          value={selection.type}
+                          onValueChange={(value) => {
+                            setInvoiceSelections(prev => ({
+                              ...prev,
+                              [inv.id]: { ...selection, type: value }
+                            }));
+                          }}
+                        >
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Commercial">Commercial</SelectItem>
+                            <SelectItem value="Residential">Residential</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                          <span className="text-foreground">{formatDate(inv.preliminary_deadline)}</span>
+                          {getDaysBadge(inv.prelim_days_remaining)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                          <span className="text-foreground">{formatDate(inv.lien_deadline)}</span>
+                          {getDaysBadge(inv.lien_days_remaining)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={inv.status === "Paid" ? "default" : isSaved ? "secondary" : "default"}
+                        className={
+                          inv.status === "Paid" 
+                            ? "bg-success/15 text-success border-success/30" 
+                            : isSaved
+                            ? "bg-muted text-muted-foreground"
+                            : "bg-primary/15 text-primary border-primary/30"
+                        }
+                      >
+                        {inv.status === "Paid" ? "Paid" : isSaved ? "Imported" : "New"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

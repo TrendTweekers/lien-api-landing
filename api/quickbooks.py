@@ -682,6 +682,33 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
             if isinstance(invoices, dict):
                 invoices = [invoices]
             
+            # Check which invoices have been saved as projects
+            user_email = user.get("email", "")
+            saved_invoice_ids = set()
+            if user_email:
+                try:
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute("""
+                            SELECT quickbooks_invoice_id FROM calculations 
+                            WHERE user_email = %s AND quickbooks_invoice_id IS NOT NULL
+                        """, (user_email,))
+                    else:
+                        cursor.execute("""
+                            SELECT quickbooks_invoice_id FROM calculations 
+                            WHERE user_email = ? AND quickbooks_invoice_id IS NOT NULL
+                        """, (user_email,))
+                    
+                    saved_rows = cursor.fetchall()
+                    for row in saved_rows:
+                        if isinstance(row, dict):
+                            qb_id = row.get('quickbooks_invoice_id')
+                        else:
+                            qb_id = row[0] if len(row) > 0 else None
+                        if qb_id:
+                            saved_invoice_ids.add(str(qb_id))
+                except Exception as e:
+                    print(f"Error checking saved invoices: {e}")
+            
             # Format invoices for frontend
             formatted_invoices = []
             today = datetime.now().date()
@@ -731,14 +758,18 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                     lien_days = None
                     state = "Unknown"
 
+                invoice_id = inv.get("Id")
+                is_saved = str(invoice_id) in saved_invoice_ids if invoice_id else False
+                
                 formatted_invoices.append({
-                    "id": inv.get("Id"),
+                    "id": invoice_id,
                     "invoice_number": inv.get("DocNumber"),
                     "date": inv.get("TxnDate"),
                     "customer_name": inv.get("CustomerRef", {}).get("name", "Unknown"),
                     "amount": float(inv.get("TotalAmt", 0)),
                     "balance": float(inv.get("Balance", 0)),
                     "status": "Unpaid" if float(inv.get("Balance", 0)) > 0 else "Paid",
+                    "is_saved": is_saved,  # Indicates if this invoice has been saved as a project
                     "state": state,
                     "preliminary_deadline": prelim_str,
                     "lien_deadline": lien_str,
