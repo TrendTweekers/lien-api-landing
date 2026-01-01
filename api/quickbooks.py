@@ -187,7 +187,7 @@ async def quickbooks_connect(request: Request):
                     )
                 """)
                 table_exists_result = cursor.fetchone()
-                table_exists = table_exists_result[0] if table_exists_result else False
+                table_exists = table_exists_result['exists'] if table_exists_result else False
             else:
                 cursor.execute("""
                     SELECT name FROM sqlite_master 
