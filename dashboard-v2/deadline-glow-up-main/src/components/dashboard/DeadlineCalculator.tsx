@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar, MapPin, Calculator, Save, AlertCircle, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,6 +93,27 @@ export const DeadlineCalculator = () => {
   const [notes, setNotes] = useState("");
   const [reminder1Day, setReminder1Day] = useState(false);
   const [reminder7Days, setReminder7Days] = useState(false);
+  // Track supported states from backend (same source as ImportedInvoicesTable)
+  const [supportedStates, setSupportedStates] = useState<Set<string>>(new Set());
+
+  // Fetch supported states from backend (same endpoint as ImportedInvoicesTable)
+  useEffect(() => {
+    const fetchSupportedStates = async () => {
+      try {
+        const res = await fetch("/api/v1/supported-states");
+        if (res.ok) {
+          const data = await res.json();
+          const states = data.states || [];
+          setSupportedStates(new Set(states.map((s: string) => s.toUpperCase())));
+        }
+      } catch (e) {
+        console.error("Failed to fetch supported states:", e);
+        // Fallback: assume all states are supported
+        setSupportedStates(new Set(US_STATES.map(s => s.code)));
+      }
+    };
+    fetchSupportedStates();
+  }, []);
 
   // States that require project type (Commercial/Residential)
   const STATES_WITH_PROJECT_TYPE = ['TX', 'CA', 'FL', 'AZ', 'NV', 'MD', 'GA', 'MN', 'OR', 'WA'];
@@ -103,9 +124,10 @@ export const DeadlineCalculator = () => {
   // Check if project type dropdown should be shown
   const showDropdown = STATES_WITH_PROJECT_TYPE.includes(selectedState);
   
-  // Debug logging for state selection
-  console.log("Current State:", selectedState);
-  console.log("Show Dropdown:", showDropdown);
+  // Filter US_STATES to only show supported states
+  const availableStates = supportedStates.size > 0
+    ? US_STATES.filter(state => supportedStates.has(state.code))
+    : US_STATES; // Fallback to all states if not loaded yet
 
   const handleCalculate = async () => {
     if (!selectedState || !date) {
@@ -253,7 +275,7 @@ export const DeadlineCalculator = () => {
                 <SelectValue placeholder="Select a state..." />
               </SelectTrigger>
               <SelectContent className="bg-card border-border">
-                {US_STATES.map((state) => (
+                {availableStates.map((state) => (
                   <SelectItem key={state.code} value={state.code}>
                     {state.name}
                   </SelectItem>

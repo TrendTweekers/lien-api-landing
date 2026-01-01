@@ -97,37 +97,74 @@ def increment_api_calls(user_email: str):
 async def get_supported_states():
     """
     Get list of states that have legal logic implemented.
-    Returns states from STATE_RULES and hardcoded calculation functions.
+    Returns states from:
+    1. STATE_RULES (state_rules.json) - includes states with ANY rules (preliminary OR lien filing)
+    2. Database (lien_deadlines table) - states with ANY deadline rules
+    3. Hardcoded calculation functions (TX, WA, CA, OH, OR, HI, NJ, IN, LA, MA)
+    
+    A state is considered supported if it has EITHER preliminary notice rules OR lien filing rules.
+    This ensures states like Alaska (lien filing only) are included.
     """
+    supported_states = set()
+    
     try:
-        # Import STATE_RULES from calculators
+        # 1. Get states from STATE_RULES (loaded from state_rules.json)
         from api.calculators import STATE_RULES
-        
-        # Get states from STATE_RULES (loaded from state_rules.json)
-        supported_states = set(STATE_RULES.keys())
-        
-        # Also include states with hardcoded calculation functions
-        # These are: TX, WA, CA, OH, OR, HI, NJ, IN, LA, MA
-        hardcoded_states = {"TX", "WA", "CA", "OH", "OR", "HI", "NJ", "IN", "LA", "MA"}
-        supported_states.update(hardcoded_states)
-        
-        # Convert to sorted list of state codes
-        state_codes = sorted(list(supported_states))
-        
-        return JSONResponse(content={
-            "status": "success",
-            "states": state_codes,
-            "count": len(state_codes)
-        })
+        supported_states.update(STATE_RULES.keys())
     except Exception as e:
-        logger.error(f"Error fetching supported states: {e}")
-        # Fallback: return common states
-        fallback_states = ["TX", "CA", "FL", "WA", "OH", "OR", "HI", "NJ", "IN", "LA", "MA"]
-        return JSONResponse(content={
-            "status": "success",
-            "states": fallback_states,
-            "count": len(fallback_states)
-        })
+        logger.warning(f"Could not load STATE_RULES: {e}")
+    
+    try:
+        # 2. Query database for states with ANY rules (preliminary OR lien filing)
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT DISTINCT state_code 
+                    FROM lien_deadlines 
+                    WHERE state_code IS NOT NULL 
+                    AND (
+                        preliminary_notice_days IS NOT NULL 
+                        OR lien_filing_days IS NOT NULL
+                    )
+                """)
+            else:
+                cursor.execute("""
+                    SELECT DISTINCT state_code 
+                    FROM lien_deadlines 
+                    WHERE state_code IS NOT NULL 
+                    AND (
+                        preliminary_notice_days IS NOT NULL 
+                        OR lien_filing_days IS NOT NULL
+                    )
+                """)
+            
+            db_rows = cursor.fetchall()
+            for row in db_rows:
+                if isinstance(row, dict):
+                    state_code = row.get('state_code')
+                else:
+                    state_code = row[0] if len(row) > 0 else None
+                
+                if state_code:
+                    supported_states.add(state_code.upper())
+    except Exception as e:
+        logger.warning(f"Could not query database for supported states: {e}")
+    
+    # 3. Include states with hardcoded calculation functions
+    # These are: TX, WA, CA, OH, OR, HI, NJ, IN, LA, MA
+    hardcoded_states = {"TX", "WA", "CA", "OH", "OR", "HI", "NJ", "IN", "LA", "MA"}
+    supported_states.update(hardcoded_states)
+    
+    # Convert to sorted list of state codes
+    state_codes = sorted(list(supported_states))
+    
+    return JSONResponse(content={
+        "status": "success",
+        "states": state_codes,
+        "count": len(state_codes)
+    })
 
 @router.get("/api/calculations/history")
 async def get_history(request: Request):
