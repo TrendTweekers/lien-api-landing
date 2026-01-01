@@ -72,6 +72,33 @@ def get_user_from_session(authorization: str = Header(None)):
     return None
 
 
+@router.get("/status")
+async def quickbooks_status(current_user: dict = Depends(get_current_user)):
+    """
+    Check if user is connected to QuickBooks
+    """
+    user_id = current_user['id']
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT expires_at FROM quickbooks_tokens WHERE user_id = %s", (user_id,))
+            else:
+                cursor.execute("SELECT expires_at FROM quickbooks_tokens WHERE user_id = ?", (user_id,))
+            
+            token = cursor.fetchone()
+            
+            if token:
+                return {"connected": True}
+            else:
+                return {"connected": False}
+    except Exception as e:
+        print(f"Error checking QB status: {e}")
+        return {"connected": False}
+
+
 @router.get("/connect")
 async def quickbooks_connect(request: Request):
     """

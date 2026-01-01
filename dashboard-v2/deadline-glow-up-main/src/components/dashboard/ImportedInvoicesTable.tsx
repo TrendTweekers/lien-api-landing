@@ -27,11 +27,10 @@ interface Invoice {
   lien_days_remaining: number | null;
 }
 
-export const ImportedInvoicesTable = () => {
+export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false }: { isConnected?: boolean; isChecking?: boolean }) => {
   const { toast } = useToast();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [connected, setConnected] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const fetchInvoices = async () => {
     setLoading(true);
@@ -43,7 +42,6 @@ export const ImportedInvoicesTable = () => {
       const res = await fetch("/api/quickbooks/invoices", { headers });
       
       if (res.status === 404) {
-        setConnected(false);
         setLoading(false);
         return;
       }
@@ -52,11 +50,10 @@ export const ImportedInvoicesTable = () => {
       
       const data = await res.json();
       setInvoices(data || []);
-      setConnected(true);
     } catch (e) {
       console.error(e);
-      // Only show error toast if we thought we were connected
-      if (connected) {
+      // Only show error toast if we are connected
+      if (isConnected) {
         toast({
             title: "Error",
             description: "Failed to load invoices.",
@@ -69,10 +66,23 @@ export const ImportedInvoicesTable = () => {
   };
 
   useEffect(() => {
-    fetchInvoices();
-  }, []);
+    if (isConnected) {
+        fetchInvoices();
+    }
+  }, [isConnected]);
 
-  if (!connected && !loading) return null;
+  if (isChecking) {
+    return (
+       <div className="bg-card rounded-xl overflow-hidden border border-border card-shadow mt-8 animate-slide-up" style={{ animationDelay: "0.22s" }}>
+            <div className="p-12 text-center">
+                <RefreshCw className="h-8 w-8 animate-spin mx-auto text-primary mb-4" />
+                <p className="text-muted-foreground">Checking for connection...</p>
+            </div>
+       </div>
+    );
+ }
+
+  if (!isConnected && !loading) return null;
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";

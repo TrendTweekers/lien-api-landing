@@ -12,6 +12,28 @@ import { ApiDocs } from "@/components/dashboard/ApiDocs";
 import { ImportedInvoicesTable } from "@/components/dashboard/ImportedInvoicesTable";
 
 const Index = () => {
+  const [isQuickBooksConnected, setIsQuickBooksConnected] = useState(false);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+
+  const checkQuickBooksConnection = async () => {
+    try {
+        const token = localStorage.getItem('session_token');
+        if (!token) return;
+
+        const res = await fetch('/api/quickbooks/status', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            setIsQuickBooksConnected(data.connected);
+        }
+    } catch (error) {
+        console.error("Failed to check QB status", error);
+    } finally {
+        setIsCheckingConnection(false);
+    }
+  };
+
   useEffect(() => {
     // Check for session token and verify session
     const token = localStorage.getItem('session_token');
@@ -29,6 +51,16 @@ const Index = () => {
     }).catch(() => {
       window.location.href = '/login.html';
     });
+
+    // Check for URL param
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('qb_connected') === 'true') {
+        // Clear the param to clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+        // Force check immediately (though checkQuickBooksConnection is called anyway below)
+    }
+    
+    checkQuickBooksConnection();
   }, []);
 
   return (
@@ -57,11 +89,11 @@ const Index = () => {
 
           {/* Integrations */}
           <div className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
-            <IntegrationsSection />
+            <IntegrationsSection isConnected={isQuickBooksConnected} />
           </div>
 
           {/* Imported Invoices Table */}
-          <ImportedInvoicesTable />
+          <ImportedInvoicesTable isConnected={isQuickBooksConnected} isChecking={isCheckingConnection} />
 
           {/* Projects Table */}
           <div className="animate-slide-up" style={{ animationDelay: "0.25s" }}>
