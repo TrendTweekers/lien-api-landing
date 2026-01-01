@@ -96,6 +96,8 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
   const [invoiceSelections, setInvoiceSelections] = useState<Record<string, { state: string; type: string }>>({});
   // Track which invoices are currently recalculating
   const [recalculatingInvoices, setRecalculatingInvoices] = useState<Set<string>>(new Set());
+  // Track supported states from backend
+  const [supportedStates, setSupportedStates] = useState<Set<string>>(new Set());
 
   const fetchInvoices = async () => {
     setLoading(true);
@@ -119,11 +121,19 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
       setInvoices(invoiceArray);
       
       // Initialize selections for unsaved invoices
+      // Auto-select QuickBooks billing state if it's supported
       const initialSelections: Record<string, { state: string; type: string }> = {};
       invoiceArray.forEach((inv: Invoice) => {
         if (!inv.is_saved && inv.id) {
+          const qbState = inv.state?.toUpperCase() || "";
+          // Auto-select QuickBooks state if supported, otherwise empty
+          // Use supportedStates if available, otherwise check if state exists in US_STATES
+          const isSupported = supportedStates.size > 0 
+            ? supportedStates.has(qbState)
+            : US_STATES.some(s => s.code === qbState);
+          const initialState = (qbState && isSupported) ? qbState : "";
           initialSelections[inv.id] = {
-            state: inv.state || "",
+            state: initialState,
             type: "Commercial"
           };
         }
@@ -144,7 +154,26 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
     }
   };
 
+  // Fetch supported states from backend
+  const fetchSupportedStates = async () => {
+    try {
+      const res = await fetch("/api/v1/supported-states");
+      if (res.ok) {
+        const data = await res.json();
+        const states = data.states || [];
+        setSupportedStates(new Set(states.map((s: string) => s.toUpperCase())));
+      }
+    } catch (e) {
+      console.error("Failed to fetch supported states:", e);
+      // Fallback: assume all states are supported
+      setSupportedStates(new Set(US_STATES.map(s => s.code)));
+    }
+  };
+
   useEffect(() => {
+    // Fetch supported states on mount
+    fetchSupportedStates();
+
     if (isConnected) {
         fetchInvoices();
     }
@@ -498,32 +527,41 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
                       {isSaved ? (
                         <Badge className="bg-muted text-muted-foreground">{inv.state}</Badge>
                       ) : (
-                        <Select
-                          value={selection.state}
-                          onValueChange={(value) => {
-                            const newSelection = { ...selection, state: value };
-                            setInvoiceSelections(prev => ({
-                              ...prev,
-                              [inv.id]: newSelection
-                            }));
-                            // Recalculate deadlines when state changes
-                            if (inv.date && newSelection.type) {
-                              recalculateDeadlines(inv.id, inv.date, value, newSelection.type);
-                            }
-                          }}
-                          disabled={recalculatingInvoices.has(inv.id)}
-                        >
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue placeholder="Select state" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {US_STATES.map((state) => (
-                              <SelectItem key={state.code} value={state.code}>
-                                {state.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="space-y-1">
+                          <Select
+                            value={selection.state}
+                            onValueChange={(value) => {
+                              const newSelection = { ...selection, state: value };
+                              setInvoiceSelections(prev => ({
+                                ...prev,
+                                [inv.id]: newSelection
+                              }));
+                              // Recalculate deadlines when state changes
+                              if (inv.date && newSelection.type) {
+                                recalculateDeadlines(inv.id, inv.date, value, newSelection.type);
+                              }
+                            }}
+                            disabled={recalculatingInvoices.has(inv.id)}
+                          >
+                            <SelectTrigger className="w-[140px]">
+                              <SelectValue placeholder="Select state" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {US_STATES
+                                .filter(state => supportedStates.has(state.code))
+                                .map((state) => (
+                                  <SelectItem key={state.code} value={state.code}>
+                                    {state.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                          {selection.state && !supportedStates.has(selection.state.toUpperCase()) && (
+                            <p className="text-xs text-destructive mt-1">
+                              Legal logic for {US_STATES.find(s => s.code === selection.state)?.name || selection.state} coming soon
+                            </p>
+                          )}
+                        </div>
                       )}
                     </TableCell>
                     <TableCell>
@@ -612,7 +650,8 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
                             size="sm" 
                             className="bg-primary hover:bg-primary/90 text-primary-foreground"
                             onClick={() => handleSaveToProjects(inv)}
-                            disabled={!selection.state || !inv.date}
+                            disabled={!selection.state || !inv.date || !supportedStates.has(selection.state.toUpperCase())}
+                            title={selection.state && !supportedStates.has(selection.state.toUpperCase()) ? "State not yet supported" : ""}
                           >
                             <Save className="h-4 w-4" />
                           </Button>

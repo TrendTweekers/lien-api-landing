@@ -93,6 +93,42 @@ def increment_api_calls(user_email: str):
 
 # --- Endpoints ---
 
+@router.get("/api/v1/supported-states")
+async def get_supported_states():
+    """
+    Get list of states that have legal logic implemented.
+    Returns states from STATE_RULES and hardcoded calculation functions.
+    """
+    try:
+        # Import STATE_RULES from calculators
+        from api.calculators import STATE_RULES
+        
+        # Get states from STATE_RULES (loaded from state_rules.json)
+        supported_states = set(STATE_RULES.keys())
+        
+        # Also include states with hardcoded calculation functions
+        # These are: TX, WA, CA, OH, OR, HI, NJ, IN, LA, MA
+        hardcoded_states = {"TX", "WA", "CA", "OH", "OR", "HI", "NJ", "IN", "LA", "MA"}
+        supported_states.update(hardcoded_states)
+        
+        # Convert to sorted list of state codes
+        state_codes = sorted(list(supported_states))
+        
+        return JSONResponse(content={
+            "status": "success",
+            "states": state_codes,
+            "count": len(state_codes)
+        })
+    except Exception as e:
+        logger.error(f"Error fetching supported states: {e}")
+        # Fallback: return common states
+        fallback_states = ["TX", "CA", "FL", "WA", "OH", "OR", "HI", "NJ", "IN", "LA", "MA"]
+        return JSONResponse(content={
+            "status": "success",
+            "states": fallback_states,
+            "count": len(fallback_states)
+        })
+
 @router.get("/api/calculations/history")
 async def get_history(request: Request):
     """
