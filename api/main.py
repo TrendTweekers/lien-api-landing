@@ -1109,6 +1109,21 @@ async def force_db_fix():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@app.get("/api/clear-oauth-states")
+async def clear_oauth_states():
+    """TEMPORARY: Clear all OAuth states to fix stale state issue"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("DELETE FROM quickbooks_oauth_states")
+            else:
+                cursor.execute("DELETE FROM quickbooks_oauth_states")
+            conn.commit()
+            return {"success": True, "message": "All OAuth states cleared"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 # Include routers with full paths to match frontend calls
 app.include_router(analytics_router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(admin_router, tags=["admin"])
