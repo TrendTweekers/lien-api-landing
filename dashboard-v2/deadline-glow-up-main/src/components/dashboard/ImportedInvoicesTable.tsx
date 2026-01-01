@@ -360,7 +360,7 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
         body: JSON.stringify({
           invoice_date: invoiceDate,
           state: state,
-          project_type: projectType,
+          project_type: projectType.toLowerCase(), // API expects lowercase: "commercial" or "residential"
         }),
       });
 

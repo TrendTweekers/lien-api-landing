@@ -8,7 +8,7 @@ import secrets
 import time
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Request, Depends, Header
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.requests import Request
 import httpx
 from urllib.parse import urlencode, quote
@@ -683,31 +683,36 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                 invoices = [invoices]
             
             # Check which invoices have been saved as projects
+            # Use a separate database connection to avoid cursor closure issues
             user_email = user.get("email", "")
             saved_invoice_ids = set()
             if user_email:
                 try:
-                    if DB_TYPE == 'postgresql':
-                        cursor.execute("""
-                            SELECT quickbooks_invoice_id FROM calculations 
-                            WHERE user_email = %s AND quickbooks_invoice_id IS NOT NULL
-                        """, (user_email,))
-                    else:
-                        cursor.execute("""
-                            SELECT quickbooks_invoice_id FROM calculations 
-                            WHERE user_email = ? AND quickbooks_invoice_id IS NOT NULL
-                        """, (user_email,))
-                    
-                    saved_rows = cursor.fetchall()
-                    for row in saved_rows:
-                        if isinstance(row, dict):
-                            qb_id = row.get('quickbooks_invoice_id')
+                    with get_db() as conn:
+                        saved_cursor = get_db_cursor(conn)
+                        if DB_TYPE == 'postgresql':
+                            saved_cursor.execute("""
+                                SELECT quickbooks_invoice_id FROM calculations 
+                                WHERE user_email = %s AND quickbooks_invoice_id IS NOT NULL
+                            """, (user_email,))
                         else:
-                            qb_id = row[0] if len(row) > 0 else None
-                        if qb_id:
-                            saved_invoice_ids.add(str(qb_id))
+                            saved_cursor.execute("""
+                                SELECT quickbooks_invoice_id FROM calculations 
+                                WHERE user_email = ? AND quickbooks_invoice_id IS NOT NULL
+                            """, (user_email,))
+                        
+                        saved_rows = saved_cursor.fetchall()
+                        for row in saved_rows:
+                            if isinstance(row, dict):
+                                qb_id = row.get('quickbooks_invoice_id')
+                            else:
+                                qb_id = row[0] if len(row) > 0 else None
+                            if qb_id:
+                                saved_invoice_ids.add(str(qb_id))
                 except Exception as e:
                     print(f"Error checking saved invoices: {e}")
+                    import traceback
+                    traceback.print_exc()
             
             # Format invoices for frontend
             formatted_invoices = []
@@ -832,13 +837,26 @@ async def disconnect_quickbooks(request: Request, current_user: dict = Depends(g
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
+            # Delete QuickBooks tokens
             if DB_TYPE == 'postgresql':
                 cursor.execute("DELETE FROM quickbooks_tokens WHERE user_id = %s", (user['id'],))
             else:
                 cursor.execute("DELETE FROM quickbooks_tokens WHERE user_id = ?", (user['id'],))
             
+            deleted_count = cursor.rowcount if hasattr(cursor, 'rowcount') else 0
+            
             conn.commit()
-            return {"success": True, "message": "QuickBooks account disconnected"}
+            
+            print(f"✅ QuickBooks disconnected for user_id: {user['id']}, deleted {deleted_count} token(s)")
+            
+            return JSONResponse(content={
+                "success": True, 
+                "message": "QuickBooks account disconnected"
+            })
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Error disconnecting QuickBooks: {e}")
-        raise HTTPException(status_code=500, detail="Error disconnecting QuickBooks account")
+        print(f"❌ Error disconnecting QuickBooks: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error disconnecting QuickBooks account: {str(e)}")
