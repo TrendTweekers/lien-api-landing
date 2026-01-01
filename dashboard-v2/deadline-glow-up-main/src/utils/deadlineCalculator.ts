@@ -33,71 +33,40 @@ function getMemorialDay(year: number): Date {
   return date;
 }
 
-function getHolidays(year: number): Date[] {
-  const holidays: Date[] = [
-    new Date(year, 0, 1), // New Year's Day
-    new Date(year, 6, 4), // Independence Day
-    new Date(year, 10, 11), // Veterans Day
-    new Date(year, 11, 25), // Christmas Day
-    new Date(year, 5, 19), // Juneteenth
-  ];
-
-  // Observed dates for fixed holidays (if on Sunday, observed Monday; if Saturday, observed Friday - though federal often varies, typically next business day logic covers the 'closed' part)
-  // But for 'deadline extension', usually actual legal holidays matter.
-  // Let's stick to the specific dates + floating ones.
-
-  // MLK Jr. Day: 3rd Monday in Jan (0)
-  holidays.push(getFloatingHoliday(year, 0, 3, 1)); // This needs a proper helper implementation
-  
-  // Presidents Day: 3rd Monday in Feb (1)
-  // Memorial Day: Last Monday in May (4)
-  holidays.push(getMemorialDay(year));
-  
-  // Labor Day: 1st Monday in Sept (8)
-  // Columbus Day: 2nd Monday in Oct (9)
-  // Thanksgiving: 4th Thursday in Nov (10)
-  
-  return holidays;
-}
-
-// Improved Floating Holiday Helper
-function getNthDayOfMonth(year: number, month: number, n: number, dayOfWeek: number): Date {
-  const firstDay = new Date(year, month, 1);
-  let day = firstDay.getDay();
-  let diff = dayOfWeek - day;
-  if (diff < 0) diff += 7;
-  let date = addDays(firstDay, diff + (n - 1) * 7);
-  return date;
+function isSameDate(d1: Date, d2: Date): boolean {
+  return getYear(d1) === getYear(d2) && getMonth(d1) === getMonth(d2) && getDate(d1) === getDate(d2);
 }
 
 function isHoliday(date: Date): boolean {
   const year = getYear(date);
-  const m = getMonth(date);
-  const d = getDate(date);
-  const dayOfWeek = date.getDay(); // 0 = Sun, 1 = Mon
+  const holidays: Date[] = [];
 
   // Fixed Holidays
-  if (m === 0 && d === 1) return true; // New Year
-  if (m === 5 && d === 19) return true; // Juneteenth
-  if (m === 6 && d === 4) return true; // Independence
-  if (m === 10 && d === 11) return true; // Veterans
-  if (m === 11 && d === 25) return true; // Christmas
+  const fixed = [
+    new Date(year, 0, 1),   // New Year's Day
+    new Date(year, 5, 19),  // Juneteenth
+    new Date(year, 6, 4),   // Independence Day
+    new Date(year, 10, 11), // Veterans Day
+    new Date(year, 11, 25), // Christmas Day
+  ];
+
+  for (const h of fixed) {
+    holidays.push(h);
+    const day = h.getDay(); // 0=Sun, 6=Sat
+    // Observed logic
+    if (day === 6) holidays.push(subDays(h, 1)); // Sat -> Fri
+    if (day === 0) holidays.push(addDays(h, 1)); // Sun -> Mon
+  }
 
   // Floating Holidays
-  // MLK: 3rd Mon Jan
-  if (m === 0 && dayOfWeek === 1 && d >= 15 && d <= 21) return true;
-  // Presidents: 3rd Mon Feb
-  if (m === 1 && dayOfWeek === 1 && d >= 15 && d <= 21) return true;
-  // Memorial: Last Mon May
-  if (m === 4 && dayOfWeek === 1 && d >= 25) return true;
-  // Labor: 1st Mon Sept
-  if (m === 8 && dayOfWeek === 1 && d <= 7) return true;
-  // Columbus: 2nd Mon Oct
-  if (m === 9 && dayOfWeek === 1 && d >= 8 && d <= 14) return true;
-  // Thanksgiving: 4th Thu Nov
-  if (m === 10 && dayOfWeek === 4 && d >= 22 && d <= 28) return true;
+  holidays.push(getFloatingHoliday(year, 0, 3, 1));  // MLK Jr (3rd Mon Jan)
+  holidays.push(getFloatingHoliday(year, 1, 3, 1));  // Presidents (3rd Mon Feb)
+  holidays.push(getMemorialDay(year));               // Memorial (Last Mon May)
+  holidays.push(getFloatingHoliday(year, 8, 1, 1));  // Labor (1st Mon Sept)
+  holidays.push(getFloatingHoliday(year, 9, 2, 1));  // Columbus (2nd Mon Oct)
+  holidays.push(getFloatingHoliday(year, 10, 4, 4)); // Thanksgiving (4th Thu Nov)
 
-  return false;
+  return holidays.some(h => isSameDate(date, h));
 }
 
 function isBusinessDay(date: Date): boolean {
@@ -122,16 +91,16 @@ export function adjustForBusinessDays(date: Date): Date {
 
 function calculateTexas(invoiceDate: Date, projectType: "residential" | "commercial"): { prelim: Date; lien: Date } {
   // Prelim:
-  // Commercial: 15th of 3rd month (Backend uses offset 2)
-  // Residential: 15th of 2nd month (Backend uses offset 1)
-  const prelimMonthOffset = projectType === "residential" ? 1 : 2;
+  // Commercial: 15th of 3rd month following (Offset 3)
+  // Residential: 15th of 2nd month following (Offset 2)
+  const prelimMonthOffset = projectType === "residential" ? 2 : 3;
   let prelim = setDate(addMonths(invoiceDate, prelimMonthOffset), 15);
   prelim = getNextBusinessDay(prelim);
 
   // Lien:
-  // Commercial: 15th of 4th month (Backend uses offset 3)
-  // Residential: 15th of 3rd month (Backend uses offset 2)
-  const lienMonthOffset = projectType === "residential" ? 2 : 3;
+  // Commercial: 15th of 4th month following (Offset 4)
+  // Residential: 15th of 3rd month following (Offset 3)
+  const lienMonthOffset = projectType === "residential" ? 3 : 4;
   let lien = setDate(addMonths(invoiceDate, lienMonthOffset), 15);
   lien = getNextBusinessDay(lien);
 
@@ -153,30 +122,11 @@ function calculateWashington(invoiceDate: Date): { prelim: Date; lien: Date } {
 function calculateCalifornia(invoiceDate: Date): { prelim: Date; lien: Date } {
   // Prelim: 20 days
   let prelim = addDays(invoiceDate, 20);
-  // CA logic often strictly 20 days, but usually falls to next business day if closed. 
-  // State rules say "Weekend extension: false" in our DB? 
-  // Let's check DB. CA says weekend_extension: false.
-  // But usually for filing, if the court is closed, it extends. 
-  // For 'serving' notice, maybe not.
-  // The python code might handle this. Let's look at python code if possible?
-  // I recall python code calling `add_business_days` or checking `is_business_day`.
-  // Re-reading python summary: "if state_code == 'CA': return calculate_california...".
-  // Let's assume standard logic: use rule flags.
+  prelim = getNextBusinessDay(prelim);
   
-  // Lien: 90 days from completion (we don't have completion date usually in this table context, 
-  // but if we did... here we only have invoice date. 
-  // Actually, CA lien deadline is from COMPLETION, not Invoice. 
-  // But the table asks for a deadline based on the invoice.
-  // If we lack completion date, we might show a warning or calculate from invoice as a proxy?
-  // The current calculator often calculates from invoice as a "safe" proxy or assumes completion = invoice (unlikely).
-  // In `calculators.py` for CA: 
-  // "Lien: Earlier of 90 days after completion..."
-  // If no completion date provided, what does it return?
-  // Let's assume we return 90 days from invoice as a placeholder if strictly invoice-based?
-  // Actually, for CA, prelim is key. Lien deadline is hard to predict without completion.
-  // Let's stick to 90 days from invoice for now as a conservative estimate or just 90 days.
-  
+  // Lien: 90 days
   let lien = addDays(invoiceDate, 90);
+  lien = getNextBusinessDay(lien);
 
   return { prelim, lien };
 }
