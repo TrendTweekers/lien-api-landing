@@ -673,7 +673,7 @@
                         <p class="text-xl text-gray-600 mb-8 leading-relaxed animate-fade-up-delay-2">
                             <span class="font-bold text-blue-600">All 50 States + DC</span> • 
                             100% Nationwide Coverage • 
-                            60% Cheaper Than Levelset
+                            QuickBooks Integration Included
                         </p>
                         
                         <!-- Email capture form -->
@@ -746,7 +746,7 @@
                             
                             <!-- Results -->
                             <div class="space-y-3">
-                                <div class="p-4 rounded-xl bg-green-50 border border-green-200">
+                                <div class="p-4 rounded-xl border border-green-200" style="background-color: #d1fae5;">
                                     <div class="flex items-start justify-between">
                                         <div>
                                             <p class="text-lg font-medium text-success mb-1">PRELIMINARY NOTICE</p>
@@ -759,7 +759,7 @@
                                     </div>
                                 </div>
                                 
-                                <div class="p-4 rounded-xl bg-orange-50 border border-orange-200">
+                                <div class="p-4 rounded-xl border border-orange-200" style="background-color: #fed7aa;">
                                     <div class="flex items-start justify-between">
                                         <div>
                                             <p class="text-lg font-medium text-warning mb-1">LIEN FILING DEADLINE</p>
@@ -2795,7 +2795,7 @@ function displayResults(data) {
     // Display results with timeline
     const resultsDiv = document.getElementById('calculatorResults');
     resultsDiv.innerHTML = `
-        <div class="p-6 rounded-xl bg-green-50 border border-green-200">
+        <div class="p-6 rounded-xl border border-green-200" style="background-color: #d1fae5;">
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm font-medium text-success mb-1">PRELIMINARY NOTICE</p>
@@ -2808,7 +2808,7 @@ function displayResults(data) {
             </div>
         </div>
         
-        <div class="p-6 rounded-xl bg-orange-50 border border-orange-200">
+        <div class="p-6 rounded-xl border border-orange-200" style="background-color: #fed7aa;">
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm font-medium text-warning mb-1">LIEN FILING DEADLINE</p>
@@ -2833,16 +2833,6 @@ function displayResults(data) {
             <p class="text-xs text-gray-500 mt-2">⭐ Trusted by 500+ material suppliers</p>
         </div>
         
-        <!-- Comparison CTA -->
-        <div class="mt-6 p-4 bg-gradient-to-r from-orange-50 to-coral/10 rounded-lg border border-orange-200">
-            <p class="text-sm font-semibold text-gray-900 mb-2">💡 Compare with Levelset</p>
-            <p class="text-sm text-gray-700 mb-3">
-                See how LienDeadline compares to Levelset: 60% cheaper, 10x faster API, perfect for material suppliers.
-            </p>
-            <a href="/comparison.html" class="inline-block bg-coral hover:bg-coral/90 text-white font-semibold px-4 py-2 rounded text-sm transition-colors">
-                Compare Lien Deadline Calculators →
-            </a>
-        </div>
     `;
     
     // Show results container
