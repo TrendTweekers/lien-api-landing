@@ -94,6 +94,8 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
   const [loading, setLoading] = useState(false);
   // Track selected state and type for each invoice
   const [invoiceSelections, setInvoiceSelections] = useState<Record<string, { state: string; type: string }>>({});
+  // Track which invoices are currently recalculating
+  const [recalculatingInvoices, setRecalculatingInvoices] = useState<Set<string>>(new Set());
 
   const fetchInvoices = async () => {
     setLoading(true);
@@ -115,6 +117,18 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
       // API returns { invoices: [...], count: ... }
       const invoiceArray = Array.isArray(data) ? data : (data?.invoices || []);
       setInvoices(invoiceArray);
+      
+      // Initialize selections for unsaved invoices
+      const initialSelections: Record<string, { state: string; type: string }> = {};
+      invoiceArray.forEach((inv: Invoice) => {
+        if (!inv.is_saved && inv.id) {
+          initialSelections[inv.id] = {
+            state: inv.state || "",
+            type: "Commercial"
+          };
+        }
+      });
+      setInvoiceSelections(prev => ({ ...prev, ...initialSelections }));
     } catch (e) {
       console.error(e);
       // Only show error toast if we are connected
@@ -205,6 +219,100 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
     );
   };
 
+  const recalculateDeadlines = async (invoiceId: string, invoiceDate: string, state: string, projectType: string) => {
+    if (!state || !invoiceDate) {
+      toast({
+        title: "Error",
+        description: "Please select both State and ensure invoice date is available.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Set loading state for this invoice
+    setRecalculatingInvoices(prev => new Set(prev).add(invoiceId));
+
+    try {
+      const token = localStorage.getItem('session_token');
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const response = await fetch("/api/v1/calculate-deadline", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          invoice_date: invoiceDate,
+          state: state,
+          project_type: projectType,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to recalculate deadlines");
+      }
+
+      const data = await response.json();
+      
+      // Extract deadline data (handle both wrapped and unwrapped responses)
+      const result = data.data || data.result || data;
+      const prelimDeadline = result.prelim_deadline || result.preliminary_notice_deadline || result.prelimDeadline;
+      const lienDeadline = result.lien_deadline || result.lienDeadline;
+      const prelimDays = result.prelim_deadline_days || result.prelimDaysRemaining || result.prelim_days_remaining;
+      const lienDays = result.lien_deadline_days || result.lienDaysRemaining || result.lien_days_remaining;
+
+      // Calculate days remaining from today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      let prelimDaysRemaining: number | null = null;
+      let lienDaysRemaining: number | null = null;
+
+      if (prelimDeadline) {
+        const prelimDate = new Date(prelimDeadline);
+        prelimDate.setHours(0, 0, 0, 0);
+        prelimDaysRemaining = Math.ceil((prelimDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      }
+
+      if (lienDeadline) {
+        const lienDate = new Date(lienDeadline);
+        lienDate.setHours(0, 0, 0, 0);
+        lienDaysRemaining = Math.ceil((lienDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      }
+
+      // Update the invoice in the state
+      setInvoices(prevInvoices =>
+        prevInvoices.map(inv =>
+          inv.id === invoiceId
+            ? {
+                ...inv,
+                preliminary_deadline: prelimDeadline || null,
+                lien_deadline: lienDeadline || null,
+                prelim_days_remaining: prelimDaysRemaining,
+                lien_days_remaining: lienDaysRemaining,
+                state: state, // Update state as well
+              }
+            : inv
+        )
+      );
+    } catch (error: any) {
+      console.error("Error recalculating deadlines:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to recalculate deadlines. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      // Remove loading state
+      setRecalculatingInvoices(prev => {
+        const next = new Set(prev);
+        next.delete(invoiceId);
+        return next;
+      });
+    }
+  };
+
   return (
     <div className="bg-card rounded-xl overflow-hidden border border-border card-shadow mt-8 animate-slide-up" style={{ animationDelay: "0.22s" }}>
       <div className="p-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -272,11 +380,17 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
                         <Select
                           value={selection.state}
                           onValueChange={(value) => {
+                            const newSelection = { ...selection, state: value };
                             setInvoiceSelections(prev => ({
                               ...prev,
-                              [inv.id]: { ...selection, state: value }
+                              [inv.id]: newSelection
                             }));
+                            // Recalculate deadlines when state changes
+                            if (inv.date && newSelection.type) {
+                              recalculateDeadlines(inv.id, inv.date, value, newSelection.type);
+                            }
                           }}
+                          disabled={recalculatingInvoices.has(inv.id)}
                         >
                           <SelectTrigger className="w-[140px]">
                             <SelectValue placeholder="Select state" />
@@ -298,11 +412,17 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
                         <Select
                           value={selection.type}
                           onValueChange={(value) => {
+                            const newSelection = { ...selection, type: value };
                             setInvoiceSelections(prev => ({
                               ...prev,
-                              [inv.id]: { ...selection, type: value }
+                              [inv.id]: newSelection
                             }));
+                            // Recalculate deadlines when type changes
+                            if (inv.date && newSelection.state) {
+                              recalculateDeadlines(inv.id, inv.date, newSelection.state, value);
+                            }
                           }}
+                          disabled={recalculatingInvoices.has(inv.id)}
                         >
                           <SelectTrigger className="w-[140px]">
                             <SelectValue placeholder="Select type" />
@@ -316,14 +436,32 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                          <span className="text-foreground">{formatDate(inv.preliminary_deadline)}</span>
-                          {getDaysBadge(inv.prelim_days_remaining)}
+                          {recalculatingInvoices.has(inv.id) ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 animate-spin text-primary" />
+                              <span className="text-muted-foreground text-sm">Calculating...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-foreground">{formatDate(inv.preliminary_deadline)}</span>
+                              {getDaysBadge(inv.prelim_days_remaining)}
+                            </>
+                          )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                          <span className="text-foreground">{formatDate(inv.lien_deadline)}</span>
-                          {getDaysBadge(inv.lien_days_remaining)}
+                          {recalculatingInvoices.has(inv.id) ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 animate-spin text-primary" />
+                              <span className="text-muted-foreground text-sm">Calculating...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-foreground">{formatDate(inv.lien_deadline)}</span>
+                              {getDaysBadge(inv.lien_days_remaining)}
+                            </>
+                          )}
                       </div>
                     </TableCell>
                     <TableCell>
