@@ -206,7 +206,7 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
   if (!isConnected && !loading) return null;
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return "Not Required";
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -529,7 +529,7 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
                       ) : (
                         <div className="space-y-1">
                           <Select
-                            value={selection.state}
+                            value={selection.state || undefined}
                             onValueChange={(value) => {
                               const newSelection = { ...selection, state: value };
                               setInvoiceSelections(prev => ({
