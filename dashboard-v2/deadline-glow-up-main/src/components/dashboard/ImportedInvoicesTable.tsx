@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -219,6 +219,92 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
     );
   };
 
+  const handleSaveToProjects = async (invoice: Invoice) => {
+    const selection = invoiceSelections[invoice.id] || { state: invoice.state || "", type: "Commercial" };
+    
+    if (!selection.state || !invoice.date) {
+      toast({
+        title: "Error",
+        description: "Please select a State and ensure invoice date is available.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('session_token');
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      // Use the calculated deadlines from the invoice, or recalculate if missing
+      let prelimDeadline = invoice.preliminary_deadline;
+      let lienDeadline = invoice.lien_deadline;
+
+      // If deadlines are missing, calculate them first
+      if (!prelimDeadline || !lienDeadline) {
+        const calcResponse = await fetch("/api/v1/calculate-deadline", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            invoice_date: invoice.date,
+            state: selection.state,
+            project_type: selection.type.toLowerCase(),
+          }),
+        });
+
+        if (!calcResponse.ok) throw new Error("Failed to calculate deadlines");
+
+        const calcData = await calcResponse.json();
+        const calcResult = calcData.data || calcData.result || calcData;
+        prelimDeadline = calcResult.prelim_deadline 
+          || calcResult.preliminary_notice_deadline 
+          || calcResult.prelimDeadline
+          || (calcResult.preliminary_notice?.deadline);
+        lienDeadline = (calcResult.lien_filing?.deadline)
+          || calcResult.lien_deadline 
+          || calcResult.lienDeadline;
+      }
+
+      const response = await fetch("/api/calculations/save", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          state: selection.state,
+          invoice_date: invoice.date,
+          project_name: `${invoice.customer_name} - ${invoice.invoice_number}`,
+          client_name: invoice.customer_name,
+          invoiceAmount: invoice.amount || 0,
+          description: `QuickBooks Invoice #${invoice.invoice_number}`,
+          prelim_deadline: prelimDeadline,
+          lien_deadline: lienDeadline,
+          quickbooks_invoice_id: invoice.id,
+          reminder_1day: 0,
+          reminder_7days: 0
+        })
+      });
+
+      if (!response.ok) throw new Error("Save failed");
+
+      toast({
+        title: "Saved",
+        description: "Invoice saved to projects.",
+      });
+
+      // Dispatch custom event to notify ProjectsTable
+      window.dispatchEvent(new Event('project-saved'));
+
+      // Refresh invoices to update the status
+      await fetchInvoices();
+    } catch (error: any) {
+      console.error("Error saving invoice:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save invoice. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const recalculateDeadlines = async (invoiceId: string, invoiceDate: string, state: string, projectType: string) => {
     if (!state || !invoiceDate) {
       toast({
@@ -383,16 +469,17 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
               <TableHead className="text-foreground font-semibold">PRELIMINARY NOTICE</TableHead>
               <TableHead className="text-foreground font-semibold">LIEN FILING DEADLINE</TableHead>
               <TableHead className="text-foreground font-semibold">Status</TableHead>
+              <TableHead className="text-foreground font-semibold">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
                <TableRow>
-                 <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading invoices...</TableCell>
+                 <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Loading invoices...</TableCell>
                </TableRow>
             ) : invoices.length === 0 ? (
                <TableRow>
-                 <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No invoices found in the last 90 days.</TableCell>
+                 <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No invoices found in the last 90 days.</TableCell>
                </TableRow>
             ) : (
               invoices.map((inv) => {
@@ -517,6 +604,20 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
                       >
                         {inv.status === "Paid" ? "Paid" : isSaved ? "Imported" : "New"}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-2">
+                        {!isSaved && (
+                          <Button 
+                            size="sm" 
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                            onClick={() => handleSaveToProjects(inv)}
+                            disabled={!selection.state || !inv.date}
+                          >
+                            <Save className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
