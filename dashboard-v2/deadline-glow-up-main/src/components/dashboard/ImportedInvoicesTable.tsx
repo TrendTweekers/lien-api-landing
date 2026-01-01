@@ -82,6 +82,7 @@ interface Invoice {
   status: string;
   is_saved?: boolean;  // Indicates if invoice has been saved as a project
   state: string;
+  project_type?: string;  // Saved project type (Commercial/Residential)
   preliminary_deadline: string | null;
   lien_deadline: string | null;
   prelim_days_remaining: number | null;
@@ -299,6 +300,7 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
         headers,
         body: JSON.stringify({
           state: selection.state,
+          state_code: selection.state,  // Ensure state_code is also set
           invoice_date: invoice.date,
           project_name: `${invoice.customer_name} - ${invoice.invoice_number}`,
           client_name: invoice.customer_name,
@@ -306,6 +308,7 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
           description: `QuickBooks Invoice #${invoice.invoice_number}`,
           prelim_deadline: prelimDeadline,
           lien_deadline: lienDeadline,
+          project_type: selection.type.toLowerCase(),  // Ensure project_type is saved
           quickbooks_invoice_id: invoice.id,
           reminder_1day: 0,
           reminder_7days: 0
@@ -566,7 +569,7 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
                     </TableCell>
                     <TableCell>
                       {isSaved ? (
-                        <Badge className="bg-muted text-muted-foreground">Commercial</Badge>
+                        <Badge className="bg-muted text-muted-foreground">{inv.project_type || "Commercial"}</Badge>
                       ) : (
                         <Select
                           value={selection.type}

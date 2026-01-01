@@ -684,20 +684,24 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
             
             # Check which invoices have been saved as projects
             # Use a separate database connection to avoid cursor closure issues
+            # Also fetch the saved state and project_type to display correctly
             user_email = user.get("email", "")
             saved_invoice_ids = set()
+            saved_invoice_data = {}  # Map invoice_id -> {state, project_type}
             if user_email:
                 try:
                     with get_db() as conn:
                         saved_cursor = get_db_cursor(conn)
                         if DB_TYPE == 'postgresql':
                             saved_cursor.execute("""
-                                SELECT quickbooks_invoice_id FROM calculations 
+                                SELECT quickbooks_invoice_id, state, project_type 
+                                FROM calculations 
                                 WHERE user_email = %s AND quickbooks_invoice_id IS NOT NULL
                             """, (user_email,))
                         else:
                             saved_cursor.execute("""
-                                SELECT quickbooks_invoice_id FROM calculations 
+                                SELECT quickbooks_invoice_id, state, project_type 
+                                FROM calculations 
                                 WHERE user_email = ? AND quickbooks_invoice_id IS NOT NULL
                             """, (user_email,))
                         
@@ -705,10 +709,20 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                         for row in saved_rows:
                             if isinstance(row, dict):
                                 qb_id = row.get('quickbooks_invoice_id')
+                                saved_state = row.get('state') or row.get('state_code', '')
+                                saved_project_type = row.get('project_type', 'Commercial')
                             else:
                                 qb_id = row[0] if len(row) > 0 else None
+                                saved_state = row[1] if len(row) > 1 else ''
+                                saved_project_type = row[2] if len(row) > 2 else 'Commercial'
+                            
                             if qb_id:
-                                saved_invoice_ids.add(str(qb_id))
+                                qb_id_str = str(qb_id)
+                                saved_invoice_ids.add(qb_id_str)
+                                saved_invoice_data[qb_id_str] = {
+                                    'state': saved_state.upper() if saved_state else '',
+                                    'project_type': saved_project_type.capitalize() if saved_project_type else 'Commercial'
+                                }
                 except Exception as e:
                     print(f"Error checking saved invoices: {e}")
                     import traceback
@@ -764,7 +778,49 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                     state = "Unknown"
 
                 invoice_id = inv.get("Id")
-                is_saved = str(invoice_id) in saved_invoice_ids if invoice_id else False
+                invoice_id_str = str(invoice_id) if invoice_id else None
+                is_saved = invoice_id_str in saved_invoice_ids if invoice_id_str else False
+                
+                # Use saved state/project_type if invoice is saved, otherwise use QuickBooks data
+                display_state = state
+                if is_saved and invoice_id_str and invoice_id_str in saved_invoice_data:
+                    saved_data = saved_invoice_data[invoice_id_str]
+                    display_state = saved_data.get('state', state)
+                    # Recalculate deadlines with saved state/project_type for accurate display
+                    try:
+                        saved_project_type = saved_data.get('project_type', 'Commercial').lower()
+                        invoice_date_str = inv.get("TxnDate")
+                        invoice_date = datetime.strptime(invoice_date_str, "%Y-%m-%d")
+                        
+                        deadlines = calculate_state_deadline(
+                            state_code=display_state,
+                            invoice_date=invoice_date,
+                            project_type=saved_project_type
+                        )
+                        
+                        prelim_deadline = deadlines.get("preliminary_deadline")
+                        lien_deadline = deadlines.get("lien_deadline")
+                        
+                        # Recalculate days remaining with saved state
+                        prelim_days = None
+                        if prelim_deadline:
+                            prelim_days = (prelim_deadline.date() - today).days
+                            
+                        lien_days = None
+                        if lien_deadline:
+                            lien_days = (lien_deadline.date() - today).days
+                        
+                        # Update formatted dates
+                        prelim_str = prelim_deadline.strftime("%Y-%m-%d") if prelim_deadline else None
+                        lien_str = lien_deadline.strftime("%Y-%m-%d") if lien_deadline else None
+                    except Exception as e:
+                        print(f"Error recalculating deadlines for saved invoice {inv.get('DocNumber')}: {e}")
+                        # Keep existing calculated values if recalculation fails
+                
+                # Get saved project_type if available
+                saved_project_type = None
+                if is_saved and invoice_id_str and invoice_id_str in saved_invoice_data:
+                    saved_project_type = saved_invoice_data[invoice_id_str].get('project_type', 'Commercial')
                 
                 formatted_invoices.append({
                     "id": invoice_id,
@@ -775,7 +831,8 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                     "balance": float(inv.get("Balance", 0)),
                     "status": "Unpaid" if float(inv.get("Balance", 0)) > 0 else "Paid",
                     "is_saved": is_saved,  # Indicates if this invoice has been saved as a project
-                    "state": state,
+                    "state": display_state,  # Use saved state if available, otherwise QuickBooks state
+                    "project_type": saved_project_type,  # Saved project type if available
                     "preliminary_deadline": prelim_str,
                     "lien_deadline": lien_str,
                     "prelim_days_remaining": prelim_days,
