@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { IntegrationCard } from "./IntegrationCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -7,6 +7,12 @@ import { useToast } from "@/hooks/use-toast";
 export const IntegrationsSection = ({ isConnected = false }: { isConnected?: boolean }) => {
   const { toast } = useToast();
   const [connected, setConnected] = useState(isConnected);
+
+  // Sync local state with prop changes
+  useEffect(() => {
+    console.log(`🔄 IntegrationsSection - isConnected prop changed:`, isConnected);
+    setConnected(isConnected);
+  }, [isConnected]);
 
   const handleDisconnect = async () => {
     try {

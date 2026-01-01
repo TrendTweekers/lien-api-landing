@@ -18,17 +18,29 @@ const Index = () => {
   const checkQuickBooksConnection = async () => {
     try {
         const token = localStorage.getItem('session_token');
-        if (!token) return;
+        if (!token) {
+          console.log("🔍 No session token found");
+          setIsCheckingConnection(false);
+          return;
+        }
 
         const res = await fetch('/api/quickbooks/status', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+        
         if (res.ok) {
             const data = await res.json();
-            setIsQuickBooksConnected(data.connected);
+            console.log("🔍 QuickBooks status response:", data);
+            const isConnected = data.connected === true || data.connected === "true";
+            console.log("🔍 Setting isQuickBooksConnected to:", isConnected);
+            setIsQuickBooksConnected(isConnected);
+        } else {
+          console.log("🔍 QuickBooks status check failed:", res.status, res.statusText);
+          setIsQuickBooksConnected(false);
         }
     } catch (error) {
         console.error("Failed to check QB status", error);
+        setIsQuickBooksConnected(false);
     } finally {
         setIsCheckingConnection(false);
     }

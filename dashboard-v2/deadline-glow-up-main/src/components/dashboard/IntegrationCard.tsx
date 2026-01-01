@@ -30,6 +30,11 @@ export const IntegrationCard = ({
   onConnect,
   onDisconnect,
 }: IntegrationCardProps) => {
+  // Debug logging for connection status
+  if (name === "QuickBooks Integration") {
+    console.log(`🔍 QuickBooks Integration Card - connected prop:`, connected);
+  }
+
   // Use brand color if provided, otherwise fall back to gradient
   const iconBgStyle = iconColor 
     ? { backgroundColor: iconColor }
@@ -96,7 +101,8 @@ export const IntegrationCard = ({
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              // When not connected: Show Connect button
+              // When not connected: Show official Intuit Connect button
+              // Using Intuit's official branding: #0077C5 blue background, white text
               <button
                 onClick={() => {
                   const token = localStorage.getItem('session_token');
@@ -106,9 +112,20 @@ export const IntegrationCard = ({
                     window.location.href = '/login.html';
                   }
                 }}
-                className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md h-9 px-4"
+                className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:shadow-md h-9 px-4"
+                style={{
+                  backgroundColor: '#0077C5',
+                  color: '#FFFFFF',
+                  border: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#0066A3';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#0077C5';
+                }}
               >
-                Connect QuickBooks
+                Connect to QuickBooks
               </button>
             )}
           </>
