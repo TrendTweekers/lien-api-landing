@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, Request, Depends, Header
 from fastapi.responses import RedirectResponse
 from starlette.requests import Request
 import httpx
-from urllib.parse import urlencode
+from urllib.parse import urlencode, quote
 from api.database import get_db, get_db_cursor, DB_TYPE
 from api.routers.auth import get_current_user
 from api.calculators import calculate_state_deadline
@@ -120,7 +120,7 @@ async def quickbooks_connect(request: Request):
     
     if not token:
         # Redirect to login if no token
-        return RedirectResponse(url="/dashboard?error=Please log in first")
+        return RedirectResponse(url=f"/dashboard?error={quote('Please log in first')}")
     
     # Look up user from token
     try:
@@ -135,7 +135,7 @@ async def quickbooks_connect(request: Request):
             user_result = cursor.fetchone()
             
             if not user_result:
-                return RedirectResponse(url="/dashboard?error=Invalid session")
+                return RedirectResponse(url=f"/dashboard?error={quote('Invalid session')}")
             
             # Extract user info
             if isinstance(user_result, dict):
@@ -148,7 +148,7 @@ async def quickbooks_connect(request: Request):
                 subscription_status = user_result[2] if len(user_result) > 2 else ''
             
             if subscription_status not in ['active', 'trialing']:
-                return RedirectResponse(url="/dashboard?error=Subscription expired")
+                return RedirectResponse(url=f"/dashboard?error={quote('Subscription expired')}")
             
             user = {"id": user_id, "email": user_email}
 
@@ -166,7 +166,9 @@ async def quickbooks_connect(request: Request):
 
     except Exception as e:
         print(f"Error looking up user: {e}")
-        return RedirectResponse(url="/dashboard?error=Authentication failed")
+        import traceback
+        traceback.print_exc()
+        return RedirectResponse(url=f"/dashboard?error={quote('Authentication failed')}")
     
     # Generate secure random state and store it with user ID
     state = secrets.token_urlsafe(32)
@@ -176,7 +178,7 @@ async def quickbooks_connect(request: Request):
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # First verify table exists
+            # First verify table exists before attempting to store state
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     SELECT EXISTS (
@@ -184,18 +186,24 @@ async def quickbooks_connect(request: Request):
                         WHERE table_name = 'quickbooks_oauth_states'
                     )
                 """)
+                table_exists_result = cursor.fetchone()
+                table_exists = table_exists_result[0] if table_exists_result else False
             else:
                 cursor.execute("""
                     SELECT name FROM sqlite_master 
                     WHERE type='table' AND name='quickbooks_oauth_states'
                 """)
+                table_exists_result = cursor.fetchone()
+                table_exists = table_exists_result is not None and len(table_exists_result) > 0
             
-            table_exists = cursor.fetchone()
-            if not table_exists or not table_exists[0]:
-                print("❌ CRITICAL: quickbooks_oauth_states table does not exist!")
-                return RedirectResponse(url="/dashboard-v2?error=System configuration error. Please contact support.")
+            if not table_exists:
+                error_msg = "❌ CRITICAL: quickbooks_oauth_states table does not exist!"
+                print(error_msg)
+                import traceback
+                traceback.print_exc()
+                return RedirectResponse(url=f"/dashboard-v2?error={quote('System configuration error. Please contact support.')}")
             
-            print("✅ quickbooks_oauth_states table exists")
+            print("✅ quickbooks_oauth_states table exists - proceeding with state storage")
             
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
@@ -211,11 +219,12 @@ async def quickbooks_connect(request: Request):
             conn.commit()
             print(f"✅ OAuth state stored successfully for user {user['id']}: {state[:20]}...")
     except Exception as e:
-        print(f"❌ CRITICAL: Failed to store OAuth state: {e}")
+        error_msg = f"❌ CRITICAL: Failed to store OAuth state: {e}"
+        print(error_msg)
         import traceback
         traceback.print_exc()
         # DO NOT redirect to QuickBooks if we can't store state!
-        return RedirectResponse(url="/dashboard-v2?error=Database error. Please try again or contact support.")
+        return RedirectResponse(url=f"/dashboard-v2?error={quote('Database error. Please try again or contact support.')}")
     
     params = {
         "client_id": QB_CLIENT_ID,
@@ -266,13 +275,11 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
     if not code or not state:
         error_msg = f"Missing required parameters: code={bool(code)}, state={bool(state)}"
         print(f"❌ {error_msg}")
-        from urllib.parse import quote
         return RedirectResponse(url=f"/dashboard-v2?error={quote('Missing OAuth parameters')}")
     
     if not realm_id_value:
         error_msg = "Missing realmId parameter"
         print(f"❌ {error_msg}")
-        from urllib.parse import quote
         return RedirectResponse(url=f"/dashboard-v2?error={quote('Missing company ID')}")
     
     # Verify state and get user ID
@@ -312,7 +319,6 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
                 
                 error_msg = "Invalid or expired OAuth state"
                 print(f"❌ {error_msg}")
-                from urllib.parse import quote
                 return RedirectResponse(url=f"/dashboard-v2?error={quote(error_msg)}")
             
             # Extract user_id - handle both dict and tuple results
@@ -358,7 +364,6 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
                 print(f"❌ QuickBooks token exchange failed:")
                 print(f"   Status: {response.status_code}")
                 print(f"   Response: {error_detail}")
-                from urllib.parse import quote
                 return RedirectResponse(url=f"/dashboard-v2?error={quote('Failed to get access token')}")
             
             tokens = response.json()
@@ -436,13 +441,13 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
         print(f"❌ {error_msg}")
         import traceback
         traceback.print_exc()
-        return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": "Network error connecting to QuickBooks"}))
+        return RedirectResponse(url=f"/dashboard-v2?error={quote('Network error connecting to QuickBooks')}")
     except Exception as e:
         error_msg = f"Error during token exchange: {e}"
         print(f"❌ {error_msg}")
         import traceback
         traceback.print_exc()
-        return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": "Unexpected error during OAuth"}))
+        return RedirectResponse(url=f"/dashboard-v2?error={quote('Unexpected error during OAuth')}")
 
 
 async def refresh_access_token(user_id: int):
