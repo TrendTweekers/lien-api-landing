@@ -175,6 +175,27 @@ async def quickbooks_connect(request: Request):
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
+            # First verify table exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_name = 'quickbooks_oauth_states'
+                    )
+                """)
+            else:
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='quickbooks_oauth_states'
+                """)
+            
+            table_exists = cursor.fetchone()
+            if not table_exists or not table_exists[0]:
+                print("❌ CRITICAL: quickbooks_oauth_states table does not exist!")
+                return RedirectResponse(url="/dashboard-v2?error=System configuration error. Please contact support.")
+            
+            print("✅ quickbooks_oauth_states table exists")
+            
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     INSERT INTO quickbooks_oauth_states (user_id, state, expires_at)
@@ -187,9 +208,13 @@ async def quickbooks_connect(request: Request):
                 """, (user['id'], state, datetime.now() + timedelta(minutes=10)))
             
             conn.commit()
+            print(f"✅ OAuth state stored successfully for user {user['id']}: {state[:20]}...")
     except Exception as e:
-        print(f"Error storing OAuth state: {e}")
-        # If table doesn't exist, we'll create it in init_db
+        print(f"❌ CRITICAL: Failed to store OAuth state: {e}")
+        import traceback
+        traceback.print_exc()
+        # DO NOT redirect to QuickBooks if we can't store state!
+        return RedirectResponse(url="/dashboard-v2?error=Database error. Please try again or contact support.")
     
     params = {
         "client_id": QB_CLIENT_ID,
@@ -240,12 +265,14 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
     if not code or not state:
         error_msg = f"Missing required parameters: code={bool(code)}, state={bool(state)}"
         print(f"❌ {error_msg}")
-        return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": "Missing OAuth parameters"}))
+        from urllib.parse import quote
+        return RedirectResponse(url=f"/dashboard-v2?error={quote('Missing OAuth parameters')}")
     
     if not realm_id_value:
         error_msg = "Missing realmId parameter"
         print(f"❌ {error_msg}")
-        return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": "Missing company ID"}))
+        from urllib.parse import quote
+        return RedirectResponse(url=f"/dashboard-v2?error={quote('Missing company ID')}")
     
     # Verify state and get user ID
     try:
@@ -264,10 +291,28 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
                 """, (state,))
             
             result = cursor.fetchone()
+            
+            # Debug logging
+            print(f"🔍 State validation debug:")
+            print(f"   Looking for state: {state[:20]}...")
+            print(f"   Found result: {result}")
+            
             if not result:
+                # Check what states exist in the table for debugging
+                try:
+                    cursor.execute("SELECT state, user_id, expires_at FROM quickbooks_oauth_states ORDER BY created_at DESC LIMIT 5")
+                    all_states = cursor.fetchall()
+                    print(f"   Recent states in DB: {len(all_states) if all_states else 0}")
+                    if all_states:
+                        for idx, s in enumerate(all_states):
+                            print(f"      [{idx}] State: {str(s)[:100]}...")
+                except Exception as debug_e:
+                    print(f"   Could not fetch debug states: {debug_e}")
+                
                 error_msg = "Invalid or expired OAuth state"
                 print(f"❌ {error_msg}")
-                return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": error_msg}))
+                from urllib.parse import quote
+                return RedirectResponse(url=f"/dashboard-v2?error={quote(error_msg)}")
             
             # Extract user_id - handle both dict and tuple results
             if isinstance(result, dict):
@@ -312,7 +357,8 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
                 print(f"❌ QuickBooks token exchange failed:")
                 print(f"   Status: {response.status_code}")
                 print(f"   Response: {error_detail}")
-                return RedirectResponse(url="/dashboard-v2?error=" + urlencode({"error": "Failed to get access token"}))
+                from urllib.parse import quote
+                return RedirectResponse(url=f"/dashboard-v2?error={quote('Failed to get access token')}")
             
             tokens = response.json()
             print(f"✅ Token exchange successful")
