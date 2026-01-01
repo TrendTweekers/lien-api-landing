@@ -101,10 +101,11 @@ export const IntegrationCard = ({
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              // When not connected: Show official Intuit Connect button
-              // Using Intuit's official branding: #0077C5 blue background, white text
-              <button
-                onClick={() => {
+              // When not connected: Show official Intuit Connect button image
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
                   const token = localStorage.getItem('session_token');
                   if (token) {
                     window.location.href = `/api/quickbooks/connect?token=${encodeURIComponent(token)}`;
@@ -112,21 +113,37 @@ export const IntegrationCard = ({
                     window.location.href = '/login.html';
                   }
                 }}
-                className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:shadow-md h-9 px-4"
-                style={{
-                  backgroundColor: '#0077C5',
-                  color: '#FFFFFF',
-                  border: 'none',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#0066A3';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#0077C5';
-                }}
+                className="w-full inline-flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity"
+                style={{ textDecoration: 'none' }}
               >
-                Connect to QuickBooks
-              </button>
+                <img
+                  src="https://developer.intuit.com/static/images/buttons/connect-to-quickbooks.png"
+                  alt="Connect to QuickBooks"
+                  className="w-full h-auto"
+                  style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
+                  onError={(e) => {
+                    // Fallback: If image fails to load, show styled button
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent && !parent.querySelector('.fallback-btn')) {
+                      const fallback = document.createElement('button');
+                      fallback.className = 'fallback-btn w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 bg-[#0077C5] text-white hover:bg-[#0066A3] hover:shadow-md h-9 px-4';
+                      fallback.textContent = 'Connect to QuickBooks';
+                      fallback.onclick = (ev) => {
+                        ev.preventDefault();
+                        const token = localStorage.getItem('session_token');
+                        if (token) {
+                          window.location.href = `/api/quickbooks/connect?token=${encodeURIComponent(token)}`;
+                        } else {
+                          window.location.href = '/login.html';
+                        }
+                      };
+                      parent.appendChild(fallback);
+                    }
+                  }}
+                />
+              </a>
             )}
           </>
         ) : (
