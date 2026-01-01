@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { IntegrationsSection } from "@/components/dashboard/IntegrationsSection";
 import { AccountOverview } from "@/components/dashboard/AccountOverview";
