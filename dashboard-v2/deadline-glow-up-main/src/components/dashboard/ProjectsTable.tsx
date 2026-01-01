@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { RefreshCw, FileSpreadsheet, FileText, Eye, Calendar, Download } from "lucide-react";
+import { RefreshCw, FileSpreadsheet, FileText, Eye, Calendar, Download, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -102,6 +102,52 @@ export const ProjectsTable = () => {
     }
   };
 
+  const handleDeleteProject = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('session_token');
+      const headers: HeadersInit = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/calculations/${id}`, {
+        method: 'DELETE',
+        headers
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ detail: "Failed to delete project" }));
+        throw new Error(errorData.detail || "Failed to delete project");
+      }
+
+      const data = await res.json();
+      
+      // Remove from local state immediately for instant UI update
+      setProjects(projects.filter(p => p.id !== id));
+      
+      toast({
+        title: "Success",
+        description: "Project deleted successfully.",
+      });
+
+      // If this was a QuickBooks invoice, trigger a refresh of the invoices table
+      if (data.quickbooks_invoice_id) {
+        // Dispatch event to refresh imported invoices
+        window.dispatchEvent(new CustomEvent('project-deleted', { 
+          detail: { quickbooks_invoice_id: data.quickbooks_invoice_id } 
+        }));
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete project.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="bg-card rounded-xl overflow-hidden border border-border card-shadow">
       <div className="p-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -191,6 +237,14 @@ export const ProjectsTable = () => {
                         onClick={() => handleDownloadPDF(project.id)}
                       >
                         <Download className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50 text-destructive"
+                        onClick={() => handleDeleteProject(project.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>

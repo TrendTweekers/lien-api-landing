@@ -71,6 +71,19 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
     if (isConnected) {
         fetchInvoices();
     }
+
+    // Listen for project deletion events to refresh invoices
+    const handleProjectDeleted = () => {
+      if (isConnected) {
+        fetchInvoices();
+      }
+    };
+
+    window.addEventListener('project-deleted', handleProjectDeleted);
+
+    return () => {
+      window.removeEventListener('project-deleted', handleProjectDeleted);
+    };
   }, [isConnected]);
 
   if (isChecking) {

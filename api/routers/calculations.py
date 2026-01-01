@@ -552,6 +552,76 @@ async def save_calculation(request: Request, body: SaveRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to save calculation: {str(e)}")
 
+@router.delete("/api/calculations/{calculation_id}")
+async def delete_calculation(calculation_id: int, request: Request):
+    """Delete a calculation/project from the database"""
+    # 🟢 LAZY IMPORT
+    from api.routers.auth import get_user_from_session
+    
+    # 1. Auth Check
+    user = get_user_from_session(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    user_email = user.get("email", "")
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Invalid user")
+    
+    # 2. Verify ownership and delete
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # First verify the calculation belongs to the user
+            if DB_TYPE == "postgresql":
+                cursor.execute("""
+                    SELECT id, quickbooks_invoice_id FROM calculations 
+                    WHERE id = %s AND user_email = %s
+                """, (calculation_id, user_email))
+            else:
+                cursor.execute("""
+                    SELECT id, quickbooks_invoice_id FROM calculations 
+                    WHERE id = ? AND user_email = ?
+                """, (calculation_id, user_email))
+            
+            calc_row = cursor.fetchone()
+            
+            if not calc_row:
+                raise HTTPException(status_code=404, detail="Calculation not found or unauthorized")
+            
+            # Extract quickbooks_invoice_id if it exists
+            if isinstance(calc_row, dict):
+                qb_invoice_id = calc_row.get('quickbooks_invoice_id')
+            else:
+                qb_invoice_id = calc_row[1] if len(calc_row) > 1 else None
+            
+            # Delete the calculation
+            if DB_TYPE == "postgresql":
+                cursor.execute("""
+                    DELETE FROM calculations 
+                    WHERE id = %s AND user_email = %s
+                """, (calculation_id, user_email))
+            else:
+                cursor.execute("""
+                    DELETE FROM calculations 
+                    WHERE id = ? AND user_email = ?
+                """, (calculation_id, user_email))
+            
+            conn.commit()
+            
+            return JSONResponse(content={
+                "success": True,
+                "message": "Project deleted successfully",
+                "quickbooks_invoice_id": qb_invoice_id  # Return QB ID so frontend can refresh invoices
+            })
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Delete calculation error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to delete calculation: {str(e)}")
+
 # Add legacy public endpoint just in case
 @router.post("/api/calculate")
 async def public_calculate_legacy(request: Request, calc_req: CalculationRequest):
