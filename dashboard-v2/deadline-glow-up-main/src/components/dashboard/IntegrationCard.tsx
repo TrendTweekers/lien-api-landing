@@ -1,7 +1,13 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface IntegrationCardProps {
   name: string;
@@ -11,6 +17,7 @@ interface IntegrationCardProps {
   gradient?: string;
   connected?: boolean;
   onConnect?: () => void;
+  onDisconnect?: () => void;
 }
 
 export const IntegrationCard = ({
@@ -21,6 +28,7 @@ export const IntegrationCard = ({
   gradient,
   connected = false,
   onConnect,
+  onDisconnect,
 }: IntegrationCardProps) => {
   // Use brand color if provided, otherwise fall back to gradient
   const iconBgStyle = iconColor 
@@ -64,19 +72,46 @@ export const IntegrationCard = ({
 
       <div className="mt-4 space-y-2">
         {name === "QuickBooks Integration" ? (
-          <button
-            onClick={() => {
-              const token = localStorage.getItem('session_token');
-              if (token) {
-                window.location.href = `/api/quickbooks/connect?token=${encodeURIComponent(token)}`;
-              } else {
-                window.location.href = '/login.html';
-              }
-            }}
-            className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md h-9 px-4"
-          >
-            {connected ? "Manage" : "Connect QuickBooks"}
-          </button>
+          <>
+            {connected ? (
+              // When connected: Show Manage dropdown menu (no Connect button)
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full border-border hover:bg-muted transition-all duration-200"
+                    size="sm"
+                  >
+                    <MoreVertical className="h-4 w-4 mr-2" />
+                    Manage
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={onDisconnect}
+                    className="text-destructive focus:text-destructive cursor-pointer"
+                  >
+                    Disconnect QuickBooks
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              // When not connected: Show Connect button
+              <button
+                onClick={() => {
+                  const token = localStorage.getItem('session_token');
+                  if (token) {
+                    window.location.href = `/api/quickbooks/connect?token=${encodeURIComponent(token)}`;
+                  } else {
+                    window.location.href = '/login.html';
+                  }
+                }}
+                className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md h-9 px-4"
+              >
+                Connect QuickBooks
+              </button>
+            )}
+          </>
         ) : (
           <Button
             className="w-full bg-primary hover:bg-primary/90 hover:shadow-md transition-all duration-200 text-primary-foreground font-medium"

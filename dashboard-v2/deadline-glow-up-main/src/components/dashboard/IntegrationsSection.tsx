@@ -1,9 +1,55 @@
-import React from "react";
+import React, { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { IntegrationCard } from "./IntegrationCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 
 export const IntegrationsSection = ({ isConnected = false }: { isConnected?: boolean }) => {
+  const { toast } = useToast();
+  const [connected, setConnected] = useState(isConnected);
+
+  const handleDisconnect = async () => {
+    try {
+      const token = localStorage.getItem('session_token');
+      if (!token) {
+        toast({
+          title: "Error",
+          description: "Please log in to disconnect QuickBooks.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch("/api/quickbooks/disconnect", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to disconnect");
+      }
+
+      setConnected(false);
+      toast({
+        title: "Disconnected",
+        description: "QuickBooks account has been disconnected.",
+      });
+
+      // Refresh the page to update the UI
+      window.location.reload();
+    } catch (error) {
+      console.error("Error disconnecting QuickBooks:", error);
+      toast({
+        title: "Error",
+        description: "Failed to disconnect QuickBooks. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const integrations = [
     {
       name: "QuickBooks Integration",
@@ -18,7 +64,8 @@ export const IntegrationsSection = ({ isConnected = false }: { isConnected?: boo
           window.location.href = '/login.html';
         }
       },
-      connected: isConnected,
+      onDisconnect: handleDisconnect,
+      connected: connected,
     },
     {
       name: "Sage Integration",
@@ -56,6 +103,7 @@ export const IntegrationsSection = ({ isConnected = false }: { isConnected?: boo
             iconColor={integration.iconColor}
             gradient={integration.gradient}
             onConnect={integration.onConnect}
+            onDisconnect={integration.onDisconnect}
             connected={integration.connected}
           />
         ))}
