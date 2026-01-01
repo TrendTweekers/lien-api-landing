@@ -302,18 +302,18 @@ export const DeadlineCalculator = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-lg bg-accent/10 border border-accent/20">
-                <h3 className="font-semibold mb-1 text-accent-foreground">Preliminary Notice</h3>
-                <p className="text-2xl font-bold">{result.prelimDeadline || "Not Required"}</p>
+              <div className="p-4 rounded-lg" style={{ backgroundColor: '#d1fae5', border: '1px solid #86efac' }}>
+                <h3 className="font-semibold mb-1 text-green-700">PRELIMINARY NOTICE</h3>
+                <p className="text-2xl font-bold text-foreground">{result.prelimDeadline || "Not Required"}</p>
                 <p className="text-sm text-muted-foreground">
                   {result.prelimDays !== null && result.prelimDays !== undefined 
                     ? `${result.prelimDays} days remaining` 
                     : <span className="text-gray-400">Not Required</span>}
                 </p>
               </div>
-              <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-                <h3 className="font-semibold mb-1 text-destructive">Lien Filing</h3>
-                <p className="text-2xl font-bold">{result.lienDeadline || "Not Required"}</p>
+              <div className="p-4 rounded-lg" style={{ backgroundColor: '#fed7aa', border: '1px solid #fdba74' }}>
+                <h3 className="font-semibold mb-1 text-orange-700">LIEN FILING DEADLINE</h3>
+                <p className="text-2xl font-bold text-foreground">{result.lienDeadline || "Not Required"}</p>
                 <p className="text-sm text-muted-foreground">
                   {result.lienDays !== null && result.lienDays !== undefined 
                     ? `${result.lienDays} days remaining` 
