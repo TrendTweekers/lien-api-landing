@@ -255,12 +255,46 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
 
       const data = await response.json();
       
+      // Debug: Log the API response to see exact field names
+      console.log("🔍 API Response:", data);
+      
       // Extract deadline data (handle both wrapped and unwrapped responses)
       const result = data.data || data.result || data;
-      const prelimDeadline = result.prelim_deadline || result.preliminary_notice_deadline || result.prelimDeadline;
-      const lienDeadline = result.lien_deadline || result.lienDeadline;
-      const prelimDays = result.prelim_deadline_days || result.prelimDaysRemaining || result.prelim_days_remaining;
-      const lienDays = result.lien_deadline_days || result.lienDaysRemaining || result.lien_days_remaining;
+      
+      // Extract preliminary deadline (check multiple possible field names)
+      const prelimDeadline = result.prelim_deadline 
+        || result.preliminary_notice_deadline 
+        || result.prelimDeadline
+        || result.preliminaryNoticeDeadline
+        || (result.preliminary_notice?.deadline);
+      
+      // Extract lien deadline (check multiple possible field names including nested)
+      const lienDeadline = (result.lien_filing?.deadline)
+        || result.lien_deadline 
+        || result.lienDeadline
+        || result.lien_deadline_str;
+      
+      // Extract days remaining
+      const prelimDays = result.prelim_deadline_days 
+        || result.prelimDaysRemaining 
+        || result.prelim_days_remaining
+        || result.preliminary_days_remaining
+        || (result.preliminary_notice?.days_from_now)
+        || (result.preliminary_notice?.days_remaining);
+      
+      const lienDays = result.lien_deadline_days 
+        || result.lienDaysRemaining 
+        || result.lien_days_remaining
+        || (result.lien_filing?.days_from_now)
+        || (result.lien_filing?.days_remaining);
+      
+      // Debug: Log extracted values
+      console.log("📅 Extracted deadlines:", {
+        prelimDeadline,
+        lienDeadline,
+        prelimDays,
+        lienDays
+      });
 
       // Calculate days remaining from today
       const today = new Date();
@@ -346,8 +380,8 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
               <TableHead className="text-foreground font-semibold">Amount</TableHead>
               <TableHead className="text-foreground font-semibold">State</TableHead>
               <TableHead className="text-foreground font-semibold">Type</TableHead>
-              <TableHead className="text-foreground font-semibold">Prelim Deadline</TableHead>
-              <TableHead className="text-foreground font-semibold">Lien Deadline</TableHead>
+              <TableHead className="text-foreground font-semibold">PRELIMINARY NOTICE</TableHead>
+              <TableHead className="text-foreground font-semibold">LIEN FILING DEADLINE</TableHead>
               <TableHead className="text-foreground font-semibold">Status</TableHead>
             </TableRow>
           </TableHeader>
@@ -435,7 +469,7 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: '#d1fae5', border: '1px solid #86efac' }}>
                           {recalculatingInvoices.has(inv.id) ? (
                             <>
                               <RefreshCw className="h-4 w-4 animate-spin text-primary" />
@@ -443,14 +477,17 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
                             </>
                           ) : (
                             <>
-                              <span className="text-foreground">{formatDate(inv.preliminary_deadline)}</span>
-                              {getDaysBadge(inv.prelim_days_remaining)}
+                              <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-green-700 mb-1">PRELIMINARY NOTICE</span>
+                                <span className="text-foreground font-semibold">{formatDate(inv.preliminary_deadline)}</span>
+                                {getDaysBadge(inv.prelim_days_remaining)}
+                              </div>
                             </>
                           )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: '#fed7aa', border: '1px solid #fdba74' }}>
                           {recalculatingInvoices.has(inv.id) ? (
                             <>
                               <RefreshCw className="h-4 w-4 animate-spin text-primary" />
@@ -458,8 +495,11 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
                             </>
                           ) : (
                             <>
-                              <span className="text-foreground">{formatDate(inv.lien_deadline)}</span>
-                              {getDaysBadge(inv.lien_days_remaining)}
+                              <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-orange-700 mb-1">LIEN FILING DEADLINE</span>
+                                <span className="text-foreground font-semibold">{formatDate(inv.lien_deadline)}</span>
+                                {getDaysBadge(inv.lien_days_remaining)}
+                              </div>
                             </>
                           )}
                       </div>
