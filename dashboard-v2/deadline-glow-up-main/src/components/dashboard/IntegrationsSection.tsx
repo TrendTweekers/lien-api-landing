@@ -13,7 +13,14 @@ export const IntegrationsSection = ({ isConnected = false }: { isConnected?: boo
       ),
       icon: "Q",
       gradient: "bg-gradient-to-br from-blue-500 to-blue-600",
-      onConnect: () => window.location.href = '/api/quickbooks/connect',
+      onConnect: () => {
+        const token = localStorage.getItem('session_token');
+        if (token) {
+          window.location.href = `/api/quickbooks/connect?token=${encodeURIComponent(token)}`;
+        } else {
+          window.location.href = '/login.html';
+        }
+      },
       connected: isConnected,
     },
     {
