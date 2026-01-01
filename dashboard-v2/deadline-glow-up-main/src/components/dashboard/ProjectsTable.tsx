@@ -41,7 +41,9 @@ export const ProjectsTable = () => {
       const res = await fetch("/api/calculations/history", { headers });
       if (!res.ok) throw new Error("Failed to fetch history");
       const data = await res.json();
-      setProjects(data.history || []);
+      // Ensure history is an array
+      const historyArray = Array.isArray(data.history) ? data.history : (Array.isArray(data) ? data : []);
+      setProjects(historyArray);
     } catch (e) {
       console.error(e);
       toast({

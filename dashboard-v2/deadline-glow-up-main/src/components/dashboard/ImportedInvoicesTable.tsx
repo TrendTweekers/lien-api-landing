@@ -49,7 +49,9 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
       if (!res.ok) throw new Error("Failed to fetch invoices");
       
       const data = await res.json();
-      setInvoices(data || []);
+      // API returns { invoices: [...], count: ... }
+      const invoiceArray = Array.isArray(data) ? data : (data?.invoices || []);
+      setInvoices(invoiceArray);
     } catch (e) {
       console.error(e);
       // Only show error toast if we are connected

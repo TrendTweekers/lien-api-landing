@@ -40,7 +40,9 @@ export const UsageStats = () => {
         let uniqueStates: string[] = [];
         if (historyRes.ok) {
           const data = await historyRes.json();
-          const history: Calculation[] = data.history || [];
+          // Ensure history is an array
+          const historyArray = Array.isArray(data.history) ? data.history : (Array.isArray(data) ? data : []);
+          const history: Calculation[] = historyArray;
           
           // Filter for last 30 days
           const thirtyDaysAgo = new Date();
@@ -104,8 +106,8 @@ export const UsageStats = () => {
             States Used
           </p>
           <div className="flex flex-wrap gap-2">
-            {stats.states.length > 0 ? (
-              stats.states.map((state) => (
+            {stats.states && stats.states.length > 0 ? (
+              (stats.states || []).map((state) => (
                 <Badge
                   key={state}
                   variant="outline"
