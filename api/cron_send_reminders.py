@@ -242,7 +242,7 @@ def send_reminder_email(reminder):
     # Format invoice amount
     amount_display = f"${reminder['invoice_amount']:,.2f}" if reminder['invoice_amount'] else "Not specified"
     
-    # Create email HTML
+    # Create email HTML - Improved with branding and better formatting
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -260,14 +260,26 @@ def send_reminder_email(reminder):
                     <!-- Email Card -->
                     <table width="600" cellpadding="0" cellspacing="0" style="background-color:white; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1); overflow:hidden;">
                         
-                        <!-- Header -->
+                        <!-- LienDeadline Branding Header -->
                         <tr>
-                            <td style="background-color:#1e3a8a; padding:30px; text-align:center;">
-                                <h1 style="margin:0; color:white; font-size:24px; font-weight:600;">
-                                    ⚠️ Lien Deadline Reminder
+                            <td style="background-color:#1e3a8a; padding:25px 30px; text-align:center; border-bottom:3px solid {urgency_color};">
+                                <h1 style="margin:0; color:white; font-size:22px; font-weight:700; letter-spacing:-0.5px;">
+                                    📋 LienDeadline
                                 </h1>
-                                <p style="margin:10px 0 0 0; color:#e0e7ff; font-size:14px;">
-                                    {urgency} - {abs(days_until)} day{'s' if abs(days_until) != 1 else ''} {'overdue' if days_until < 0 else 'remaining'}
+                                <p style="margin:8px 0 0 0; color:#e0e7ff; font-size:13px; font-weight:500;">
+                                    Mechanics Lien Deadline Tracking
+                                </p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Urgency Alert Header -->
+                        <tr>
+                            <td style="background-color:{urgency_color}; padding:20px 30px; text-align:center;">
+                                <h2 style="margin:0; color:white; font-size:20px; font-weight:600;">
+                                    {urgency}
+                                </h2>
+                                <p style="margin:8px 0 0 0; color:white; font-size:16px; font-weight:500;">
+                                    {abs(days_until)} day{'s' if abs(days_until) != 1 else ''} {'overdue' if days_until < 0 else 'remaining'}
                                 </p>
                             </td>
                         </tr>
@@ -351,17 +363,25 @@ def send_reminder_email(reminder):
                                 </div>
                                 ''' if reminder.get('notes') else ''}
                                 
-                                <!-- Action Buttons -->
+                                <!-- Primary CTA Button -->
+                                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                                    <tr>
+                                        <td align="center" style="padding:10px 0;">
+                                            <a href="https://liendeadline.com/dashboard-v2" 
+                                               style="display:inline-block; background-color:{urgency_color}; color:white; text-decoration:none; padding:16px 32px; border-radius:8px; font-weight:700; font-size:16px; box-shadow:0 4px 6px rgba(0,0,0,0.15);">
+                                                View Project in Dashboard →
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                                
+                                <!-- Secondary Actions -->
                                 <table width="100%" cellpadding="0" cellspacing="0">
                                     <tr>
-                                        <td align="center" style="padding:20px 0;">
-                                            <a href="https://liendeadline.com/dashboard-v2" 
-                                               style="display:inline-block; background-color:#f97316; color:white; text-decoration:none; padding:14px 28px; border-radius:6px; font-weight:600; font-size:16px; margin:0 5px;">
-                                                View Dashboard
-                                            </a>
+                                        <td align="center" style="padding:10px 0;">
                                             <a href="https://liendeadline.com/api/v1/guide/{reminder['state_code']}/pdf?invoice_date={reminder['invoice_date']}&state_name={reminder['state']}" 
-                                               style="display:inline-block; background-color:#3b82f6; color:white; text-decoration:none; padding:14px 28px; border-radius:6px; font-weight:600; font-size:16px; margin:0 5px;">
-                                                Download PDF Guide
+                                               style="display:inline-block; background-color:#f9fafb; color:#1e3a8a; text-decoration:none; padding:12px 24px; border-radius:6px; font-weight:600; font-size:14px; border:2px solid #e5e7eb; margin:0 5px;">
+                                                📄 Download State Guide PDF
                                             </a>
                                         </td>
                                     </tr>
@@ -372,14 +392,18 @@ def send_reminder_email(reminder):
                         
                         <!-- Footer -->
                         <tr>
-                            <td style="background-color:#f9fafb; padding:20px 30px; border-top:1px solid #e5e7eb;">
-                                <p style="margin:0 0 10px 0; font-size:12px; color:#6b7280; text-align:center;">
-                                    Questions? Reply to this email or visit 
-                                    <a href="https://liendeadline.com/help" style="color:#f97316;">our help center</a>
+                            <td style="background-color:#f9fafb; padding:25px 30px; border-top:1px solid #e5e7eb;">
+                                <p style="margin:0 0 12px 0; font-size:13px; color:#6b7280; text-align:center; line-height:1.6;">
+                                    <strong>Need Help?</strong> Reply to this email or contact 
+                                    <a href="mailto:support@liendeadline.com" style="color:#1e3a8a; text-decoration:none; font-weight:600;">support@liendeadline.com</a>
+                                </p>
+                                <p style="margin:0 0 12px 0; font-size:12px; color:#9ca3af; text-align:center;">
+                                    You're receiving this because you set a reminder at LienDeadline.com<br>
+                                    <a href="https://liendeadline.com/dashboard-v2" style="color:#6b7280; text-decoration:none;">Manage your reminders</a> | 
+                                    <a href="https://liendeadline.com" style="color:#6b7280; text-decoration:none;">Visit LienDeadline.com</a>
                                 </p>
                                 <p style="margin:0; font-size:11px; color:#9ca3af; text-align:center;">
-                                    You're receiving this because you set a reminder at LienDeadline.com<br>
-                                    <a href="https://liendeadline.com/dashboard-v2" style="color:#9ca3af;">Manage your reminders</a>
+                                    © {datetime.now().year} LienDeadline. All rights reserved.
                                 </p>
                             </td>
                         </tr>
@@ -394,11 +418,11 @@ def send_reminder_email(reminder):
     </html>
     """
     
-    # Format subject line
+    # Format subject line - Improved format
     if days_until < 0:
-        subject = f"⚠️ OVERDUE: {deadline_type_display} Deadline for {reminder['project_name']}"
+        subject = f"⚠️ Lien Deadline Alert: {reminder['project_name']} - OVERDUE ({abs(days_until)} days)"
     else:
-        subject = f"⚠️ {deadline_type_display} Deadline in {days_until} Day{'s' if days_until != 1 else ''}: {reminder['project_name']}"
+        subject = f"⚠️ Lien Deadline Alert: {reminder['project_name']} - {days_until} Day{'s' if days_until != 1 else ''} Remaining"
     
     # Send via centralized service
     send_email_sync(

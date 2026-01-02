@@ -895,9 +895,10 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
         from reportlab.lib.pagesizes import letter
         from reportlab.lib.units import inch
         from reportlab.lib.colors import HexColor
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+        import os
         from io import BytesIO
         REPORTLAB_AVAILABLE = True
     except ImportError:
@@ -988,6 +989,139 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
             navy = HexColor('#1e3a8a')
             coral = HexColor('#f97316')
             
+            # Define urgency color function
+            def get_urgency_color(days_remaining):
+                """Get color based on days remaining until deadline"""
+                if days_remaining is None:
+                    return HexColor('#1f2937')  # Default gray
+                if days_remaining < 0:
+                    return HexColor('#dc2626')  # Red - overdue
+                elif days_remaining < 7:
+                    return HexColor('#dc2626')  # Red - urgent (< 7 days)
+                elif days_remaining < 14:
+                    return HexColor('#ea580c')  # Orange (7-14 days)
+                elif days_remaining < 30:
+                    return HexColor('#f59e0b')  # Yellow (14-30 days)
+                else:
+                    return HexColor('#16a34a')  # Green (≥ 30 days)
+            
+            # Calculate days remaining from today
+            today = datetime.now().date()
+            prelim_days_remaining = None
+            lien_days_remaining = None
+            
+            if calc['prelim_deadline']:
+                try:
+                    if isinstance(calc['prelim_deadline'], str):
+                        prelim_dt = datetime.strptime(calc['prelim_deadline'][:10], '%Y-%m-%d').date()
+                    else:
+                        prelim_dt = calc['prelim_deadline']
+                    prelim_days_remaining = (prelim_dt - today).days
+                except:
+                    prelim_days_remaining = None
+            
+            if calc['lien_deadline']:
+                try:
+                    if isinstance(calc['lien_deadline'], str):
+                        lien_dt = datetime.strptime(calc['lien_deadline'][:10], '%Y-%m-%d').date()
+                    else:
+                        lien_dt = calc['lien_deadline']
+                    lien_days_remaining = (lien_dt - today).days
+                except:
+                    lien_days_remaining = None
+            
+            # Check if urgent warning needed (< 7 days)
+            urgent_deadlines = []
+            if prelim_days_remaining is not None and prelim_days_remaining < 7:
+                urgent_deadlines.append(('Preliminary Notice', prelim_days_remaining))
+            if lien_days_remaining is not None and lien_days_remaining < 7:
+                urgent_deadlines.append(('Lien Filing', lien_days_remaining))
+            
+            # ===== PROFESSIONAL HEADER SECTION =====
+            # Add LienDeadline logo
+            # Calculate path: api/routers/calculations.py -> api/ -> project root -> public/images/liendeadline-logo.png
+            current_dir = os.path.dirname(__file__)  # api/routers/
+            api_dir = os.path.dirname(current_dir)  # api/
+            project_root = os.path.dirname(api_dir)  # project root
+            logo_path = os.path.join(project_root, 'public', 'images', 'liendeadline-logo.png')
+            if os.path.exists(logo_path):
+                try:
+                    logo = Image(logo_path, width=2*inch, height=0.6*inch)
+                    logo.hAlign = 'CENTER'
+                    story.append(logo)
+                    story.append(Spacer(1, 0.15*inch))
+                except Exception as e:
+                    logger.warning(f"Could not load logo: {e}")
+                    # Fallback to text header
+                    header_text = f"<b>LienDeadline</b>"
+                    header_style = ParagraphStyle(
+                        'Header',
+                        parent=styles['Normal'],
+                        fontSize=18,
+                        textColor=navy,
+                        alignment=TA_CENTER,
+                        fontName='Helvetica-Bold',
+                        spaceAfter=6
+                    )
+                    story.append(Paragraph(header_text, header_style))
+            else:
+                # Fallback to text header if logo not found
+                header_text = f"<b>LienDeadline</b>"
+                header_style = ParagraphStyle(
+                    'Header',
+                    parent=styles['Normal'],
+                    fontSize=18,
+                    textColor=navy,
+                    alignment=TA_CENTER,
+                    fontName='Helvetica-Bold',
+                    spaceAfter=6
+                )
+                story.append(Paragraph(header_text, header_style))
+            
+            # Header text: "LienDeadline | Deadline Report"
+            header_text = "<b>LienDeadline</b> | Deadline Report"
+            header_style = ParagraphStyle(
+                'Header',
+                parent=styles['Normal'],
+                fontSize=14,
+                textColor=navy,
+                alignment=TA_CENTER,
+                fontName='Helvetica-Bold',
+                spaceAfter=8
+            )
+            story.append(Paragraph(header_text, header_style))
+            story.append(Spacer(1, 0.2*inch))
+            
+            # ===== URGENT WARNING BOX =====
+            if urgent_deadlines:
+                min_days = min(days for name, days in urgent_deadlines)
+                warning_text = f"⚠️ <b>URGENT:</b> Deadline approaching in {min_days} day{'s' if min_days != 1 else ''}"
+                if min_days < 0:
+                    warning_text = f"⚠️ <b>OVERDUE:</b> Deadline has passed ({abs(min_days)} day{'s' if abs(min_days) != 1 else ''} ago)"
+                
+                warning_style = ParagraphStyle(
+                    'Warning',
+                    parent=styles['Normal'],
+                    fontSize=12,
+                    textColor=HexColor('#ffffff'),
+                    alignment=TA_CENTER,
+                    fontName='Helvetica-Bold',
+                    spaceAfter=12,
+                    spaceBefore=12
+                )
+                warning_para = Paragraph(warning_text, warning_style)
+                
+                # Create warning box with red background
+                warning_table = Table([[warning_para]], colWidths=[5.5*inch])
+                warning_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), HexColor('#dc2626')),
+                    ('BOX', (0, 0), (-1, -1), 2, HexColor('#991b1b')),
+                    ('PADDING', (0, 0), (-1, -1), 14),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ]))
+                story.append(warning_table)
+                story.append(Spacer(1, 0.3*inch))
+            
             # Title
             title_style = ParagraphStyle(
                 'Title',
@@ -1057,31 +1191,104 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
             story.append(Paragraph("Deadline Information", heading_style))
             
             deadline_data = []
-            
-            if calc['prelim_deadline']:
-                prelim_days = calc['prelim_deadline_days'] if calc['prelim_deadline_days'] is not None else 'N/A'
-                deadline_data.append(['Preliminary Notice Deadline:', format_date(calc['prelim_deadline']), f"{prelim_days} days remaining" if isinstance(prelim_days, int) else prelim_days])
-            else:
-                deadline_data.append(['Preliminary Notice Deadline:', 'Not Required', ''])
-            
-            if calc['lien_deadline']:
-                lien_days = calc['lien_deadline_days'] if calc['lien_deadline_days'] is not None else 'N/A'
-                deadline_data.append(['Lien Filing Deadline:', format_date(calc['lien_deadline']), f"{lien_days} days remaining" if isinstance(lien_days, int) else lien_days])
-            else:
-                deadline_data.append(['Lien Filing Deadline:', 'N/A', ''])
-            
-            deadline_table = Table(deadline_data, colWidths=[2.5*inch, 2.5*inch, 1*inch])
-            deadline_table.setStyle(TableStyle([
+            deadline_table_style = [
                 ('BACKGROUND', (0, 0), (0, -1), HexColor('#f3f4f6')),
-                ('TEXTCOLOR', (0, 0), (-1, -1), HexColor('#1f2937')),
+                ('TEXTCOLOR', (0, 0), (0, -1), HexColor('#374151')),
                 ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                 ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
                 ('FONTSIZE', (0, 0), (-1, -1), 11),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-                ('TOPPADDING', (0, 0), (-1, -1), 8),
-                ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#e5e7eb'))
-            ]))
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+                ('TOPPADDING', (0, 0), (-1, -1), 10),
+                ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#e5e7eb')),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ]
+            
+            row_idx = 0
+            
+            if calc['prelim_deadline']:
+                deadline_date = format_date(calc['prelim_deadline'])
+                if prelim_days_remaining is not None:
+                    if prelim_days_remaining < 0:
+                        days_text = f"OVERDUE ({abs(prelim_days_remaining)} days)"
+                    else:
+                        days_text = f"{prelim_days_remaining} days remaining"
+                    prelim_color = get_urgency_color(prelim_days_remaining)
+                    deadline_data.append(['Preliminary Notice Deadline:', deadline_date, days_text])
+                    deadline_table_style.append(('TEXTCOLOR', (2, row_idx), (2, row_idx), prelim_color))
+                    deadline_table_style.append(('FONTNAME', (2, row_idx), (2, row_idx), 'Helvetica-Bold'))
+                else:
+                    deadline_data.append(['Preliminary Notice Deadline:', deadline_date, 'N/A'])
+                row_idx += 1
+            else:
+                deadline_data.append(['Preliminary Notice Deadline:', 'Not Required', ''])
+                row_idx += 1
+            
+            if calc['lien_deadline']:
+                deadline_date = format_date(calc['lien_deadline'])
+                if lien_days_remaining is not None:
+                    if lien_days_remaining < 0:
+                        days_text = f"OVERDUE ({abs(lien_days_remaining)} days)"
+                    else:
+                        days_text = f"{lien_days_remaining} days remaining"
+                    lien_color = get_urgency_color(lien_days_remaining)
+                    deadline_data.append(['Lien Filing Deadline:', deadline_date, days_text])
+                    deadline_table_style.append(('TEXTCOLOR', (2, row_idx), (2, row_idx), lien_color))
+                    deadline_table_style.append(('FONTNAME', (2, row_idx), (2, row_idx), 'Helvetica-Bold'))
+                else:
+                    deadline_data.append(['Lien Filing Deadline:', deadline_date, 'N/A'])
+                row_idx += 1
+            else:
+                deadline_data.append(['Lien Filing Deadline:', 'N/A', ''])
+            
+            deadline_table = Table(deadline_data, colWidths=[2.5*inch, 2.2*inch, 1.3*inch])
+            deadline_table.setStyle(TableStyle(deadline_table_style))
             story.append(deadline_table)
+            story.append(Spacer(1, 0.3*inch))
+            
+            # ===== FOOTER SECTION =====
+            gen_date_footer = datetime.now().strftime('%B %d, %Y')
+            footer_text = f"Generated {gen_date_footer} | liendeadline.com | Not Legal Advice"
+            footer_style = ParagraphStyle(
+                'Footer',
+                parent=styles['Normal'],
+                fontSize=8,
+                textColor=HexColor('#9ca3af'),
+                alignment=TA_CENTER,
+                spaceAfter=4
+            )
+            story.append(Paragraph(footer_text, footer_style))
+            
+            # Disclaimer
+            disclaimer_text = """
+            <b>DISCLAIMER</b><br/>
+            This is general information only, NOT legal advice. Always consult a licensed construction 
+            attorney before taking any legal action. Deadlines vary based on project specifics, and this 
+            tool cannot account for all variables. LienDeadline assumes no liability for missed deadlines 
+            or legal consequences.
+            """
+            
+            disclaimer_style = ParagraphStyle(
+                'Disclaimer',
+                parent=styles['Normal'],
+                fontSize=9,
+                textColor=HexColor('#6b7280'),
+                alignment=TA_LEFT,
+                leftIndent=0,
+                rightIndent=0,
+                spaceAfter=8
+            )
+            disclaimer = Paragraph(disclaimer_text, disclaimer_style)
+            
+            # Create disclaimer box with border
+            disclaimer_table = Table([[disclaimer]], colWidths=[5.5*inch])
+            disclaimer_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), HexColor('#f3f4f6')),
+                ('BOX', (0, 0), (-1, -1), 1, HexColor('#d1d5db')),
+                ('PADDING', (0, 0), (-1, -1), 12),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ]))
+            
+            story.append(disclaimer_table)
             
             # Build PDF
             doc.build(story)

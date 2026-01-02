@@ -3,6 +3,7 @@ import smtplib
 import ssl
 import logging
 import traceback
+from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import Optional, List, Dict, Any
@@ -164,51 +165,126 @@ def send_broker_welcome_email(email: str, name: str, link: str, code: str):
     return send_email_sync(email, "🎉 Welcome to LienDeadline Partner Program!", html)
 
 def send_welcome_email(email: str, temp_password: str):
-    """Send welcome email with login credentials"""
+    """Send welcome email with login credentials - Improved version"""
     html = f"""
+    <!DOCTYPE html>
     <html>
-    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 30px; border-radius: 10px; text-align: center;">
-            <h1 style="margin: 0;">Welcome to LienDeadline! 🎉</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your account is ready to protect your receivables</p>
-        </div>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color:#f3f4f6;">
         
-        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="color: #1e293b; margin-top: 0;">Your Login Credentials</h2>
-            <p style="margin: 10px 0;"><strong>Email:</strong> {email}</p>
-            <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background: white; padding: 5px 10px; border-radius: 4px; font-size: 16px;">{temp_password}</code></p>
-            <p style="margin: 20px 0 0 0;">
-                <a href="https://liendeadline.com/login.html" style="display: inline-block; background: #c1554e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-                    Login to Dashboard →
-                </a>
-            </p>
-        </div>
+        <!-- Main Container -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6; padding:40px 20px;">
+            <tr>
+                <td align="center">
+                    
+                    <!-- Email Card -->
+                    <table width="600" cellpadding="0" cellspacing="0" style="background-color:white; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1); overflow:hidden;">
+                        
+                        <!-- LienDeadline Branding Header -->
+                        <tr>
+                            <td style="background-color:#1e3a8a; padding:35px 30px; text-align:center;">
+                                <h1 style="margin:0; color:white; font-size:28px; font-weight:700; letter-spacing:-0.5px;">
+                                    📋 LienDeadline
+                                </h1>
+                                <p style="margin:10px 0 0 0; color:#e0e7ff; font-size:16px; font-weight:500;">
+                                    Welcome! Your account is ready 🎉
+                                </p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Welcome Message -->
+                        <tr>
+                            <td style="padding:40px 30px;">
+                                <h2 style="margin:0 0 16px 0; font-size:24px; font-weight:600; color:#1f2937;">
+                                    Welcome to LienDeadline!
+                                </h2>
+                                <p style="margin:0 0 24px 0; font-size:16px; color:#4b5563; line-height:1.6;">
+                                    Thank you for joining LienDeadline. Your account is now active and ready to help you protect your receivables with automated lien deadline tracking.
+                                </p>
+                                
+                                <!-- Login Credentials Box -->
+                                <div style="background-color:#f9fafb; border:2px solid #e5e7eb; border-radius:8px; padding:24px; margin-bottom:30px;">
+                                    <h3 style="margin:0 0 16px 0; font-size:18px; font-weight:600; color:#1e3a8a;">
+                                        Your Login Credentials
+                                    </h3>
+                                    <table width="100%" cellpadding="8" cellspacing="0">
+                                        <tr>
+                                            <td style="color:#6b7280; font-weight:600; width:120px; font-size:14px;">Email:</td>
+                                            <td style="color:#111827; font-size:14px;">{email}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color:#6b7280; font-weight:600; font-size:14px;">Password:</td>
+                                            <td style="color:#111827; font-size:16px; font-family:'Courier New',monospace; font-weight:700; letter-spacing:1px;">{temp_password}</td>
+                                        </tr>
+                                    </table>
+                                    <p style="margin:20px 0 0 0; text-align:center;">
+                                        <a href="https://liendeadline.com/login.html" 
+                                           style="display:inline-block; background-color:#1e3a8a; color:white; text-decoration:none; padding:14px 32px; border-radius:8px; font-weight:700; font-size:16px; box-shadow:0 4px 6px rgba(30,58,138,0.3);">
+                                            Login to Dashboard →
+                                        </a>
+                                    </p>
+                                </div>
+                                
+                                <!-- Next Steps Section -->
+                                <div style="margin-bottom:30px;">
+                                    <h3 style="margin:0 0 16px 0; font-size:20px; font-weight:600; color:#1f2937;">
+                                        What's Next?
+                                    </h3>
+                                    <div style="background-color:#eff6ff; border-left:4px solid #2563eb; border-radius:4px; padding:20px; margin-bottom:20px;">
+                                        <h4 style="margin:0 0 12px 0; font-size:16px; font-weight:600; color:#1e40af;">
+                                            1. Connect QuickBooks (Recommended)
+                                        </h4>
+                                        <p style="margin:0; font-size:14px; color:#1e40af; line-height:1.6;">
+                                            Automatically import invoices and track deadlines. Connect in your dashboard under "Integrations".
+                                        </p>
+                                    </div>
+                                    <ul style="margin:0; padding-left:20px; color:#4b5563; font-size:15px; line-height:1.8;">
+                                        <li style="margin-bottom:12px;">Change your password in Account Settings for security</li>
+                                        <li style="margin-bottom:12px;">Create your first project and set up deadline reminders</li>
+                                        <li style="margin-bottom:12px;">Run <strong>unlimited</strong> lien deadline calculations</li>
+                                        <li style="margin-bottom:12px;">Download PDF reports for your records</li>
+                                    </ul>
+                                </div>
+                                
+                                <!-- Pro Tip -->
+                                <div style="background-color:#fef3c7; border-left:4px solid #f59e0b; border-radius:4px; padding:16px; margin-bottom:30px;">
+                                    <p style="margin:0; color:#92400e; font-size:14px; line-height:1.6;">
+                                        <strong>💡 Pro Tip:</strong> Bookmark your dashboard for instant access. Set up email reminders to never miss a deadline.
+                                    </p>
+                                </div>
+                                
+                            </td>
+                        </tr>
+                        
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color:#f9fafb; padding:25px 30px; border-top:1px solid #e5e7eb;">
+                                <p style="margin:0 0 12px 0; font-size:14px; color:#4b5563; text-align:center; line-height:1.6;">
+                                    <strong>Need Help?</strong> We're here for you!<br>
+                                    Email: <a href="mailto:support@liendeadline.com" style="color:#1e3a8a; text-decoration:none; font-weight:600;">support@liendeadline.com</a><br>
+                                    Or simply reply to this email.
+                                </p>
+                                <p style="margin:0; font-size:12px; color:#9ca3af; text-align:center;">
+                                    © {datetime.now().year} LienDeadline. All rights reserved.<br>
+                                    <a href="https://liendeadline.com" style="color:#6b7280; text-decoration:none;">liendeadline.com</a>
+                                </p>
+                            </td>
+                        </tr>
+                        
+                    </table>
+                    
+                </td>
+            </tr>
+        </table>
         
-        <div style="margin: 30px 0;">
-            <h3 style="color: #1e293b;">What's Next?</h3>
-            <ul style="color: #475569; line-height: 1.8;">
-                <li>Change your password in Account Settings</li>
-                <li>Run <strong>unlimited</strong> lien deadline calculations</li>
-                <li>View your calculation history anytime</li>
-                <li>Save calculations as PDF (coming soon)</li>
-            </ul>
-        </div>
-        
-        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0;">
-            <p style="margin: 0; color: #92400e;"><strong>Pro Tip:</strong> Bookmark the calculator page for instant access when you need to check deadlines.</p>
-        </div>
-        
-        <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e2e8f0; margin-top: 30px;">
-            <p style="color: #64748b; font-size: 14px; margin: 0;">
-                Questions? Just reply to this email.<br>
-                Thank you for trusting LienDeadline to protect your receivables.
-            </p>
-        </div>
     </body>
     </html>
     """
     
-    return send_email_sync(email, "🎉 Welcome to LienDeadline - Your Account is Ready", html)
+    return send_email_sync(email, "Welcome to LienDeadline - Your Account is Ready", html)
 
 def send_broker_notification(broker_email: str, customer_email: str):
     """Notify broker of new referral"""
