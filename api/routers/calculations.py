@@ -918,4 +918,5 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
         logger.error(f"Error generating calculation PDF: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")#   F o r c e   d e p l o y   2 0 2 6 - 0 1 - 0 2   0 8 : 5 8 : 1 0  
+ 
