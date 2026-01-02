@@ -17,7 +17,7 @@ import sys
 import bcrypt
 import stripe
 import traceback
-from api.migrations.fix_production_schema import fix_postgres_schema
+# REMOVED: from api.migrations.fix_production_schema import fix_postgres_schema
 
 import httpx
 from urllib.parse import urlencode
@@ -1172,32 +1172,33 @@ async def startup():
         # Don't fail startup if migration fails - column might already exist
 
     # Run schema check (temporary for debugging production)
-    try:
-        print("🔍 Running production schema check...")
-        # Use python from current environment
-        result = subprocess.run([sys.executable, 'api/migrations/check_production_schema.py'], 
-                              capture_output=True, text=True)
-        # Print output to logs so it shows up in Railway logs
-        print(f"Schema check output:\n{result.stdout}")
-        if result.stderr:
-            print(f"Schema check errors:\n{result.stderr}")
-            
-        # Run schema fix migration (AFTER check)
-        print("🔧 Running production schema fix migration...")
-        fix_result = subprocess.run([sys.executable, 'api/migrations/fix_production_schema.py'], 
-                              capture_output=True, text=True, timeout=60)
-        
-        print(f"Schema fix output:\n{fix_result.stdout}")
-        if fix_result.stderr:
-            print(f"Schema fix errors:\n{fix_result.stderr}")
-        
-        if fix_result.returncode == 0:
-            print("✅ Schema fix migration completed")
-        else:
-            print(f"❌ Schema fix migration failed with code {fix_result.returncode}")
-            
-    except Exception as e:
-        print(f"❌ Schema check/fix failed: {e}")
+    # REMOVED: Auto-running migration code to prevent startup failures
+    # try:
+    #     print("🔍 Running production schema check...")
+    #     # Use python from current environment
+    #     # REMOVED: result = subprocess.run([sys.executable, 'api/migrations/check_production_schema.py'], 
+    #     #                       capture_output=True, text=True)
+    #     # Print output to logs so it shows up in Railway logs
+    #     # print(f"Schema check output:\n{result.stdout}")
+    #     # if result.stderr:
+    #     #     print(f"Schema check errors:\n{result.stderr}")
+    #     #     
+    #     # Run schema fix migration (AFTER check)
+    #     # print("🔧 Running production schema fix migration...")
+    #     # REMOVED: fix_result = subprocess.run([sys.executable, 'api/migrations/fix_production_schema.py'], 
+    #     #                       capture_output=True, text=True, timeout=60)
+    #     # 
+    #     # print(f"Schema fix output:\n{fix_result.stdout}")
+    #     # if fix_result.stderr:
+    #     #     print(f"Schema fix errors:\n{fix_result.stderr}")
+    #     # 
+    #     # if fix_result.returncode == 0:
+    #     #     print("✅ Schema fix migration completed")
+    #     # else:
+    #     #     print(f"❌ Schema fix migration failed with code {fix_result.returncode}")
+    #     #     
+    # except Exception as e:
+    #     print(f"❌ Schema check/fix failed: {e}")
     
     print("✅ Application startup complete")
 
