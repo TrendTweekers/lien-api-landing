@@ -898,6 +898,7 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+        from PIL import Image as PILImage
         import os
         from io import BytesIO
         REPORTLAB_AVAILABLE = True
@@ -1046,7 +1047,15 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
             logo_path = os.path.join(project_root, 'public', 'images', 'liendeadline-logo.png')
             if os.path.exists(logo_path):
                 try:
-                    logo = Image(logo_path, width=2*inch, height=0.6*inch)
+                    # Calculate aspect ratio to maintain proportions
+                    img = PILImage.open(logo_path)
+                    aspect = img.width / img.height
+                    
+                    # Set width, calculate height proportionally
+                    logo_width = 2*inch
+                    logo_height = logo_width / aspect
+                    
+                    logo = Image(logo_path, width=logo_width, height=logo_height)
                     logo.hAlign = 'CENTER'
                     story.append(logo)
                     story.append(Spacer(1, 0.15*inch))
