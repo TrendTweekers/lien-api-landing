@@ -35,6 +35,7 @@ class SaveRequest(BaseModel):
     lien_deadline_days: Optional[int] = None
     notes: Optional[str] = None
     project_type: Optional[str] = None
+    quickbooks_invoice_id: Optional[str] = None
     reminder_1day: Optional[bool] = False
     reminder_7days: Optional[bool] = False
     # Camel Case Aliases (for React frontend)
@@ -48,6 +49,7 @@ class SaveRequest(BaseModel):
     lienDeadline: Optional[str] = None
     lienDeadlineDays: Optional[int] = None
     projectType: Optional[str] = None
+    quickbooksInvoiceId: Optional[str] = None
     reminder1day: Optional[bool] = False
     reminder7days: Optional[bool] = False
     # Nested reminders object (from frontend)
@@ -200,7 +202,7 @@ async def get_history(request: Request):
                     SELECT id, project_name, client_name, state, state_code, invoice_amount, 
                            invoice_date, prelim_deadline, prelim_deadline_days,
                            lien_deadline, lien_deadline_days, notes,
-                           COALESCE(reminder_1day, false) as reminder_1day,
+                           COALESCE(reminder_1day, true) as reminder_1day,
                            COALESCE(reminder_7days, false) as reminder_7days,
                            created_at
                     FROM calculations 
@@ -212,7 +214,7 @@ async def get_history(request: Request):
                     SELECT id, project_name, client_name, state, state_code, invoice_amount,
                            invoice_date, prelim_deadline, prelim_deadline_days,
                            lien_deadline, lien_deadline_days, notes,
-                           COALESCE(reminder_1day, 0) as reminder_1day,
+                           COALESCE(reminder_1day, 1) as reminder_1day,
                            COALESCE(reminder_7days, 0) as reminder_7days,
                            created_at
                     FROM calculations 
@@ -226,13 +228,30 @@ async def get_history(request: Request):
             for row in rows:
                 if isinstance(row, dict):
                     # Extract reminder values (handle both boolean and int)
-                    reminder_1day = row.get('reminder_1day', False)
-                    reminder_7days = row.get('reminder_7days', False)
-                    # Convert to boolean if needed
-                    if isinstance(reminder_1day, int):
-                        reminder_1day = bool(reminder_1day)
-                    if isinstance(reminder_7days, int):
-                        reminder_7days = bool(reminder_7days)
+                    # CRITICAL: Default reminder_1day to True (1 Day enabled) if NULL
+                    # Default reminder_7days to False (7 Days disabled) if NULL
+                    reminder_1day_raw = row.get('reminder_1day')
+                    reminder_7days_raw = row.get('reminder_7days')
+                    
+                    # Handle reminder_1day: default to True if NULL
+                    if reminder_1day_raw is None:
+                        reminder_1day = True  # Default to enabled (1 Day)
+                    elif isinstance(reminder_1day_raw, bool):
+                        reminder_1day = reminder_1day_raw
+                    elif isinstance(reminder_1day_raw, int):
+                        reminder_1day = bool(reminder_1day_raw)  # 1 = True, 0 = False
+                    else:
+                        reminder_1day = bool(reminder_1day_raw)
+                    
+                    # Handle reminder_7days: default to False if NULL
+                    if reminder_7days_raw is None:
+                        reminder_7days = False  # Default to disabled (7 Days)
+                    elif isinstance(reminder_7days_raw, bool):
+                        reminder_7days = reminder_7days_raw
+                    elif isinstance(reminder_7days_raw, int):
+                        reminder_7days = bool(reminder_7days_raw)  # 1 = True, 0 = False
+                    else:
+                        reminder_7days = bool(reminder_7days_raw)
                     
                     history.append({
                         "id": row.get('id'),
@@ -253,12 +272,16 @@ async def get_history(request: Request):
                     })
                 else:
                     # Handle tuple/row format - reminder columns are at index 12, 13
-                    reminder_1day = False
-                    reminder_7days = False
+                    # Default to True if NULL (matching new save behavior where reminders default to enabled)
                     if len(row) > 12:
-                        reminder_1day = bool(row[12]) if row[12] is not None else False
+                        reminder_1day = bool(row[12]) if row[12] is not None else True  # Default to True if NULL
+                    else:
+                        reminder_1day = True  # Default to enabled
+                    
                     if len(row) > 13:
-                        reminder_7days = bool(row[13]) if row[13] is not None else False
+                        reminder_7days = bool(row[13]) if row[13] is not None else False  # Default to False if NULL
+                    else:
+                        reminder_7days = False  # Default to disabled (7 Days)
                     
                     history.append({
                         "id": row[0] if len(row) > 0 else None,
@@ -475,36 +498,76 @@ async def save_calculation(request: Request, body: SaveRequest):
     c_name = body.client_name or body.clientName
     state_val = body.state or ""
     state_code_val = body.state_code or body.stateCode or state_val
+    
+    # CRITICAL: Ensure state_code is exactly 2 uppercase characters (fix TX -> RI issue)
+    if state_code_val:
+        # Remove any whitespace and take first 2 characters, then uppercase
+        state_code_val = state_code_val.strip().upper()[:2]
+    
+    # Validate state_code is exactly 2 characters
+    if not state_code_val or len(state_code_val) != 2:
+        # Fallback: try to extract from state_val
+        if state_val:
+            state_code_val = state_val.strip().upper()[:2]
+        else:
+            state_code_val = "XX"  # Default fallback
+    
+    # Final validation - must be exactly 2 uppercase letters
+    if len(state_code_val) != 2 or not state_code_val.isalpha():
+        state_code_val = "XX"
+    
+    # Log for debugging
+    print(f"💾 Save request - state_val: '{state_val}', state_code_val: '{state_code_val}'")
     inv_date = body.invoice_date or body.invoiceDate or ""
     inv_amount = body.invoice_amount or body.invoiceAmount
     prelim_dead = body.prelim_deadline or body.prelimDeadline
     prelim_days = body.prelim_deadline_days or body.prelimDeadlineDays
     lien_dead = body.lien_deadline or body.lienDeadline or ""
     lien_days = body.lien_deadline_days or body.lienDeadlineDays
-    project_type_val = body.project_type or body.projectType
+    project_type_val = body.project_type or body.projectType or "commercial"
+    quickbooks_invoice_id = body.quickbooks_invoice_id or getattr(body, 'quickbooksInvoiceId', None)
     
     # Extract reminder values from nested object or direct fields
-    reminder_1day = False
-    reminder_7days = False
+    # CRITICAL: Default to reminder_1day=True (1 Day enabled), reminder_7days=False (7 Days disabled)
+    # These defaults ensure new saves always have 1 Day reminder enabled
+    reminder_1day = True  # Default to enabled (1 Day) - only override if explicitly set
+    reminder_7days = False  # Default to disabled (7 Days) - only override if explicitly set
+    
     if body.reminders:
         # Check if any prelim or lien reminder is checked for 1 day
-        reminder_1day = bool(
-            body.reminders.get('prelim1') or 
-            body.reminders.get('lien1') or
-            body.reminder_1day or 
-            body.reminder1day
-        )
+        if body.reminders.get('prelim1') is not None or body.reminders.get('lien1') is not None:
+            reminder_1day = bool(
+                body.reminders.get('prelim1') or 
+                body.reminders.get('lien1')
+            )
+        elif body.reminder_1day is not None or body.reminder1day is not None:
+            # Only override default if explicitly provided (including False)
+            reminder_1day = bool(body.reminder_1day if body.reminder_1day is not None else body.reminder1day)
+        
         # Check if any prelim or lien reminder is checked for 7 days
-        reminder_7days = bool(
-            body.reminders.get('prelim7') or 
-            body.reminders.get('lien7') or
-            body.reminder_7days or 
-            body.reminder7days
-        )
+        if body.reminders.get('prelim7') is not None or body.reminders.get('lien7') is not None:
+            reminder_7days = bool(
+                body.reminders.get('prelim7') or 
+                body.reminders.get('lien7')
+            )
+        elif body.reminder_7days is not None or body.reminder7days is not None:
+            # Only override default if explicitly provided (including False)
+            reminder_7days = bool(body.reminder_7days if body.reminder_7days is not None else body.reminder7days)
     else:
         # Use direct fields if reminders object not provided
-        reminder_1day = bool(body.reminder_1day or body.reminder1day)
-        reminder_7days = bool(body.reminder_7days or body.reminder7days)
+        # CRITICAL: Only override defaults if explicitly set (not None)
+        # If field is missing (None), keep default True for reminder_1day
+        if body.reminder_1day is not None:
+            reminder_1day = bool(body.reminder_1day)
+        elif body.reminder1day is not None:
+            reminder_1day = bool(body.reminder1day)
+        # reminder_1day stays True (default) if not provided
+        
+        if body.reminder_7days is not None:
+            reminder_7days = bool(body.reminder_7days)
+        elif body.reminder7days is not None:
+            reminder_7days = bool(body.reminder7days)
+        # reminder_7days stays False (default) if not provided
     
     # 3. Save to database
     try:
@@ -523,12 +586,19 @@ async def save_calculation(request: Request, body: SaveRequest):
             c_name = "Unknown Client"
         if not state_val:
             state_val = "Unknown"
-        if not state_code_val:
+        if not state_code_val or len(state_code_val) != 2:
             state_code_val = state_val[:2].upper() if len(state_val) >= 2 else "XX"
         if not inv_date:
             inv_date = datetime.now().strftime("%Y-%m-%d")
         if not lien_dead:
             lien_dead = inv_date  # Default to invoice date if not provided
+        if not project_type_val:
+            project_type_val = "commercial"
+        # Normalize project_type to lowercase
+        project_type_val = project_type_val.lower()
+        
+        # Log for debugging
+        print(f"💾 Saving calculation: state_code={state_code_val}, project_type={project_type_val}, qb_invoice_id={quickbooks_invoice_id}")
         
         # Ensure lien_deadline_days is set (required by schema)
         if lien_days is None:
@@ -545,7 +615,115 @@ async def save_calculation(request: Request, body: SaveRequest):
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Insert with reminder columns (migration adds these columns on startup)
+            # Ensure columns exist (migration) - CRITICAL for PostgreSQL compatibility
+            try:
+                if DB_TYPE == "postgresql":
+                    # Check existing columns
+                    cursor.execute("""
+                        SELECT column_name FROM information_schema.columns 
+                        WHERE table_name = 'calculations'
+                    """)
+                    existing_columns = [row[0] if isinstance(row, dict) else row[0] for row in cursor.fetchall()]
+                    
+                    # Add user_email if missing (required for save endpoint)
+                    if 'user_email' not in existing_columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN user_email VARCHAR")
+                        conn.commit()
+                        print("✅ Added user_email column to calculations table")
+                    
+                    # Add other required columns if missing
+                    if 'project_name' not in existing_columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN project_name VARCHAR")
+                        conn.commit()
+                        print("✅ Added project_name column to calculations table")
+                    
+                    if 'client_name' not in existing_columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN client_name VARCHAR")
+                        conn.commit()
+                        print("✅ Added client_name column to calculations table")
+                    
+                    if 'invoice_amount' not in existing_columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN invoice_amount DECIMAL(10,2)")
+                        conn.commit()
+                        print("✅ Added invoice_amount column to calculations table")
+                    
+                    if 'notes' not in existing_columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN notes TEXT")
+                        conn.commit()
+                        print("✅ Added notes column to calculations table")
+                    
+                    if 'state_code' not in existing_columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN state_code VARCHAR")
+                        conn.commit()
+                        print("✅ Added state_code column to calculations table")
+                    
+                    if 'invoice_date' not in existing_columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN invoice_date DATE")
+                        conn.commit()
+                        print("✅ Added invoice_date column to calculations table")
+                    
+                    if 'prelim_deadline' not in existing_columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN prelim_deadline DATE")
+                        conn.commit()
+                        print("✅ Added prelim_deadline column to calculations table")
+                    
+                    if 'prelim_deadline_days' not in existing_columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN prelim_deadline_days INTEGER")
+                        conn.commit()
+                        print("✅ Added prelim_deadline_days column to calculations table")
+                    
+                    if 'lien_deadline_days' not in existing_columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN lien_deadline_days INTEGER")
+                        conn.commit()
+                        print("✅ Added lien_deadline_days column to calculations table")
+                    
+                    if 'reminder_1day' not in existing_columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN reminder_1day BOOLEAN DEFAULT true")
+                        conn.commit()
+                        print("✅ Added reminder_1day column to calculations table")
+                    
+                    if 'reminder_7days' not in existing_columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN reminder_7days BOOLEAN DEFAULT true")
+                        conn.commit()
+                        print("✅ Added reminder_7days column to calculations table")
+                    
+                    # Check and add quickbooks_invoice_id column if missing
+                    if 'quickbooks_invoice_id' not in existing_columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN quickbooks_invoice_id VARCHAR")
+                        conn.commit()
+                        print("✅ Added quickbooks_invoice_id column to calculations table")
+                    
+                    # Check and add project_type column if missing
+                    if 'project_type' not in existing_columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN project_type VARCHAR DEFAULT 'commercial'")
+                        conn.commit()
+                        print("✅ Added project_type column to calculations table")
+                else:
+                    # SQLite: Check and add columns if missing
+                    cursor.execute("PRAGMA table_info(calculations)")
+                    columns = [row[1] for row in cursor.fetchall()]
+                    if 'user_email' not in columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN user_email TEXT")
+                        print("✅ Added user_email column to calculations table")
+                    if 'quickbooks_invoice_id' not in columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN quickbooks_invoice_id TEXT")
+                        print("✅ Added quickbooks_invoice_id column to calculations table")
+                    if 'project_type' not in columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN project_type TEXT DEFAULT 'commercial'")
+                        print("✅ Added project_type column to calculations table")
+                    if 'reminder_1day' not in columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN reminder_1day INTEGER DEFAULT 1")
+                        print("✅ Added reminder_1day column to calculations table")
+                    if 'reminder_7days' not in columns:
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN reminder_7days INTEGER DEFAULT 1")
+                        print("✅ Added reminder_7days column to calculations table")
+            except Exception as e:
+                print(f"⚠️ Migration check error: {e}")
+                import traceback
+                traceback.print_exc()
+                # Don't fail the save if migration has issues - try to continue
+            
+            # Insert with reminder columns and QuickBooks fields
             if DB_TYPE == "postgresql":
                 cursor.execute("""
                     INSERT INTO calculations (
@@ -554,8 +732,9 @@ async def save_calculation(request: Request, body: SaveRequest):
                         prelim_deadline, prelim_deadline_days,
                         lien_deadline, lien_deadline_days,
                         reminder_1day, reminder_7days,
+                        quickbooks_invoice_id, project_type,
                         created_at
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
                     RETURNING id
                 """, (
                     user_email,
@@ -563,15 +742,17 @@ async def save_calculation(request: Request, body: SaveRequest):
                     c_name or "",
                     float(inv_amount) if inv_amount else None,
                     body.notes or "",
-                    state_val,
-                    state_code_val,
+                    state_val or state_code_val,  # Use state_code_val if state_val is empty
+                    state_code_val,  # CRITICAL: This MUST be the validated 2-char code (TX, not RI)
                     inv_date,
                     prelim_dead,
                     prelim_days,
                     lien_dead,
                     lien_days,
-                    reminder_1day,
-                    reminder_7days,
+                    True,  # reminder_1day: Explicitly True for all new saves (1 Day enabled)
+                    False,  # reminder_7days: Explicitly False for all new saves (7 Days disabled)
+                    str(quickbooks_invoice_id) if quickbooks_invoice_id else None,
+                    project_type_val,
                 ))
                 result = cursor.fetchone()
                 if isinstance(result, dict):
@@ -586,23 +767,26 @@ async def save_calculation(request: Request, body: SaveRequest):
                         prelim_deadline, prelim_deadline_days,
                         lien_deadline, lien_deadline_days,
                         reminder_1day, reminder_7days,
+                        quickbooks_invoice_id, project_type,
                         created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """, (
                     user_email,
                     p_name,
                     c_name or "",
                     float(inv_amount) if inv_amount else None,
                     body.notes or "",
-                    state_val,
-                    state_code_val,
+                    state_val or state_code_val,  # Use state_code_val if state_val is empty
+                    state_code_val,  # CRITICAL: This MUST be the validated 2-char code (TX, not RI)
                     inv_date,
                     prelim_dead,
                     prelim_days,
                     lien_dead,
                     lien_days,
-                    reminder_1day,
-                    reminder_7days,
+                    True,  # reminder_1day: Explicitly True for all new saves (1 Day enabled)
+                    False,  # reminder_7days: Explicitly False for all new saves (7 Days disabled)
+                    str(quickbooks_invoice_id) if quickbooks_invoice_id else None,
+                    project_type_val,
                 ))
                 conn.commit()
                 calculation_id = cursor.lastrowid
@@ -918,5 +1102,3 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
         logger.error(f"Error generating calculation PDF: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")#   F o r c e   d e p l o y   2 0 2 6 - 0 1 - 0 2   0 8 : 5 8 : 1 0  
- 
