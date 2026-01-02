@@ -22,8 +22,8 @@ interface Project {
   state: string;
   prelim_deadline: string;
   lien_deadline: string;
-  reminder_1day: number;
-  reminder_7days: number;
+  reminder_1day: boolean | number | null | undefined;  // Can be boolean, number (0/1), or null
+  reminder_7days: boolean | number | null | undefined;  // Can be boolean, number (0/1), or null
 }
 
 export const ProjectsTable = () => {
@@ -217,17 +217,47 @@ export const ProjectsTable = () => {
                   <TableCell className="text-foreground">{project.prelim_deadline}</TableCell>
                   <TableCell className="text-foreground">{project.lien_deadline}</TableCell>
                   <TableCell>
-                    {(project.reminder_1day || project.reminder_7days) ? (
-                      <Badge className="bg-info/15 text-info border-info/30">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {[
-                          project.reminder_1day ? "1 Day" : null, 
-                          project.reminder_7days ? "7 Days" : null
-                        ].filter(Boolean).join(", ")}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">None</span>
-                    )}
+                    {(() => {
+                      // CRITICAL: Handle boolean, number (0/1), null, undefined
+                      // Default to reminder_1day = true (1 Day enabled) if null/undefined
+                      // Default to reminder_7days = false (7 Days disabled) if null/undefined
+                      let r1day: boolean;
+                      let r7days: boolean;
+                      
+                      if (project.reminder_1day === null || project.reminder_1day === undefined) {
+                        r1day = true;  // Default to enabled (1 Day)
+                      } else if (typeof project.reminder_1day === 'boolean') {
+                        r1day = project.reminder_1day;
+                      } else if (typeof project.reminder_1day === 'number') {
+                        r1day = project.reminder_1day !== 0;  // 1 = true, 0 = false
+                      } else {
+                        r1day = Boolean(project.reminder_1day);
+                      }
+                      
+                      if (project.reminder_7days === null || project.reminder_7days === undefined) {
+                        r7days = false;  // Default to disabled (7 Days)
+                      } else if (typeof project.reminder_7days === 'boolean') {
+                        r7days = project.reminder_7days;
+                      } else if (typeof project.reminder_7days === 'number') {
+                        r7days = project.reminder_7days !== 0;  // 1 = true, 0 = false
+                      } else {
+                        r7days = Boolean(project.reminder_7days);
+                      }
+                      
+                      // Display badges if at least one reminder is enabled
+                      if (r1day || r7days) {
+                        const badges = [];
+                        if (r1day) badges.push("1 Day");
+                        if (r7days) badges.push("7 Days");
+                        return (
+                          <Badge className="bg-info/15 text-info border-info/30">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {badges.join(", ")}
+                          </Badge>
+                        );
+                      }
+                      return <span className="text-muted-foreground text-sm">None</span>;
+                    })()}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-2">

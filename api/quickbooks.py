@@ -1,6 +1,8 @@
 """
 QuickBooks Online OAuth 2.0 Integration
 Allows users to connect their QuickBooks account and import invoices
+Updated: Fixed cursor closure and imported status display issues
+Redeploy trigger: 2026-01-01
 """
 import os
 import base64
@@ -579,8 +581,10 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
     """
     Fetch invoices from QuickBooks for the logged-in user
     Returns invoices from last 90 days
+    Updated: Fixed cursor closure issue and imported status display
     """
     # Use current_user from dependency
+    # Redeploy trigger: 2026-01-01
     user = current_user
     
     # Get user's QuickBooks tokens
@@ -683,50 +687,80 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                 invoices = [invoices]
             
             # Check which invoices have been saved as projects
-            # Use a separate database connection to avoid cursor closure issues
-            # Also fetch the saved state and project_type to display correctly
+            # CRITICAL: Fetch all data BEFORE the connection context closes
             user_email = user.get("email", "")
             saved_invoice_ids = set()
             saved_invoice_data = {}  # Map invoice_id -> {state, project_type}
+            
             if user_email:
                 try:
+                    # Fetch all saved invoice data in a separate connection
+                    # Store results in local variables before context closes
+                    saved_rows_data = []
                     with get_db() as conn:
                         saved_cursor = get_db_cursor(conn)
                         if DB_TYPE == 'postgresql':
                             saved_cursor.execute("""
-                                SELECT quickbooks_invoice_id, state, project_type 
+                                SELECT quickbooks_invoice_id, state, state_code, project_type 
                                 FROM calculations 
-                                WHERE user_email = %s AND quickbooks_invoice_id IS NOT NULL
+                                WHERE user_email = %s 
+                                AND quickbooks_invoice_id IS NOT NULL 
+                                AND quickbooks_invoice_id != ''
+                                AND TRIM(quickbooks_invoice_id) != ''
                             """, (user_email,))
                         else:
                             saved_cursor.execute("""
-                                SELECT quickbooks_invoice_id, state, project_type 
+                                SELECT quickbooks_invoice_id, state, state_code, project_type 
                                 FROM calculations 
-                                WHERE user_email = ? AND quickbooks_invoice_id IS NOT NULL
+                                WHERE user_email = ? 
+                                AND quickbooks_invoice_id IS NOT NULL 
+                                AND quickbooks_invoice_id != ''
+                                AND TRIM(quickbooks_invoice_id) != ''
                             """, (user_email,))
                         
-                        saved_rows = saved_cursor.fetchall()
-                        for row in saved_rows:
-                            if isinstance(row, dict):
-                                qb_id = row.get('quickbooks_invoice_id')
-                                saved_state = row.get('state') or row.get('state_code', '')
-                                saved_project_type = row.get('project_type', 'Commercial')
-                            else:
-                                qb_id = row[0] if len(row) > 0 else None
-                                saved_state = row[1] if len(row) > 1 else ''
-                                saved_project_type = row[2] if len(row) > 2 else 'Commercial'
-                            
-                            if qb_id:
-                                qb_id_str = str(qb_id)
+                        # CRITICAL: Fetch all rows BEFORE context closes
+                        saved_rows_data = saved_cursor.fetchall()
+                        # Connection will close here, but we have the data
+                    
+                    # Process fetched data AFTER context closes (data is already in memory)
+                    print(f"🔍 Found {len(saved_rows_data)} saved invoices for user {user_email}")
+                    for row in saved_rows_data:
+                        if isinstance(row, dict):
+                            qb_id = row.get('quickbooks_invoice_id')
+                            # Prefer state_code over state
+                            saved_state = row.get('state_code') or row.get('state') or ''
+                            saved_project_type = row.get('project_type', 'Commercial')
+                        else:
+                            qb_id = row[0] if len(row) > 0 else None
+                            # Try to get state_code (index 2) or fallback to state (index 1)
+                            saved_state = (row[2] if len(row) > 2 and row[2] else row[1]) if len(row) > 1 else ''
+                            saved_project_type = row[3] if len(row) > 3 else 'Commercial'
+                        
+                        if qb_id:
+                            # Normalize to string for consistent comparison - handle both string and numeric IDs
+                            qb_id_str = str(qb_id).strip()
+                            if qb_id_str:
+                                # Add both string and numeric versions for robust matching
                                 saved_invoice_ids.add(qb_id_str)
+                                # Also add numeric version if it's a number
+                                try:
+                                    qb_id_num = int(qb_id) if isinstance(qb_id, str) else qb_id
+                                    saved_invoice_ids.add(str(qb_id_num))
+                                except (ValueError, TypeError):
+                                    pass
+                                
                                 saved_invoice_data[qb_id_str] = {
                                     'state': saved_state.upper() if saved_state else '',
                                     'project_type': saved_project_type.capitalize() if saved_project_type else 'Commercial'
                                 }
+                                print(f"  ✅ Added saved invoice ID: {qb_id_str}, state: {saved_state.upper() if saved_state else 'N/A'}")
+                    
+                    print(f"🔍 Total saved invoice IDs in set: {len(saved_invoice_ids)}")
                 except Exception as e:
-                    print(f"Error checking saved invoices: {e}")
+                    print(f"❌ Error checking saved invoices: {e}")
                     import traceback
                     traceback.print_exc()
+                    # Continue with empty sets if query fails
             
             # Format invoices for frontend
             formatted_invoices = []
@@ -778,8 +812,55 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                     state = "Unknown"
 
                 invoice_id = inv.get("Id")
-                invoice_id_str = str(invoice_id) if invoice_id else None
-                is_saved = invoice_id_str in saved_invoice_ids if invoice_id_str else False
+                # CRITICAL: Convert invoice_id to string and normalize for robust matching
+                invoice_id_str = str(invoice_id).strip() if invoice_id else None
+                
+                # Check if this invoice has been saved - ROBUST ID MATCHING
+                is_saved = False
+                if invoice_id_str:
+                    # Method 1: Exact string match (most common case)
+                    is_saved = invoice_id_str in saved_invoice_ids
+                    
+                    # Method 2: Normalized string match (remove all whitespace)
+                    if not is_saved:
+                        invoice_id_normalized = ''.join(invoice_id_str.split())
+                        for saved_id in saved_invoice_ids:
+                            saved_id_normalized = ''.join(str(saved_id).split())
+                            if invoice_id_normalized == saved_id_normalized:
+                                is_saved = True
+                                break
+                    
+                    # Method 3: Numeric conversion match (handle string vs int)
+                    if not is_saved and invoice_id:
+                        try:
+                            invoice_id_num = int(invoice_id) if isinstance(invoice_id, str) else invoice_id
+                            invoice_id_str_num = str(invoice_id_num)
+                            is_saved = invoice_id_str_num in saved_invoice_ids
+                            # Also check normalized numeric match
+                            if not is_saved:
+                                for saved_id in saved_invoice_ids:
+                                    try:
+                                        saved_id_num = int(saved_id) if isinstance(saved_id, str) else saved_id
+                                        if invoice_id_num == saved_id_num:
+                                            is_saved = True
+                                            break
+                                    except (ValueError, TypeError):
+                                        continue
+                        except (ValueError, TypeError):
+                            pass
+                
+                # Debug logging for troubleshooting
+                if invoice_id_str:
+                    in_set = invoice_id_str in saved_invoice_ids
+                    print(f"🔍 Invoice {invoice_id_str}: is_saved={is_saved}, in_set={in_set}, saved_ids_count={len(saved_invoice_ids)}")
+                    if not is_saved and len(saved_invoice_ids) > 0:
+                        # Show first few saved IDs for debugging
+                        sample_ids = list(saved_invoice_ids)[:3]
+                        print(f"   Sample saved IDs: {sample_ids}")
+                        print(f"   Invoice ID type: {type(invoice_id)}, value: {invoice_id}")
+                        print(f"   Invoice ID normalized: '{invoice_id_str}'")
+                    elif is_saved:
+                        print(f"   ✅ Invoice {invoice_id_str} marked as saved!")
                 
                 # Use saved state/project_type if invoice is saved, otherwise use QuickBooks data
                 display_state = state
@@ -887,14 +968,63 @@ async def get_quickbooks_status(request: Request, authorization: str = Header(No
 
 @router.post("/disconnect")
 async def disconnect_quickbooks(request: Request, current_user: dict = Depends(get_current_user)):
-    """Disconnect QuickBooks account"""
+    """Disconnect QuickBooks account - calls Intuit revoke endpoint"""
     user = current_user
     
+    access_token = None
+    realm_id = None
+    
     try:
+        # First, get the access token and realm_id before deleting
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Delete QuickBooks tokens
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT access_token, realm_id FROM quickbooks_tokens WHERE user_id = %s
+                """, (user['id'],))
+            else:
+                cursor.execute("""
+                    SELECT access_token, realm_id FROM quickbooks_tokens WHERE user_id = ?
+                """, (user['id'],))
+            
+            token_row = cursor.fetchone()
+            if token_row:
+                if isinstance(token_row, dict):
+                    access_token = token_row.get('access_token')
+                    realm_id = token_row.get('realm_id')
+                else:
+                    access_token = token_row[0] if len(token_row) > 0 else None
+                    realm_id = token_row[1] if len(token_row) > 1 else None
+        
+        # Call Intuit's official revoke endpoint
+        if access_token:
+            try:
+                revoke_url = "https://appcenter.intuit.com/connect/oauth2/v1/tokens/revoke"
+                async with httpx.AsyncClient() as client:
+                    revoke_response = await client.post(
+                        revoke_url,
+                        headers={
+                            "Accept": "application/json",
+                            "Authorization": f"Bearer {access_token}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "token": access_token
+                        }
+                    )
+                    if revoke_response.status_code in [200, 204]:
+                        print(f"✅ Successfully revoked token with Intuit for user_id: {user['id']}")
+                    else:
+                        print(f"⚠️ Intuit revoke returned status {revoke_response.status_code}: {revoke_response.text}")
+            except Exception as revoke_error:
+                print(f"⚠️ Error calling Intuit revoke endpoint (continuing with disconnect): {revoke_error}")
+                # Continue with disconnect even if revoke fails
+        
+        # Now delete tokens from database
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
             if DB_TYPE == 'postgresql':
                 cursor.execute("DELETE FROM quickbooks_tokens WHERE user_id = %s", (user['id'],))
             else:

@@ -119,6 +119,14 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
       const data = await res.json();
       // API returns { invoices: [...], count: ... }
       const invoiceArray = Array.isArray(data) ? data : (data?.invoices || []);
+      
+      // Debug logging to verify is_saved status
+      console.log("📋 Fetched invoices:", invoiceArray.map((inv: Invoice) => ({
+        id: inv.id,
+        invoice_number: inv.invoice_number,
+        is_saved: inv.is_saved
+      })));
+      
       setInvoices(invoiceArray);
       
       // Initialize selections for unsaved invoices
@@ -250,16 +258,31 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
   };
 
   const handleSaveToProjects = async (invoice: Invoice) => {
+    // Get the CURRENT selection from state at the exact moment of save
     const selection = invoiceSelections[invoice.id] || { state: invoice.state || "", type: "Commercial" };
     
-    if (!selection.state || !invoice.date) {
+    // Validate state is selected
+    if (!selection.state || selection.state.length !== 2) {
       toast({
         title: "Error",
-        description: "Please select a State and ensure invoice date is available.",
+        description: "Please select a State from the dropdown before saving.",
         variant: "destructive",
       });
       return;
     }
+    
+    if (!invoice.date) {
+      toast({
+        title: "Error",
+        description: "Invoice date is missing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Ensure state_code is uppercase and exactly 2 characters
+    const stateCode = selection.state.toUpperCase().substring(0, 2);
+    console.log(`💾 Saving invoice ${invoice.id} with state_code: ${stateCode}, type: ${selection.type}`);
 
     try {
       const token = localStorage.getItem('session_token');
@@ -277,7 +300,7 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
           headers,
           body: JSON.stringify({
             invoice_date: invoice.date,
-            state: selection.state,
+            state: stateCode,  // Use the validated state code
             project_type: selection.type.toLowerCase(),
           }),
         });
@@ -299,8 +322,8 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
         method: "POST",
         headers,
         body: JSON.stringify({
-          state: selection.state,
-          state_code: selection.state,  // Ensure state_code is also set
+          state: stateCode,  // Use validated state code
+          state_code: stateCode,  // Ensure state_code matches exactly
           invoice_date: invoice.date,
           project_name: `${invoice.customer_name} - ${invoice.invoice_number}`,
           client_name: invoice.customer_name,
@@ -308,14 +331,33 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
           description: `QuickBooks Invoice #${invoice.invoice_number}`,
           prelim_deadline: prelimDeadline,
           lien_deadline: lienDeadline,
-          project_type: selection.type.toLowerCase(),  // Ensure project_type is saved
+          project_type: selection.type.toLowerCase(),
           quickbooks_invoice_id: invoice.id,
-          reminder_1day: 0,
-          reminder_7days: 0
+          // Reminders: Let backend default them (reminder_1day=true, reminder_7days=false)
+          // Backend will set correct defaults if these are omitted
         })
       });
 
-      if (!response.ok) throw new Error("Save failed");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: "Save failed" }));
+        console.error("❌ Save failed:", errorData);
+        throw new Error(errorData.detail || errorData.message || `Save failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("✅ Save successful:", result);
+
+      // CRITICAL: Immediately update local state to show "Imported" status BEFORE refetch
+      // This makes the UI update instantly while backend confirms
+      setInvoices(prevInvoices => 
+        prevInvoices.map(inv => 
+          inv.id === invoice.id 
+            ? { ...inv, is_saved: true } 
+            : inv
+        )
+      );
+      
+      console.log(`✅ Updated local state: Invoice ${invoice.id} marked as saved`);
 
       toast({
         title: "Saved",
@@ -325,13 +367,16 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
       // Dispatch custom event to notify ProjectsTable
       window.dispatchEvent(new Event('project-saved'));
 
-      // Refresh invoices to update the status
-      await fetchInvoices();
+      // CRITICAL: Refresh invoices from server to ensure sync (this will show "Imported" badge)
+      // Small delay to ensure backend has committed the save
+      setTimeout(async () => {
+        await fetchInvoices();
+      }, 500);
     } catch (error: any) {
-      console.error("Error saving invoice:", error);
+      console.error("❌ Error saving invoice:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to save invoice. Please try again.",
+        description: error.message || "Failed to save invoice. Please check the console for details.",
         variant: "destructive",
       });
     }

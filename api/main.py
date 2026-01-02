@@ -1159,6 +1159,18 @@ async def startup():
         traceback.print_exc()
         # Don't fail startup if migration fails - columns might already exist
 
+    # Run project_type column migration
+    try:
+        from api.migrations.add_project_type_column import run_migration
+        print("🔄 Running project_type column migration...")
+        run_migration()
+        print("✅ Project type column migration completed")
+    except Exception as e:
+        print(f"⚠️ Could not run project_type column migration: {e}")
+        import traceback
+        traceback.print_exc()
+        # Don't fail startup if migration fails - column might already exist
+
     # Run schema check (temporary for debugging production)
     try:
         print("🔍 Running production schema check...")
