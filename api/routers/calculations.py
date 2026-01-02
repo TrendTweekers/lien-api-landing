@@ -528,10 +528,10 @@ async def save_calculation(request: Request, body: SaveRequest):
     quickbooks_invoice_id = body.quickbooks_invoice_id or getattr(body, 'quickbooksInvoiceId', None)
     
     # Extract reminder values from nested object or direct fields
-    # CRITICAL: Default to reminder_1day=True (1 Day enabled), reminder_7days=False (7 Days disabled)
-    # These defaults ensure new saves always have 1 Day reminder enabled
+    # CRITICAL: Default to reminder_1day=True (1 Day enabled), reminder_7days=True (7 Days enabled) - BOTH ON
+    # These defaults ensure new saves always have both reminders enabled
     reminder_1day = True  # Default to enabled (1 Day) - only override if explicitly set
-    reminder_7days = False  # Default to disabled (7 Days) - only override if explicitly set
+    reminder_7days = True  # Default to enabled (7 Days) - BOTH ON - only override if explicitly set
     
     if body.reminders:
         # Check if any prelim or lien reminder is checked for 1 day
@@ -567,7 +567,7 @@ async def save_calculation(request: Request, body: SaveRequest):
             reminder_7days = bool(body.reminder_7days)
         elif body.reminder7days is not None:
             reminder_7days = bool(body.reminder7days)
-        # reminder_7days stays False (default) if not provided
+        # reminder_7days stays True (default) if not provided
     
     # 3. Save to database
     try:
@@ -749,8 +749,8 @@ async def save_calculation(request: Request, body: SaveRequest):
                     prelim_days,
                     lien_dead,
                     lien_days,
-                    True,  # reminder_1day: Explicitly True for all new saves (1 Day enabled)
-                    False,  # reminder_7days: Explicitly False for all new saves (7 Days disabled)
+                    reminder_1day,  # Use calculated reminder_1day value
+                    reminder_7days,  # Use calculated reminder_7days value (BOTH ON by default)
                     str(quickbooks_invoice_id) if quickbooks_invoice_id else None,
                     project_type_val,
                 ))
@@ -783,8 +783,8 @@ async def save_calculation(request: Request, body: SaveRequest):
                     prelim_days,
                     lien_dead,
                     lien_days,
-                    True,  # reminder_1day: Explicitly True for all new saves (1 Day enabled)
-                    False,  # reminder_7days: Explicitly False for all new saves (7 Days disabled)
+                    reminder_1day,  # Use calculated reminder_1day value
+                    reminder_7days,  # Use calculated reminder_7days value (BOTH ON by default)
                     str(quickbooks_invoice_id) if quickbooks_invoice_id else None,
                     project_type_val,
                 ))
