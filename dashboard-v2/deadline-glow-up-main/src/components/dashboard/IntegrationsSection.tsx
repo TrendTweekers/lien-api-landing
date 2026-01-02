@@ -61,7 +61,7 @@ export const IntegrationsSection = ({ isConnected = false }: { isConnected?: boo
       name: "QuickBooks Integration",
       description: "Import invoices and auto-calculate deadlines",
       icon: "QB",
-      iconColor: "#2CA01C", // QuickBooks brand green
+      iconColor: "#0077C5", // Official Intuit blue
       onConnect: () => {
         const token = localStorage.getItem('session_token');
         if (token) {

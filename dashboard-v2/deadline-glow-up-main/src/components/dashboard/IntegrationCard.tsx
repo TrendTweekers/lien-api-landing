@@ -43,14 +43,34 @@ export const IntegrationCard = ({
     ? "" 
     : (gradient || "bg-gradient-to-br from-gray-500 to-gray-600");
 
+  // Special handling for QuickBooks to use logo image
+  const isQuickBooks = name === "QuickBooks Integration";
+  const quickBooksLogoUrl = "https://developer.intuit.com/static/images/logo/quickbooks-logo.png";
+  
   return (
-    <div className="bg-card rounded-xl p-6 border border-border hover:shadow-lg transition-shadow duration-200 card-shadow group h-full flex flex-col">
+    <div className="bg-card rounded-xl p-6 border border-border hover:shadow-xl hover:border-primary/20 transition-all duration-300 card-shadow group h-full flex flex-col">
       <div className="flex items-start gap-4 mb-4">
         <div
-          className={`w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-base shrink-0 ${iconBgClass}`}
+          className={`w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-base shrink-0 overflow-hidden ${iconBgClass}`}
           style={iconBgStyle}
         >
-          {icon}
+          {isQuickBooks && iconColor === "#0077C5" ? (
+            <img 
+              src={quickBooksLogoUrl}
+              alt="QuickBooks"
+              className="w-10 h-10 object-contain"
+              onError={(e) => {
+                // Fallback to text if image fails
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                if (target.parentElement) {
+                  target.parentElement.textContent = icon;
+                }
+              }}
+            />
+          ) : (
+            icon
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors text-base mb-2">
@@ -67,11 +87,11 @@ export const IntegrationCard = ({
           variant={connected ? "default" : "secondary"}
           className={
             connected 
-              ? "bg-[#10B981] text-white border-[#10B981] rounded-md px-2.5 py-0.5 text-xs font-medium" 
+              ? "bg-[#10B981] text-white border-[#10B981] rounded-md px-3 py-1 text-xs font-semibold shadow-sm" 
               : "bg-muted text-muted-foreground rounded-md px-2.5 py-0.5 text-xs font-medium"
           }
         >
-          {connected ? "Connected" : "Not connected"}
+          {connected ? "✓ Connected" : "Not connected"}
         </Badge>
       </div>
 
