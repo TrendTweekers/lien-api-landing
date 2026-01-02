@@ -1144,32 +1144,32 @@ async def startup():
     """Initialize the application on startup."""
     print("🚀 Starting application...")
     
-    # Run reminder columns migration
-    try:
-        from api.migrations.add_reminder_columns import add_reminder_columns
-        print("🔄 Running reminder columns migration...")
-        success = add_reminder_columns()
-        if success:
-            print("✅ Reminder columns migration completed successfully")
-        else:
-            print("⚠️ Reminder columns migration had issues (check logs above)")
-    except Exception as e:
-        print(f"⚠️ Could not run reminder columns migration: {e}")
-        import traceback
-        traceback.print_exc()
-        # Don't fail startup if migration fails - columns might already exist
+    # REMOVED: Run reminder columns migration
+    # try:
+    #     from api.migrations.add_reminder_columns import add_reminder_columns
+    #     print("🔄 Running reminder columns migration...")
+    #     success = add_reminder_columns()
+    #     if success:
+    #         print("✅ Reminder columns migration completed successfully")
+    #     else:
+    #         print("⚠️ Reminder columns migration had issues (check logs above)")
+    # except Exception as e:
+    #     print(f"⚠️ Could not run reminder columns migration: {e}")
+    #     import traceback
+    #     traceback.print_exc()
+    #     # Don't fail startup if migration fails - columns might already exist
 
-    # Run project_type column migration
-    try:
-        from api.migrations.add_project_type_column import run_migration
-        print("🔄 Running project_type column migration...")
-        run_migration()
-        print("✅ Project type column migration completed")
-    except Exception as e:
-        print(f"⚠️ Could not run project_type column migration: {e}")
-        import traceback
-        traceback.print_exc()
-        # Don't fail startup if migration fails - column might already exist
+    # REMOVED: Run project_type column migration
+    # try:
+    #     from api.migrations.add_project_type_column import run_migration
+    #     print("🔄 Running project_type column migration...")
+    #     run_migration()
+    #     print("✅ Project type column migration completed")
+    # except Exception as e:
+    #     print(f"⚠️ Could not run project_type column migration: {e}")
+    #     import traceback
+    #     traceback.print_exc()
+    #     # Don't fail startup if migration fails - column might already exist
 
     # Run schema check (temporary for debugging production)
     # REMOVED: Auto-running migration code to prevent startup failures
