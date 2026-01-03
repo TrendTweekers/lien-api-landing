@@ -5236,6 +5236,15 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
     print("========== CHECKOUT SESSION ENDPOINT HIT ==========", flush=True)
     sys.stdout.flush()
     
+    # Set Stripe API key IMMEDIATELY - must be set before accessing checkout
+    import os
+    stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+    if not stripe.api_key:
+        raise HTTPException(status_code=500, detail="STRIPE_SECRET_KEY not set in environment")
+    print(f"DEBUG: API key set: {bool(stripe.api_key)}", flush=True)
+    print(f"DEBUG: API key starts with: {stripe.api_key[:7] if stripe.api_key else 'NONE'}", flush=True)
+    sys.stdout.flush()
+    
     # Explicit checks at the very start - before any other code
     if stripe is None:
         sys.stdout.flush()
@@ -5263,13 +5272,7 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
     sys.stdout.flush()
     
     try:
-        # Set Stripe API key from environment at request time
-        # Stripe module is required - if import fails, app won't start
-        stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
-        
-        # Verify Stripe is properly configured
-        if not stripe.api_key:
-            raise HTTPException(status_code=500, detail="Stripe not configured. Please set STRIPE_SECRET_KEY environment variable.")
+        # Stripe API key is already set above (line 5241) - no need to set again
         
         # Use environment variables for price IDs or default to test values
         # You should set these in your environment variables
