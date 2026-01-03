@@ -5,9 +5,9 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: '/dashboard-v2/',
+  base: '/dashboard/',
   build: {
-    outDir: '../../public/dashboard-v2',
+    outDir: '../../public/dashboard',
     emptyOutDir: true,
   },
   server: {

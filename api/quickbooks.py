@@ -164,7 +164,7 @@ async def quickbooks_connect(request: Request):
             if existing_token:
                 # User is already connected, redirect to dashboard
                 print(f"ℹ️ User {user_id} already connected to QuickBooks. Redirecting.")
-                return RedirectResponse(url=f"/dashboard-v2?qb_connected=true&already_connected=true")
+                return RedirectResponse(url=f"/dashboard?qb_connected=true&already_connected=true")
 
     except Exception as e:
         print(f"Error looking up user: {e}")
@@ -203,7 +203,7 @@ async def quickbooks_connect(request: Request):
                 print(error_msg)
                 import traceback
                 traceback.print_exc()
-                return RedirectResponse(url=f"/dashboard-v2?error={quote('System configuration error. Please contact support.')}")
+                return RedirectResponse(url=f"/dashboard?error={quote('System configuration error. Please contact support.')}")
             
             print("✅ quickbooks_oauth_states table exists - proceeding with state storage")
             
@@ -226,7 +226,7 @@ async def quickbooks_connect(request: Request):
         import traceback
         traceback.print_exc()
         # DO NOT redirect to QuickBooks if we can't store state!
-        return RedirectResponse(url=f"/dashboard-v2?error={quote('Database error. Please try again or contact support.')}")
+        return RedirectResponse(url=f"/dashboard?error={quote('Database error. Please try again or contact support.')}")
     
     params = {
         "client_id": QB_CLIENT_ID,
@@ -277,12 +277,12 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
     if not code or not state:
         error_msg = f"Missing required parameters: code={bool(code)}, state={bool(state)}"
         print(f"❌ {error_msg}")
-        return RedirectResponse(url=f"/dashboard-v2?error={quote('Missing OAuth parameters')}")
+        return RedirectResponse(url=f"/dashboard?error={quote('Missing OAuth parameters')}")
     
     if not realm_id_value:
         error_msg = "Missing realmId parameter"
         print(f"❌ {error_msg}")
-        return RedirectResponse(url=f"/dashboard-v2?error={quote('Missing company ID')}")
+        return RedirectResponse(url=f"/dashboard?error={quote('Missing company ID')}")
     
     # Verify state and get user ID
     try:
@@ -321,7 +321,7 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
                 
                 error_msg = "Invalid or expired OAuth state"
                 print(f"❌ {error_msg}")
-                return RedirectResponse(url=f"/dashboard-v2?error={quote(error_msg)}")
+                return RedirectResponse(url=f"/dashboard?error={quote(error_msg)}")
             
             # Extract user_id - handle both dict and tuple results
             if isinstance(result, dict):
@@ -366,7 +366,7 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
                 print(f"❌ QuickBooks token exchange failed:")
                 print(f"   Status: {response.status_code}")
                 print(f"   Response: {error_detail}")
-                return RedirectResponse(url=f"/dashboard-v2?error={quote('Failed to get access token')}")
+                return RedirectResponse(url=f"/dashboard?error={quote('Failed to get access token')}")
             
             tokens = response.json()
             print(f"✅ Token exchange successful")
@@ -436,20 +436,20 @@ async def quickbooks_callback(request: Request, code: str = None, state: str = N
             
             # Redirect to customer dashboard with success message
             print(f"✅ Redirecting to dashboard with success")
-            return RedirectResponse(url=f"/dashboard-v2?qb_connected=true&cache_bust={int(time.time())}")
+            return RedirectResponse(url=f"/dashboard?qb_connected=true&cache_bust={int(time.time())}")
             
     except httpx.HTTPError as e:
         error_msg = f"HTTP error during token exchange: {e}"
         print(f"❌ {error_msg}")
         import traceback
         traceback.print_exc()
-        return RedirectResponse(url=f"/dashboard-v2?error={quote('Network error connecting to QuickBooks')}")
+        return RedirectResponse(url=f"/dashboard?error={quote('Network error connecting to QuickBooks')}")
     except Exception as e:
         error_msg = f"Error during token exchange: {e}"
         print(f"❌ {error_msg}")
         import traceback
         traceback.print_exc()
-        return RedirectResponse(url=f"/dashboard-v2?error={quote('Unexpected error during OAuth')}")
+        return RedirectResponse(url=f"/dashboard?error={quote('Unexpected error during OAuth')}")
 
 
 async def refresh_access_token(user_id: int):

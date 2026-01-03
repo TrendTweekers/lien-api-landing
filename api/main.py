@@ -1208,10 +1208,10 @@ try:
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
     
-    # Serve React Dashboard v2 Assets
-    dashboard_v2_assets = BASE_DIR / "public" / "dashboard-v2" / "assets"
-    if dashboard_v2_assets.exists():
-        app.mount("/dashboard-v2/assets", StaticFiles(directory=str(dashboard_v2_assets)), name="dashboard-v2-assets")
+    # Serve React Dashboard Assets
+    dashboard_assets = BASE_DIR / "public" / "dashboard" / "assets"
+    if dashboard_assets.exists():
+        app.mount("/dashboard/assets", StaticFiles(directory=str(dashboard_assets)), name="dashboard-assets")
 
     # Serve Broker Dashboard v2 Assets
     broker_dashboard_v2_assets = BASE_DIR / "public" / "broker-dashboard-v2" / "assets"
@@ -1221,25 +1221,25 @@ try:
 except Exception as e:
     print(f"Warning: Could not mount static files: {e}")
 
-# Serve React Dashboard v2 SPA
-@app.get("/dashboard-v2")
-async def serve_dashboard_v2_root():
+# Serve React Dashboard SPA
+@app.get("/dashboard")
+async def serve_dashboard_root():
     """Serve React App Root"""
-    file_path = BASE_DIR / "public" / "dashboard-v2" / "index.html"
+    file_path = BASE_DIR / "public" / "dashboard" / "index.html"
     if file_path.exists():
         return FileResponse(file_path)
     return Response("Dashboard not found", status_code=404)
 
-@app.get("/dashboard-v2/{full_path:path}")
-async def serve_dashboard_v2(full_path: str):
+@app.get("/dashboard/{full_path:path}")
+async def serve_dashboard(full_path: str):
     """Serve React App Paths (SPA Routing)"""
     # Check if file exists (e.g. favicon.ico, manifest.json)
-    file_path = BASE_DIR / "public" / "dashboard-v2" / full_path
+    file_path = BASE_DIR / "public" / "dashboard" / full_path
     if file_path.exists() and file_path.is_file():
         return FileResponse(file_path)
     
     # Fallback to index.html for SPA routing
-    index_path = BASE_DIR / "public" / "dashboard-v2" / "index.html"
+    index_path = BASE_DIR / "public" / "dashboard" / "index.html"
     if index_path.exists():
         return FileResponse(index_path)
     return Response("Dashboard not found", status_code=404)
@@ -5164,7 +5164,7 @@ async def procore_callback(code: str, state: str):
                 conn.commit()
             
             # Redirect to customer dashboard with success message
-            return RedirectResponse(url="/dashboard-v2?procore_connected=true")
+            return RedirectResponse(url="/dashboard?procore_connected=true")
             
     except httpx.HTTPError as e:
         print(f"HTTP error during Procore token exchange: {e}")
@@ -5503,7 +5503,7 @@ async def force_test_email(to: str):
                                 <table width="100%" cellpadding="0" cellspacing="0">
                                     <tr>
                                         <td align="center" style="padding:20px 0;">
-                                            <a href="https://liendeadline.com/dashboard-v2" 
+                                            <a href="https://liendeadline.com/dashboard" 
                                                style="display:inline-block; background-color:#f97316; color:white; text-decoration:none; padding:14px 28px; border-radius:6px; font-weight:600; font-size:16px; margin:0 5px;">
                                                 View Dashboard
                                             </a>
@@ -5527,7 +5527,7 @@ async def force_test_email(to: str):
                                 </p>
                                 <p style="margin:0; font-size:11px; color:#9ca3af; text-align:center;">
                                     You're receiving this because you set a reminder at LienDeadline.com<br>
-                                    <a href="https://liendeadline.com/dashboard-v2" style="color:#9ca3af;">Manage your reminders</a>
+                                    <a href="https://liendeadline.com/dashboard" style="color:#9ca3af;">Manage your reminders</a>
                                 </p>
                             </td>
                         </tr>
