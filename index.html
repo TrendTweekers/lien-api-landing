@@ -3334,18 +3334,18 @@ function updatePartnerCalculator() {
     if (clientCountInput) clientCountInput.value = clientCount;
     if (clientCountBountyInput) clientCountBountyInput.value = clientCount;
     
-    if (selectedPartnerModel === 'recurring') {
-        const monthly = clientCount * 50;
-        const annual = monthly * 12;
-        const recurringMonthlyEl = document.getElementById('recurringMonthly');
-        const recurringAnnualEl = document.getElementById('recurringAnnual');
-        if (recurringMonthlyEl) recurringMonthlyEl.textContent = `${clientCount} × $50 = $${monthly.toLocaleString()}/month`;
-        if (recurringAnnualEl) recurringAnnualEl.textContent = `${clientCount} × $50 × 12 = $${annual.toLocaleString()}/year`;
-    } else {
-        const total = clientCount * 500;
-        const bountyTotalEl = document.getElementById('bountyTotal');
-        if (bountyTotalEl) bountyTotalEl.textContent = `${clientCount} × $500 = $${total.toLocaleString()} one-time`;
-    }
+    // Calculate 30% monthly recurring commission
+    // Subscription is $299/month, 30% = $89.70 per client per month
+    const commissionPerClient = 89.70;
+    const monthly = clientCount * commissionPerClient;
+    const annual = monthly * 12;
+    const recurringMonthlyEl = document.getElementById('recurringMonthly');
+    const recurringAnnualEl = document.getElementById('recurringAnnual');
+    const bountyTotalEl = document.getElementById('bountyTotal');
+    
+    if (recurringMonthlyEl) recurringMonthlyEl.textContent = `${clientCount} × 30% = $${monthly.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/month`;
+    if (recurringAnnualEl) recurringAnnualEl.textContent = `${clientCount} × 30% × 12 = $${annual.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/year`;
+    if (bountyTotalEl) bountyTotalEl.textContent = `${clientCount} × 30% = $${monthly.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/month recurring`;
 }
 
 // Initialize calculator on page load (only if elements exist)

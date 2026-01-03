@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Partner Program | LienDeadline</title>
-    <meta name="description" content="Join the LienDeadline Partner Program and earn up to $500 per referral or 30% recurring commissions. We handle onboarding, billing, and support— you focus on sharing.">
+    <meta name="description" content="Join the LienDeadline Partner Program and earn 30% monthly recurring commission on every referral. We handle onboarding, billing, and support— you focus on sharing.">
     
     <!-- Open Graph -->
     <meta property="og:title" content="Partner Program | LienDeadline" />
@@ -701,12 +701,12 @@
                             </svg>
                         </div>
                         <div>
-                            <div class="stat-value">$500</div>
-                            <div class="stat-label">per referral</div>
+                            <div class="stat-value">30%</div>
+                            <div class="stat-label">monthly recurring</div>
                         </div>
                     </div>
                     <div class="stat-description">
-                        Or choose $50/month recurring for long-term passive income. The choice is yours.
+                        Earn 30% of every subscription payment, month after month. Build long-term passive income helping construction suppliers protect their receivables.
                     </div>
                 </div>
 
@@ -761,7 +761,7 @@
                         <div class="feature-content">
                             <h3 class="feature-title">Lucrative Earnings</h3>
                             <p class="feature-description">
-                                Choose $500 bounty per client or $50/month recurring. Potential for $6,000+ annual passive income from 10 clients.
+                                Earn 30% monthly recurring commission on every referral. With 10 active clients, that's $900+ per month in passive income that grows with your network.
                             </p>
                             <span class="feature-highlight orange">High ROI</span>
                         </div>
@@ -880,19 +880,18 @@
             </div>
             
             <div>
-                <label class="block text-gray-700 font-semibold mb-3">Choose Your Commission Model *</label>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label class="p-4 border-2 rounded-lg cursor-pointer hover:border-orange-500 hover:bg-orange-50 transition">
-                        <input type="radio" name="commission_model" value="bounty" class="mr-2">
-                        <span class="font-bold">$500 One-Time Bounty</span>
-                        <p class="text-sm text-gray-600 mt-1">Commission held for 60 days after customer payment to prevent fraud, then paid monthly • Best for 1-10 clients</p>
-                    </label>
-                    <label class="p-4 border-2 rounded-lg cursor-pointer hover:border-orange-500 hover:bg-orange-50 transition">
-                        <input type="radio" name="commission_model" value="recurring" checked class="mr-2">
-                        <span class="font-bold">$50/month Recurring</span>
-                        <p class="text-sm text-gray-600 mt-1">Passive income • Best for 10+ clients</p>
-                    </label>
+                <label class="block text-gray-700 font-semibold mb-3">Commission Structure</label>
+                <div class="p-4 bg-orange-50 border-2 border-orange-300 rounded-lg">
+                    <div class="flex items-start gap-3">
+                        <div class="text-orange-600 text-2xl font-bold">30%</div>
+                        <div>
+                            <span class="font-bold text-gray-900 block">Monthly Recurring Commission</span>
+                            <p class="text-sm text-gray-600 mt-1">Earn 30% of every subscription payment ($299/month) for as long as your referral stays active. Commission held for 60 days after customer payment to prevent fraud, then paid monthly.</p>
+                            <p class="text-sm text-gray-600 mt-2"><strong>Example:</strong> 10 active clients = $897/month in recurring commissions</p>
+                        </div>
+                    </div>
                 </div>
+                <input type="hidden" name="commission_model" value="recurring">
             </div>
             
             <div>
@@ -929,7 +928,7 @@
             </div>
             <div>
                 <h3 class="text-xl font-semibold mb-2">When do I get paid?</h3>
-                <p class="text-gray-600">Recurring commissions pay monthly. One-time bounties: Commission held for 60 days after customer payment to prevent fraud, then paid monthly.</p>
+                <p class="text-gray-600">You earn 30% of each monthly subscription payment. Commission is held for 60 days after customer payment to prevent fraud, then paid monthly via direct deposit.</p>
             </div>
             <div>
                 <h3 class="text-xl font-semibold mb-2">What if a client cancels?</h3>
@@ -1000,11 +999,8 @@
                 works_with_suppliers: formData.get('works_with_suppliers') === 'on'
             };
             
-            // Validate commission model selected
-            if (!data.commission_model) {
-                alert('Please select a commission model');
-                return;
-            }
+            // Commission model is always recurring (30%)
+            data.commission_model = 'recurring';
             
             // Show loading
             submitBtn.disabled = true;
