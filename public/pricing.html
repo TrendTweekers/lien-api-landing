@@ -815,12 +815,6 @@
                 });
             }
             
-            // Get Tolt referral ID: prioritize 'via' URL parameter, then window.tolt_referral, then sessionStorage
-            const urlParams = new URLSearchParams(window.location.search);
-            const viaParam = urlParams.get('via');
-            const toltReferralId = viaParam || window.tolt_referral || sessionStorage.getItem('tolt_referral') || null;
-            console.log('🔗 Tolt referral ID:', toltReferralId);
-            
             // Use Stripe Payment Links directly - simpler and more reliable
             const planType = monthlyBtn.classList.contains('active') ? 'monthly' : 'annual';
             
@@ -829,9 +823,19 @@
                 annual: 'https://buy.stripe.com/aFacN5gBL7ln9Z72AZ9fW01'
             };
             
-            const url = paymentLinks[planType] + (toltReferralId ? '?client_reference_id=' + toltReferralId : '');
-            console.log('💳 Redirecting to Stripe Payment Link:', url);
-            window.location.href = url;
+            // Get Tolt referral ID from window.tolt_referral (set by Tolt script)
+            const toltReferralId = window.tolt_referral || null;
+            
+            // Build URL with metadata
+            const url = new URL(paymentLinks[planType]);
+            if (toltReferralId) {
+                url.searchParams.append('client_reference_id', toltReferralId);
+            }
+            
+            console.log('🔗 Tolt Referral ID:', toltReferralId);
+            console.log('🔗 Redirecting to:', url.toString());
+            
+            window.location.href = url.toString();
         });
     </script>
 
