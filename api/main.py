@@ -15,14 +15,7 @@ import os
 import subprocess
 import sys
 import bcrypt
-try:
-    import stripe
-    STRIPE_AVAILABLE = True
-except ImportError as e:
-    STRIPE_AVAILABLE = False
-    stripe = None
-    print(f"⚠️ Warning: Stripe library not installed: {e}")
-    print("   Install with: pip install stripe")
+import stripe
 import traceback
 # REMOVED: from api.migrations.fix_production_schema import fix_postgres_schema
 
@@ -1103,19 +1096,14 @@ def init_db():
             pass
 
 # Initialize Stripe - Set API key from environment variable
-# Always set stripe.api_key to ensure stripe module is properly initialized
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY') or os.getenv('STRIPE_KEY') or ''
+stripe.api_key = STRIPE_SECRET_KEY
 
-if STRIPE_AVAILABLE:
-    stripe.api_key = STRIPE_SECRET_KEY
-
-    if not STRIPE_SECRET_KEY:
-        print("⚠️ Warning: STRIPE_SECRET_KEY not found in environment variables")
-        print("   Stripe checkout sessions will fail without a valid API key")
-    else:
-        print(f"✅ Stripe API key initialized (length: {len(STRIPE_SECRET_KEY)} chars)")
+if not STRIPE_SECRET_KEY:
+    print("⚠️ Warning: STRIPE_SECRET_KEY not found in environment variables")
+    print("   Stripe checkout sessions will fail without a valid API key")
 else:
-    print("⚠️ Warning: Stripe library not available - checkout sessions will fail")
+    print(f"✅ Stripe API key initialized (length: {len(STRIPE_SECRET_KEY)} chars)")
 
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 
@@ -5236,8 +5224,7 @@ class CheckoutRequest(BaseModel):
 @app.post("/api/create-checkout-session")
 async def create_checkout_session(request: Request, checkout_request: CheckoutRequest):
     try:
-        # Initialize Stripe at request time to ensure API key is loaded from environment
-        import stripe
+        # Set Stripe API key from environment at request time
         stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
         
         # Verify Stripe is properly initialized
