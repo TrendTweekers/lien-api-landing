@@ -75,6 +75,79 @@
         .orange-btn { background-color: #F97316; color: white; }
         .orange-btn:hover { background-color: #E66A00; }
         .orange-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        /* Partner Cards Styling */
+        .partner-card-earnings,
+        .partner-card-referrals,
+        .partner-card-tracking {
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .partner-card-earnings {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        }
+        
+        .partner-card-referrals {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        }
+        
+        .partner-card-tracking {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        }
+        
+        .partner-card-earnings:hover,
+        .partner-card-referrals:hover,
+        .partner-card-tracking:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+        
+        .emoji-circle {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        
+        .earnings-circle {
+            background-color: #f97316;
+        }
+        
+        .referrals-circle {
+            background-color: #3b82f6;
+        }
+        
+        .tracking-circle {
+            background-color: #10b981;
+        }
+        
+        .emoji-icon {
+            font-size: 32px;
+            color: white;
+            line-height: 1;
+        }
+        
+        .partner-card-title {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+        
+        .partner-card-description {
+            color: #4b5563;
+            line-height: 1.6;
+            font-size: 16px;
+            margin: 0;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -126,20 +199,26 @@
     <section class="py-16 px-6 max-w-4xl mx-auto">
         <h2 class="text-3xl font-bold mb-8 text-center">Why Partner with LienDeadline?</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="p-6 border rounded-lg">
-                <span class="text-3xl mb-4 block">💰</span>
-                <h3 class="text-xl font-semibold mb-2">Lucrative Earnings</h3>
-                <p class="text-gray-600">Choose $500 bounty per client or $50/month recurring. Potential for $6,000+ annual passive income from 10 clients.</p>
+            <div class="partner-card-earnings">
+                <div class="emoji-circle earnings-circle">
+                    <span class="emoji-icon">💰</span>
+                </div>
+                <h3 class="partner-card-title">Lucrative Earnings</h3>
+                <p class="partner-card-description">Choose $500 bounty per client or $50/month recurring. Potential for $6,000+ annual passive income from 10 clients.</p>
             </div>
-            <div class="p-6 border rounded-lg">
-                <span class="text-3xl mb-4 block">🤝</span>
-                <h3 class="text-xl font-semibold mb-2">Easy Referrals</h3>
-                <p class="text-gray-600">Share your unique link. We onboard, train, and support your referrals—no extra work for you.</p>
+            <div class="partner-card-referrals">
+                <div class="emoji-circle referrals-circle">
+                    <span class="emoji-icon">🤝</span>
+                </div>
+                <h3 class="partner-card-title">Easy Referrals</h3>
+                <p class="partner-card-description">Share your unique link. We onboard, train, and support your referrals—no extra work for you.</p>
             </div>
-            <div class="p-6 border rounded-lg">
-                <span class="text-3xl mb-4 block">📈</span>
-                <h3 class="text-xl font-semibold mb-2">Track Everything</h3>
-                <p class="text-gray-600">Real-time dashboard shows referrals, commissions, and payouts. Transparent and automated.</p>
+            <div class="partner-card-tracking">
+                <div class="emoji-circle tracking-circle">
+                    <span class="emoji-icon">📈</span>
+                </div>
+                <h3 class="partner-card-title">Track Everything</h3>
+                <p class="partner-card-description">Real-time dashboard shows referrals, commissions, and payouts. Transparent and automated.</p>
             </div>
         </div>
     </section>
@@ -168,32 +247,6 @@
                     <h3 class="text-xl font-semibold mb-2">You Get Paid</h3>
                     <p class="text-gray-600">Earn commissions monthly via direct deposit. Track everything in your partner dashboard.</p>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Calculator Section -->
-    <section id="calculator" class="py-16 px-6 bg-gray-50 max-w-4xl mx-auto">
-        <h2 class="text-3xl font-bold mb-8 text-center">Calculate Your Earning Potential</h2>
-        <div class="p-6 border rounded-lg bg-white">
-            <label class="block text-gray-700 font-semibold mb-4">How many contractor/supplier clients do you have?</label>
-            <input type="number" id="clientCount" class="w-full p-3 border rounded mb-6" value="10" min="1" oninput="calculateEarnings()">
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div class="p-4 bg-gray-50 rounded-lg text-center">
-                    <p class="text-gray-600 mb-2 text-sm">One-Time Bounty</p>
-                    <p class="text-3xl font-bold text-orange-600" id="bountyAmount">$5,000</p>
-                    <p class="text-gray-500 text-sm mt-1">$500 per client</p>
-                </div>
-                <div class="p-4 bg-gray-50 rounded-lg text-center">
-                    <p class="text-gray-600 mb-2 text-sm">Monthly Recurring</p>
-                    <p class="text-3xl font-bold text-orange-600" id="monthlyAmount">$500/mo</p>
-                    <p class="text-gray-500 text-sm mt-1">$50 per client/month</p>
-                </div>
-            </div>
-            
-            <div class="text-center p-4 bg-orange-50 rounded-lg border-2 border-dashed border-orange-300">
-                <p class="text-gray-700">That's <strong class="text-orange-600 text-xl" id="annualAmount">$6,000/year</strong> in passive income</p>
             </div>
         </div>
     </section>
@@ -278,6 +331,32 @@
                 🔒 We'll review your application within 24 hours
             </p>
         </form>
+    </section>
+
+    <!-- Calculator Section -->
+    <section id="calculator" class="py-16 px-6 bg-gray-50 max-w-4xl mx-auto">
+        <h2 class="text-3xl font-bold mb-8 text-center">Calculate Your Earning Potential</h2>
+        <div class="p-6 border rounded-lg bg-white">
+            <label class="block text-gray-700 font-semibold mb-4">How many contractor/supplier clients do you have?</label>
+            <input type="number" id="clientCount" class="w-full p-3 border rounded mb-6" value="10" min="1" oninput="calculateEarnings()">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="p-4 bg-gray-50 rounded-lg text-center">
+                    <p class="text-gray-600 mb-2 text-sm">One-Time Bounty</p>
+                    <p class="text-3xl font-bold text-orange-600" id="bountyAmount">$5,000</p>
+                    <p class="text-gray-500 text-sm mt-1">$500 per client</p>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-lg text-center">
+                    <p class="text-gray-600 mb-2 text-sm">Monthly Recurring</p>
+                    <p class="text-3xl font-bold text-orange-600" id="monthlyAmount">$500/mo</p>
+                    <p class="text-gray-500 text-sm mt-1">$50 per client/month</p>
+                </div>
+            </div>
+            
+            <div class="text-center p-4 bg-orange-50 rounded-lg border-2 border-dashed border-orange-300">
+                <p class="text-gray-700">That's <strong class="text-orange-600 text-xl" id="annualAmount">$6,000/year</strong> in passive income</p>
+            </div>
+        </div>
     </section>
 
     <!-- FAQ: Matching main site's FAQ style with expandable or simple list -->
