@@ -821,34 +821,17 @@
             const toltReferralId = viaParam || window.tolt_referral || sessionStorage.getItem('tolt_referral') || null;
             console.log('🔗 Tolt referral ID:', toltReferralId);
             
-            try {
-                // Call checkout session API
-                const planType = monthlyBtn.classList.contains('active') ? 'monthly' : 'annual';
-                const response = await fetch('/api/create-checkout-session', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        price_id: planType === 'monthly' ? 'price_1SjgtHGcjwyM4YjyEV17KZZh' : 'price_1SjgbDBu7jaDnpQY2wk',
-                        success_url: window.location.origin + '/dashboard?session_id={CHECKOUT_SESSION_ID}',
-                        cancel_url: window.location.origin + '/pricing.html',
-                        email: null,
-                        referral_id: toltReferralId
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.url) {
-                    console.log('💳 Redirecting to Stripe checkout:', data.url);
-                    window.location.href = data.url;
-                } else {
-                    console.error('❌ No checkout URL returned:', data);
-                    alert('Error creating checkout session. Please try again.');
-                }
-            } catch (error) {
-                console.error('❌ Checkout error:', error);
-                alert('Error creating checkout session. Please try again.');
-            }
+            // Use Stripe Payment Links directly - simpler and more reliable
+            const planType = monthlyBtn.classList.contains('active') ? 'monthly' : 'annual';
+            
+            const paymentLinks = {
+                monthly: 'https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00',
+                annual: 'https://buy.stripe.com/aFacN5gBL7ln9Z72AZ9fW01'
+            };
+            
+            const url = paymentLinks[planType] + (toltReferralId ? '?client_reference_id=' + toltReferralId : '');
+            console.log('💳 Redirecting to Stripe Payment Link:', url);
+            window.location.href = url;
         });
     </script>
 
