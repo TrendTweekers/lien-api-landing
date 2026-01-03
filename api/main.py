@@ -5224,12 +5224,26 @@ class CheckoutRequest(BaseModel):
 
 @app.post("/api/create-checkout-session")
 async def create_checkout_session(request: Request, checkout_request: CheckoutRequest):
+    import sys
+    
+    # Explicit checks at the very start - before any other code
+    if stripe is None:
+        sys.stdout.flush()
+        raise HTTPException(status_code=500, detail="Stripe module is None - not installed")
+    
+    if not hasattr(stripe, 'checkout'):
+        sys.stdout.flush()
+        raise HTTPException(status_code=500, detail=f"Stripe has no checkout attr. Type: {type(stripe)}, Value: {stripe}")
+    
     # Debug logging to diagnose stripe module issues
     print(f"DEBUG: stripe module: {stripe}")
     print(f"DEBUG: stripe type: {type(stripe)}")
     print(f"DEBUG: Has checkout? {hasattr(stripe, 'checkout')}")
     if hasattr(stripe, 'checkout'):
         print(f"DEBUG: Has Session? {hasattr(stripe.checkout, 'Session')}")
+    
+    # Force print to show immediately
+    sys.stdout.flush()
     
     try:
         # Set Stripe API key from environment at request time
