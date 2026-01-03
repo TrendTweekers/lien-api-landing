@@ -5238,9 +5238,16 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
     # Debug logging to diagnose stripe module issues
     print(f"DEBUG: stripe module: {stripe}")
     print(f"DEBUG: stripe type: {type(stripe)}")
+    print(f"DEBUG: Stripe version: {stripe.__version__}")
     print(f"DEBUG: Has checkout? {hasattr(stripe, 'checkout')}")
     if hasattr(stripe, 'checkout'):
+        print(f"DEBUG: stripe.checkout type: {type(stripe.checkout)}")
         print(f"DEBUG: Has Session? {hasattr(stripe.checkout, 'Session')}")
+        if hasattr(stripe.checkout, 'Session'):
+            print(f"DEBUG: stripe.checkout.Session: {stripe.checkout.Session}")
+    print(f"DEBUG: Has checkout_sessions? {hasattr(stripe, 'checkout_sessions')}")
+    if hasattr(stripe, 'checkout_sessions'):
+        print(f"DEBUG: stripe.checkout_sessions type: {type(stripe.checkout_sessions)}")
     
     # Force print to show immediately
     sys.stdout.flush()
@@ -5276,19 +5283,38 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
         else:
             print("⚠️ No Tolt referral ID provided - commission tracking may not work")
             
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[
-                {
-                    'price': price_id,
-                    'quantity': 1,
-                },
-            ],
-            mode='subscription',
-            metadata=metadata,  # Always pass metadata dict (empty if no referral)
-            success_url='https://liendeadline.com/success.html?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url='https://liendeadline.com/pricing.html',
-        )
+        # Try v2 API first (newer Stripe versions), fallback to v1 API
+        try:
+            # Use v2 API: stripe.checkout_sessions.create()
+            checkout_session = stripe.checkout_sessions.create(
+                payment_method_types=['card'],
+                line_items=[
+                    {
+                        'price': price_id,
+                        'quantity': 1,
+                    },
+                ],
+                mode='subscription',
+                metadata=metadata,  # Always pass metadata dict (empty if no referral)
+                success_url='https://liendeadline.com/success.html?session_id={CHECKOUT_SESSION_ID}',
+                cancel_url='https://liendeadline.com/pricing.html',
+            )
+        except AttributeError:
+            # Fallback to v1 API: stripe.checkout.Session.create()
+            print("⚠️ Using Stripe v1 API (checkout.Session) - consider upgrading")
+            checkout_session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[
+                    {
+                        'price': price_id,
+                        'quantity': 1,
+                    },
+                ],
+                mode='subscription',
+                metadata=metadata,  # Always pass metadata dict (empty if no referral)
+                success_url='https://liendeadline.com/success.html?session_id={CHECKOUT_SESSION_ID}',
+                cancel_url='https://liendeadline.com/pricing.html',
+            )
         return {"url": checkout_session.url}
     except HTTPException:
         # Re-raise HTTPExceptions (like our configuration errors)
