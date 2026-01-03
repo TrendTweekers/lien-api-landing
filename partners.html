@@ -917,234 +917,113 @@
         </form>
     </section>
 
-    <!-- Partner Program Section - Exact Match to Dashboard -->
+    <!-- Partner Program Section - Dashboard V2 Match -->
     <section id="calculator" class="py-16 px-6 bg-gray-50">
-        <div class="max-w-7xl mx-auto">
-            <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 shadow-2xl">
-                <div class="grid grid-cols-1 lg:grid-cols-2">
-                    <!-- Left Side - Benefits -->
-                    <div class="p-8 lg:p-10">
-                        <p class="text-orange-500 font-semibold text-sm tracking-wide uppercase mb-4">
-                            Partner Program
-                        </p>
-                        
-                        <h2 class="text-3xl lg:text-4xl font-bold text-white mb-2">
-                            Earn while helping your clients 
-                            <span class="italic text-orange-500">protect receivables</span>
-                        </h2>
-                        
-                        <p class="text-gray-400 mt-4 text-lg">
-                            Insurance brokers, accountants, and consultants: add LienDeadline to your toolkit
-                            and earn up to $180K MRR in recurring commissions.
-                        </p>
+        <div class="max-w-4xl mx-auto p-6 bg-[#0f172a] text-white rounded-2xl shadow-2xl">
+            <div class="mb-10">
+                <h2 class="text-3xl font-bold mb-2">Choose Your Partner Payment Model</h2>
+                <p class="text-gray-400 text-lg">Select ONE model - you cannot earn both for the same client</p>
+            </div>
 
-                        <div class="space-y-6 mt-8">
-                            <!-- Benefit 1 -->
-                            <div class="flex items-start gap-4">
-                                <div class="w-10 h-10 rounded-lg bg-gray-700/50 flex items-center justify-center flex-shrink-0">
-                                    <svg class="h-5 w-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-white underline decoration-orange-500/50 underline-offset-2">
-                                        $500 Per Referral
-                                    </h3>
-                                    <p class="text-gray-400 text-sm mt-1">Earn a one-time bounty for every client you bring on board.</p>
-                                </div>
-                            </div>
-                            
-                            <!-- Benefit 2 -->
-                            <div class="flex items-start gap-4">
-                                <div class="w-10 h-10 rounded-lg bg-gray-700/50 flex items-center justify-center flex-shrink-0">
-                                    <svg class="h-5 w-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-white underline decoration-orange-500/50 underline-offset-2">
-                                        $50/Month Recurring
-                                    </h3>
-                                    <p class="text-gray-400 text-sm mt-1">Or choose 15% recurring revenue share for ongoing income.</p>
-                                </div>
-                            </div>
-                            
-                            <!-- Benefit 3 -->
-                            <div class="flex items-start gap-4">
-                                <div class="w-10 h-10 rounded-lg bg-gray-700/50 flex items-center justify-center flex-shrink-0">
-                                    <svg class="h-5 w-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-white underline decoration-orange-500/50 underline-offset-2">
-                                        Add Value to Clients
-                                    </h3>
-                                    <p class="text-gray-400 text-sm mt-1">Help your construction clients protect their receivables.</p>
-                                </div>
-                            </div>
-                        </div>
+            <div class="flex p-1 bg-[#1e293b] rounded-2xl w-full max-w-md mb-12">
+                <button id="btn-recurring" onclick="switchModel('recurring')" 
+                        class="flex-1 py-4 px-6 rounded-xl font-bold transition-all bg-orange-600 text-white shadow-lg">
+                    Recurring Revenue
+                </button>
+                <button id="btn-bounty" onclick="switchModel('bounty')" 
+                        class="flex-1 py-4 px-6 rounded-xl font-bold transition-all text-gray-400 hover:text-white">
+                    Upfront Bounty
+                </button>
+            </div>
 
-                        <a href="#apply" class="inline-flex items-center gap-2 mt-8 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-lg transition-all">
-                            Join Partner Program
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                            </svg>
-                        </a>
+            <div id="view-recurring" class="animate-in fade-in duration-500">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-orange-600/20 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18.06"/><path d="M7 6h1v4"/></svg>
                     </div>
+                    <h3 class="text-2xl font-bold border-b-4 border-orange-600 pb-1">Recurring Revenue Model</h3>
+                </div>
+                
+                <ul class="space-y-4 text-gray-300 text-lg mb-10">
+                    <li class="flex items-center gap-3"><span class="text-orange-500 text-xl">•</span> Earn $50/month for EVERY active client</li>
+                    <li class="flex items-center gap-3"><span class="text-orange-500 text-xl">•</span> Works for both monthly ($299) and annual ($2,390) subscribers</li>
+                    <li class="flex items-center gap-3"><span class="text-orange-500 text-xl">•</span> Get paid monthly as long as clients remain active</li>
+                </ul>
 
-                    <!-- Right Side - Calculator -->
-                    <div class="bg-gray-800/50 p-8 lg:p-10">
-                        <p class="text-gray-400 mb-2">Partners choose their preferred payment model</p>
-                        
-                        <h3 class="text-xl font-bold text-white mb-1">Choose Your Partner Payment Model</h3>
-                        <p class="text-gray-500 text-sm mb-6">
-                            Select ONE model - you cannot earn both for the same client
-                        </p>
+                <div class="bg-[#1e293b] border border-gray-700 p-8 rounded-3xl shadow-2xl">
+                    <label class="block text-gray-400 mb-4 text-xl">Number of clients:</label>
+                    <input type="number" id="calcInput" value="100" 
+                           class="w-full bg-[#0f172a] border-2 border-gray-700 rounded-2xl p-6 text-4xl font-bold text-white mb-10 focus:border-orange-500 outline-none transition-colors" />
 
-                        <!-- Toggle Buttons -->
-                        <div class="grid grid-cols-2 gap-2 mb-8">
-                            <button
-                                id="recurringBtn"
-                                onclick="setPaymentModel('recurring')"
-                                class="py-3 px-4 rounded-lg font-semibold transition-all bg-orange-500 text-white"
-                            >
-                                Recurring Revenue
-                            </button>
-                            <button
-                                id="bountyBtn"
-                                onclick="setPaymentModel('bounty')"
-                                class="py-3 px-4 rounded-lg font-semibold transition-all bg-gray-700/50 text-gray-400 hover:bg-gray-700"
-                            >
-                                Upfront Bounty
-                            </button>
-                        </div>
-
-                        <!-- Model Details -->
-                        <div class="mb-6">
-                            <div class="flex items-center gap-2 mb-3">
-                                <svg id="modelIcon" class="h-5 w-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <h4 id="modelTitle" class="font-bold text-white underline decoration-orange-500/50 underline-offset-2">
-                                    Recurring Revenue Model
-                                </h4>
-                            </div>
-                            
-                            <!-- Recurring Model Details -->
-                            <ul id="recurringDetails" class="space-y-1 text-gray-400 text-sm">
-                                <li>• Earn $50/month for EVERY active client</li>
-                                <li>• Works for both monthly ($299) and annual ($2,390) subscribers</li>
-                                <li>• Get paid monthly as long as clients remain active</li>
-                            </ul>
-                            
-                            <!-- Bounty Model Details (Hidden by default) -->
-                            <ul id="bountyDetails" class="space-y-1 text-gray-400 text-sm hidden">
-                                <li>• Earn $500 one-time for EVERY client you refer</li>
-                                <li>• Get paid upfront when client subscribes</li>
-                                <li>• No ongoing tracking needed</li>
-                            </ul>
-                        </div>
-
-                        <!-- Calculator -->
-                        <div class="bg-gray-900/50 rounded-xl p-5">
-                            <label class="text-gray-400 text-sm">Number of clients:</label>
-                            <input
-                                type="number"
-                                id="clientCount"
-                                value="100"
-                                min="1"
-                                oninput="calculateEarnings()"
-                                class="mt-2 w-full bg-gray-800 border border-gray-700 text-white text-lg font-medium h-12 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                            />
-
-                            <div class="mt-4 space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <span id="earningsLabel" class="text-gray-400">Monthly earnings:</span>
-                                    <span id="earningsCalc" class="text-orange-500 font-semibold">
-                                        100 × $50 = $5,000/month
-                                    </span>
-                                </div>
-                                
-                                <div id="annualRow" class="flex items-center justify-between">
-                                    <span class="text-gray-400">Annual projection:</span>
-                                    <span id="annualCalc" class="text-orange-500 font-semibold">
-                                        100 × $50 × 12 = $60,000/year
-                                    </span>
-                                </div>
+                    <div class="space-y-8">
+                        <div class="flex justify-between items-end">
+                            <span class="text-gray-400 text-xl">Monthly earnings:</span>
+                            <div class="text-right">
+                                <span id="mFormula" class="text-gray-500 block text-lg mb-1">100 × $50 =</span>
+                                <span id="mTotal" class="text-orange-500 text-4xl font-black">$5,000/month</span>
                             </div>
                         </div>
-
-                        <p class="text-gray-500 text-xs mt-4 italic">
-                            Note: Partners select ONE payment model when they join the program. You cannot earn both the bounty and
-                            recurring revenue for the same client.
-                        </p>
+                        <div class="flex justify-between items-end border-t border-gray-700 pt-8">
+                            <span class="text-gray-400 text-xl">Annual projection:</span>
+                            <div class="text-right">
+                                <span id="aFormula" class="text-gray-500 block text-lg mb-1">100 × $50 × 12 =</span>
+                                <span id="aTotal" class="text-orange-500 text-4xl font-black">$60,000/year</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <div id="view-bounty" class="hidden animate-in fade-in duration-500">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-blue-600/20 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4Z"/></svg>
+                    </div>
+                    <h3 class="text-2xl font-bold border-b-4 border-blue-600 pb-1">Upfront Bounty Model</h3>
+                </div>
+                <div class="bg-[#1e293b] p-8 rounded-3xl border border-gray-700">
+                    <p class="text-xl text-gray-300">Earn a one-time bounty of <span class="text-blue-500 font-bold">$500</span> for every client referred.</p>
+                </div>
+            </div>
+
+            <p class="text-gray-500 italic text-sm mt-8">Note: Partners select ONE payment model when they join the program. You cannot earn both the bounty and recurring revenue for the same client.</p>
         </div>
     </section>
 
     <script>
-    let currentPaymentModel = 'recurring';
+    function switchModel(type) {
+        const recView = document.getElementById('view-recurring');
+        const bntView = document.getElementById('view-bounty');
+        const recBtn = document.getElementById('btn-recurring');
+        const bntBtn = document.getElementById('btn-bounty');
 
-    function setPaymentModel(model) {
-        currentPaymentModel = model;
-        
-        const recurringBtn = document.getElementById('recurringBtn');
-        const bountyBtn = document.getElementById('bountyBtn');
-        const recurringDetails = document.getElementById('recurringDetails');
-        const bountyDetails = document.getElementById('bountyDetails');
-        const modelTitle = document.getElementById('modelTitle');
-        const annualRow = document.getElementById('annualRow');
-        const earningsLabel = document.getElementById('earningsLabel');
-        
-        if (model === 'recurring') {
-            // Update buttons
-            recurringBtn.className = 'py-3 px-4 rounded-lg font-semibold transition-all bg-orange-500 text-white';
-            bountyBtn.className = 'py-3 px-4 rounded-lg font-semibold transition-all bg-gray-700/50 text-gray-400 hover:bg-gray-700';
-            
-            // Update details
-            recurringDetails.classList.remove('hidden');
-            bountyDetails.classList.add('hidden');
-            modelTitle.textContent = 'Recurring Revenue Model';
-            annualRow.classList.remove('hidden');
-            earningsLabel.textContent = 'Monthly earnings:';
+        if (type === 'recurring') {
+            recView.classList.remove('hidden');
+            bntView.classList.add('hidden');
+            recBtn.classList.add('bg-orange-600', 'text-white', 'shadow-lg');
+            recBtn.classList.remove('text-gray-400');
+            bntBtn.classList.remove('bg-orange-600', 'text-white', 'shadow-lg');
+            bntBtn.classList.add('text-gray-400');
         } else {
-            // Update buttons
-            recurringBtn.className = 'py-3 px-4 rounded-lg font-semibold transition-all bg-gray-700/50 text-gray-400 hover:bg-gray-700';
-            bountyBtn.className = 'py-3 px-4 rounded-lg font-semibold transition-all bg-orange-500 text-white';
-            
-            // Update details
-            recurringDetails.classList.add('hidden');
-            bountyDetails.classList.remove('hidden');
-            modelTitle.textContent = 'Upfront Bounty Model';
-            annualRow.classList.add('hidden');
-            earningsLabel.textContent = 'Total earnings:';
-        }
-        
-        calculateEarnings();
-    }
-
-    function calculateEarnings() {
-        const clientCount = parseInt(document.getElementById('clientCount').value) || 0;
-        const earningsCalc = document.getElementById('earningsCalc');
-        const annualCalc = document.getElementById('annualCalc');
-        
-        if (currentPaymentModel === 'recurring') {
-            const monthly = clientCount * 50;
-            const annual = monthly * 12;
-            
-            earningsCalc.textContent = `${clientCount} × $50 = $${monthly.toLocaleString()}/month`;
-            annualCalc.textContent = `${clientCount} × $50 × 12 = $${annual.toLocaleString()}/year`;
-        } else {
-            const total = clientCount * 500;
-            earningsCalc.textContent = `${clientCount} × $500 = $${total.toLocaleString()}`;
+            bntView.classList.remove('hidden');
+            recView.classList.add('hidden');
+            bntBtn.classList.add('bg-orange-600', 'text-white', 'shadow-lg');
+            bntBtn.classList.remove('text-gray-400');
+            recBtn.classList.remove('bg-orange-600', 'text-white', 'shadow-lg');
+            recBtn.classList.add('text-gray-400');
         }
     }
 
-    // Initialize
-    calculateEarnings();
+    const input = document.getElementById('calcInput');
+    input.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value) || 0;
+        const monthly = val * 50;
+        const annual = monthly * 12;
+        document.getElementById('mFormula').innerText = `${val} × $50 =`;
+        document.getElementById('mTotal').innerText = `$${monthly.toLocaleString()}/month`;
+        document.getElementById('aFormula').innerText = `${val} × $50 × 12 =`;
+        document.getElementById('aTotal').innerText = `$${annual.toLocaleString()}/year`;
+    });
     </script>
 
     <!-- FAQ: Matching main site's FAQ style with expandable or simple list -->
