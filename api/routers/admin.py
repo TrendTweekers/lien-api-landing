@@ -704,11 +704,13 @@ async def delete_broker(broker_id: int, username: str = Depends(verify_admin)):
                 raise HTTPException(status_code=404, detail=f"Broker with id {broker_id} not found")
             
             # Delete referrals first (foreign key constraint)
+            # Cast broker_id to text for PostgreSQL since referrals.broker_id is VARCHAR
             if DB_TYPE == 'postgresql':
-                cursor.execute("DELETE FROM referrals WHERE broker_id = %s", (broker_id,))
+                cursor.execute("DELETE FROM referrals WHERE broker_id = %s::text", (str(broker_id),))
                 cursor.execute("DELETE FROM brokers WHERE id = %s", (broker_id,))
             else:
-                cursor.execute("DELETE FROM referrals WHERE broker_id = ?", (broker_id,))
+                # SQLite: broker_id might be stored as text in referrals table
+                cursor.execute("DELETE FROM referrals WHERE broker_id = ?", (str(broker_id),))
                 cursor.execute("DELETE FROM brokers WHERE id = ?", (broker_id,))
             
             conn.commit()
