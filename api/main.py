@@ -5224,17 +5224,16 @@ class CheckoutRequest(BaseModel):
 @app.post("/api/create-checkout-session")
 async def create_checkout_session(request: Request, checkout_request: CheckoutRequest):
     try:
+        # Verify stripe module is available
+        if stripe is None:
+            raise HTTPException(status_code=500, detail="Stripe library not available")
+        
         # Set Stripe API key from environment at request time
         stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
         
-        # Verify Stripe is properly initialized
+        # Verify Stripe is properly configured
         if not stripe.api_key:
-            error_msg = "Stripe API key not configured. Please set STRIPE_SECRET_KEY environment variable."
-            print(f"❌ {error_msg}")
-            return JSONResponse(
-                status_code=500,
-                content={"error": error_msg}
-            )
+            raise HTTPException(status_code=500, detail="Stripe not configured. Please set STRIPE_SECRET_KEY environment variable.")
         
         # Use environment variables for price IDs or default to test values
         # You should set these in your environment variables
