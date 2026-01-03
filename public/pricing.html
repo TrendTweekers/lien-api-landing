@@ -823,12 +823,15 @@
             
             try {
                 // Call checkout session API
-                const plan = monthlyBtn.classList.contains('active') ? 'monthly' : 'annual';
+                const planType = monthlyBtn.classList.contains('active') ? 'monthly' : 'annual';
                 const response = await fetch('/api/create-checkout-session', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        plan: plan,
+                        price_id: planType === 'monthly' ? 'price_1SjgtHGcjwyM4YjyEV17KZZh' : 'price_1SjgbDBu7jaDnpQY2wk',
+                        success_url: window.location.origin + '/dashboard?session_id={CHECKOUT_SESSION_ID}',
+                        cancel_url: window.location.origin + '/pricing.html',
+                        email: null,
                         referral_id: toltReferralId
                     })
                 });
