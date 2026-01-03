@@ -5237,42 +5237,19 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
     sys.stdout.flush()
     
     print("========== CHECKOUT SESSION ENDPOINT HIT ==========", flush=True)
-    sys.stdout.flush()
     
     # Set Stripe API key IMMEDIATELY - must be set before accessing checkout
     import os
     stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
     if not stripe.api_key:
         raise HTTPException(status_code=500, detail="STRIPE_SECRET_KEY not set in environment")
-    print(f"DEBUG: API key set: {bool(stripe.api_key)}", flush=True)
-    print(f"DEBUG: API key starts with: {stripe.api_key[:7] if stripe.api_key else 'NONE'}", flush=True)
-    sys.stdout.flush()
     
     # Explicit checks at the very start - before any other code
     if stripe is None:
-        sys.stdout.flush()
         raise HTTPException(status_code=500, detail="Stripe module is None - not installed")
     
     if not hasattr(stripe, 'checkout'):
-        sys.stdout.flush()
         raise HTTPException(status_code=500, detail=f"Stripe has no checkout attr. Type: {type(stripe)}, Value: {stripe}")
-    
-    # Debug logging to diagnose stripe module issues
-    print(f"DEBUG: stripe module: {stripe}")
-    print(f"DEBUG: stripe type: {type(stripe)}")
-    print(f"DEBUG: Stripe version: {stripe.__version__}")
-    print(f"DEBUG: Has checkout? {hasattr(stripe, 'checkout')}")
-    if hasattr(stripe, 'checkout'):
-        print(f"DEBUG: stripe.checkout type: {type(stripe.checkout)}")
-        print(f"DEBUG: Has Session? {hasattr(stripe.checkout, 'Session')}")
-        if hasattr(stripe.checkout, 'Session'):
-            print(f"DEBUG: stripe.checkout.Session: {stripe.checkout.Session}")
-    print(f"DEBUG: Has checkout_sessions? {hasattr(stripe, 'checkout_sessions')}")
-    if hasattr(stripe, 'checkout_sessions'):
-        print(f"DEBUG: stripe.checkout_sessions type: {type(stripe.checkout_sessions)}")
-    
-    # Force print to show immediately
-    sys.stdout.flush()
     
     try:
         # Stripe API key is already set above (line 5241) - no need to set again
