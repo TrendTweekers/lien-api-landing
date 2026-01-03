@@ -145,25 +145,8 @@ def send_broker_welcome_email(email: str, name: str, link: str, code: str):
                                     Congratulations, {name}!
                                 </h2>
                                 <p style="margin:0 0 28px 0; font-size:16px; color:#4b5563; line-height:1.7;">
-                                    Your partner account is now active. Share your referral link with construction clients and start earning commissions.
+                                    Your partner account is now active. Log in to your dashboard below to get your unique referral link and start tracking your earnings.
                                 </p>
-                                
-                                <!-- Referral Details Box -->
-                                <div style="background-color:#f9fafb; border:2px solid #e5e7eb; border-radius:8px; padding:24px; margin-bottom:30px;">
-                                    <h3 style="margin:0 0 18px 0; font-size:18px; font-weight:600; color:#1e3a8a; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-                                        Your Referral Details
-                                    </h3>
-                                    <table width="100%" cellpadding="10" cellspacing="0" style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-                                        <tr>
-                                            <td style="color:#6b7280; font-weight:600; width:140px; font-size:14px; padding:10px 0; vertical-align:top;">Referral Code:</td>
-                                            <td style="padding:10px 0;"><code style="background:#f1f5f9; padding:8px 12px; border-radius:6px; font-size:16px; font-family:'Courier New', 'Monaco', monospace; font-weight:700; letter-spacing:1px; color:#1f2937;">{code}</code></td>
-                                        </tr>
-                                        <tr>
-                                            <td style="color:#6b7280; font-weight:600; font-size:14px; padding:10px 0; vertical-align:top;">Referral Link:</td>
-                                            <td style="padding:10px 0;"><a href="{link}" style="color:#1e3a8a; word-break:break-all; text-decoration:none; font-weight:500;">{link}</a></td>
-                                        </tr>
-                                    </table>
-                                </div>
                                 
                                 <!-- Commission Structure Box -->
                                 <div style="background-color:#fef3c7; border-left:4px solid #f59e0b; border-radius:4px; padding:20px; margin-bottom:30px;">
@@ -177,26 +160,13 @@ def send_broker_welcome_email(email: str, name: str, link: str, code: str):
                                     </ul>
                                 </div>
                                 
-                                <!-- How It Works -->
-                                <div style="margin-bottom:30px;">
-                                    <h3 style="margin:0 0 18px 0; font-size:20px; font-weight:600; color:#1f2937; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; letter-spacing:-0.2px;">
-                                        How It Works
-                                    </h3>
-                                    <ol style="margin:0; padding-left:24px; color:#4b5563; line-height:1.8; font-size:15px;">
-                                        <li style="margin-bottom:14px; padding-left:4px;">Share your referral link with construction clients</li>
-                                        <li style="margin-bottom:14px; padding-left:4px;">When they sign up for LienDeadline Pro ($299/month), you earn a commission</li>
-                                        <li style="margin-bottom:14px; padding-left:4px;">Track all referrals in your dashboard</li>
-                                        <li style="margin-bottom:0; padding-left:4px;">Get paid monthly via PayPal or bank transfer</li>
-                                    </ol>
-                                </div>
-                                
                                 <!-- CTA Button -->
                                 <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
                                     <tr>
                                         <td align="center" style="padding:12px 0;">
-                                            <a href="https://liendeadline.tolt.io/login" 
+                                            <a href="https://partners.liendeadline.com/login" 
                                                style="display:inline-block; background-color:#1e3a8a; color:#ffffff; text-decoration:none; padding:18px 36px; border-radius:8px; font-weight:700; font-size:16px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-shadow:0 4px 12px rgba(30,58,138,0.3); letter-spacing:0.3px;">
-                                                View Your Dashboard →
+                                                Access Partner Dashboard →
                                             </a>
                                         </td>
                                     </tr>
