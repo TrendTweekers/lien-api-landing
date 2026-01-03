@@ -248,6 +248,28 @@
         submitButton.textContent = 'Sign In';
       }
     });
+    
+    // Mobile menu toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    
+    function checkMobile() {
+      if (window.innerWidth <= 768) {
+        mobileMenuBtn.style.display = 'block';
+      } else {
+        mobileMenuBtn.style.display = 'none';
+        mobileMenu.style.display = 'none';
+      }
+    }
+    
+    window.addEventListener('resize', checkMobile);
+    checkMobile();
+    
+    if (mobileMenuBtn) {
+      mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.style.display = mobileMenu.style.display === 'block' ? 'none' : 'block';
+      });
+    }
   </script>
 </body>
 </html>
