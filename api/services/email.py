@@ -651,15 +651,16 @@ def send_welcome_email_background(email: str, referral_link: str, name: str = ""
                                 <p style="margin: 0 0 12px; font-size: 15px; color: #1f2937; line-height: 1.6;">
                                     Your account is approved under one of the following commission models:
                                 </p>
-                                <ul style="margin: 0 0 12px; padding-left: 20px; color: #1f2937; font-size: 15px; line-height: 1.8;">
-                                    <li style="margin-bottom: 8px;"><strong>$500 one-time bounty</strong> per referred customer, OR</li>
-                                    <li style="margin-bottom: 8px;"><strong>$50 per month</strong> for each active paying customer you refer</li>
-                                </ul>
-                                <p style="margin: 0 0 8px; font-size: 14px; color: #4b5563; line-height: 1.5;">
-                                    Your specific commission model is visible in your broker dashboard.
+                                <p style="margin: 0 0 12px; font-size: 15px; color: #1f2937; line-height: 1.6;">
+                                    <strong>30% Monthly Recurring Commission</strong>
                                 </p>
+                                <ul style="margin: 0 0 12px; padding-left: 20px; color: #1f2937; font-size: 15px; line-height: 1.8;">
+                                    <li style="margin-bottom: 8px;">Earn 30% of every $299/month subscription ($89.70 per client per month)</li>
+                                    <li style="margin-bottom: 8px;">Commission held for 30 days after customer payment to prevent fraud, then paid monthly</li>
+                                    <li style="margin-bottom: 0;">Build long-term passive income as long as clients stay active</li>
+                                </ul>
                                 <p style="margin: 0; font-size: 13px; color: #6b7280; font-style: italic;">
-                                    Commission held for 30 days after customer payment to prevent fraud, then paid monthly.
+                                    Track all referrals and earnings in your partner dashboard.
                                 </p>
                             </div>
                         </td>
