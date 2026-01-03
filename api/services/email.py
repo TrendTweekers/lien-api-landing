@@ -562,19 +562,30 @@ def send_welcome_email_background(email: str, referral_link: str, name: str = ""
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Welcome to LienDeadline Partner Program</title>
+    <style>
+        @media only screen and (max-width: 600px) {{
+            .email-container {{
+                width: 100% !important;
+                padding: 10px !important;
+            }}
+            .content-cell {{
+                padding: 30px 20px !important;
+            }}
+        }}
+    </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937;">
     <!-- Email wrapper -->
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width: 100%; max-width: 650px; background-color: #f9fafb;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width: 100%; background-color: #f9fafb;">
         <tr>
-            <td align="center" style="padding: 40px 20px;">
+            <td align="center" style="padding: 20px;">
                 <!-- Main content container -->
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="650" style="width: 100%; max-width: 650px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" class="email-container" style="width: 100%; max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
                     
                     <!-- Header -->
                     <tr>
-                        <td style="padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #e5e7eb;">
-                            <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1f2937; letter-spacing: -0.5px;">
+                        <td class="content-cell" style="padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+                            <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #1f2937; letter-spacing: -0.5px; line-height: 1.2;">
                                 📋 LienDeadline
                             </h1>
                             <p style="margin: 12px 0 0; font-size: 16px; color: #6b7280; font-weight: 500;">
@@ -585,48 +596,65 @@ def send_welcome_email_background(email: str, referral_link: str, name: str = ""
                     
                     <!-- Welcome message -->
                     <tr>
-                        <td style="padding: 40px 40px 20px;">
-                            <h2 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #1f2937; line-height: 1.3;">
+                        <td class="content-cell" style="padding: 40px 40px 30px;">
+                            <h2 style="margin: 0 0 20px; font-size: 26px; font-weight: 600; color: #1f2937; line-height: 1.3;">
                                 Welcome, {name}!
                             </h2>
-                            <p style="margin: 0 0 24px; font-size: 16px; color: #4b5563; line-height: 1.6;">
-                                Congratulations! Your application to join the LienDeadline Partner Program has been approved. Log in to your dashboard below to get your unique referral link and start tracking your earnings.
+                            <p style="margin: 0; font-size: 16px; color: #4b5563; line-height: 1.7;">
+                                Congratulations! Your application to join the LienDeadline Partner Program has been approved. You're now ready to start earning commissions.
                             </p>
                         </td>
                     </tr>
                     
-                    <!-- Commission info -->
+                    <!-- Commission Structure Section -->
                     <tr>
-                        <td style="padding: 0 40px 30px;">
-                            <div style="background-color: #eff6ff; border-left: 4px solid #2563eb; border-radius: 4px; padding: 20px;">
-                                <h3 style="margin: 0 0 12px; font-size: 16px; font-weight: 600; color: #1e40af;">
+                        <td class="content-cell" style="padding: 0 40px 30px;">
+                            <div style="background-color: #eff6ff; border: 1px solid #dbeafe; border-left: 4px solid #2563eb; border-radius: 6px; padding: 24px;">
+                                <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1e40af;">
                                     Your Commission Structure
                                 </h3>
-                                <p style="margin: 0 0 12px; font-size: 15px; color: #1f2937; line-height: 1.6;">
-                                    Your account is approved under one of the following commission models:
+                                <p style="margin: 0 0 16px; font-size: 15px; color: #1f2937; line-height: 1.6;">
+                                    <strong style="font-size: 16px; color: #1e40af;">30% Monthly Recurring Commission</strong>
                                 </p>
-                                <p style="margin: 0 0 12px; font-size: 15px; color: #1f2937; line-height: 1.6;">
-                                    <strong>30% Monthly Recurring Commission</strong>
-                                </p>
-                                <ul style="margin: 0 0 12px; padding-left: 20px; color: #1f2937; font-size: 15px; line-height: 1.8;">
-                                    <li style="margin-bottom: 8px;">Earn 30% of every $299/month subscription ($89.70 per client per month)</li>
-                                    <li style="margin-bottom: 8px;">Commission held for 30 days after customer payment to prevent fraud, then paid monthly</li>
+                                <ul style="margin: 0 0 16px; padding-left: 24px; color: #1f2937; font-size: 15px; line-height: 1.8;">
+                                    <li style="margin-bottom: 10px;">Earn 30% of every $299/month subscription ($89.70 per client per month)</li>
+                                    <li style="margin-bottom: 10px;">Commission held for 30 days after customer payment to prevent fraud, then paid monthly</li>
                                     <li style="margin-bottom: 0;">Build long-term passive income as long as clients stay active</li>
                                 </ul>
-                                <p style="margin: 0; font-size: 13px; color: #6b7280; font-style: italic;">
+                                <p style="margin: 0; font-size: 14px; color: #6b7280; font-style: italic; line-height: 1.6;">
                                     Track all referrals and earnings in your partner dashboard.
                                 </p>
                             </div>
                         </td>
                     </tr>
                     
+                    <!-- How It Works Section -->
+                    <tr>
+                        <td class="content-cell" style="padding: 0 40px 30px;">
+                            <h3 style="margin: 0 0 20px; font-size: 20px; font-weight: 600; color: #1f2937;">
+                                How It Works
+                            </h3>
+                            <ol style="margin: 0; padding-left: 24px; color: #4b5563; font-size: 15px; line-height: 1.8;">
+                                <li style="margin-bottom: 14px;">
+                                    Share your referral link with construction companies and contractors
+                                </li>
+                                <li style="margin-bottom: 14px;">
+                                    When they sign up and make their first payment, you earn commission
+                                </li>
+                                <li style="margin-bottom: 0;">
+                                    Track all referrals and earnings in your partner dashboard
+                                </li>
+                            </ol>
+                        </td>
+                    </tr>
+                    
                     <!-- CTA Button -->
                     <tr>
-                        <td style="padding: 0 40px 40px; text-align: center;">
-                            <a href="{dashboard_url}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; padding: 14px 32px; border-radius: 6px; box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);">
-                                Access Partner Dashboard
+                        <td class="content-cell" style="padding: 0 40px 40px; text-align: center;">
+                            <a href="{dashboard_url}" style="display: inline-block; background-color: #f97316; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; padding: 16px 36px; border-radius: 8px; box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3); letter-spacing: 0.3px;">
+                                Access Partner Dashboard →
                             </a>
-                            <p style="margin: 16px 0 0; font-size: 14px; color: #6b7280;">
+                            <p style="margin: 20px 0 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
                                 Login with: <strong style="color: #1f2937;">{email}</strong>
                             </p>
                         </td>
@@ -634,11 +662,11 @@ def send_welcome_email_background(email: str, referral_link: str, name: str = ""
                     
                     <!-- Footer -->
                     <tr>
-                        <td style="padding: 32px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
-                            <p style="margin: 0 0 12px; font-size: 14px; color: #4b5563; line-height: 1.6;">
-                                Questions? Reply to this email or contact us at <a href="mailto:partners@liendeadline.com" style="color: #2563eb; text-decoration: none;">partners@liendeadline.com</a>
+                        <td class="content-cell" style="padding: 32px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0 0 12px; font-size: 14px; color: #4b5563; line-height: 1.6; text-align: center;">
+                                Questions? Reply to this email or contact us at <a href="mailto:partners@liendeadline.com" style="color: #f97316; text-decoration: none; font-weight: 600;">partners@liendeadline.com</a>
                             </p>
-                            <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+                            <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center; line-height: 1.6;">
                                 © 2025 LienDeadline. All rights reserved.<br>
                                 <a href="https://liendeadline.com" style="color: #6b7280; text-decoration: none;">liendeadline.com</a>
                             </p>
