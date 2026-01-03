@@ -1087,20 +1087,6 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
                 )
                 story.append(Paragraph(header_text, header_style))
             
-            # Header text: "LienDeadline | Deadline Report"
-            header_text = "<b>LienDeadline</b> | Deadline Report"
-            header_style = ParagraphStyle(
-                'Header',
-                parent=styles['Normal'],
-                fontSize=14,
-                textColor=navy,
-                alignment=TA_CENTER,
-                fontName='Helvetica-Bold',
-                spaceAfter=8
-            )
-            story.append(Paragraph(header_text, header_style))
-            story.append(Spacer(1, 0.2*inch))
-            
             # ===== URGENT WARNING BOX =====
             if urgent_deadlines:
                 min_days = min(days for name, days in urgent_deadlines)
@@ -1182,16 +1168,22 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
             if calc['notes']:
                 info_data.append(['Notes:', calc['notes']])
             
-            info_table = Table(info_data, colWidths=[2*inch, 4*inch])
+            info_table = Table(info_data, colWidths=[2.5*inch, 3.5*inch])
             info_table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (0, -1), HexColor('#f3f4f6')),
-                ('TEXTCOLOR', (0, 0), (-1, -1), HexColor('#1f2937')),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('TEXTCOLOR', (0, 0), (0, -1), HexColor('#374151')),
+                ('TEXTCOLOR', (1, 0), (1, -1), HexColor('#1f2937')),
+                ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+                ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
                 ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
                 ('FONTSIZE', (0, 0), (-1, -1), 11),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-                ('TOPPADDING', (0, 0), (-1, -1), 8),
-                ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#e5e7eb'))
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+                ('TOPPADDING', (0, 0), (-1, -1), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+                ('GRID', (0, 0), (-1, -1), 1, HexColor('#e5e7eb'))
             ]))
             story.append(info_table)
             story.append(Spacer(1, 0.3*inch))
@@ -1203,13 +1195,20 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
             deadline_table_style = [
                 ('BACKGROUND', (0, 0), (0, -1), HexColor('#f3f4f6')),
                 ('TEXTCOLOR', (0, 0), (0, -1), HexColor('#374151')),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('TEXTCOLOR', (1, 0), (1, -1), HexColor('#1f2937')),
+                ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+                ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+                ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
                 ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+                ('FONTNAME', (2, 0), (2, -1), 'Helvetica'),
                 ('FONTSIZE', (0, 0), (-1, -1), 11),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-                ('TOPPADDING', (0, 0), (-1, -1), 10),
-                ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#e5e7eb')),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+                ('TOPPADDING', (0, 0), (-1, -1), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+                ('GRID', (0, 0), (-1, -1), 1, HexColor('#e5e7eb')),
             ]
             
             row_idx = 0
