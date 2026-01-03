@@ -917,100 +917,67 @@
         </form>
     </section>
 
-    <!-- Partner Program Section - Dashboard V2 Match -->
+    <!-- Partner Program Section - High Contrast White Background -->
     <section id="calculator" class="py-16 px-6 bg-gray-50">
-        <div class="max-w-4xl mx-auto p-6 bg-[#0f172a] text-white rounded-2xl shadow-2xl">
-            <div class="mb-10">
-                <h2 class="text-3xl font-bold mb-2">Choose Your Partner Payment Model</h2>
-                <p class="text-gray-400 text-lg">Select ONE model - you cannot earn both for the same client</p>
-            </div>
+        <div class="max-w-4xl mx-auto p-12 bg-white border-2 border-gray-200 rounded-[2rem] shadow-2xl my-10">
+            <h2 class="text-3xl font-black text-gray-900 mb-2">Choose Your Partner Payment Model</h2>
+            <p class="text-gray-500 mb-10 text-lg">Select ONE model - you cannot earn both for the same client</p>
 
-            <div class="flex p-1 bg-[#1e293b] rounded-2xl w-full max-w-md mb-12">
+            <div class="flex p-2 bg-gray-100 rounded-2xl w-full max-w-md mb-12 border border-gray-200">
                 <button id="btn-recurring" onclick="switchModel('recurring')" 
                         class="flex-1 py-4 px-6 rounded-xl font-bold transition-all bg-orange-600 text-white shadow-lg">
                     Recurring Revenue
                 </button>
                 <button id="btn-bounty" onclick="switchModel('bounty')" 
-                        class="flex-1 py-4 px-6 rounded-xl font-bold transition-all text-gray-400 hover:text-white">
+                        class="flex-1 py-4 px-6 rounded-xl font-bold transition-all text-gray-500 hover:text-orange-600">
                     Upfront Bounty
                 </button>
             </div>
 
-            <div id="view-recurring" class="animate-in fade-in duration-500">
-                <div class="flex items-center gap-3 mb-6">
-                    <div class="p-2 bg-orange-600/20 rounded-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18.06"/><path d="M7 6h1v4"/></svg>
-                    </div>
-                    <h3 class="text-2xl font-bold border-b-4 border-orange-600 pb-1">Recurring Revenue Model</h3>
-                </div>
+            <div class="bg-gray-50 border-2 border-gray-200 rounded-3xl p-10">
+                <label class="block text-gray-700 mb-6 text-xl font-bold">Number of clients:</label>
                 
-                <ul class="space-y-4 text-gray-300 text-lg mb-10">
-                    <li class="flex items-center gap-3"><span class="text-orange-500 text-xl">•</span> Earn $50/month for EVERY active client</li>
-                    <li class="flex items-center gap-3"><span class="text-orange-500 text-xl">•</span> Works for both monthly ($299) and annual ($2,390) subscribers</li>
-                    <li class="flex items-center gap-3"><span class="text-orange-500 text-xl">•</span> Get paid monthly as long as clients remain active</li>
-                </ul>
+                <input type="number" id="calcInput" value="100" 
+                       class="w-full bg-white border-2 border-gray-300 rounded-2xl p-6 text-5xl font-black text-gray-900 mb-12 focus:border-orange-600 outline-none shadow-sm" />
 
-                <div class="bg-[#1e293b] border border-gray-700 p-8 rounded-3xl shadow-2xl">
-                    <label class="block text-gray-400 mb-4 text-xl">Number of clients:</label>
-                    <input type="number" id="calcInput" value="100" 
-                           class="w-full bg-[#0f172a] border-2 border-gray-700 rounded-2xl p-6 text-4xl font-bold text-white mb-10 focus:border-orange-500 outline-none transition-colors" />
-
-                    <div class="space-y-8">
-                        <div class="flex justify-between items-end">
-                            <span class="text-gray-400 text-xl">Monthly earnings:</span>
-                            <div class="text-right">
-                                <span id="mFormula" class="text-gray-500 block text-lg mb-1">100 × $50 =</span>
-                                <span id="mTotal" class="text-orange-500 text-4xl font-black">$5,000/month</span>
-                            </div>
+                <div class="space-y-10">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600 text-xl font-bold">Monthly earnings:</span>
+                        <div class="text-right">
+                            <span id="mFormula" class="text-gray-400 block text-lg font-bold">100 × $50 =</span>
+                            <span id="mTotal" class="text-orange-600 text-5xl font-black">$5,000/month</span>
                         </div>
-                        <div class="flex justify-between items-end border-t border-gray-700 pt-8">
-                            <span class="text-gray-400 text-xl">Annual projection:</span>
-                            <div class="text-right">
-                                <span id="aFormula" class="text-gray-500 block text-lg mb-1">100 × $50 × 12 =</span>
-                                <span id="aTotal" class="text-orange-500 text-4xl font-black">$60,000/year</span>
-                            </div>
+                    </div>
+                    
+                    <div class="h-px bg-gray-300 w-full"></div>
+
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600 text-xl font-bold">Annual projection:</span>
+                        <div class="text-right">
+                            <span id="aFormula" class="text-gray-400 block text-lg font-bold">100 × $50 × 12 =</span>
+                            <span id="aTotal" class="text-orange-600 text-5xl font-black">$60,000/year</span>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <div id="view-bounty" class="hidden animate-in fade-in duration-500">
-                <div class="flex items-center gap-3 mb-6">
-                    <div class="p-2 bg-blue-600/20 rounded-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4Z"/></svg>
-                    </div>
-                    <h3 class="text-2xl font-bold border-b-4 border-blue-600 pb-1">Upfront Bounty Model</h3>
-                </div>
-                <div class="bg-[#1e293b] p-8 rounded-3xl border border-gray-700">
-                    <p class="text-xl text-gray-300">Earn a one-time bounty of <span class="text-blue-500 font-bold">$500</span> for every client referred.</p>
-                </div>
-            </div>
-
-            <p class="text-gray-500 italic text-sm mt-8">Note: Partners select ONE payment model when they join the program. You cannot earn both the bounty and recurring revenue for the same client.</p>
         </div>
     </section>
 
     <script>
     function switchModel(type) {
-        const recView = document.getElementById('view-recurring');
-        const bntView = document.getElementById('view-bounty');
         const recBtn = document.getElementById('btn-recurring');
         const bntBtn = document.getElementById('btn-bounty');
 
         if (type === 'recurring') {
-            recView.classList.remove('hidden');
-            bntView.classList.add('hidden');
             recBtn.classList.add('bg-orange-600', 'text-white', 'shadow-lg');
-            recBtn.classList.remove('text-gray-400');
+            recBtn.classList.remove('text-gray-500');
             bntBtn.classList.remove('bg-orange-600', 'text-white', 'shadow-lg');
-            bntBtn.classList.add('text-gray-400');
+            bntBtn.classList.add('text-gray-500');
         } else {
-            bntView.classList.remove('hidden');
-            recView.classList.add('hidden');
             bntBtn.classList.add('bg-orange-600', 'text-white', 'shadow-lg');
-            bntBtn.classList.remove('text-gray-400');
+            bntBtn.classList.remove('text-gray-500');
             recBtn.classList.remove('bg-orange-600', 'text-white', 'shadow-lg');
-            recBtn.classList.add('text-gray-400');
+            recBtn.classList.add('text-gray-500');
         }
     }
 
