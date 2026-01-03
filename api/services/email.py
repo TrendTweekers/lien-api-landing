@@ -590,25 +590,8 @@ def send_welcome_email_background(email: str, referral_link: str, name: str = ""
                                 Welcome, {name}!
                             </h2>
                             <p style="margin: 0 0 24px; font-size: 16px; color: #4b5563; line-height: 1.6;">
-                                Congratulations! Your application to join the LienDeadline Partner Program has been approved. You're now ready to start earning commissions.
+                                Congratulations! Your application to join the LienDeadline Partner Program has been approved. Log in to your dashboard below to get your unique referral link and start tracking your earnings.
                             </p>
-                        </td>
-                    </tr>
-                    
-                    <!-- Referral link box -->
-                    <tr>
-                        <td style="padding: 0 40px 30px;">
-                            <div style="background-color: #f3f4f6; border: 2px solid #e5e7eb; border-radius: 8px; padding: 24px; text-align: center;">
-                                <p style="margin: 0 0 12px; font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    Your Referral Link
-                                </p>
-                                <p style="margin: 0; font-size: 18px; font-weight: 600; color: #2563eb; word-break: break-all; font-family: 'Courier New', monospace;">
-                                    <a href="{referral_link}" style="color: #2563eb; text-decoration: none;">{referral_link}</a>
-                                </p>
-                                <p style="margin: 16px 0 0; font-size: 13px; color: #6b7280;">
-                                    Share this link to start earning commissions
-                                </p>
-                            </div>
                         </td>
                     </tr>
                     
@@ -634,26 +617,6 @@ def send_welcome_email_background(email: str, referral_link: str, name: str = ""
                                     Track all referrals and earnings in your partner dashboard.
                                 </p>
                             </div>
-                        </td>
-                    </tr>
-                    
-                    <!-- How it works -->
-                    <tr>
-                        <td style="padding: 0 40px 30px;">
-                            <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1f2937;">
-                                How it works
-                            </h3>
-                            <ol style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 15px;">
-                                <li style="margin-bottom: 12px; line-height: 1.6;">
-                                    Share your referral link with construction companies and contractors
-                                </li>
-                                <li style="margin-bottom: 12px; line-height: 1.6;">
-                                    When they sign up and make their first payment, you earn commission
-                                </li>
-                                <li style="margin-bottom: 0; line-height: 1.6;">
-                                    Track all referrals and earnings in your partner dashboard
-                                </li>
-                            </ol>
                         </td>
                     </tr>
                     

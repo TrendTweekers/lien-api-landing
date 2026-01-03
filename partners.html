@@ -1019,11 +1019,6 @@
                     successTitle.textContent = '✅ Approved! Check email for your link.';
                     successMessageText.innerHTML = `
                         <p style="color: #666; margin-bottom: 16px;">Your account has been created and your referral link has been sent to your email!</p>
-                        ${result.referral_link ? `
-                        <p style="font-size: 0.9375rem; color: #666; margin-bottom: 16px;">
-                            Referral Link: <a href="${result.referral_link}" style="color: #F97316; text-decoration: underline; font-family: monospace;" target="_blank">${result.referral_link}</a>
-                        </p>
-                        ` : ''}
                         <p style="font-size: 0.875rem; color: #9ca3af;">Check your email for your referral link and login details. Access your partner dashboard at <a href="https://partners.liendeadline.com/login" style="color: #F97316; text-decoration: underline;">https://partners.liendeadline.com/login</a></p>
                     `;
                     
