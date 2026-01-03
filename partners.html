@@ -76,250 +76,432 @@
         .orange-btn:hover { background-color: #E66A00; }
         .orange-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         
-        /* Why Partner Section - New Two-Column Layout */
-        .why-partner-section {
+        /* ========================================
+           NEW HERO SECTION WITH STATS
+           ======================================== */
+        .partner-hero {
             padding: 80px 24px;
-            background: white;
+            position: relative;
+            overflow: hidden;
+            background-color: #ffffff;
         }
-        
-        .why-partner-container {
+
+        .partner-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to left, #fff7ed, transparent);
+            pointer-events: none;
+        }
+
+        .partner-hero-container {
             max-width: 1200px;
             margin: 0 auto;
+            position: relative;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 4rem;
+            gap: 64px;
             align-items: center;
         }
-        
-        /* Left Side: Content */
-        .why-partner-content {
-            display: flex;
-            flex-direction: column;
+
+        .partner-hero-content {
+            z-index: 1;
         }
-        
-        .partner-program-label {
-            color: #f97316;
+
+        .partner-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #fff7ed;
+            color: #ea580c;
+            border-radius: 9999px;
             font-size: 14px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 12px;
+            margin-bottom: 24px;
         }
-        
-        .why-partner-heading {
-            font-size: 42px;
+
+        .partner-hero h1 {
+            font-size: 48px;
             font-weight: 800;
-            color: #1f2937;
-            margin-bottom: 20px;
             line-height: 1.2;
+            margin-bottom: 24px;
+            color: #111827;
         }
-        
-        .liendeadline-orange {
-            color: #f97316;
+
+        .partner-hero h1 .brand-name {
             font-style: italic;
+            color: #ea580c;
         }
-        
-        .why-partner-subheading {
+
+        .partner-hero-description {
             font-size: 18px;
-            color: #4b5563;
-            line-height: 1.6;
+            color: #6b7280;
             margin-bottom: 32px;
+            line-height: 1.75;
         }
-        
-        .partner-benefits-list {
+
+        .benefits-list {
             list-style: none;
+            margin-bottom: 32px;
             padding: 0;
-            margin: 0 0 32px 0;
         }
-        
-        .partner-benefits-list li {
+
+        .benefits-list li {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
+            gap: 12px;
             margin-bottom: 16px;
-            font-size: 16px;
             color: #1f2937;
-            line-height: 1.6;
         }
-        
-        .checkmark-icon {
-            color: #f97316;
-            font-weight: 700;
-            font-size: 20px;
-            margin-right: 12px;
+
+        .benefits-list li svg {
+            width: 20px;
+            height: 20px;
+            color: #ea580c;
             flex-shrink: 0;
         }
-        
-        .partner-apply-button {
-            display: inline-block;
-            background-color: #f97316;
+
+        .apply-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #ea580c;
             color: white;
-            padding: 14px 32px;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 16px;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
             text-decoration: none;
             transition: all 0.3s ease;
-            align-self: flex-start;
+            box-shadow: 0 10px 30px rgba(234, 88, 12, 0.3);
         }
-        
-        .partner-apply-button:hover {
-            background-color: #ea580c;
+
+        .apply-btn:hover {
+            background-color: #dc2626;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+            box-shadow: 0 15px 40px rgba(234, 88, 12, 0.4);
         }
-        
-        /* Right Side: Cards */
-        .why-partner-cards {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+
+        /* Stats Cards */
+        .stats-container {
+            position: relative;
         }
-        
-        /* Large Orange Card */
-        .partner-card-large {
-            background-color: #f97316;
+
+        .main-stat-card {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            border-radius: 24px;
+            padding: 32px;
             color: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
-            text-align: center;
+            box-shadow: 0 20px 50px rgba(234, 88, 12, 0.3);
+            margin-bottom: 24px;
         }
-        
-        .card-icon-circle {
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-icon {
             width: 64px;
             height: 64px;
-            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 20px;
         }
-        
-        .card-icon-orange {
-            background-color: rgba(255, 255, 255, 0.2);
+
+        .stat-icon svg {
+            width: 32px;
+            height: 32px;
         }
-        
-        .card-icon-blue {
-            background-color: rgba(59, 130, 246, 0.2);
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
         }
-        
-        .card-icon-green {
-            background-color: rgba(16, 185, 129, 0.2);
-        }
-        
-        .card-icon {
-            font-size: 32px;
-        }
-        
-        .card-title-large {
-            font-size: 32px;
-            font-weight: 800;
-            color: white;
-            margin-bottom: 12px;
-        }
-        
-        .card-description-large {
+
+        .stat-label {
             font-size: 16px;
-            color: rgba(255, 255, 255, 0.95);
-            line-height: 1.6;
-            margin: 0;
+            color: rgba(255, 255, 255, 0.8);
         }
-        
-        /* Two Smaller Cards */
-        .partner-cards-small {
+
+        .stat-description {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+        }
+
+        .secondary-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 16px;
         }
-        
-        .partner-card-small {
-            padding: 32px 24px;
+
+        .stat-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
             border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            text-align: center;
+            padding: 24px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
         }
-        
-        .partner-card-blue {
+
+        .stat-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .stat-card-icon.blue {
             background-color: #dbeafe;
         }
-        
-        .partner-card-green {
+
+        .stat-card-icon.green {
             background-color: #d1fae5;
         }
-        
-        .card-text-small {
-            font-size: 18px;
+
+        .stat-card-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .stat-card-icon.blue svg {
+            color: #2563eb;
+        }
+
+        .stat-card-icon.green svg {
+            color: #10b981;
+        }
+
+        .stat-card-value {
+            font-size: 28px;
             font-weight: 700;
-            color: #1f2937;
-            margin: 16px 0 0 0;
+            color: #111827;
+            margin-bottom: 4px;
         }
-        
-        /* Responsive */
-        @media (max-width: 968px) {
-            .why-partner-container {
-                grid-template-columns: 1fr;
-                gap: 3rem;
-            }
-            
-            .why-partner-heading {
-                font-size: 36px;
-            }
-            
-            .partner-cards-small {
-                grid-template-columns: 1fr;
-            }
+
+        .stat-card-label {
+            font-size: 14px;
+            color: #6b7280;
         }
-        
-        /* Hero Section Styling */
-        .hero-section-partners {
+
+        /* ========================================
+           WHY PARTNER SECTION (3 CARDS)
+           ======================================== */
+        .why-partner-section {
             padding: 80px 24px;
-            text-align: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background-color: #f9fafb;
         }
-        
-        .hero-title-partners {
+
+        .why-partner-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 64px;
+        }
+
+        .section-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            background-color: #fff7ed;
+            color: #ea580c;
+            border-radius: 9999px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
             font-size: 48px;
             font-weight: 800;
-            margin-bottom: 20px;
-            color: white;
-            line-height: 1.2;
+            margin-bottom: 16px;
+            color: #111827;
         }
-        
-        .hero-subtitle-partners {
-            font-size: 20px;
-            margin-bottom: 32px;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-            color: rgba(255, 255, 255, 0.95);
-            line-height: 1.6;
+
+        .section-title .highlight {
+            font-style: italic;
+            color: #ea580c;
         }
-        
-        .hero-cta-button {
-            display: inline-block;
-            background: white;
-            color: #764ba2;
-            padding: 16px 40px;
-            border-radius: 8px;
-            font-weight: 700;
+
+        .section-description {
             font-size: 18px;
-            text-decoration: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            color: #6b7280;
+            max-width: 600px;
+            margin: 0 auto;
         }
-        
-        .hero-cta-button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
         }
-        
-        @media (max-width: 768px) {
-            .hero-title-partners {
+
+        .feature-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-card.orange {
+            border-color: #fed7aa;
+        }
+
+        .feature-card.blue {
+            border-color: #bfdbfe;
+        }
+
+        .feature-card.green {
+            border-color: #a7f3d0;
+        }
+
+        .feature-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover .feature-icon {
+            transform: scale(1.1);
+        }
+
+        .feature-icon.orange {
+            background-color: #fed7aa;
+        }
+
+        .feature-icon.blue {
+            background-color: #dbeafe;
+        }
+
+        .feature-icon.green {
+            background-color: #d1fae5;
+        }
+
+        .feature-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .feature-icon.orange svg {
+            color: #ea580c;
+        }
+
+        .feature-icon.blue svg {
+            color: #2563eb;
+        }
+
+        .feature-icon.green svg {
+            color: #10b981;
+        }
+
+        .feature-content {
+            flex: 1;
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #111827;
+        }
+
+        .feature-description {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+
+        .feature-highlight {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .feature-highlight.orange {
+            background-color: #ea580c;
+        }
+
+        .feature-highlight.blue {
+            background-color: #2563eb;
+        }
+
+        .feature-highlight.green {
+            background-color: #10b981;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .partner-hero-container {
+                grid-template-columns: 1fr;
+                gap: 48px;
+            }
+
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .partner-hero h1 {
                 font-size: 36px;
             }
-            .hero-subtitle-partners {
-                font-size: 18px;
+
+            .section-title {
+                font-size: 36px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .partner-hero {
+                padding: 48px 16px;
+            }
+
+            .why-partner-section {
+                padding: 48px 16px;
+            }
+
+            .secondary-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .partner-hero h1 {
+                font-size: 32px;
+            }
+
+            .section-title {
+                font-size: 32px;
             }
         }
         
@@ -459,70 +641,166 @@
         </div>
     </header>
 
-    <!-- Hero section: Matches main site's bold, benefit-focused style -->
-    <section class="hero-section-partners">
-        <h1 class="hero-title-partners">Turn Your Network into Recurring Revenue</h1>
-        <p class="hero-subtitle-partners">Join the LienDeadline Partner Program and earn up to $500 per referral or 30% recurring commissions. We handle onboarding, billing, and support— you focus on sharing.</p>
-        <a href="#apply" class="hero-cta-button">Apply Now</a>
-    </section>
-
-    <!-- Overview/Features: Two-column layout -->
-    <section class="why-partner-section">
-        <div class="why-partner-container">
-            <!-- Left Side: Content -->
-            <div class="why-partner-content">
-                <p class="partner-program-label">Partner Program</p>
-                <h2 class="why-partner-heading">
-                    Why Partner with <span class="liendeadline-orange">LienDeadline</span>?
-                </h2>
-                <p class="why-partner-subheading">
+    <!-- Hero Section with Stats -->
+    <section class="partner-hero">
+        <div class="partner-hero-container">
+            <!-- Left Content -->
+            <div class="partner-hero-content">
+                <span class="partner-badge">Partner Program</span>
+                <h1>
+                    Why Partner with 
+                    <span class="brand-name">LienDeadline</span>?
+                </h1>
+                <p class="partner-hero-description">
                     Turn your network into recurring revenue. Earn commissions helping construction suppliers protect their receivables.
                 </p>
-                <ul class="partner-benefits-list">
+
+                <ul class="benefits-list">
                     <li>
-                        <span class="checkmark-icon">✓</span>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
                         <span>Instant approval for construction industry partners</span>
                     </li>
                     <li>
-                        <span class="checkmark-icon">✓</span>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
                         <span>Monthly payouts via direct deposit</span>
                     </li>
                     <li>
-                        <span class="checkmark-icon">✓</span>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
                         <span>Dedicated partner success manager</span>
                     </li>
                     <li>
-                        <span class="checkmark-icon">✓</span>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
                         <span>Co-marketing opportunities available</span>
                     </li>
                 </ul>
-                <a href="#apply" class="partner-apply-button">Apply Now →</a>
+
+                <a href="#apply" class="apply-btn">
+                    Apply Now
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
             </div>
-            
-            <!-- Right Side: Cards -->
-            <div class="why-partner-cards">
-                <!-- Large Orange Card -->
-                <div class="partner-card-large">
-                    <div class="card-icon-circle card-icon-orange">
-                        <span class="card-icon">💲</span>
+
+            <!-- Right Stats -->
+            <div class="stats-container">
+                <!-- Main Stat Card -->
+                <div class="main-stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="stat-value">$500</div>
+                            <div class="stat-label">per referral</div>
+                        </div>
                     </div>
-                    <h3 class="card-title-large">$500 per referral</h3>
-                    <p class="card-description-large">Or choose $50/month recurring for long-term passive income. The choice is yours.</p>
+                    <div class="stat-description">
+                        Or choose $50/month recurring for long-term passive income. The choice is yours.
+                    </div>
                 </div>
-                
-                <!-- Two Smaller Cards -->
-                <div class="partner-cards-small">
-                    <div class="partner-card-small partner-card-blue">
-                        <div class="card-icon-circle card-icon-blue">
-                            <span class="card-icon">👥</span>
+
+                <!-- Secondary Stats -->
+                <div class="secondary-stats">
+                    <div class="stat-card">
+                        <div class="stat-card-icon blue">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
                         </div>
-                        <p class="card-text-small">50+ Active Partners</p>
+                        <div class="stat-card-value">50+</div>
+                        <div class="stat-card-label">Active Partners</div>
                     </div>
-                    <div class="partner-card-small partner-card-green">
-                        <div class="card-icon-circle card-icon-green">
-                            <span class="card-icon">📊</span>
+
+                    <div class="stat-card">
+                        <div class="stat-card-icon green">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
                         </div>
-                        <p class="card-text-small">$75K+ Paid to Partners</p>
+                        <div class="stat-card-value">$75K+</div>
+                        <div class="stat-card-label">Paid to Partners</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Partner Section -->
+    <section class="why-partner-section">
+        <div class="why-partner-container">
+            <div class="section-header">
+                <span class="section-badge">Why Partner With Us</span>
+                <h2 class="section-title">
+                    Built for Your <span class="highlight">Success</span>
+                </h2>
+                <p class="section-description">
+                    Everything you need to earn passive income while helping suppliers protect their receivables
+                </p>
+            </div>
+
+            <div class="features-grid">
+                <!-- Feature 1: Lucrative Earnings -->
+                <div class="feature-card orange">
+                    <div class="feature-header">
+                        <div class="feature-icon orange">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="feature-content">
+                            <h3 class="feature-title">Lucrative Earnings</h3>
+                            <p class="feature-description">
+                                Choose $500 bounty per client or $50/month recurring. Potential for $6,000+ annual passive income from 10 clients.
+                            </p>
+                            <span class="feature-highlight orange">High ROI</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature 2: Easy Referrals -->
+                <div class="feature-card blue">
+                    <div class="feature-header">
+                        <div class="feature-icon blue">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="feature-content">
+                            <h3 class="feature-title">Easy Referrals</h3>
+                            <p class="feature-description">
+                                Share your unique link. We onboard, train, and support your referrals—no extra work for you.
+                            </p>
+                            <span class="feature-highlight blue">Zero Effort</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature 3: Track Everything -->
+                <div class="feature-card green">
+                    <div class="feature-header">
+                        <div class="feature-icon green">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <div class="feature-content">
+                            <h3 class="feature-title">Track Everything</h3>
+                            <p class="feature-description">
+                                Real-time dashboard shows referrals, commissions, and payouts. Transparent and automated.
+                            </p>
+                            <span class="feature-highlight green">Full Visibility</span>
+                        </div>
                     </div>
                 </div>
             </div>
