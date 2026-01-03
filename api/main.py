@@ -5219,7 +5219,10 @@ async def serve_state_guide(state: str):
 
 # Stripe Checkout Session Endpoint
 class CheckoutRequest(BaseModel):
-    plan: str
+    price_id: str
+    success_url: str
+    cancel_url: str
+    email: Optional[str] = None
     referral_id: Optional[str] = None
 
 # SIMPLE TEST VERSION - Uncomment this to test if endpoint works at all:
@@ -5274,61 +5277,28 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
     try:
         # Stripe API key is already set above (line 5241) - no need to set again
         
-        # Use environment variables for price IDs or default to test values
-        # You should set these in your environment variables
-        PRICE_MONTHLY = os.getenv("STRIPE_PRICE_MONTHLY", "price_1Qd5xLKg7t5Qd4mZ...")  # Replace with actual test price ID
-        PRICE_ANNUAL = os.getenv("STRIPE_PRICE_ANNUAL", "price_1Qd5yPKg7t5Qd4mZ...")   # Replace with actual test price ID
-        
-        price_id = PRICE_MONTHLY
-        if checkout_request.plan == 'annual':
-            price_id = PRICE_ANNUAL
-            
-        # Get Tolt referral ID from request body
-        tolt_referral_id = checkout_request.referral_id
-        print(f"Creating checkout session with Tolt referral ID: {tolt_referral_id}")
-        
         # Build metadata for Stripe (Tolt uses this to track commissions)
         # Tolt requires the referral ID in metadata to track the 30% commission
         metadata = {}
-        if tolt_referral_id:
-            metadata["tolt_referral"] = tolt_referral_id
-            print(f"✅ Adding tolt_referral to Stripe metadata: {tolt_referral_id}")
-        else:
-            print("⚠️ No Tolt referral ID provided - commission tracking may not work")
-            
-        # Try v2 API first (newer Stripe versions), fallback to v1 API
-        try:
-            # Use v2 API: stripe.checkout_sessions.create()
-            checkout_session = stripe.checkout_sessions.create(
-                payment_method_types=['card'],
-                line_items=[
-                    {
-                        'price': price_id,
-                        'quantity': 1,
-                    },
-                ],
-                mode='subscription',
-                metadata=metadata,  # Always pass metadata dict (empty if no referral)
-                success_url='https://liendeadline.com/success.html?session_id={CHECKOUT_SESSION_ID}',
-                cancel_url='https://liendeadline.com/pricing.html',
-            )
-        except AttributeError:
-            # Fallback to v1 API: stripe.checkout.Session.create()
-            print("⚠️ Using Stripe v1 API (checkout.Session) - consider upgrading")
-            checkout_session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
-                line_items=[
-                    {
-                        'price': price_id,
-                        'quantity': 1,
-                    },
-                ],
-                mode='subscription',
-                metadata=metadata,  # Always pass metadata dict (empty if no referral)
-                success_url='https://liendeadline.com/success.html?session_id={CHECKOUT_SESSION_ID}',
-                cancel_url='https://liendeadline.com/pricing.html',
-            )
-        return {"url": checkout_session.url}
+        if checkout_request.referral_id:
+            metadata["tolt_referral"] = checkout_request.referral_id
+            print(f"✅ Adding tolt_referral to Stripe metadata: {checkout_request.referral_id}")
+        
+        # Use standard Stripe API (v8.7.0)
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price': checkout_request.price_id,
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=checkout_request.success_url,
+            cancel_url=checkout_request.cancel_url,
+            client_reference_id=checkout_request.email,
+            customer_email=checkout_request.email,
+            metadata=metadata,
+        )
+        return {"url": session.url}
     except HTTPException:
         # Re-raise HTTPExceptions (like our configuration errors)
         raise
