@@ -171,9 +171,8 @@ def send_broker_welcome_email(email: str, name: str, link: str, code: str):
                                         💰 Commission Structure
                                     </h3>
                                     <ul style="margin:0; padding-left:24px; color:#92400e; line-height:1.8; font-size:15px;">
-                                        <li style="margin-bottom:12px; padding-left:4px;"><strong style="font-weight:600;">$500 one-time</strong> per signup (bounty model)</li>
-                                        <li style="margin-bottom:12px; padding-left:4px;"><strong style="font-weight:600;">$50/month recurring</strong> per active subscriber (recurring model)</li>
-                                        <li style="margin-bottom:0; padding-left:4px;">Commission held for 60 days after customer payment to prevent fraud, then paid monthly</li>
+                                        <li style="margin-bottom:0; padding-left:4px;"><strong style="font-weight:600;">30% monthly recurring commission</strong> on every subscription payment ($89.70 per client per month)</li>
+                                        <li style="margin-bottom:0; padding-left:4px;">Commission held for 30 days after customer payment to prevent fraud, then paid monthly</li>
                                     </ul>
                                 </div>
                                 
@@ -409,7 +408,7 @@ def send_broker_notification(broker_email: str, customer_email: str):
                                         </tr>
                                         <tr>
                                             <td style="color:#6b7280; font-weight:600; font-size:14px; padding:10px 0; vertical-align:top;">Commission Status:</td>
-                                            <td style="color:#f59e0b; font-weight:700; font-size:14px; padding:10px 0;">Pending (60-day holding period)</td>
+                                            <td style="color:#f59e0b; font-weight:700; font-size:14px; padding:10px 0;">Pending (30-day holding period)</td>
                                         </tr>
                                         <tr>
                                             <td style="color:#6b7280; font-weight:600; font-size:14px; padding:10px 0; vertical-align:top;">Commission Amount:</td>
@@ -421,7 +420,7 @@ def send_broker_notification(broker_email: str, customer_email: str):
                                 <!-- Payment Timeline Box -->
                                 <div style="background-color:#fef3c7; border-left:4px solid #f59e0b; border-radius:4px; padding:20px; margin-bottom:30px;">
                                     <p style="margin:0; color:#92400e; font-size:14px; line-height:1.7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-                                        <strong style="font-weight:600;">⏰ Payment Timeline:</strong> Commission held for 60 days after customer payment to prevent fraud, then paid monthly. You'll receive an email when payment is processed.
+                                        <strong style="font-weight:600;">⏰ Payment Timeline:</strong> Commission held for 30 days after customer payment to prevent fraud, then paid monthly. You'll receive an email when payment is processed.
                                     </p>
                                 </div>
                                 
@@ -660,7 +659,7 @@ def send_welcome_email_background(email: str, referral_link: str, name: str = ""
                                     Your specific commission model is visible in your broker dashboard.
                                 </p>
                                 <p style="margin: 0; font-size: 13px; color: #6b7280; font-style: italic;">
-                                    Commission held for 60 days after customer payment to prevent fraud, then paid monthly.
+                                    Commission held for 30 days after customer payment to prevent fraud, then paid monthly.
                                 </p>
                             </div>
                         </td>

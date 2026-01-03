@@ -6,14 +6,14 @@ import { Label } from "@/components/ui/label";
 
 const benefits = [
   {
-    icon: DollarSign,
-    title: "$500 Per Referral",
-    description: "Earn a one-time bounty for every client you bring on board.",
+    icon: TrendingUp,
+    title: "30% Monthly Recurring",
+    description: "Earn 30% of every subscription payment for as long as clients stay active.",
   },
   {
-    icon: TrendingUp,
-    title: "$50/Month Recurring",
-    description: "Or choose 15% recurring revenue share for ongoing income.",
+    icon: DollarSign,
+    title: "Passive Income",
+    description: "Build long-term recurring revenue helping construction suppliers protect receivables.",
   },
   {
     icon: Users,
@@ -23,11 +23,12 @@ const benefits = [
 ];
 
 export const PartnerProgram = () => {
-  const [paymentModel, setPaymentModel] = useState<"recurring" | "bounty">("recurring");
   const [clientCount, setClientCount] = useState(100);
 
-  const monthlyEarnings = paymentModel === "recurring" ? clientCount * 50 : clientCount * 500;
-  const annualProjection = paymentModel === "recurring" ? monthlyEarnings * 12 : monthlyEarnings;
+  // 30% of $299/month subscription = $89.70 per client per month
+  const commissionPerClient = 89.70;
+  const monthlyEarnings = clientCount * commissionPerClient;
+  const annualProjection = monthlyEarnings * 12;
 
   return (
     <div className="rounded-2xl overflow-hidden bg-gradient-dark card-shadow-lg">
@@ -45,7 +46,7 @@ export const PartnerProgram = () => {
           
           <p className="text-gray-400 mt-4 text-lg">
             Insurance brokers, accountants, and consultants: add LienDeadline to your toolkit
-            and earn up to $180K MRR in recurring commissions.
+            and earn 30% monthly recurring commission on every referral.
           </p>
 
           <div className="space-y-6 mt-8">
@@ -75,60 +76,25 @@ export const PartnerProgram = () => {
 
         {/* Right Side - Calculator */}
         <div className="bg-gray-800/50 p-8 lg:p-10">
-          <p className="text-gray-400 mb-2">Partners choose their preferred payment model</p>
-          
-          <h3 className="text-xl font-bold text-white mb-1">Choose Your Partner Payment Model</h3>
+          <h3 className="text-xl font-bold text-white mb-1">30% Monthly Recurring Commission</h3>
           <p className="text-gray-500 text-sm mb-6">
-            Select ONE model - you cannot earn both for the same client
+            Earn 30% of every subscription payment for as long as your referral stays active
           </p>
-
-          {/* Toggle Buttons */}
-          <div className="grid grid-cols-2 gap-2 mb-8">
-            <button
-              onClick={() => setPaymentModel("recurring")}
-              className={`py-3 px-4 rounded-lg font-semibold transition-all ${
-                paymentModel === "recurring"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-gray-700/50 text-gray-400 hover:bg-gray-700"
-              }`}
-            >
-              Recurring Revenue
-            </button>
-            <button
-              onClick={() => setPaymentModel("bounty")}
-              className={`py-3 px-4 rounded-lg font-semibold transition-all ${
-                paymentModel === "bounty"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-gray-700/50 text-gray-400 hover:bg-gray-700"
-              }`}
-            >
-              Upfront Bounty
-            </button>
-          </div>
 
           {/* Model Details */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <Coins className="h-5 w-5 text-primary" />
               <h4 className="font-bold text-white underline decoration-primary/50 underline-offset-2">
-                {paymentModel === "recurring" ? "Recurring Revenue Model" : "Upfront Bounty Model"}
+                Commission Structure
               </h4>
             </div>
             
             <ul className="space-y-1 text-gray-400 text-sm">
-              {paymentModel === "recurring" ? (
-                <>
-                  <li>• Earn $50/month for EVERY active client</li>
-                  <li>• Works for both monthly ($299) and annual ($2,390) subscribers</li>
-                  <li>• Get paid monthly as long as clients remain active</li>
-                </>
-              ) : (
-                <>
-                  <li>• Earn $500 one-time for EVERY client you refer</li>
-                  <li>• Get paid upfront when client subscribes</li>
-                  <li>• No ongoing tracking needed</li>
-                </>
-              )}
+              <li>• Earn 30% of every $299/month subscription ($89.70 per client)</li>
+              <li>• Commission held for 30 days after customer payment to prevent fraud</li>
+              <li>• Get paid monthly via direct deposit as long as clients remain active</li>
+              <li>• Build long-term passive income with your construction network</li>
             </ul>
           </div>
 
@@ -144,29 +110,23 @@ export const PartnerProgram = () => {
 
             <div className="mt-4 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-gray-400">
-                  {paymentModel === "recurring" ? "Monthly earnings:" : "Total earnings:"}
-                </span>
+                <span className="text-gray-400">Monthly earnings:</span>
                 <span className="text-primary font-semibold">
-                  {clientCount} × ${paymentModel === "recurring" ? "50" : "500"} = ${monthlyEarnings.toLocaleString()}
-                  {paymentModel === "recurring" && "/month"}
+                  {clientCount} × 30% = ${monthlyEarnings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/month
                 </span>
               </div>
               
-              {paymentModel === "recurring" && (
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Annual projection:</span>
-                  <span className="text-primary font-semibold">
-                    {clientCount} × $50 × 12 = ${annualProjection.toLocaleString()}/year
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400">Annual projection:</span>
+                <span className="text-primary font-semibold">
+                  {clientCount} × 30% × 12 = ${annualProjection.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/year
+                </span>
+              </div>
             </div>
           </div>
 
           <p className="text-gray-500 text-xs mt-4 italic">
-            Note: Partners select ONE payment model when they join the program. You cannot earn both the bounty and
-            recurring revenue for the same client.
+            Note: Commission is held for 30 days after customer payment to prevent fraud, then paid monthly via direct deposit.
           </p>
         </div>
       </div>
