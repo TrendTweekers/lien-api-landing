@@ -1291,93 +1291,28 @@
         </section>
         
         <!-- Partners Section -->
-        <section id="partners" class="py-20 px-6 text-center bg-gray-50">
-            <h1 class="text-4xl font-bold mb-4">Turn Your Network into Recurring Revenue</h1>
-            <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">Join the LienDeadline Partner Program and earn up to $500 per referral or 30% recurring commissions. We handle onboarding, billing, and support— you focus on sharing.</p>
-            <a href="/partners.html" class="orange-btn px-6 py-3 rounded-md text-lg font-medium inline-block" style="text-decoration: none; background-color: #F97316; color: white;">Apply Now</a>
-        </section>
-
-        <!-- Overview/Features: Bullet lists with icons, like main site's features -->
-        <section class="py-16 px-6 max-w-4xl mx-auto">
+        <section id="partners" class="py-16 px-6 max-w-4xl mx-auto">
             <h2 class="text-3xl font-bold mb-8 text-center">Why Partner with LienDeadline?</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="p-6 border rounded-lg">
-                    <span class="text-3xl mb-4 block">💰</span>
-                    <h3 class="text-xl font-semibold mb-2">Lucrative Earnings</h3>
-                    <p class="text-gray-600">Choose $500 bounty per client or $50/month recurring. Potential for $6,000+ annual passive income from 10 clients.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="p-6 border rounded-lg text-center">
+                    <span class="text-4xl mb-3 block">💰</span>
+                    <h3 class="text-lg font-semibold mb-2">Lucrative Earnings</h3>
+                    <p class="text-gray-600 text-sm">Earn $500 per referral or $50/month recurring commissions.</p>
                 </div>
-                <div class="p-6 border rounded-lg">
-                    <span class="text-3xl mb-4 block">🤝</span>
-                    <h3 class="text-xl font-semibold mb-2">Easy Referrals</h3>
-                    <p class="text-gray-600">Share your unique link. We onboard, train, and support your referrals—no extra work for you.</p>
+                <div class="p-6 border rounded-lg text-center">
+                    <span class="text-4xl mb-3 block">🤝</span>
+                    <h3 class="text-lg font-semibold mb-2">Easy Referrals</h3>
+                    <p class="text-gray-600 text-sm">Share your link and we handle the rest.</p>
                 </div>
-                <div class="p-6 border rounded-lg">
-                    <span class="text-3xl mb-4 block">📈</span>
-                    <h3 class="text-xl font-semibold mb-2">Track Everything</h3>
-                    <p class="text-gray-600">Real-time dashboard shows referrals, commissions, and payouts. Transparent and automated.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- How It Works: Step-by-step, matching main site's process explanations -->
-        <section class="py-16 px-6 bg-white max-w-4xl mx-auto">
-            <h2 class="text-3xl font-bold mb-8 text-center">How Partnering Works</h2>
-            <div class="space-y-8">
-                <div class="flex items-start">
-                    <span class="text-2xl mr-4 font-bold text-orange-600">1</span>
-                    <div>
-                        <h3 class="text-xl font-semibold mb-2">Share Your Link</h3>
-                        <p class="text-gray-600">Send your unique referral link to clients in construction, supply, or related fields.</p>
-                    </div>
-                </div>
-                <div class="flex items-start">
-                    <span class="text-2xl mr-4 font-bold text-orange-600">2</span>
-                    <div>
-                        <h3 class="text-xl font-semibold mb-2">We Onboard & Support</h3>
-                        <p class="text-gray-600">Our team handles setup, training, and ongoing help—your referrals get white-glove service.</p>
-                    </div>
-                </div>
-                <div class="flex items-start">
-                    <span class="text-2xl mr-4 font-bold text-orange-600">3</span>
-                    <div>
-                        <h3 class="text-xl font-semibold mb-2">You Get Paid</h3>
-                        <p class="text-gray-600">Earn commissions monthly via direct deposit. Track everything in your partner dashboard.</p>
-                    </div>
+                <div class="p-6 border rounded-lg text-center">
+                    <span class="text-4xl mb-3 block">📈</span>
+                    <h3 class="text-lg font-semibold mb-2">Track Everything</h3>
+                    <p class="text-gray-600 text-sm">Monitor referrals and commissions in real-time.</p>
                 </div>
             </div>
-        </section>
-
-        <!-- Calculator Section -->
-        <section class="py-16 px-6 bg-gray-50 max-w-4xl mx-auto">
-            <h2 class="text-3xl font-bold mb-8 text-center">Calculate Your Earning Potential</h2>
-            <div class="p-6 border rounded-lg bg-white">
-                <label class="block text-gray-700 font-semibold mb-4">How many contractor/supplier clients do you have?</label>
-                <input type="number" id="homepageClientCount" class="w-full p-3 border rounded mb-6" value="10" min="1" oninput="calculateHomepageEarnings()">
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div class="p-4 bg-gray-50 rounded-lg text-center">
-                        <p class="text-gray-600 mb-2 text-sm">One-Time Bounty</p>
-                        <p class="text-3xl font-bold text-orange-600" id="homepageBountyAmount">$5,000</p>
-                        <p class="text-gray-500 text-sm mt-1">$500 per client</p>
-                    </div>
-                    <div class="p-4 bg-gray-50 rounded-lg text-center">
-                        <p class="text-gray-600 mb-2 text-sm">Monthly Recurring</p>
-                        <p class="text-3xl font-bold text-orange-600" id="homepageMonthlyAmount">$500/mo</p>
-                        <p class="text-gray-500 text-sm mt-1">$50 per client/month</p>
-                    </div>
-                </div>
-                
-                <div class="text-center p-4 bg-orange-50 rounded-lg border-2 border-dashed border-orange-300">
-                    <p class="text-gray-700">That's <strong class="text-orange-600 text-xl" id="homepageAnnualAmount">$6,000/year</strong> in passive income</p>
-                </div>
+            <div class="text-center">
+                <a href="/partners.html" class="inline-block px-6 py-3 bg-orange-600 text-white rounded-md font-medium hover:bg-orange-700 transition-colors">Apply Now</a>
             </div>
-        </section>
-
-        <!-- Final CTA: Matches main site's upgrade prompts -->
-        <section class="py-20 px-6 text-center bg-gray-50">
-            <h2 class="text-3xl font-bold mb-4">Ready to Start Earning?</h2>
-            <p class="text-xl text-gray-600 mb-8">Apply today and get your referral link in minutes.</p>
-            <a href="/partners.html" class="orange-btn px-6 py-3 rounded-md text-lg font-medium inline-block" style="text-decoration: none; background-color: #F97316; color: white;">Apply Now</a>
         </section>
         
         <!-- Final CTA Section -->
@@ -3367,32 +3302,6 @@ function togglePartnerModel(model) {
     updatePartnerCalculator();
 }
 
-// Homepage calculator function
-function calculateHomepageEarnings() {
-    const clients = parseInt(document.getElementById('homepageClientCount').value) || 0;
-    const bounty = clients * 500;
-    const monthly = clients * 50;
-    const annual = monthly * 12;
-    
-    document.getElementById('homepageBountyAmount').textContent = '$' + bounty.toLocaleString();
-    document.getElementById('homepageMonthlyAmount').textContent = '$' + monthly.toLocaleString() + '/mo';
-    document.getElementById('homepageAnnualAmount').textContent = '$' + annual.toLocaleString() + '/year';
-}
-
-// Initialize homepage calculator on page load
-if (typeof document !== 'undefined') {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            if (document.getElementById('homepageClientCount')) {
-                calculateHomepageEarnings();
-            }
-        });
-    } else {
-        if (document.getElementById('homepageClientCount')) {
-            calculateHomepageEarnings();
-        }
-    }
-}
 
 function updatePartnerCalculator() {
     const clientCount = parseInt(document.getElementById('partnerClientCount').value) || parseInt(document.getElementById('partnerClientCountBounty').value) || 0;
@@ -3526,3 +3435,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
 </body>
 </html>
+
