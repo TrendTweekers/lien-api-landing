@@ -2097,6 +2097,39 @@ def get_user_from_session(request: Request):
     
     return None
 
+@app.post("/api/logout")
+async def logout(request: Request):
+    """Logout endpoint - clears session token on server side"""
+    authorization = request.headers.get('authorization', '')
+    if not authorization or not authorization.startswith('Bearer '):
+        return JSONResponse(
+            status_code=200,
+            content={"message": "Logged out successfully"}
+        )
+    
+    token = authorization.replace('Bearer ', '')
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Clear session token in database
+            if DB_TYPE == 'postgresql':
+                cursor.execute("UPDATE users SET session_token = NULL WHERE session_token = %s", (token,))
+            else:
+                cursor.execute("UPDATE users SET session_token = NULL WHERE session_token = ?", (token,))
+            
+            conn.commit()
+            print(f"✅ Session token cleared for logout")
+    except Exception as e:
+        print(f"⚠️ Error clearing session token: {e}")
+        # Don't fail logout if DB update fails - client-side clearing is sufficient
+    
+    return JSONResponse(
+        status_code=200,
+        content={"message": "Logged out successfully"}
+    )
+
 @app.delete("/api/calculations/{calculation_id}")
 async def delete_calculation(calculation_id: int, request: Request):
     """Delete a saved calculation/project"""

@@ -2,6 +2,48 @@ import { LogOut, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const DashboardHeader = () => {
+  const handleLogout = async () => {
+    try {
+      // Call logout API endpoint if it exists (optional - for server-side session clearing)
+      const token = localStorage.getItem('session_token');
+      if (token) {
+        try {
+          await fetch('/api/logout', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+        } catch (error) {
+          // If logout endpoint doesn't exist, that's okay - we'll still clear client-side
+          console.log('Logout endpoint not available, clearing client-side only');
+        }
+      }
+      
+      // Clear all localStorage items related to session
+      localStorage.removeItem('session_token');
+      localStorage.removeItem('user_email');
+      localStorage.removeItem('userEmail');
+      localStorage.removeItem('loginTime');
+      
+      // Clear any cookies that might be set
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+      
+      // Redirect to login page
+      window.location.href = '/login.html';
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if there's an error, clear localStorage and redirect
+      localStorage.clear();
+      window.location.href = '/login.html';
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur-sm card-shadow">
       <div className="container flex h-16 items-center justify-between">
@@ -17,7 +59,7 @@ export const DashboardHeader = () => {
         <nav className="flex items-center gap-6">
           <span className="text-sm text-muted-foreground hidden sm:block">admin@stackedboost.com</span>
           <a
-            href="#"
+            href="/"
             className="flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition-colors"
           >
             Landing Page
@@ -27,6 +69,7 @@ export const DashboardHeader = () => {
             variant="ghost"
             size="sm"
             className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={handleLogout}
           >
             <LogOut className="h-4 w-4 mr-1.5" />
             Logout
