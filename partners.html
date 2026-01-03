@@ -76,38 +76,116 @@
         .orange-btn:hover { background-color: #E66A00; }
         .orange-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         
-        /* Partner Cards Styling */
-        .partner-card-earnings,
-        .partner-card-referrals,
-        .partner-card-tracking {
-            padding: 32px;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            border: 1px solid rgba(0,0,0,0.05);
+        /* Why Partner Section - New Two-Column Layout */
+        .why-partner-section {
+            padding: 80px 24px;
+            background: white;
+        }
+        
+        .why-partner-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+        
+        /* Left Side: Content */
+        .why-partner-content {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .partner-program-label {
+            color: #f97316;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        
+        .why-partner-heading {
+            font-size: 42px;
+            font-weight: 800;
+            color: #1f2937;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+        
+        .liendeadline-orange {
+            color: #f97316;
+            font-style: italic;
+        }
+        
+        .why-partner-subheading {
+            font-size: 18px;
+            color: #4b5563;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+        
+        .partner-benefits-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 32px 0;
+        }
+        
+        .partner-benefits-list li {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            font-size: 16px;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+        
+        .checkmark-icon {
+            color: #f97316;
+            font-weight: 700;
+            font-size: 20px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        
+        .partner-apply-button {
+            display: inline-block;
+            background-color: #f97316;
+            color: white;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 16px;
+            text-decoration: none;
             transition: all 0.3s ease;
+            align-self: flex-start;
+        }
+        
+        .partner-apply-button:hover {
+            background-color: #ea580c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+        }
+        
+        /* Right Side: Cards */
+        .why-partner-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        /* Large Orange Card */
+        .partner-card-large {
+            background-color: #f97316;
+            color: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
             text-align: center;
         }
         
-        .partner-card-earnings {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        }
-        
-        .partner-card-referrals {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-        }
-        
-        .partner-card-tracking {
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        }
-        
-        .partner-card-earnings:hover,
-        .partner-card-referrals:hover,
-        .partner-card-tracking:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
-        }
-        
-        .emoji-circle {
+        .card-icon-circle {
             width: 64px;
             height: 64px;
             border-radius: 50%;
@@ -117,36 +195,79 @@
             margin: 0 auto 20px;
         }
         
-        .earnings-circle {
-            background-color: #f97316;
+        .card-icon-orange {
+            background-color: rgba(255, 255, 255, 0.2);
         }
         
-        .referrals-circle {
-            background-color: #3b82f6;
+        .card-icon-blue {
+            background-color: rgba(59, 130, 246, 0.2);
         }
         
-        .tracking-circle {
-            background-color: #10b981;
+        .card-icon-green {
+            background-color: rgba(16, 185, 129, 0.2);
         }
         
-        .emoji-icon {
+        .card-icon {
             font-size: 32px;
-            color: white;
-            line-height: 1;
         }
         
-        .partner-card-title {
-            font-weight: 700;
-            color: #1f2937;
-            font-size: 20px;
+        .card-title-large {
+            font-size: 32px;
+            font-weight: 800;
+            color: white;
             margin-bottom: 12px;
         }
         
-        .partner-card-description {
-            color: #4b5563;
-            line-height: 1.6;
+        .card-description-large {
             font-size: 16px;
+            color: rgba(255, 255, 255, 0.95);
+            line-height: 1.6;
             margin: 0;
+        }
+        
+        /* Two Smaller Cards */
+        .partner-cards-small {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .partner-card-small {
+            padding: 32px 24px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .partner-card-blue {
+            background-color: #dbeafe;
+        }
+        
+        .partner-card-green {
+            background-color: #d1fae5;
+        }
+        
+        .card-text-small {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 16px 0 0 0;
+        }
+        
+        /* Responsive */
+        @media (max-width: 968px) {
+            .why-partner-container {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+            
+            .why-partner-heading {
+                font-size: 36px;
+            }
+            
+            .partner-cards-small {
+                grid-template-columns: 1fr;
+            }
         }
         
         /* Hero Section Styling */
@@ -345,30 +466,65 @@
         <a href="#apply" class="hero-cta-button">Apply Now</a>
     </section>
 
-    <!-- Overview/Features: Bullet lists with icons, like main site's features -->
-    <section class="py-16 px-6 max-w-4xl mx-auto">
-        <h2 class="text-3xl font-bold mb-8 text-center">Why Partner with LienDeadline?</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="partner-card-earnings">
-                <div class="emoji-circle earnings-circle">
-                    <span class="emoji-icon">💰</span>
-                </div>
-                <h3 class="partner-card-title">Lucrative Earnings</h3>
-                <p class="partner-card-description">Choose $500 bounty per client or $50/month recurring. Potential for $6,000+ annual passive income from 10 clients.</p>
+    <!-- Overview/Features: Two-column layout -->
+    <section class="why-partner-section">
+        <div class="why-partner-container">
+            <!-- Left Side: Content -->
+            <div class="why-partner-content">
+                <p class="partner-program-label">Partner Program</p>
+                <h2 class="why-partner-heading">
+                    Why Partner with <span class="liendeadline-orange">LienDeadline</span>?
+                </h2>
+                <p class="why-partner-subheading">
+                    Turn your network into recurring revenue. Earn commissions helping construction suppliers protect their receivables.
+                </p>
+                <ul class="partner-benefits-list">
+                    <li>
+                        <span class="checkmark-icon">✓</span>
+                        <span>Instant approval for construction industry partners</span>
+                    </li>
+                    <li>
+                        <span class="checkmark-icon">✓</span>
+                        <span>Monthly payouts via direct deposit</span>
+                    </li>
+                    <li>
+                        <span class="checkmark-icon">✓</span>
+                        <span>Dedicated partner success manager</span>
+                    </li>
+                    <li>
+                        <span class="checkmark-icon">✓</span>
+                        <span>Co-marketing opportunities available</span>
+                    </li>
+                </ul>
+                <a href="#apply" class="partner-apply-button">Apply Now →</a>
             </div>
-            <div class="partner-card-referrals">
-                <div class="emoji-circle referrals-circle">
-                    <span class="emoji-icon">🤝</span>
+            
+            <!-- Right Side: Cards -->
+            <div class="why-partner-cards">
+                <!-- Large Orange Card -->
+                <div class="partner-card-large">
+                    <div class="card-icon-circle card-icon-orange">
+                        <span class="card-icon">💲</span>
+                    </div>
+                    <h3 class="card-title-large">$500 per referral</h3>
+                    <p class="card-description-large">Or choose $50/month recurring for long-term passive income. The choice is yours.</p>
                 </div>
-                <h3 class="partner-card-title">Easy Referrals</h3>
-                <p class="partner-card-description">Share your unique link. We onboard, train, and support your referrals—no extra work for you.</p>
-            </div>
-            <div class="partner-card-tracking">
-                <div class="emoji-circle tracking-circle">
-                    <span class="emoji-icon">📈</span>
+                
+                <!-- Two Smaller Cards -->
+                <div class="partner-cards-small">
+                    <div class="partner-card-small partner-card-blue">
+                        <div class="card-icon-circle card-icon-blue">
+                            <span class="card-icon">👥</span>
+                        </div>
+                        <p class="card-text-small">50+ Active Partners</p>
+                    </div>
+                    <div class="partner-card-small partner-card-green">
+                        <div class="card-icon-circle card-icon-green">
+                            <span class="card-icon">📊</span>
+                        </div>
+                        <p class="card-text-small">$75K+ Paid to Partners</p>
+                    </div>
                 </div>
-                <h3 class="partner-card-title">Track Everything</h3>
-                <p class="partner-card-description">Real-time dashboard shows referrals, commissions, and payouts. Transparent and automated.</p>
             </div>
         </div>
     </section>
