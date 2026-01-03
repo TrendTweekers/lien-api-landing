@@ -5224,6 +5224,13 @@ class CheckoutRequest(BaseModel):
 
 @app.post("/api/create-checkout-session")
 async def create_checkout_session(request: Request, checkout_request: CheckoutRequest):
+    # Debug logging to diagnose stripe module issues
+    print(f"DEBUG: stripe module: {stripe}")
+    print(f"DEBUG: stripe type: {type(stripe)}")
+    print(f"DEBUG: Has checkout? {hasattr(stripe, 'checkout')}")
+    if hasattr(stripe, 'checkout'):
+        print(f"DEBUG: Has Session? {hasattr(stripe.checkout, 'Session')}")
+    
     try:
         # Set Stripe API key from environment at request time
         # Stripe module is required - if import fails, app won't start
@@ -5269,11 +5276,22 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
             cancel_url='https://liendeadline.com/pricing.html',
         )
         return {"url": checkout_session.url}
+    except HTTPException:
+        # Re-raise HTTPExceptions (like our configuration errors)
+        raise
     except Exception as e:
-        print(f"Error creating checkout session: {e}")
+        # Log full error details including traceback
+        print(f"❌ Error creating checkout session: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return proper error response with full details
         return JSONResponse(
-            status_code=400,
-            content={"message": str(e)}
+            status_code=500,
+            content={
+                "error": str(e),
+                "type": type(e).__name__,
+                "message": f"Failed to create checkout session: {str(e)}"
+            }
         )
 
 @app.get("/api/debug-trigger-reminders")
