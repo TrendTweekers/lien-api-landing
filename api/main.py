@@ -15,6 +15,7 @@ import os
 import subprocess
 import sys
 import bcrypt
+# Stripe is required for payment processing - not optional
 import stripe
 import traceback
 # REMOVED: from api.migrations.fix_production_schema import fix_postgres_schema
@@ -5224,11 +5225,8 @@ class CheckoutRequest(BaseModel):
 @app.post("/api/create-checkout-session")
 async def create_checkout_session(request: Request, checkout_request: CheckoutRequest):
     try:
-        # Verify stripe module is available
-        if stripe is None:
-            raise HTTPException(status_code=500, detail="Stripe library not available")
-        
         # Set Stripe API key from environment at request time
+        # Stripe module is required - if import fails, app won't start
         stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
         
         # Verify Stripe is properly configured
