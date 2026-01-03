@@ -5230,9 +5230,13 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
         print(f"Creating checkout session with Tolt referral ID: {tolt_referral_id}")
         
         # Build metadata for Stripe (Tolt uses this to track commissions)
+        # Tolt requires the referral ID in metadata to track the 30% commission
         metadata = {}
         if tolt_referral_id:
             metadata["tolt_referral"] = tolt_referral_id
+            print(f"✅ Adding tolt_referral to Stripe metadata: {tolt_referral_id}")
+        else:
+            print("⚠️ No Tolt referral ID provided - commission tracking may not work")
             
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -5243,7 +5247,7 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
                 },
             ],
             mode='subscription',
-            metadata=metadata if metadata else None,
+            metadata=metadata,  # Always pass metadata dict (empty if no referral)
             success_url='https://liendeadline.com/success.html?session_id={CHECKOUT_SESSION_ID}',
             cancel_url='https://liendeadline.com/pricing.html',
         )

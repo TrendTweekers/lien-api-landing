@@ -208,24 +208,37 @@ def send_welcome_email(email: str, temp_password: str):
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Welcome to LienDeadline</title>
+        <style>
+            @media only screen and (max-width: 600px) {{
+                .email-container {{
+                    width: 100% !important;
+                    padding: 10px !important;
+                }}
+                .content-cell {{
+                    padding: 30px 20px !important;
+                }}
+            }}
+        </style>
     </head>
-    <body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color:#f3f4f6; line-height:1.6;">
+    <body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color:#f9fafb; line-height:1.6; color: #1f2937;">
         
         <!-- Main Container -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6; padding:40px 20px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width: 100%; background-color:#f9fafb;">
             <tr>
-                <td align="center">
+                <td align="center" style="padding: 20px;">
                     
                     <!-- Email Card -->
-                    <table width="600" cellpadding="0" cellspacing="0" style="background-color:white; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1); overflow:hidden;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" class="email-container" style="width: 100%; max-width: 600px; background-color:white; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
                         
                         <!-- LienDeadline Branding Header -->
                         <tr>
-                            <td style="background-color:#1e3a8a; padding:35px 30px; text-align:center;">
-                                <h1 style="margin:0; color:white; font-size:28px; font-weight:700; letter-spacing:-0.5px;">
+                            <td class="content-cell" style="background-color:#1e3a8a; padding:40px 40px 30px; text-align:center; border-bottom: 1px solid #e5e7eb;">
+                                <h1 style="margin:0; color:white; font-size:32px; font-weight:700; letter-spacing:-0.5px; line-height:1.2;">
                                     📋 LienDeadline
                                 </h1>
-                                <p style="margin:10px 0 0 0; color:#e0e7ff; font-size:16px; font-weight:500;">
+                                <p style="margin:12px 0 0; color:#e0e7ff; font-size:16px; font-weight:500;">
                                     Welcome! Your account is ready 🎉
                                 </p>
                             </td>
@@ -233,20 +246,20 @@ def send_welcome_email(email: str, temp_password: str):
                         
                         <!-- Welcome Message -->
                         <tr>
-                            <td style="padding:40px 30px;">
-                                <h2 style="margin:0 0 20px 0; font-size:24px; font-weight:600; color:#1f2937; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; letter-spacing:-0.3px;">
+                            <td class="content-cell" style="padding:40px 40px 30px;">
+                                <h2 style="margin:0 0 20px 0; font-size:26px; font-weight:600; color:#1f2937; line-height:1.3;">
                                     Welcome to LienDeadline!
                                 </h2>
-                                <p style="margin:0 0 28px 0; font-size:16px; color:#4b5563; line-height:1.7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                <p style="margin:0 0 30px 0; font-size:16px; color:#4b5563; line-height:1.7;">
                                     Thank you for joining LienDeadline. Your account is now active and ready to help you protect your receivables with automated lien deadline tracking.
                                 </p>
                                 
                                 <!-- Login Credentials Box -->
-                                <div style="background-color:#f9fafb; border:2px solid #e5e7eb; border-radius:8px; padding:24px; margin-bottom:30px;">
-                                    <h3 style="margin:0 0 18px 0; font-size:18px; font-weight:600; color:#1e3a8a; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                <div style="background-color:#f9fafb; border:1px solid #e5e7eb; border-left:4px solid #1e3a8a; border-radius:6px; padding:24px; margin-bottom:30px;">
+                                    <h3 style="margin:0 0 18px 0; font-size:18px; font-weight:600; color:#1e3a8a;">
                                         Your Login Credentials
                                     </h3>
-                                    <table width="100%" cellpadding="10" cellspacing="0" style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                    <table width="100%" cellpadding="10" cellspacing="0">
                                         <tr>
                                             <td style="color:#6b7280; font-weight:600; width:120px; font-size:14px; padding:10px 0; vertical-align:top;">Email:</td>
                                             <td style="color:#111827; font-size:14px; padding:10px 0;">{email}</td>
@@ -258,7 +271,7 @@ def send_welcome_email(email: str, temp_password: str):
                                     </table>
                                     <p style="margin:24px 0 0 0; text-align:center;">
                                         <a href="https://liendeadline.com/login.html" 
-                                           style="display:inline-block; background-color:#1e3a8a; color:#ffffff; text-decoration:none; padding:18px 36px; border-radius:8px; font-weight:700; font-size:16px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-shadow:0 4px 12px rgba(30,58,138,0.3); letter-spacing:0.3px;">
+                                           style="display:inline-block; background-color:#f97316; color:#ffffff; text-decoration:none; padding:16px 36px; border-radius:8px; font-weight:600; font-size:16px; box-shadow:0 2px 8px rgba(249, 115, 22, 0.3); letter-spacing:0.3px;">
                                             Login to Dashboard →
                                         </a>
                                     </p>
@@ -266,28 +279,28 @@ def send_welcome_email(email: str, temp_password: str):
                                 
                                 <!-- Next Steps Section -->
                                 <div style="margin-bottom:30px;">
-                                    <h3 style="margin:0 0 20px 0; font-size:20px; font-weight:600; color:#1f2937; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; letter-spacing:-0.2px;">
+                                    <h3 style="margin:0 0 20px 0; font-size:20px; font-weight:600; color:#1f2937;">
                                         What's Next?
                                     </h3>
-                                    <div style="background-color:#eff6ff; border-left:4px solid #2563eb; border-radius:4px; padding:20px; margin-bottom:20px;">
-                                        <h4 style="margin:0 0 14px 0; font-size:16px; font-weight:600; color:#1e40af; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                    <div style="background-color:#eff6ff; border:1px solid #dbeafe; border-left:4px solid #2563eb; border-radius:6px; padding:24px; margin-bottom:20px;">
+                                        <h4 style="margin:0 0 14px 0; font-size:16px; font-weight:600; color:#1e40af;">
                                             1. Connect QuickBooks (Recommended)
                                         </h4>
-                                        <p style="margin:0; font-size:14px; color:#1e40af; line-height:1.7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                        <p style="margin:0; font-size:15px; color:#1e40af; line-height:1.7;">
                                             Automatically import invoices and track deadlines. Connect in your dashboard under "Integrations".
                                         </p>
                                     </div>
-                                    <ul style="margin:0; padding-left:24px; color:#4b5563; font-size:15px; line-height:1.8; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-                                        <li style="margin-bottom:14px; padding-left:4px;">Change your password in Account Settings for security</li>
-                                        <li style="margin-bottom:14px; padding-left:4px;">Create your first project and set up deadline reminders</li>
-                                        <li style="margin-bottom:14px; padding-left:4px;">Run <strong style="color:#1f2937; font-weight:600;">unlimited</strong> lien deadline calculations</li>
-                                        <li style="margin-bottom:14px; padding-left:4px;">Download PDF reports for your records</li>
+                                    <ul style="margin:0; padding-left:24px; color:#4b5563; font-size:15px; line-height:1.8;">
+                                        <li style="margin-bottom:14px;">Change your password in Account Settings for security</li>
+                                        <li style="margin-bottom:14px;">Create your first project and set up deadline reminders</li>
+                                        <li style="margin-bottom:14px;">Run <strong style="color:#1f2937; font-weight:600;">unlimited</strong> lien deadline calculations</li>
+                                        <li style="margin-bottom:0;">Download PDF reports for your records</li>
                                     </ul>
                                 </div>
                                 
                                 <!-- Pro Tip -->
-                                <div style="background-color:#fef3c7; border-left:4px solid #f59e0b; border-radius:4px; padding:16px; margin-bottom:30px;">
-                                    <p style="margin:0; color:#92400e; font-size:14px; line-height:1.7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                <div style="background-color:#fef3c7; border:1px solid #fde68a; border-left:4px solid #f59e0b; border-radius:6px; padding:20px; margin-bottom:30px;">
+                                    <p style="margin:0; color:#92400e; font-size:15px; line-height:1.7;">
                                         <strong style="font-weight:600;">💡 Pro Tip:</strong> Bookmark your dashboard for instant access. Set up email reminders to never miss a deadline.
                                     </p>
                                 </div>
@@ -297,13 +310,13 @@ def send_welcome_email(email: str, temp_password: str):
                         
                         <!-- Footer -->
                         <tr>
-                            <td style="background-color:#f9fafb; padding:25px 30px; border-top:1px solid #e5e7eb;">
+                            <td class="content-cell" style="background-color:#f9fafb; padding:32px 40px; border-top:1px solid #e5e7eb; border-radius:0 0 8px 8px;">
                                 <p style="margin:0 0 12px 0; font-size:14px; color:#4b5563; text-align:center; line-height:1.6;">
                                     <strong>Need Help?</strong> We're here for you!<br>
-                                    Email: <a href="mailto:support@liendeadline.com" style="color:#1e3a8a; text-decoration:none; font-weight:600;">support@liendeadline.com</a><br>
+                                    Email: <a href="mailto:support@liendeadline.com" style="color:#f97316; text-decoration:none; font-weight:600;">support@liendeadline.com</a><br>
                                     Or simply reply to this email.
                                 </p>
-                                <p style="margin:0; font-size:12px; color:#9ca3af; text-align:center;">
+                                <p style="margin:0; font-size:12px; color:#9ca3af; text-align:center; line-height:1.6;">
                                     © {datetime.now().year} LienDeadline. All rights reserved.<br>
                                     <a href="https://liendeadline.com" style="color:#6b7280; text-decoration:none;">liendeadline.com</a>
                                 </p>
