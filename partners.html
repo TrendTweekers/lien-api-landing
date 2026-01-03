@@ -899,21 +899,11 @@
                 <textarea name="message" placeholder="I work with construction material suppliers..." class="w-full p-3 border rounded h-32"></textarea>
             </div>
             
-            <div class="p-4 bg-orange-50 rounded-lg border-2 border-orange-300">
-                <label class="flex items-start cursor-pointer">
-                    <input type="checkbox" name="works_with_suppliers" required class="mt-1 mr-3">
-                    <div>
-                        <span class="block font-semibold text-gray-900">I work with construction material suppliers or contractors</span>
-                        <span class="block text-sm text-gray-600 mt-1">✓ Auto-approved instantly</span>
-                    </div>
-                </label>
-            </div>
-            
             <button type="submit" id="submitBtn" class="orange-btn w-full py-3 rounded-md text-lg font-medium">Submit Application</button>
             
             <p class="text-center text-gray-600 text-sm mt-4">
-                ✓ Auto-approved if you work with construction suppliers<br>
-                🔒 We'll review your application within 24 hours
+                ✓ Instant auto-approval for all applicants<br>
+                📧 Check your email for your referral link and login details
             </p>
         </form>
     </section>
@@ -995,8 +985,7 @@
                 company: formData.get('company'),
                 client_count: formData.get('client_count') || '',
                 commission_model: formData.get('commission_model'),
-                message: formData.get('message') || '',
-                works_with_suppliers: formData.get('works_with_suppliers') === 'on'
+                message: formData.get('message') || ''
             };
             
             // Commission model is always recurring (30%)
@@ -1026,23 +1015,17 @@
                     form.style.display = 'none';
                     successMessage.style.display = 'block';
                     
-                    // Check if auto-approved
-                    if (result.status === 'approved' && result.referral_link) {
-                        successTitle.textContent = '✅ Approved! Check email for your link.';
-                        successMessageText.innerHTML = `
-                            <p style="color: #666; margin-bottom: 16px;">Your referral link has been sent to your email!</p>
-                            <p style="font-size: 0.9375rem; color: #666; margin-bottom: 16px;">
-                                Referral Link: <a href="${result.referral_link}" style="color: #F97316; text-decoration: underline; font-family: monospace;" target="_blank">${result.referral_link}</a>
-                            </p>
-                            <p style="font-size: 0.875rem; color: #9ca3af;">Check your email for login credentials. Access your partner dashboard at <a href="https://liendeadline.tolt.io/login" style="color: #F97316; text-decoration: underline;">https://liendeadline.tolt.io/login</a></p>
-                        `;
-                    } else {
-                        // Manual review message
-                        successTitle.textContent = 'Application Submitted! 🎉';
-                        successMessageText.innerHTML = `
-                            <p style="color: #666;">We'll review your application and send you an email within 24 hours with your unique referral link.</p>
-                        `;
-                    }
+                    // All applicants are auto-approved
+                    successTitle.textContent = '✅ Approved! Check email for your link.';
+                    successMessageText.innerHTML = `
+                        <p style="color: #666; margin-bottom: 16px;">Your account has been created and your referral link has been sent to your email!</p>
+                        ${result.referral_link ? `
+                        <p style="font-size: 0.9375rem; color: #666; margin-bottom: 16px;">
+                            Referral Link: <a href="${result.referral_link}" style="color: #F97316; text-decoration: underline; font-family: monospace;" target="_blank">${result.referral_link}</a>
+                        </p>
+                        ` : ''}
+                        <p style="font-size: 0.875rem; color: #9ca3af;">Check your email for your referral link and login details. Access your partner dashboard at <a href="https://partners.liendeadline.com/login" style="color: #F97316; text-decoration: underline;">https://partners.liendeadline.com/login</a></p>
+                    `;
                     
                     // Scroll to top
                     window.scrollTo({ top: 0, behavior: 'smooth' });
