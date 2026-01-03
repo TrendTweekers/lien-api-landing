@@ -2368,12 +2368,12 @@ function safeAddListener(id, event, handler) {
 }
 
 window.addEventListener('DOMContentLoaded', function() {
-    const urlParams = new URLSearchParams(window.location.search);
+    const stripeUrlParams = new URLSearchParams(window.location.search);
     
     // Multiple checks for Stripe success
-    const hasSessionId = urlParams.has('session_id');
-    const hasSuccess = urlParams.get('success') === 'true';
-    const hasPaymentIntent = urlParams.has('payment_intent');
+    const hasSessionId = stripeUrlParams.has('session_id');
+    const hasSuccess = stripeUrlParams.get('success') === 'true';
+    const hasPaymentIntent = stripeUrlParams.has('payment_intent');
     
     if (hasSessionId || hasSuccess || hasPaymentIntent) {
         console.log('✅ Stripe success detected!');
@@ -3288,26 +3288,41 @@ function togglePartnerModel(model) {
 
 
 function updatePartnerCalculator() {
-    const clientCount = parseInt(document.getElementById('partnerClientCount').value) || parseInt(document.getElementById('partnerClientCountBounty').value) || 0;
+    // Guard: Check if calculator elements exist (calculator was removed from homepage)
+    const clientCountInput = document.getElementById('partnerClientCount');
+    const clientCountBountyInput = document.getElementById('partnerClientCountBounty');
     
-    // Sync both inputs
-    document.getElementById('partnerClientCount').value = clientCount;
-    document.getElementById('partnerClientCountBounty').value = clientCount;
+    if (!clientCountInput && !clientCountBountyInput) {
+        // Calculator elements don't exist - this is expected if calculator was removed
+        return;
+    }
+    
+    const clientCount = parseInt(clientCountInput?.value || clientCountBountyInput?.value || '0') || 0;
+    
+    // Sync both inputs if they exist
+    if (clientCountInput) clientCountInput.value = clientCount;
+    if (clientCountBountyInput) clientCountBountyInput.value = clientCount;
     
     if (selectedPartnerModel === 'recurring') {
         const monthly = clientCount * 50;
         const annual = monthly * 12;
-        document.getElementById('recurringMonthly').textContent = `${clientCount} × $50 = $${monthly.toLocaleString()}/month`;
-        document.getElementById('recurringAnnual').textContent = `${clientCount} × $50 × 12 = $${annual.toLocaleString()}/year`;
+        const recurringMonthlyEl = document.getElementById('recurringMonthly');
+        const recurringAnnualEl = document.getElementById('recurringAnnual');
+        if (recurringMonthlyEl) recurringMonthlyEl.textContent = `${clientCount} × $50 = $${monthly.toLocaleString()}/month`;
+        if (recurringAnnualEl) recurringAnnualEl.textContent = `${clientCount} × $50 × 12 = $${annual.toLocaleString()}/year`;
     } else {
         const total = clientCount * 500;
-        document.getElementById('bountyTotal').textContent = `${clientCount} × $500 = $${total.toLocaleString()} one-time`;
+        const bountyTotalEl = document.getElementById('bountyTotal');
+        if (bountyTotalEl) bountyTotalEl.textContent = `${clientCount} × $500 = $${total.toLocaleString()} one-time`;
     }
 }
 
-// Initialize calculator on page load
+// Initialize calculator on page load (only if elements exist)
 document.addEventListener('DOMContentLoaded', function() {
-    updatePartnerCalculator();
+    // Only call if calculator elements exist
+    if (document.getElementById('partnerClientCount') || document.getElementById('partnerClientCountBounty')) {
+        updatePartnerCalculator();
+    }
 });
 
 // Professional plan Stripe payment link tracking
@@ -3393,8 +3408,8 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- Success Parameter Handling -->
     <script>
       // Check for success parameter from Stripe redirect
-      const urlParams = new URLSearchParams(window.location.search);
-      const success = urlParams.get('success');
+      const successParams = new URLSearchParams(window.location.search);
+      const success = successParams.get('success');
       
       if (success === 'true') {
         // Show success message
