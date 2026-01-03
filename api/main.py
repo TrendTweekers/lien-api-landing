@@ -15,7 +15,14 @@ import os
 import subprocess
 import sys
 import bcrypt
-import stripe
+try:
+    import stripe
+    STRIPE_AVAILABLE = True
+except ImportError as e:
+    STRIPE_AVAILABLE = False
+    stripe = None
+    print(f"⚠️ Warning: Stripe library not installed: {e}")
+    print("   Install with: pip install stripe")
 import traceback
 # REMOVED: from api.migrations.fix_production_schema import fix_postgres_schema
 
@@ -1095,8 +1102,21 @@ def init_db():
         except:
             pass
 
-# Initialize Stripe
-stripe.api_key = os.getenv('STRIPE_SECRET_KEY', '')
+# Initialize Stripe - Set API key from environment variable
+# Always set stripe.api_key to ensure stripe module is properly initialized
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY') or os.getenv('STRIPE_KEY') or ''
+
+if STRIPE_AVAILABLE:
+    stripe.api_key = STRIPE_SECRET_KEY
+
+    if not STRIPE_SECRET_KEY:
+        print("⚠️ Warning: STRIPE_SECRET_KEY not found in environment variables")
+        print("   Stripe checkout sessions will fail without a valid API key")
+    else:
+        print(f"✅ Stripe API key initialized (length: {len(STRIPE_SECRET_KEY)} chars)")
+else:
+    print("⚠️ Warning: Stripe library not available - checkout sessions will fail")
+
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 
 @app.get("/api/force-db-fix")
@@ -5216,6 +5236,23 @@ class CheckoutRequest(BaseModel):
 @app.post("/api/create-checkout-session")
 async def create_checkout_session(request: Request, checkout_request: CheckoutRequest):
     try:
+        # Verify Stripe is properly initialized
+        if not STRIPE_AVAILABLE or stripe is None:
+            error_msg = "Stripe library not available. Please install stripe package."
+            print(f"❌ {error_msg}")
+            return JSONResponse(
+                status_code=500,
+                content={"error": error_msg}
+            )
+        
+        if not stripe.api_key:
+            error_msg = "Stripe API key not configured. Please set STRIPE_SECRET_KEY environment variable."
+            print(f"❌ {error_msg}")
+            return JSONResponse(
+                status_code=500,
+                content={"error": error_msg}
+            )
+        
         # Use environment variables for price IDs or default to test values
         # You should set these in your environment variables
         PRICE_MONTHLY = os.getenv("STRIPE_PRICE_MONTHLY", "price_1Qd5xLKg7t5Qd4mZ...")  # Replace with actual test price ID
