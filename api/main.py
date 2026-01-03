@@ -5222,9 +5222,19 @@ class CheckoutRequest(BaseModel):
     plan: str
     referral_id: Optional[str] = None
 
+# SIMPLE TEST VERSION - Uncomment this to test if endpoint works at all:
+# @app.post("/api/create-checkout-session")
+# async def create_checkout_session(request: Request, checkout_request: CheckoutRequest):
+#     return {"test": "endpoint works", "stripe_installed": stripe is not None}
+
 @app.post("/api/create-checkout-session")
 async def create_checkout_session(request: Request, checkout_request: CheckoutRequest):
+    print("ENDPOINT CALLED", flush=True)
     import sys
+    sys.stdout.flush()
+    
+    print("========== CHECKOUT SESSION ENDPOINT HIT ==========", flush=True)
+    sys.stdout.flush()
     
     # Explicit checks at the very start - before any other code
     if stripe is None:
