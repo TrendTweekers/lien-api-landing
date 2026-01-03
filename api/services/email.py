@@ -136,7 +136,7 @@ def send_broker_welcome_email(email: str, name: str, link: str, code: str):
             <ul style="color: #92400e; line-height: 1.8; margin: 0;">
                 <li><strong>$500 one-time</strong> per signup (bounty model)</li>
                 <li><strong>$50/month recurring</strong> per active subscriber (recurring model)</li>
-                <li>Commissions paid after 60-day customer retention period</li>
+                <li>Commission held for 60 days after customer payment to prevent fraud, then paid monthly</li>
             </ul>
         </div>
         
@@ -305,13 +305,13 @@ def send_broker_notification(broker_email: str, customer_email: str):
             <h3 style="color: #1e293b; margin-top: 0;">Referral Details</h3>
             <p style="margin: 10px 0;"><strong>Customer Email:</strong> {customer_email}</p>
             <p style="margin: 10px 0;"><strong>Plan:</strong> Professional ($299/month)</p>
-            <p style="margin: 10px 0;"><strong>Commission Status:</strong> <span style="color: #f59e0b; font-weight: bold;">Pending (60-day retention period)</span></p>
+            <p style="margin: 10px 0;"><strong>Commission Status:</strong> <span style="color: #f59e0b; font-weight: bold;">Pending (60-day holding period)</span></p>
             <p style="margin: 10px 0;"><strong>Commission Amount:</strong> <span style="color: #059669; font-size: 20px; font-weight: bold;">$500</span> (one-time bounty)</p>
         </div>
         
         <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0;">
             <p style="margin: 0; color: #92400e;">
-                <strong>⏰ Payment Timeline:</strong> Your commission will be paid after the customer completes their 60-day retention period. You'll receive an email when payment is processed.
+                <strong>⏰ Payment Timeline:</strong> Commission held for 60 days after customer payment to prevent fraud, then paid monthly. You'll receive an email when payment is processed.
             </p>
         </div>
         
@@ -524,7 +524,7 @@ def send_welcome_email_background(email: str, referral_link: str, name: str = ""
                                     Your specific commission model is visible in your broker dashboard.
                                 </p>
                                 <p style="margin: 0; font-size: 13px; color: #6b7280; font-style: italic;">
-                                    All commissions are subject to a 60-day holding period after customer payment.
+                                    Commission held for 60 days after customer payment to prevent fraud, then paid monthly.
                                 </p>
                             </div>
                         </td>

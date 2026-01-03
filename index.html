@@ -102,6 +102,19 @@
         };
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .orange-btn { 
+            background-color: #F97316; 
+            color: white; 
+        }
+        .orange-btn:hover { 
+            background-color: #E66A00; 
+        }
+        .orange-btn:disabled { 
+            opacity: 0.6; 
+            cursor: not-allowed; 
+        }
+    </style>
     
     <!-- Lovable Scale Stylesheet (load first) -->
     <link rel="stylesheet" href="/lovable-scale.css">
@@ -1278,160 +1291,93 @@
         </section>
         
         <!-- Partners Section -->
-        <section id="partners" class="py-24 lg:py-32 bg-gradient-to-br from-slate-900 to-slate-800 text-white">
-            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-                    <!-- Left: Copy -->
+        <section id="partners" class="py-20 px-6 text-center bg-gray-50">
+            <h1 class="text-4xl font-bold mb-4">Turn Your Network into Recurring Revenue</h1>
+            <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">Join the LienDeadline Partner Program and earn up to $500 per referral or 30% recurring commissions. We handle onboarding, billing, and support— you focus on sharing.</p>
+            <a href="/partners.html" class="orange-btn px-6 py-3 rounded-md text-lg font-medium inline-block" style="text-decoration: none; background-color: #F97316; color: white;">Apply Now</a>
+        </section>
+
+        <!-- Overview/Features: Bullet lists with icons, like main site's features -->
+        <section class="py-16 px-6 max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8 text-center">Why Partner with LienDeadline?</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="p-6 border rounded-lg">
+                    <span class="text-3xl mb-4 block">💰</span>
+                    <h3 class="text-xl font-semibold mb-2">Lucrative Earnings</h3>
+                    <p class="text-gray-600">Choose $500 bounty per client or $50/month recurring. Potential for $6,000+ annual passive income from 10 clients.</p>
+                </div>
+                <div class="p-6 border rounded-lg">
+                    <span class="text-3xl mb-4 block">🤝</span>
+                    <h3 class="text-xl font-semibold mb-2">Easy Referrals</h3>
+                    <p class="text-gray-600">Share your unique link. We onboard, train, and support your referrals—no extra work for you.</p>
+                </div>
+                <div class="p-6 border rounded-lg">
+                    <span class="text-3xl mb-4 block">📈</span>
+                    <h3 class="text-xl font-semibold mb-2">Track Everything</h3>
+                    <p class="text-gray-600">Real-time dashboard shows referrals, commissions, and payouts. Transparent and automated.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works: Step-by-step, matching main site's process explanations -->
+        <section class="py-16 px-6 bg-white max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8 text-center">How Partnering Works</h2>
+            <div class="space-y-8">
+                <div class="flex items-start">
+                    <span class="text-2xl mr-4 font-bold text-orange-600">1</span>
                     <div>
-                        <span class="inline-block text-accent text-sm font-semibold mb-4">
-                            PARTNER PROGRAM
-                        </span>
-                        <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl mb-6">
-                            Earn while helping your clients <span class="italic">protect receivables</span>
-                        </h2>
-                        <p class="text-lg text-white/70 mb-8">
-                            Insurance brokers, accountants, and consultants: add LienDeadline to your toolkit and earn up to $180K MRR in recurring commissions.
-                        </p>
-                        
-                        <div class="space-y-4 mb-8">
-                            <div class="flex items-start gap-4">
-                                <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                                    <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold mb-1">$500 Per Referral</h3>
-                                    <p class="text-sm text-white/70">
-                                        Earn a one-time bounty for every client you bring on board.
-                                    </p>
-                                </div>
-                            </div>
-                            
-                            <div class="flex items-start gap-4">
-                                <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                                    <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold mb-1">$50/Month Recurring</h3>
-                                    <p class="text-sm text-white/70">
-                                        Or choose 15% recurring revenue share for ongoing income.
-                                    </p>
-                                </div>
-                            </div>
-                            
-                            <div class="flex items-start gap-4">
-                                <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                                    <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold mb-1">Add Value to Clients</h3>
-                                    <p class="text-sm text-white/70">
-                                        Help your construction clients protect their receivables.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <a href="/partners.html" class="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-lg bg-accent text-white font-semibold text-lg hover:bg-accent/90 transition-colors">
-                            Join Partner Program
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                            </svg>
-                        </a>
+                        <h3 class="text-xl font-semibold mb-2">Share Your Link</h3>
+                        <p class="text-gray-600">Send your unique referral link to clients in construction, supply, or related fields.</p>
                     </div>
-                    
-                    <!-- Right: Revenue calculator preview -->
-                    <div class="relative">
-                        <div class="bg-white/5 backdrop-blur rounded-2xl border border-white/10 p-6 sm:p-8">
-                            <div class="mb-4">
-                                <p class="text-sm text-white/60 mb-2">Partners choose their preferred payment model</p>
-                                <h3 class="font-semibold mb-2">Choose Your Partner Payment Model</h3>
-                                <p class="text-xs text-white/50">Select ONE model - you cannot earn both for the same client</p>
-                            </div>
-                            
-                            <!-- Model Toggle -->
-                            <div class="flex gap-2 mb-6 p-1 bg-white/5 rounded-lg border border-white/10">
-                                <button id="recurringToggle" class="partner-model-btn active flex-1 py-2 px-4 rounded-md font-semibold text-sm transition-all" onclick="togglePartnerModel('recurring')">
-                                    Recurring Revenue
-                                </button>
-                                <button id="bountyToggle" class="partner-model-btn flex-1 py-2 px-4 rounded-md font-semibold text-sm transition-all" onclick="togglePartnerModel('bounty')">
-                                    Upfront Bounty
-                                </button>
-                            </div>
-                            
-                            <!-- Recurring Revenue Model Display -->
-                            <div id="recurringModel" class="partner-model-content">
-                                <div class="mb-4">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="text-xl">💰</span>
-                                        <h4 class="font-semibold">Recurring Revenue Model</h4>
-                                    </div>
-                                    <ul class="text-sm text-white/70 space-y-1 mb-4">
-                                        <li>• Earn $50/month for EVERY active client</li>
-                                        <li>• Works for both monthly ($299) and annual ($2,390) subscribers</li>
-                                        <li>• Get paid monthly as long as clients remain active</li>
-                                    </ul>
-                                </div>
-                                
-                                <div class="bg-white/5 rounded-lg p-4 border border-white/10">
-                                    <label class="block text-sm text-white/70 mb-2">Number of clients:</label>
-                                    <input type="number" id="partnerClientCount" value="100" min="0" class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-accent mb-4" oninput="updatePartnerCalculator()">
-                                    
-                                    <div id="recurringResults" class="space-y-2">
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-sm text-white/70">Monthly earnings:</span>
-                                            <span class="text-xl font-serif text-accent" id="recurringMonthly">100 × $50 = $5,000/month</span>
-                                        </div>
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-sm text-white/70">Annual projection:</span>
-                                            <span class="text-xl font-serif text-accent" id="recurringAnnual">100 × $50 × 12 = $60,000/year</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Upfront Bounty Model Display -->
-                            <div id="bountyModel" class="partner-model-content hidden">
-                                <div class="mb-4">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="text-xl">💵</span>
-                                        <h4 class="font-semibold">Upfront Bounty Model</h4>
-                                    </div>
-                                    <ul class="text-sm text-white/70 space-y-1 mb-4">
-                                        <li>• Earn $500 one-time per referred client</li>
-                                        <li>• Get paid immediately when client signs up</li>
-                                        <li>• No ongoing payments</li>
-                                    </ul>
-                                </div>
-                                
-                                <div class="bg-white/5 rounded-lg p-4 border border-white/10">
-                                    <label class="block text-sm text-white/70 mb-2">Number of clients:</label>
-                                    <input type="number" id="partnerClientCountBounty" value="100" min="0" class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-accent mb-4" oninput="updatePartnerCalculator()">
-                                    
-                                    <div id="bountyResults" class="space-y-2">
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-sm text-white/70">Total earnings:</span>
-                                            <span class="text-2xl font-serif text-accent" id="bountyTotal">100 × $500 = $50,000 one-time</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Clarifying Note -->
-                            <div class="mt-6 pt-4 border-t border-white/10">
-                                <p class="text-xs text-white/50 italic">
-                                    Note: Partners select ONE payment model when they join the program. You cannot earn both the bounty and recurring revenue for the same client.
-                                </p>
-                            </div>
-                        </div>
+                </div>
+                <div class="flex items-start">
+                    <span class="text-2xl mr-4 font-bold text-orange-600">2</span>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">We Onboard & Support</h3>
+                        <p class="text-gray-600">Our team handles setup, training, and ongoing help—your referrals get white-glove service.</p>
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <span class="text-2xl mr-4 font-bold text-orange-600">3</span>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">You Get Paid</h3>
+                        <p class="text-gray-600">Earn commissions monthly via direct deposit. Track everything in your partner dashboard.</p>
                     </div>
                 </div>
             </div>
+        </section>
+
+        <!-- Calculator Section -->
+        <section class="py-16 px-6 bg-gray-50 max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8 text-center">Calculate Your Earning Potential</h2>
+            <div class="p-6 border rounded-lg bg-white">
+                <label class="block text-gray-700 font-semibold mb-4">How many contractor/supplier clients do you have?</label>
+                <input type="number" id="homepageClientCount" class="w-full p-3 border rounded mb-6" value="10" min="1" oninput="calculateHomepageEarnings()">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="p-4 bg-gray-50 rounded-lg text-center">
+                        <p class="text-gray-600 mb-2 text-sm">One-Time Bounty</p>
+                        <p class="text-3xl font-bold text-orange-600" id="homepageBountyAmount">$5,000</p>
+                        <p class="text-gray-500 text-sm mt-1">$500 per client</p>
+                    </div>
+                    <div class="p-4 bg-gray-50 rounded-lg text-center">
+                        <p class="text-gray-600 mb-2 text-sm">Monthly Recurring</p>
+                        <p class="text-3xl font-bold text-orange-600" id="homepageMonthlyAmount">$500/mo</p>
+                        <p class="text-gray-500 text-sm mt-1">$50 per client/month</p>
+                    </div>
+                </div>
+                
+                <div class="text-center p-4 bg-orange-50 rounded-lg border-2 border-dashed border-orange-300">
+                    <p class="text-gray-700">That's <strong class="text-orange-600 text-xl" id="homepageAnnualAmount">$6,000/year</strong> in passive income</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final CTA: Matches main site's upgrade prompts -->
+        <section class="py-20 px-6 text-center bg-gray-50">
+            <h2 class="text-3xl font-bold mb-4">Ready to Start Earning?</h2>
+            <p class="text-xl text-gray-600 mb-8">Apply today and get your referral link in minutes.</p>
+            <a href="/partners.html" class="orange-btn px-6 py-3 rounded-md text-lg font-medium inline-block" style="text-decoration: none; background-color: #F97316; color: white;">Apply Now</a>
         </section>
         
         <!-- Final CTA Section -->
@@ -3419,6 +3365,33 @@ function togglePartnerModel(model) {
     }
     
     updatePartnerCalculator();
+}
+
+// Homepage calculator function
+function calculateHomepageEarnings() {
+    const clients = parseInt(document.getElementById('homepageClientCount').value) || 0;
+    const bounty = clients * 500;
+    const monthly = clients * 50;
+    const annual = monthly * 12;
+    
+    document.getElementById('homepageBountyAmount').textContent = '$' + bounty.toLocaleString();
+    document.getElementById('homepageMonthlyAmount').textContent = '$' + monthly.toLocaleString() + '/mo';
+    document.getElementById('homepageAnnualAmount').textContent = '$' + annual.toLocaleString() + '/year';
+}
+
+// Initialize homepage calculator on page load
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById('homepageClientCount')) {
+                calculateHomepageEarnings();
+            }
+        });
+    } else {
+        if (document.getElementById('homepageClientCount')) {
+            calculateHomepageEarnings();
+        }
+    }
 }
 
 function updatePartnerCalculator() {
