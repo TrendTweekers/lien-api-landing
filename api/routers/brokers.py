@@ -55,9 +55,11 @@ async def auto_approve_broker(name: str, email: str, company: str, commission_mo
         random_suffix = ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(6))
         referral_code = f"broker_{random_suffix}"
         
-        # Generate short code for clean referral link
+        # Use professional referral link format with ?via= parameter
+        referral_link = f"https://liendeadline.com/?via={referral_code}"
+        
+        # Generate short code for legacy compatibility (not used in referral link anymore)
         short_code = ShortLinkGenerator.generate_short_code(email, length=4)
-        referral_link = f"https://liendeadline.com/r/{short_code}"
         
         # Generate temporary password
         temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
@@ -75,10 +77,12 @@ async def auto_approve_broker(name: str, email: str, company: str, commission_mo
                 cursor.execute("SELECT short_code FROM brokers WHERE short_code = ?", (short_code,))
             
             if cursor.fetchone():
-                # Collision - generate longer random code
+                # Collision - generate new referral code
+                random_suffix = ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(6))
+                referral_code = f"broker_{random_suffix}"
+                referral_link = f"https://liendeadline.com/?via={referral_code}"
                 short_code = ShortLinkGenerator.generate_random_code(length=6)
-                referral_link = f"https://liendeadline.com/r/{short_code}"
-                print(f"⚠️ Short code collision, using random code: {short_code}")
+                print(f"⚠️ Short code collision, using new referral code: {referral_code}")
             
             # Create broker record with status='approved'
             if DB_TYPE == 'postgresql':
@@ -680,11 +684,11 @@ async def apply_partner(request: Request):
                 content={"status": "error", "message": "Missing required fields"}
             )
         
-        # Auto-approval logic
-        if works_with_suppliers:
-            print("🚀 AUTO-APPROVAL: Creating broker immediately...")
-            return await auto_approve_broker(name, email, company, commission_model, message)
+        # Auto-approval logic - ALL applicants are auto-approved
+        print("🚀 AUTO-APPROVAL: Creating broker immediately...")
+        return await auto_approve_broker(name, email, company, commission_model, message)
         
+        # NOTE: The code below is no longer reached as all applicants are auto-approved
         # Insert into database
         print("💾 Attempting database insert...")
         

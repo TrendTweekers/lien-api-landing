@@ -686,6 +686,51 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
             "trace": traceback.format_exc()
         }
 
+@router.delete("/api/admin/delete-broker/{broker_id}")
+async def delete_broker(broker_id: int, username: str = Depends(verify_admin)):
+    """Delete a broker and all their referrals"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Check if broker exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id FROM brokers WHERE id = %s", (broker_id,))
+            else:
+                cursor.execute("SELECT id FROM brokers WHERE id = ?", (broker_id,))
+            
+            broker = cursor.fetchone()
+            if not broker:
+                raise HTTPException(status_code=404, detail=f"Broker with id {broker_id} not found")
+            
+            # Delete referrals first (foreign key constraint)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("DELETE FROM referrals WHERE broker_id = %s", (broker_id,))
+                cursor.execute("DELETE FROM brokers WHERE id = %s", (broker_id,))
+            else:
+                cursor.execute("DELETE FROM referrals WHERE broker_id = ?", (broker_id,))
+                cursor.execute("DELETE FROM brokers WHERE id = ?", (broker_id,))
+            
+            conn.commit()
+            
+            logger.info(f"Broker {broker_id} and all associated referrals deleted by {username}")
+            
+            return {
+                "success": True,
+                "message": f"Broker {broker_id} and all associated referrals deleted successfully"
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting broker {broker_id}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete broker: {str(e)}"
+        )
+
 @router.get("/api/admin/email-captures")
 async def get_email_captures_api(username: str = Depends(verify_admin)):
     """Get all email captures from calculator email gate"""
