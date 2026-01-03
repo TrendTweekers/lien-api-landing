@@ -171,8 +171,9 @@ def send_broker_welcome_email(email: str, name: str, link: str, code: str):
                                         💰 Commission Structure
                                     </h3>
                                     <ul style="margin:0; padding-left:24px; color:#92400e; line-height:1.8; font-size:15px;">
-                                        <li style="margin-bottom:0; padding-left:4px;"><strong style="font-weight:600;">30% monthly recurring commission</strong> on every subscription payment ($89.70 per client per month)</li>
-                                        <li style="margin-bottom:0; padding-left:4px;">Commission held for 30 days after customer payment to prevent fraud, then paid monthly</li>
+                                        <li style="margin-bottom:8px; padding-left:4px;"><strong style="font-weight:600;">30% Monthly Recurring Commission</strong></li>
+                                        <li style="margin-bottom:8px; padding-left:4px;">Earn $89.70 per month for every active client ($299/mo subscription)</li>
+                                        <li style="margin-bottom:0; padding-left:4px;">30-day hold period for fraud prevention</li>
                                     </ul>
                                 </div>
                                 
@@ -578,11 +579,11 @@ def send_broker_password_reset_email(email: str, name: str, reset_link: str):
 
 def send_welcome_email_background(email: str, referral_link: str, name: str = "", referral_code: str = "", commission_model: str = "bounty", temp_password: str = ""):
     """Background email function for partner approval"""
-    # Use short link format if referral_link is provided, otherwise fallback to old format
+    # Use professional link format if referral_link is provided, otherwise fallback to via format
     if not referral_link:
-        referral_link = f"https://liendeadline.com/?ref={referral_code}"
+        referral_link = f"https://liendeadline.com/?via={referral_code}"
         
-    dashboard_url = "https://liendeadline.tolt.io/login"
+    dashboard_url = "https://partners.liendeadline.com/login"
     
     body_html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -594,11 +595,11 @@ def send_welcome_email_background(email: str, referral_link: str, name: str = ""
 </head>
 <body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937;">
     <!-- Email wrapper -->
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f9fafb;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width: 100%; max-width: 650px; background-color: #f9fafb;">
         <tr>
             <td align="center" style="padding: 40px 20px;">
                 <!-- Main content container -->
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="650" style="width: 100%; max-width: 650px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
                     
                     <!-- Header -->
                     <tr>
@@ -695,19 +696,6 @@ def send_welcome_email_background(email: str, referral_link: str, name: str = ""
                             <p style="margin: 16px 0 0; font-size: 14px; color: #6b7280;">
                                 Login with: <strong style="color: #1f2937;">{email}</strong>
                             </p>
-                            {f'''
-                            <div style="margin-top: 24px; padding: 20px; background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px;">
-                                <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #92400e;">
-                                    🔐 Your Temporary Password
-                                </p>
-                                <p style="margin: 0; font-size: 18px; font-weight: 700; color: #1f2937; font-family: 'Courier New', monospace; letter-spacing: 2px;">
-                                    {temp_password}
-                                </p>
-                                <p style="margin: 12px 0 0; font-size: 13px; color: #92400e;">
-                                    Please change this password after your first login for security.
-                                </p>
-                            </div>
-                            ''' if temp_password else ''}
                         </td>
                     </tr>
                     
