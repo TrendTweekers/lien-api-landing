@@ -2350,8 +2350,33 @@
 // ==========================================
 // TOLT AFFILIATE SYSTEM
 // ==========================================
-// Tolt handles all referral tracking via window.tolt_referral
-// No custom referral code logic needed
+// Priority: Check URL parameter 'via' first, then fall back to Tolt's window.tolt_referral
+
+(function() {
+    // Check for 'via' parameter in URL (e.g., ?via=ID)
+    const urlParams = new URLSearchParams(window.location.search);
+    const viaParam = urlParams.get('via');
+    
+    if (viaParam && viaParam.trim() !== '') {
+        // Set window.tolt_referral from URL parameter
+        window.tolt_referral = viaParam.trim();
+        console.log('✅ Tolt referral ID captured from URL (via parameter):', window.tolt_referral);
+        
+        // Store in sessionStorage for persistence across page navigations
+        sessionStorage.setItem('tolt_referral', window.tolt_referral);
+    } else {
+        // Fall back to sessionStorage if available
+        const storedReferral = sessionStorage.getItem('tolt_referral');
+        if (storedReferral) {
+            window.tolt_referral = storedReferral;
+            console.log('✅ Tolt referral ID restored from sessionStorage:', window.tolt_referral);
+        } else {
+            // If Tolt script sets window.tolt_referral, use that
+            // Otherwise, it will be null/undefined
+            console.log('ℹ️ No via parameter found, waiting for Tolt script to set window.tolt_referral');
+        }
+    }
+})();
 
 // ==========================================
 // 2. STRIPE SUCCESS DETECTION (ENHANCED)

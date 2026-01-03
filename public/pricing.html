@@ -15,6 +15,35 @@
     </script>
     <!-- Umami Analytics -->
     <script defer src="https://cloud.umami.is/script.js" data-website-id="02250d35-ee17-41be-845d-2fe0f7f15e63"></script>
+    <!-- Tolt Affiliate System -->
+    <script async src="https://cdn.tolt.io/tolt.js" data-tolt="pk_zPxK1Qfn14jf5sGBc2kD2eqQ"></script>
+    <!-- Tolt Referral Tracking: Prioritize 'via' URL parameter -->
+    <script>
+        (function() {
+            // Check for 'via' parameter in URL (e.g., ?via=ID)
+            const urlParams = new URLSearchParams(window.location.search);
+            const viaParam = urlParams.get('via');
+            
+            if (viaParam && viaParam.trim() !== '') {
+                // Set window.tolt_referral from URL parameter
+                window.tolt_referral = viaParam.trim();
+                console.log('✅ Tolt referral ID captured from URL (via parameter):', window.tolt_referral);
+                
+                // Store in sessionStorage for persistence across page navigations
+                sessionStorage.setItem('tolt_referral', window.tolt_referral);
+            } else {
+                // Fall back to sessionStorage if available
+                const storedReferral = sessionStorage.getItem('tolt_referral');
+                if (storedReferral) {
+                    window.tolt_referral = storedReferral;
+                    console.log('✅ Tolt referral ID restored from sessionStorage:', window.tolt_referral);
+                } else {
+                    // If Tolt script sets window.tolt_referral, use that
+                    console.log('ℹ️ No via parameter found, waiting for Tolt script to set window.tolt_referral');
+                }
+            }
+        })();
+    </script>
     
     <meta name="description" content="Unlimited lien deadline calculations for $299/month. QuickBooks integration included. Built for material suppliers.">
     
@@ -786,8 +815,10 @@
                 });
             }
             
-            // Get Tolt referral ID from window
-            const toltReferralId = window.tolt_referral || null;
+            // Get Tolt referral ID: prioritize 'via' URL parameter, then window.tolt_referral, then sessionStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            const viaParam = urlParams.get('via');
+            const toltReferralId = viaParam || window.tolt_referral || sessionStorage.getItem('tolt_referral') || null;
             console.log('🔗 Tolt referral ID:', toltReferralId);
             
             try {
