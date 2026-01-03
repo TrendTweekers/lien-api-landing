@@ -250,7 +250,7 @@ def send_reminder_email(reminder):
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
-    <body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color:#f3f4f6;">
+    <body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color:#f3f4f6; line-height:1.6;">
         
         <!-- Main Container -->
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6; padding:20px 0;">
@@ -289,8 +289,8 @@ def send_reminder_email(reminder):
                             <td style="padding:40px 30px;">
                                 
                                 <!-- Greeting -->
-                                <p style="margin:0 0 20px 0; font-size:16px; color:#374151;">
-                                    Your <strong>{deadline_type_display}</strong> deadline is coming up:
+                                <p style="margin:0 0 24px 0; font-size:16px; color:#374151; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height:1.6;">
+                                    Your <strong style="color:#1f2937; font-weight:600;">{deadline_type_display}</strong> deadline is coming up:
                                 </p>
                                 
                                 <!-- Project Details Box -->
@@ -301,22 +301,22 @@ def send_reminder_email(reminder):
                                                 📋 Project Details
                                             </h2>
                                             
-                                            <table width="100%" cellpadding="8" cellspacing="0">
+                                            <table width="100%" cellpadding="10" cellspacing="0" style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
                                                 <tr>
-                                                    <td style="color:#6b7280; font-weight:600; width:140px;">Project:</td>
-                                                    <td style="color:#111827; font-weight:600;">{reminder['project_name']}</td>
+                                                    <td style="color:#6b7280; font-weight:600; width:140px; font-size:14px; padding:8px 0; vertical-align:top;">Project:</td>
+                                                    <td style="color:#111827; font-weight:600; font-size:14px; padding:8px 0;">{reminder['project_name']}</td>
                                                 </tr>
                                                 <tr>
-                                                    <td style="color:#6b7280; font-weight:600;">Client:</td>
-                                                    <td style="color:#111827;">{reminder['client_name']}</td>
+                                                    <td style="color:#6b7280; font-weight:600; font-size:14px; padding:8px 0; vertical-align:top;">Client:</td>
+                                                    <td style="color:#111827; font-size:14px; padding:8px 0;">{reminder['client_name']}</td>
                                                 </tr>
                                                 <tr>
-                                                    <td style="color:#6b7280; font-weight:600;">Amount:</td>
-                                                    <td style="color:#111827;">{amount_display}</td>
+                                                    <td style="color:#6b7280; font-weight:600; font-size:14px; padding:8px 0; vertical-align:top;">Amount:</td>
+                                                    <td style="color:#111827; font-size:14px; padding:8px 0;">{amount_display}</td>
                                                 </tr>
                                                 <tr>
-                                                    <td style="color:#6b7280; font-weight:600;">State:</td>
-                                                    <td style="color:#111827;">{reminder['state']}</td>
+                                                    <td style="color:#6b7280; font-weight:600; font-size:14px; padding:8px 0; vertical-align:top;">State:</td>
+                                                    <td style="color:#111827; font-size:14px; padding:8px 0;">{reminder['state']}</td>
                                                 </tr>
                                             </table>
                                         </td>
@@ -331,20 +331,20 @@ def send_reminder_email(reminder):
                                                 ⏰ Deadline Information
                                             </h2>
                                             
-                                            <table width="100%" cellpadding="8" cellspacing="0">
+                                            <table width="100%" cellpadding="10" cellspacing="0" style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
                                                 <tr>
-                                                    <td style="color:#6b7280; font-weight:600; width:140px;">Deadline Type:</td>
-                                                    <td style="color:#111827; font-weight:600;">{deadline_type_display}</td>
+                                                    <td style="color:#6b7280; font-weight:600; width:140px; font-size:14px; padding:8px 0; vertical-align:top;">Deadline Type:</td>
+                                                    <td style="color:#111827; font-weight:600; font-size:14px; padding:8px 0;">{deadline_type_display}</td>
                                                 </tr>
                                                 <tr>
-                                                    <td style="color:#6b7280; font-weight:600;">Due Date:</td>
-                                                    <td style="color:{urgency_color}; font-weight:700; font-size:18px;">
+                                                    <td style="color:#6b7280; font-weight:600; font-size:14px; padding:8px 0; vertical-align:top;">Due Date:</td>
+                                                    <td style="color:{urgency_color}; font-weight:700; font-size:18px; padding:8px 0; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
                                                         {formatted_deadline} ({day_of_week})
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <td style="color:#6b7280; font-weight:600;">Days Left:</td>
-                                                    <td style="color:{urgency_color}; font-weight:700; font-size:18px;">
+                                                    <td style="color:#6b7280; font-weight:600; font-size:14px; padding:8px 0; vertical-align:top;">Days Left:</td>
+                                                    <td style="color:{urgency_color}; font-weight:700; font-size:18px; padding:8px 0; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
                                                         {abs(days_until)} day{'s' if abs(days_until) != 1 else ''} {'overdue' if days_until < 0 else ''}
                                                     </td>
                                                 </tr>
@@ -364,11 +364,11 @@ def send_reminder_email(reminder):
                                 ''' if reminder.get('notes') else ''}
                                 
                                 <!-- Primary CTA Button -->
-                                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
                                     <tr>
-                                        <td align="center" style="padding:10px 0;">
+                                        <td align="center" style="padding:12px 0;">
                                             <a href="https://liendeadline.com/dashboard-v2" 
-                                               style="display:inline-block; background-color:{urgency_color}; color:white; text-decoration:none; padding:16px 32px; border-radius:8px; font-weight:700; font-size:16px; box-shadow:0 4px 6px rgba(0,0,0,0.15);">
+                                               style="display:inline-block; background-color:{urgency_color}; color:#ffffff; text-decoration:none; padding:18px 36px; border-radius:8px; font-weight:700; font-size:16px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-shadow:0 4px 12px rgba(0,0,0,0.15); letter-spacing:0.3px;">
                                                 View Project in Dashboard →
                                             </a>
                                         </td>
@@ -378,9 +378,9 @@ def send_reminder_email(reminder):
                                 <!-- Secondary Actions -->
                                 <table width="100%" cellpadding="0" cellspacing="0">
                                     <tr>
-                                        <td align="center" style="padding:10px 0;">
+                                        <td align="center" style="padding:8px 0;">
                                             <a href="https://liendeadline.com/api/v1/guide/{reminder['state_code']}/pdf?invoice_date={reminder['invoice_date']}&state_name={reminder['state']}" 
-                                               style="display:inline-block; background-color:#f9fafb; color:#1e3a8a; text-decoration:none; padding:12px 24px; border-radius:6px; font-weight:600; font-size:14px; border:2px solid #e5e7eb; margin:0 5px;">
+                                               style="display:inline-block; background-color:#ffffff; color:#1e3a8a; text-decoration:none; padding:14px 28px; border-radius:8px; font-weight:600; font-size:14px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; border:2px solid #e5e7eb; transition:all 0.2s;">
                                                 📄 Download State Guide PDF
                                             </a>
                                         </td>

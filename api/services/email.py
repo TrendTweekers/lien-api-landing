@@ -110,54 +110,120 @@ def send_email_sync(to_email: str, subject: str, content: str, is_html: bool = T
 def send_broker_welcome_email(email: str, name: str, link: str, code: str):
     """Send broker welcome email with referral link"""
     html = f"""
+    <!DOCTYPE html>
     <html>
-    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 30px; border-radius: 10px; text-align: center;">
-            <h1 style="margin: 0;">Welcome to LienDeadline Partner Program! 🎉</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">Start earning commissions today</p>
-        </div>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color:#f3f4f6; line-height:1.6;">
         
-        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="color: #1e293b; margin-top: 0;">Congratulations, {name}!</h2>
-            <p style="color: #475569; line-height: 1.8;">Your partner account is now active. Share your referral link with construction clients and start earning commissions.</p>
-        </div>
+        <!-- Main Container -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6; padding:40px 20px;">
+            <tr>
+                <td align="center">
+                    
+                    <!-- Email Card -->
+                    <table width="600" cellpadding="0" cellspacing="0" style="background-color:white; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1); overflow:hidden;">
+                        
+                        <!-- Header -->
+                        <tr>
+                            <td style="background-color:#1e3a8a; padding:35px 30px; text-align:center;">
+                                <h1 style="margin:0; color:white; font-size:28px; font-weight:700; letter-spacing:-0.5px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                    📋 LienDeadline Partner Program
+                                </h1>
+                                <p style="margin:10px 0 0 0; color:#e0e7ff; font-size:16px; font-weight:500;">
+                                    Welcome! Start earning commissions today 🎉
+                                </p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Welcome Message -->
+                        <tr>
+                            <td style="padding:40px 30px;">
+                                <h2 style="margin:0 0 20px 0; font-size:24px; font-weight:600; color:#1f2937; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; letter-spacing:-0.3px;">
+                                    Congratulations, {name}!
+                                </h2>
+                                <p style="margin:0 0 28px 0; font-size:16px; color:#4b5563; line-height:1.7;">
+                                    Your partner account is now active. Share your referral link with construction clients and start earning commissions.
+                                </p>
+                                
+                                <!-- Referral Details Box -->
+                                <div style="background-color:#f9fafb; border:2px solid #e5e7eb; border-radius:8px; padding:24px; margin-bottom:30px;">
+                                    <h3 style="margin:0 0 18px 0; font-size:18px; font-weight:600; color:#1e3a8a; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                        Your Referral Details
+                                    </h3>
+                                    <table width="100%" cellpadding="10" cellspacing="0" style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                        <tr>
+                                            <td style="color:#6b7280; font-weight:600; width:140px; font-size:14px; padding:10px 0; vertical-align:top;">Referral Code:</td>
+                                            <td style="padding:10px 0;"><code style="background:#f1f5f9; padding:8px 12px; border-radius:6px; font-size:16px; font-family:'Courier New', 'Monaco', monospace; font-weight:700; letter-spacing:1px; color:#1f2937;">{code}</code></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color:#6b7280; font-weight:600; font-size:14px; padding:10px 0; vertical-align:top;">Referral Link:</td>
+                                            <td style="padding:10px 0;"><a href="{link}" style="color:#1e3a8a; word-break:break-all; text-decoration:none; font-weight:500;">{link}</a></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <!-- Commission Structure Box -->
+                                <div style="background-color:#fef3c7; border-left:4px solid #f59e0b; border-radius:4px; padding:20px; margin-bottom:30px;">
+                                    <h3 style="margin:0 0 14px 0; font-size:18px; font-weight:600; color:#92400e; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                        💰 Commission Structure
+                                    </h3>
+                                    <ul style="margin:0; padding-left:24px; color:#92400e; line-height:1.8; font-size:15px;">
+                                        <li style="margin-bottom:12px; padding-left:4px;"><strong style="font-weight:600;">$500 one-time</strong> per signup (bounty model)</li>
+                                        <li style="margin-bottom:12px; padding-left:4px;"><strong style="font-weight:600;">$50/month recurring</strong> per active subscriber (recurring model)</li>
+                                        <li style="margin-bottom:0; padding-left:4px;">Commission held for 60 days after customer payment to prevent fraud, then paid monthly</li>
+                                    </ul>
+                                </div>
+                                
+                                <!-- How It Works -->
+                                <div style="margin-bottom:30px;">
+                                    <h3 style="margin:0 0 18px 0; font-size:20px; font-weight:600; color:#1f2937; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; letter-spacing:-0.2px;">
+                                        How It Works
+                                    </h3>
+                                    <ol style="margin:0; padding-left:24px; color:#4b5563; line-height:1.8; font-size:15px;">
+                                        <li style="margin-bottom:14px; padding-left:4px;">Share your referral link with construction clients</li>
+                                        <li style="margin-bottom:14px; padding-left:4px;">When they sign up for LienDeadline Pro ($299/month), you earn a commission</li>
+                                        <li style="margin-bottom:14px; padding-left:4px;">Track all referrals in your dashboard</li>
+                                        <li style="margin-bottom:0; padding-left:4px;">Get paid monthly via PayPal or bank transfer</li>
+                                    </ol>
+                                </div>
+                                
+                                <!-- CTA Button -->
+                                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                                    <tr>
+                                        <td align="center" style="padding:12px 0;">
+                                            <a href="https://liendeadline.com/broker-dashboard" 
+                                               style="display:inline-block; background-color:#1e3a8a; color:#ffffff; text-decoration:none; padding:18px 36px; border-radius:8px; font-weight:700; font-size:16px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-shadow:0 4px 12px rgba(30,58,138,0.3); letter-spacing:0.3px;">
+                                                View Your Dashboard →
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                                
+                            </td>
+                        </tr>
+                        
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color:#f9fafb; padding:25px 30px; border-top:1px solid #e5e7eb;">
+                                <p style="margin:0 0 12px 0; font-size:14px; color:#4b5563; text-align:center; line-height:1.6;">
+                                    Questions? Reply to this email or contact 
+                                    <a href="mailto:partners@liendeadline.com" style="color:#1e3a8a; text-decoration:none; font-weight:600;">partners@liendeadline.com</a>
+                                </p>
+                                <p style="margin:0; font-size:12px; color:#9ca3af; text-align:center;">
+                                    © {datetime.now().year} LienDeadline. All rights reserved.
+                                </p>
+                            </td>
+                        </tr>
+                        
+                    </table>
+                    
+                </td>
+            </tr>
+        </table>
         
-        <div style="background: white; border: 2px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #1e293b; margin-top: 0;">Your Referral Details</h3>
-            <p style="margin: 10px 0;"><strong>Referral Code:</strong> <code style="background: #f1f5f9; padding: 5px 10px; border-radius: 4px; font-size: 16px;">{code}</code></p>
-            <p style="margin: 10px 0;"><strong>Referral Link:</strong></p>
-            <p style="margin: 10px 0;">
-                <a href="{link}" style="color: #2563eb; word-break: break-all;">{link}</a>
-            </p>
-        </div>
-        
-        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0;">
-            <h3 style="color: #92400e; margin-top: 0;">💰 Commission Structure</h3>
-            <ul style="color: #92400e; line-height: 1.8; margin: 0;">
-                <li><strong>$500 one-time</strong> per signup (bounty model)</li>
-                <li><strong>$50/month recurring</strong> per active subscriber (recurring model)</li>
-                <li>Commission held for 60 days after customer payment to prevent fraud, then paid monthly</li>
-            </ul>
-        </div>
-        
-        <div style="margin: 30px 0;">
-            <h3 style="color: #1e293b;">How It Works</h3>
-            <ol style="color: #475569; line-height: 1.8;">
-                <li>Share your referral link with construction clients</li>
-                <li>When they sign up for LienDeadline Pro ($299/month), you earn a commission</li>
-                <li>Track all referrals in your dashboard</li>
-                <li>Get paid monthly via PayPal or bank transfer</li>
-            </ol>
-        </div>
-        
-        <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e2e8f0; margin-top: 30px;">
-            <a href="https://liendeadline.com/broker-dashboard" style="display: inline-block; background: #c1554e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-bottom: 15px;">
-                View Your Dashboard →
-            </a>
-            <p style="color: #64748b; font-size: 14px; margin: 0;">
-                Questions? Reply to this email or contact partners@liendeadline.com
-            </p>
-        </div>
     </body>
     </html>
     """
@@ -173,7 +239,7 @@ def send_welcome_email(email: str, temp_password: str):
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
-    <body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color:#f3f4f6;">
+    <body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color:#f3f4f6; line-height:1.6;">
         
         <!-- Main Container -->
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6; padding:40px 20px;">
@@ -198,31 +264,31 @@ def send_welcome_email(email: str, temp_password: str):
                         <!-- Welcome Message -->
                         <tr>
                             <td style="padding:40px 30px;">
-                                <h2 style="margin:0 0 16px 0; font-size:24px; font-weight:600; color:#1f2937;">
+                                <h2 style="margin:0 0 20px 0; font-size:24px; font-weight:600; color:#1f2937; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; letter-spacing:-0.3px;">
                                     Welcome to LienDeadline!
                                 </h2>
-                                <p style="margin:0 0 24px 0; font-size:16px; color:#4b5563; line-height:1.6;">
+                                <p style="margin:0 0 28px 0; font-size:16px; color:#4b5563; line-height:1.7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
                                     Thank you for joining LienDeadline. Your account is now active and ready to help you protect your receivables with automated lien deadline tracking.
                                 </p>
                                 
                                 <!-- Login Credentials Box -->
                                 <div style="background-color:#f9fafb; border:2px solid #e5e7eb; border-radius:8px; padding:24px; margin-bottom:30px;">
-                                    <h3 style="margin:0 0 16px 0; font-size:18px; font-weight:600; color:#1e3a8a;">
+                                    <h3 style="margin:0 0 18px 0; font-size:18px; font-weight:600; color:#1e3a8a; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
                                         Your Login Credentials
                                     </h3>
-                                    <table width="100%" cellpadding="8" cellspacing="0">
+                                    <table width="100%" cellpadding="10" cellspacing="0" style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
                                         <tr>
-                                            <td style="color:#6b7280; font-weight:600; width:120px; font-size:14px;">Email:</td>
-                                            <td style="color:#111827; font-size:14px;">{email}</td>
+                                            <td style="color:#6b7280; font-weight:600; width:120px; font-size:14px; padding:10px 0; vertical-align:top;">Email:</td>
+                                            <td style="color:#111827; font-size:14px; padding:10px 0;">{email}</td>
                                         </tr>
                                         <tr>
-                                            <td style="color:#6b7280; font-weight:600; font-size:14px;">Password:</td>
-                                            <td style="color:#111827; font-size:16px; font-family:'Courier New',monospace; font-weight:700; letter-spacing:1px;">{temp_password}</td>
+                                            <td style="color:#6b7280; font-weight:600; font-size:14px; padding:10px 0; vertical-align:top;">Password:</td>
+                                            <td style="color:#111827; font-size:16px; font-family:'Courier New', 'Monaco', monospace; font-weight:700; letter-spacing:1px; padding:10px 0;">{temp_password}</td>
                                         </tr>
                                     </table>
-                                    <p style="margin:20px 0 0 0; text-align:center;">
+                                    <p style="margin:24px 0 0 0; text-align:center;">
                                         <a href="https://liendeadline.com/login.html" 
-                                           style="display:inline-block; background-color:#1e3a8a; color:white; text-decoration:none; padding:14px 32px; border-radius:8px; font-weight:700; font-size:16px; box-shadow:0 4px 6px rgba(30,58,138,0.3);">
+                                           style="display:inline-block; background-color:#1e3a8a; color:#ffffff; text-decoration:none; padding:18px 36px; border-radius:8px; font-weight:700; font-size:16px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-shadow:0 4px 12px rgba(30,58,138,0.3); letter-spacing:0.3px;">
                                             Login to Dashboard →
                                         </a>
                                     </p>
@@ -230,29 +296,29 @@ def send_welcome_email(email: str, temp_password: str):
                                 
                                 <!-- Next Steps Section -->
                                 <div style="margin-bottom:30px;">
-                                    <h3 style="margin:0 0 16px 0; font-size:20px; font-weight:600; color:#1f2937;">
+                                    <h3 style="margin:0 0 20px 0; font-size:20px; font-weight:600; color:#1f2937; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; letter-spacing:-0.2px;">
                                         What's Next?
                                     </h3>
                                     <div style="background-color:#eff6ff; border-left:4px solid #2563eb; border-radius:4px; padding:20px; margin-bottom:20px;">
-                                        <h4 style="margin:0 0 12px 0; font-size:16px; font-weight:600; color:#1e40af;">
+                                        <h4 style="margin:0 0 14px 0; font-size:16px; font-weight:600; color:#1e40af; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
                                             1. Connect QuickBooks (Recommended)
                                         </h4>
-                                        <p style="margin:0; font-size:14px; color:#1e40af; line-height:1.6;">
+                                        <p style="margin:0; font-size:14px; color:#1e40af; line-height:1.7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
                                             Automatically import invoices and track deadlines. Connect in your dashboard under "Integrations".
                                         </p>
                                     </div>
-                                    <ul style="margin:0; padding-left:20px; color:#4b5563; font-size:15px; line-height:1.8;">
-                                        <li style="margin-bottom:12px;">Change your password in Account Settings for security</li>
-                                        <li style="margin-bottom:12px;">Create your first project and set up deadline reminders</li>
-                                        <li style="margin-bottom:12px;">Run <strong>unlimited</strong> lien deadline calculations</li>
-                                        <li style="margin-bottom:12px;">Download PDF reports for your records</li>
+                                    <ul style="margin:0; padding-left:24px; color:#4b5563; font-size:15px; line-height:1.8; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                        <li style="margin-bottom:14px; padding-left:4px;">Change your password in Account Settings for security</li>
+                                        <li style="margin-bottom:14px; padding-left:4px;">Create your first project and set up deadline reminders</li>
+                                        <li style="margin-bottom:14px; padding-left:4px;">Run <strong style="color:#1f2937; font-weight:600;">unlimited</strong> lien deadline calculations</li>
+                                        <li style="margin-bottom:14px; padding-left:4px;">Download PDF reports for your records</li>
                                     </ul>
                                 </div>
                                 
                                 <!-- Pro Tip -->
                                 <div style="background-color:#fef3c7; border-left:4px solid #f59e0b; border-radius:4px; padding:16px; margin-bottom:30px;">
-                                    <p style="margin:0; color:#92400e; font-size:14px; line-height:1.6;">
-                                        <strong>💡 Pro Tip:</strong> Bookmark your dashboard for instant access. Set up email reminders to never miss a deadline.
+                                    <p style="margin:0; color:#92400e; font-size:14px; line-height:1.7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                        <strong style="font-weight:600;">💡 Pro Tip:</strong> Bookmark your dashboard for instant access. Set up email reminders to never miss a deadline.
                                     </p>
                                 </div>
                                 
@@ -289,33 +355,113 @@ def send_welcome_email(email: str, temp_password: str):
 def send_broker_notification(broker_email: str, customer_email: str):
     """Notify broker of new referral"""
     html = f"""
+    <!DOCTYPE html>
     <html>
-    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 30px; border-radius: 10px; text-align: center;">
-            <h1 style="margin: 0;">💰 New Referral! 🎉</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">You just earned a commission</p>
-        </div>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color:#f3f4f6; line-height:1.6;">
         
-        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="color: #1e293b; margin-top: 0;">Congratulations!</h2>
-            <p style="color: #475569; line-height: 1.8;">Your referral just signed up for LienDeadline Pro.</p>
-        </div>
+        <!-- Main Container -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6; padding:40px 20px;">
+            <tr>
+                <td align="center">
+                    
+                    <!-- Email Card -->
+                    <table width="600" cellpadding="0" cellspacing="0" style="background-color:white; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1); overflow:hidden;">
+                        
+                        <!-- Success Header -->
+                        <tr>
+                            <td style="background-color:#059669; padding:35px 30px; text-align:center;">
+                                <h1 style="margin:0; color:white; font-size:28px; font-weight:700; letter-spacing:-0.5px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                    💰 New Referral! 🎉
+                                </h1>
+                                <p style="margin:10px 0 0 0; color:#d1fae5; font-size:16px; font-weight:500;">
+                                    You just earned a commission
+                                </p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Congratulations Message -->
+                        <tr>
+                            <td style="padding:40px 30px;">
+                                <h2 style="margin:0 0 20px 0; font-size:24px; font-weight:600; color:#1f2937; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; letter-spacing:-0.3px;">
+                                    Congratulations!
+                                </h2>
+                                <p style="margin:0 0 28px 0; font-size:16px; color:#4b5563; line-height:1.7;">
+                                    Your referral just signed up for LienDeadline Pro.
+                                </p>
+                                
+                                <!-- Referral Details Box -->
+                                <div style="background-color:#f9fafb; border:2px solid #e5e7eb; border-radius:8px; padding:24px; margin-bottom:30px;">
+                                    <h3 style="margin:0 0 18px 0; font-size:18px; font-weight:600; color:#1e3a8a; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                        Referral Details
+                                    </h3>
+                                    <table width="100%" cellpadding="10" cellspacing="0" style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                        <tr>
+                                            <td style="color:#6b7280; font-weight:600; width:160px; font-size:14px; padding:10px 0; vertical-align:top;">Customer Email:</td>
+                                            <td style="color:#111827; font-size:14px; padding:10px 0;">{customer_email}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color:#6b7280; font-weight:600; font-size:14px; padding:10px 0; vertical-align:top;">Plan:</td>
+                                            <td style="color:#111827; font-size:14px; padding:10px 0;">Professional ($299/month)</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color:#6b7280; font-weight:600; font-size:14px; padding:10px 0; vertical-align:top;">Commission Status:</td>
+                                            <td style="color:#f59e0b; font-weight:700; font-size:14px; padding:10px 0;">Pending (60-day holding period)</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color:#6b7280; font-weight:600; font-size:14px; padding:10px 0; vertical-align:top;">Commission Amount:</td>
+                                            <td style="color:#059669; font-size:20px; font-weight:700; padding:10px 0; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">$500 <span style="color:#6b7280; font-size:14px; font-weight:500;">(one-time bounty)</span></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <!-- Payment Timeline Box -->
+                                <div style="background-color:#fef3c7; border-left:4px solid #f59e0b; border-radius:4px; padding:20px; margin-bottom:30px;">
+                                    <p style="margin:0; color:#92400e; font-size:14px; line-height:1.7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                        <strong style="font-weight:600;">⏰ Payment Timeline:</strong> Commission held for 60 days after customer payment to prevent fraud, then paid monthly. You'll receive an email when payment is processed.
+                                    </p>
+                                </div>
+                                
+                                <!-- CTA Button -->
+                                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                                    <tr>
+                                        <td align="center" style="padding:12px 0;">
+                                            <a href="https://liendeadline.com/broker-dashboard" 
+                                               style="display:inline-block; background-color:#059669; color:#ffffff; text-decoration:none; padding:18px 36px; border-radius:8px; font-weight:700; font-size:16px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-shadow:0 4px 12px rgba(5,150,105,0.3); letter-spacing:0.3px;">
+                                                View Your Dashboard →
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                                
+                            </td>
+                        </tr>
+                        
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color:#f9fafb; padding:25px 30px; border-top:1px solid #e5e7eb;">
+                                <p style="margin:0 0 12px 0; font-size:14px; color:#4b5563; text-align:center; line-height:1.6;">
+                                    Questions? Reply to this email or contact 
+                                    <a href="mailto:partners@liendeadline.com" style="color:#1e3a8a; text-decoration:none; font-weight:600;">partners@liendeadline.com</a>
+                                </p>
+                                <p style="margin:0; font-size:12px; color:#9ca3af; text-align:center;">
+                                    © {datetime.now().year} LienDeadline. All rights reserved.
+                                </p>
+                            </td>
+                        </tr>
+                        
+                    </table>
+                    
+                </td>
+            </tr>
+        </table>
         
-        <div style="background: white; border: 2px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #1e293b; margin-top: 0;">Referral Details</h3>
-            <p style="margin: 10px 0;"><strong>Customer Email:</strong> {customer_email}</p>
-            <p style="margin: 10px 0;"><strong>Plan:</strong> Professional ($299/month)</p>
-            <p style="margin: 10px 0;"><strong>Commission Status:</strong> <span style="color: #f59e0b; font-weight: bold;">Pending (60-day holding period)</span></p>
-            <p style="margin: 10px 0;"><strong>Commission Amount:</strong> <span style="color: #059669; font-size: 20px; font-weight: bold;">$500</span> (one-time bounty)</p>
-        </div>
-        
-        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0;">
-            <p style="margin: 0; color: #92400e;">
-                <strong>⏰ Payment Timeline:</strong> Commission held for 60 days after customer payment to prevent fraud, then paid monthly. You'll receive an email when payment is processed.
-            </p>
-        </div>
-        
-        <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e2e8f0; margin-top: 30px;">
+    </body>
+    </html>
+    """
             <a href="https://liendeadline.com/broker-dashboard" style="display: inline-block; background: #c1554e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-bottom: 15px;">
                 View All Referrals →
             </a>
