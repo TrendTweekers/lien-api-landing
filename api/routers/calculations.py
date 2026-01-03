@@ -897,7 +897,7 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
         from reportlab.lib.colors import HexColor
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY, TA_RIGHT
         from PIL import Image as PILImage
         import os
         from io import BytesIO
@@ -981,9 +981,25 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
             
             # Generate PDF
             buffer = BytesIO()
+            
+            # Get state name for footer
+            state_name = calc.get('state') or calc.get('state_code') or 'the applicable state'
+            
+            # Footer function to add on every page
+            def add_footer(canv, doc):
+                canv.saveState()
+                canv.setFont('Helvetica-Oblique', 8)
+                canv.setFillColor(HexColor('#6b7280'))
+                footer_text = f"Calculated based on {state_name} statutory requirements. This is not legal advice."
+                # Position footer at bottom of page (accounting for margins)
+                canv.drawString(0.75*inch, 0.5*inch, footer_text)
+                canv.restoreState()
+            
             doc = SimpleDocTemplate(buffer, pagesize=letter,
                                   rightMargin=0.75*inch, leftMargin=0.75*inch,
-                                  topMargin=0.75*inch, bottomMargin=0.75*inch)
+                                  topMargin=0.75*inch, bottomMargin=1*inch,  # Increased bottom margin for footer
+                                  onFirstPage=add_footer,
+                                  onLaterPages=add_footer)
             
             story = []
             styles = getSampleStyleSheet()
@@ -1058,7 +1074,7 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
                     logo = Image(logo_path, width=logo_width, height=logo_height)
                     logo.hAlign = 'CENTER'
                     story.append(logo)
-                    story.append(Spacer(1, 0.15*inch))
+                    story.append(Spacer(1, 0.28*inch))  # 20pt spacing between logo and header
                 except Exception as e:
                     logger.warning(f"Could not load logo: {e}")
                     # Fallback to text header
@@ -1117,20 +1133,20 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
                 story.append(warning_table)
                 story.append(Spacer(1, 0.3*inch))
             
-            # Title
+            # Title - Left-aligned
             title_style = ParagraphStyle(
                 'Title',
                 parent=styles['Heading1'],
                 fontSize=24,
                 textColor=navy,
                 spaceAfter=12,
-                alignment=TA_CENTER,
+                alignment=TA_LEFT,
                 fontName='Helvetica-Bold'
             )
             story.append(Paragraph("Lien Deadline Report", title_style))
             story.append(Spacer(1, 0.2*inch))
             
-            # Project Information
+            # Project Information - Left-aligned
             heading_style = ParagraphStyle(
                 'Heading',
                 parent=styles['Heading2'],
@@ -1138,6 +1154,7 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
                 textColor=navy,
                 spaceAfter=8,
                 spaceBefore=12,
+                alignment=TA_LEFT,
                 fontName='Helvetica-Bold'
             )
             
@@ -1170,8 +1187,8 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
             
             info_table = Table(info_data, colWidths=[2.5*inch, 3.5*inch])
             info_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (0, -1), HexColor('#f3f4f6')),
-                ('TEXTCOLOR', (0, 0), (0, -1), HexColor('#374151')),
+                ('BACKGROUND', (0, 0), (0, -1), HexColor('#f97316')),  # Brand orange for header column
+                ('TEXTCOLOR', (0, 0), (0, -1), HexColor('#ffffff')),  # White text on orange
                 ('TEXTCOLOR', (1, 0), (1, -1), HexColor('#1f2937')),
                 ('ALIGN', (0, 0), (0, -1), 'LEFT'),
                 ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
@@ -1188,13 +1205,13 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
             story.append(info_table)
             story.append(Spacer(1, 0.3*inch))
             
-            # Deadline Information
+            # Deadline Information - Left-aligned
             story.append(Paragraph("Deadline Information", heading_style))
             
             deadline_data = []
             deadline_table_style = [
-                ('BACKGROUND', (0, 0), (0, -1), HexColor('#f3f4f6')),
-                ('TEXTCOLOR', (0, 0), (0, -1), HexColor('#374151')),
+                ('BACKGROUND', (0, 0), (0, -1), HexColor('#f97316')),  # Brand orange for header column
+                ('TEXTCOLOR', (0, 0), (0, -1), HexColor('#ffffff')),  # White text on orange
                 ('TEXTCOLOR', (1, 0), (1, -1), HexColor('#1f2937')),
                 ('ALIGN', (0, 0), (0, -1), 'LEFT'),
                 ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
@@ -1297,6 +1314,38 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
             ]))
             
             story.append(disclaimer_table)
+            
+            # Add test credentials at the end
+            story.append(Spacer(1, 0.4*inch))
+            
+            credentials_style = ParagraphStyle(
+                'Credentials',
+                parent=styles['Normal'],
+                fontSize=11,
+                textColor=HexColor('#1f2937'),
+                alignment=TA_LEFT,
+                fontName='Helvetica-Bold',
+                spaceAfter=4
+            )
+            
+            credentials_text = """
+            <b>Test Login Credentials:</b><br/>
+            Email: reviewer@liendeadline.com<br/>
+            Password: IntuitReview2026!
+            """
+            
+            credentials_para = Paragraph(credentials_text, credentials_style)
+            
+            # Create credentials box
+            credentials_table = Table([[credentials_para]], colWidths=[5.5*inch])
+            credentials_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), HexColor('#fff7ed')),  # Light orange background
+                ('BOX', (0, 0), (-1, -1), 1, HexColor('#f97316')),  # Orange border
+                ('PADDING', (0, 0), (-1, -1), 12),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ]))
+            
+            story.append(credentials_table)
             
             # Build PDF
             doc.build(story)
