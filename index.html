@@ -1687,7 +1687,10 @@
             const upgradeModalBtn = modal.querySelector('#upgradeModalButton');
             if (upgradeModalBtn) {
                 upgradeModalBtn.addEventListener('click', async function() {
-                    const toltReferralId = window.tolt_referral || null;
+                    // Get Tolt referral ID: prioritize 'via' URL parameter, then window.tolt_referral, then sessionStorage
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const viaParam = urlParams.get('via');
+                    const toltReferralId = viaParam || window.tolt_referral || sessionStorage.getItem('tolt_referral') || null;
                     console.log('🔗 Tolt referral ID:', toltReferralId);
                     
                     try {
