@@ -80,10 +80,51 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 });
 
 // Logout
-document.getElementById('logoutBtn').addEventListener('click', () => {
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('loginTime');
-    showLogin();
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try {
+        // Call logout API endpoint if token exists
+        const token = localStorage.getItem('session_token');
+        if (token) {
+            try {
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+            } catch (error) {
+                // If logout endpoint doesn't exist, that's okay - we'll still clear client-side
+                console.log('Logout endpoint not available, clearing client-side only');
+            }
+        }
+        
+        // Clear all localStorage items
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Clear any cookies
+        document.cookie.split(";").forEach((c) => {
+            document.cookie = c
+                .replace(/^ +/, "")
+                .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+        
+        // Show login screen
+        showLogin();
+        
+        // Redirect to login page after a brief delay
+        setTimeout(() => {
+            window.location.href = '/login.html';
+        }, 500);
+    } catch (error) {
+        console.error('Logout error:', error);
+        // Even if there's an error, clear localStorage and redirect
+        localStorage.clear();
+        sessionStorage.clear();
+        showLogin();
+        window.location.href = '/login.html';
+    }
 });
 
 // Dashboard Calculator Form
