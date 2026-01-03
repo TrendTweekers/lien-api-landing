@@ -56,6 +56,8 @@
     </script>
     <!-- Umami Analytics -->
     <script defer src="https://cloud.umami.is/script.js" data-website-id="02250d35-ee17-41be-845d-2fe0f7f15e63"></script>
+    <!-- Tolt Affiliate System -->
+    <script async src="https://cdn.tolt.io/tolt.js" data-tolt="pk_zPxK1Qfn14jf5sGBc2kD2eqQ"></script>
     <meta name="description" content="Calculate mechanics lien deadlines in 0.3 seconds. All 50 states + DC coverage. Free calculator for construction professionals. Avoid $75K+ forfeitures.">
     <meta name="keywords" content="lien deadline calculator, mechanics lien deadline, preliminary notice deadline, construction lien deadlines, lien deadline API">
     
@@ -1669,9 +1671,9 @@
                 <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-elegant">
                     <h3 class="text-2xl font-serif mb-4">Your Free Trial Has Ended</h3>
                     <p class="text-muted-foreground mb-6">You've used all 6 free trial calculations. Upgrade to Pro for unlimited calculations, PDF reports, and calculation history.</p>
-                    <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" class="block w-full h-12 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-colors text-center leading-[3rem] text-lg">
+                    <button id="upgradeModalButton" class="block w-full h-12 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-colors text-center leading-[3rem] text-lg">
                         Upgrade Now - $299/month
-                    </a>
+                    </button>
                 </div>
             `;
             document.body.appendChild(modal);
@@ -1679,6 +1681,36 @@
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) modal.remove();
             });
+            
+            // Add click handler to upgrade button
+            const upgradeModalBtn = modal.querySelector('#upgradeModalButton');
+            if (upgradeModalBtn) {
+                upgradeModalBtn.addEventListener('click', async function() {
+                    const toltReferralId = window.tolt_referral || null;
+                    console.log('🔗 Tolt referral ID:', toltReferralId);
+                    
+                    try {
+                        const response = await fetch('/api/create-checkout-session', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                plan: 'monthly',
+                                referral_id: toltReferralId
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        if (data.url) {
+                            window.location.href = data.url;
+                        } else {
+                            alert('Error creating checkout session. Please try again.');
+                        }
+                    } catch (error) {
+                        console.error('Checkout error:', error);
+                        alert('Error creating checkout session. Please try again.');
+                    }
+                });
+            }
         }
         
         // Calculator form with trial flow
@@ -2315,52 +2347,10 @@
 
 <script>
 // ==========================================
-// 1. REFERRAL CODE PERSISTENCE
+// TOLT AFFILIATE SYSTEM
 // ==========================================
-
-(function() {
-    // Capture referral code on ANY page load
-    const urlParams = new URLSearchParams(window.location.search);
-    const ref = urlParams.get('ref');
-    
-    if (ref && ref.trim() !== '') {
-        // Store in both localStorage AND sessionStorage
-        localStorage.setItem('referral_code', ref);
-        sessionStorage.setItem('referral_code', ref);
-        console.log('✅ Referral code captured:', ref);
-    }
-    
-    // Helper function to get referral code
-    window.getReferralCode = function() {
-        // Read cookies set by /r/{code} route
-        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-            const [key, value] = cookie.trim().split('=');
-            acc[key] = value;
-            return acc;
-        }, {});
-        
-        return cookies.ref_code || 
-               localStorage.getItem('referral_code') || 
-               sessionStorage.getItem('referral_code') || 
-               'direct';
-    };
-    
-    // Helper function to build Stripe URL with referral
-    window.buildStripeUrl = function(baseUrl) {
-        const referralCode = window.getReferralCode();
-        const userEmail = localStorage.getItem('userEmail') || '';
-        
-        const params = new URLSearchParams();
-        if (userEmail) params.append('prefilled_email', userEmail);
-        params.append('client_reference_id', referralCode);
-        params.append('success_url', window.location.origin + '?success=true&ref=' + referralCode);
-        params.append('cancel_url', window.location.origin);
-        
-        return baseUrl + (baseUrl.includes('?') ? '&' : '?') + params.toString();
-    };
-    
-    console.log('✅ Referral system initialized. Current code:', window.getReferralCode());
-})();
+// Tolt handles all referral tracking via window.tolt_referral
+// No custom referral code logic needed
 
 // ==========================================
 // 2. STRIPE SUCCESS DETECTION (ENHANCED)
@@ -3047,7 +3037,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const upgradeBtn = document.getElementById('upgradeButton');
     if (!upgradeBtn) return;
     
-    upgradeBtn.addEventListener('click', function() {
+    upgradeBtn.addEventListener('click', async function() {
         // Track checkout initiation (Umami + GA4)
         if (typeof umami !== 'undefined' && umami.track) {
             umami.track('checkout_click', {
@@ -3070,18 +3060,36 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Replace with your actual Stripe payment link
-        const baseStripeUrl = 'https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00';
-        const fullUrl = window.buildStripeUrl(baseStripeUrl);
+        // Get Tolt referral ID from window
+        const toltReferralId = window.tolt_referral || null;
+        console.log('🔗 Tolt referral ID:', toltReferralId);
         
-        console.log('💳 Redirecting to Stripe:', fullUrl);
-        console.log('📊 Referral code:', window.getReferralCode());
-        console.log('📧 Email:', localStorage.getItem('userEmail') || 'none');
-        
-        // Small delay to ensure events fire
-        setTimeout(function() {
-            window.location.href = fullUrl;
-        }, 150);
+        try {
+            // Call checkout session API
+            const response = await fetch('/api/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    plan: 'monthly',
+                    referral_id: toltReferralId
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.url) {
+                console.log('💳 Redirecting to Stripe checkout:', data.url);
+                window.location.href = data.url;
+            } else {
+                console.error('❌ No checkout URL returned:', data);
+                alert('Error creating checkout session. Please try again.');
+            }
+        } catch (error) {
+            console.error('❌ Checkout error:', error);
+            alert('Error creating checkout session. Please try again.');
+        }
     });
 });
 
@@ -3097,7 +3105,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 LienDeadline initialized');
     console.log('📊 Calculation count:', localStorage.getItem('calcCount') || '0');
     console.log('📧 User email:', localStorage.getItem('userEmail') || 'none');
-    console.log('🔗 Referral code:', window.getReferralCode());
+    console.log('🔗 Tolt referral:', window.tolt_referral || 'none');
     console.log('📈 UTM source:', localStorage.getItem('utm_source') || 'none');
 });
 

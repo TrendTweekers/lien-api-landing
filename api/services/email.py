@@ -194,7 +194,7 @@ def send_broker_welcome_email(email: str, name: str, link: str, code: str):
                                 <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
                                     <tr>
                                         <td align="center" style="padding:12px 0;">
-                                            <a href="https://liendeadline.com/broker-dashboard" 
+                                            <a href="https://liendeadline.tolt.io/login" 
                                                style="display:inline-block; background-color:#1e3a8a; color:#ffffff; text-decoration:none; padding:18px 36px; border-radius:8px; font-weight:700; font-size:16px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-shadow:0 4px 12px rgba(30,58,138,0.3); letter-spacing:0.3px;">
                                                 View Your Dashboard →
                                             </a>
@@ -429,7 +429,7 @@ def send_broker_notification(broker_email: str, customer_email: str):
                                 <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
                                     <tr>
                                         <td align="center" style="padding:12px 0;">
-                                            <a href="https://liendeadline.com/broker-dashboard" 
+                                            <a href="https://liendeadline.tolt.io/login" 
                                                style="display:inline-block; background-color:#059669; color:#ffffff; text-decoration:none; padding:18px 36px; border-radius:8px; font-weight:700; font-size:16px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-shadow:0 4px 12px rgba(5,150,105,0.3); letter-spacing:0.3px;">
                                                 View Your Dashboard →
                                             </a>
@@ -583,7 +583,7 @@ def send_welcome_email_background(email: str, referral_link: str, name: str = ""
     if not referral_link:
         referral_link = f"https://liendeadline.com/?ref={referral_code}"
         
-    dashboard_url = "https://liendeadline.com/broker-dashboard"
+    dashboard_url = "https://liendeadline.tolt.io/login"
     
     body_html = f"""<!DOCTYPE html>
 <html lang="en">

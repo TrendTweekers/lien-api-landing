@@ -435,9 +435,9 @@
                         </li>
                     </ul>
                     
-                    <a href="https://buy.stripe.com/3cIcN5gBL8pr6MVgrP9fW00" id="proCta" class="block w-full bg-primary-orange text-white text-center py-3 rounded-lg font-semibold hover:bg-orange-600 transition">
+                    <button id="proCta" class="block w-full bg-primary-orange text-white text-center py-3 rounded-lg font-semibold hover:bg-orange-600 transition">
                         <span id="proCtaText">Start Professional →</span>
-                    </a>
+                    </button>
                 </div>
                 
                 <!-- Enterprise Tier -->
@@ -761,8 +761,10 @@
             observer.observe(checkmark);
         });
         
-        // Stripe checkout tracking
-        document.getElementById('proCta').addEventListener('click', function(e) {
+        // Stripe checkout tracking and API call
+        document.getElementById('proCta').addEventListener('click', async function(e) {
+            e.preventDefault();
+            
             // Track analytics
             if (typeof umami !== 'undefined' && umami.track) {
                 umami.track('checkout_click', {
@@ -782,6 +784,36 @@
                         quantity: 1
                     }]
                 });
+            }
+            
+            // Get Tolt referral ID from window
+            const toltReferralId = window.tolt_referral || null;
+            console.log('🔗 Tolt referral ID:', toltReferralId);
+            
+            try {
+                // Call checkout session API
+                const plan = monthlyBtn.classList.contains('active') ? 'monthly' : 'annual';
+                const response = await fetch('/api/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        plan: plan,
+                        referral_id: toltReferralId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.url) {
+                    console.log('💳 Redirecting to Stripe checkout:', data.url);
+                    window.location.href = data.url;
+                } else {
+                    console.error('❌ No checkout URL returned:', data);
+                    alert('Error creating checkout session. Please try again.');
+                }
+            } catch (error) {
+                console.error('❌ Checkout error:', error);
+                alert('Error creating checkout session. Please try again.');
             }
         });
     </script>
