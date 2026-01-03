@@ -462,16 +462,6 @@ def send_broker_notification(broker_email: str, customer_email: str):
     </body>
     </html>
     """
-            <a href="https://liendeadline.com/broker-dashboard" style="display: inline-block; background: #c1554e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-bottom: 15px;">
-                View All Referrals →
-            </a>
-            <p style="color: #64748b; font-size: 14px; margin: 0;">
-                Keep sharing your referral link to earn more commissions!
-            </p>
-        </div>
-    </body>
-    </html>
-    """
     
     return send_email_sync(broker_email, "💰 New Referral - $500 Commission Earned!", html)
 
