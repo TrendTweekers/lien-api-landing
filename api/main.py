@@ -1328,6 +1328,14 @@ async def serve_login():
         raise HTTPException(status_code=404, detail="login.html not found")
     return FileResponse(file_path, media_type="text/html")
 
+@app.get("/login.html")
+async def serve_login_html():
+    """Serve login.html page directly"""
+    file_path = BASE_DIR / "login.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="login.html not found")
+    return FileResponse(file_path, media_type="text/html")
+
 @app.get("/test-api")
 async def test_api():
     """Serve test-api.html API tester page"""
