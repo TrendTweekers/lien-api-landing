@@ -1218,12 +1218,12 @@ try:
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
     
     # Serve React Dashboard Assets
-    dashboard_assets = BASE_DIR / "public" / "dashboard" / "assets"
+    dashboard_assets = BASE_DIR / "dashboard" / "assets"
     if dashboard_assets.exists():
         app.mount("/dashboard/assets", StaticFiles(directory=str(dashboard_assets)), name="dashboard-assets")
 
     # Serve Broker Dashboard v2 Assets
-    broker_dashboard_v2_assets = BASE_DIR / "public" / "broker-dashboard-v2" / "assets"
+    broker_dashboard_v2_assets = BASE_DIR / "broker-dashboard-v2" / "assets"
     if broker_dashboard_v2_assets.exists():
         app.mount("/broker-dashboard-v2/assets", StaticFiles(directory=str(broker_dashboard_v2_assets)), name="broker-dashboard-v2-assets")
 
@@ -1234,7 +1234,7 @@ except Exception as e:
 @app.get("/dashboard")
 async def serve_dashboard_root():
     """Serve React App Root"""
-    file_path = BASE_DIR / "public" / "dashboard" / "index.html"
+    file_path = BASE_DIR / "dashboard" / "index.html"
     if file_path.exists():
         return FileResponse(file_path)
     return Response("Dashboard not found", status_code=404)
@@ -1243,12 +1243,12 @@ async def serve_dashboard_root():
 async def serve_dashboard(full_path: str):
     """Serve React App Paths (SPA Routing)"""
     # Check if file exists (e.g. favicon.ico, manifest.json)
-    file_path = BASE_DIR / "public" / "dashboard" / full_path
+    file_path = BASE_DIR / "dashboard" / full_path
     if file_path.exists() and file_path.is_file():
         return FileResponse(file_path)
     
     # Fallback to index.html for SPA routing
-    index_path = BASE_DIR / "public" / "dashboard" / "index.html"
+    index_path = BASE_DIR / "dashboard" / "index.html"
     if index_path.exists():
         return FileResponse(index_path)
     return Response("Dashboard not found", status_code=404)
@@ -1258,7 +1258,7 @@ async def serve_dashboard(full_path: str):
 @app.get("/broker-dashboard-v2")
 async def serve_broker_dashboard_v2_root():
     """Serve Broker React App Root"""
-    file_path = BASE_DIR / "public" / "broker-dashboard-v2" / "index.html"
+    file_path = BASE_DIR / "broker-dashboard-v2" / "index.html"
     if file_path.exists():
         return FileResponse(file_path)
     return Response("Broker Dashboard not found", status_code=404)
@@ -1267,12 +1267,12 @@ async def serve_broker_dashboard_v2_root():
 async def serve_broker_dashboard_v2(full_path: str):
     """Serve Broker React App Paths (SPA Routing)"""
     # Check if file exists (e.g. favicon.ico, manifest.json)
-    file_path = BASE_DIR / "public" / "broker-dashboard-v2" / full_path
+    file_path = BASE_DIR / "broker-dashboard-v2" / full_path
     if file_path.exists() and file_path.is_file():
         return FileResponse(file_path)
     
     # Fallback to index.html for SPA routing
-    index_path = BASE_DIR / "public" / "broker-dashboard-v2" / "index.html"
+    index_path = BASE_DIR / "broker-dashboard-v2" / "index.html"
     if index_path.exists():
         return FileResponse(index_path)
     return Response("Broker Dashboard not found", status_code=404)
@@ -1316,6 +1316,16 @@ async def root():
     file_path = BASE_DIR / "index.html"
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="index.html not found")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/login")
+async def serve_login():
+    """Serve login.html page at root"""
+    file_path = BASE_DIR / "login.html"
+    if not file_path.exists():
+        # Fallback to index if login doesn't exist? Or 404. 
+        # User said ensure login.html is in root.
+        raise HTTPException(status_code=404, detail="login.html not found")
     return FileResponse(file_path, media_type="text/html")
 
 @app.get("/test-api")
@@ -5493,9 +5503,7 @@ async def force_test_email(to: str):
     else:
         return {"status": "error", "message": "Email function returned False"}
 
-# Serve static files from public directory - MUST BE LAST
-if public_dir.exists():
-    app.mount("/", StaticFiles(directory=str(public_dir), html=True), name="public")
+
 
 # Log startup
 import logging

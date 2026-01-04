@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surety Dashboard - LienDeadline</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        .bg-orange-accent { background-color: #f97316; }
+        .text-orange-accent { color: #f97316; }
+        .border-orange-accent { border-color: #f97316; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-blue-600">🛡️ LienDeadline Surety</span>
+                </div>
+                <div class="text-sm text-gray-600" id="contractorInfo">
+                    Loading contractor info...
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Dashboard Content -->
+    <div id="dashboardContent" class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        
+        <!-- Error Message -->
+        <div id="errorMessage" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span class="block sm:inline" id="errorText"></span>
+        </div>
+
+        <!-- Surety Header / Risk Score -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Monitoring Info -->
+            <div class="bg-white shadow-lg rounded-lg p-6 md:col-span-2">
+                <h2 class="text-xl font-bold text-gray-900 mb-2">Monitoring Status</h2>
+                <div class="flex items-center space-x-2 mb-4">
+                    <span class="h-3 w-3 rounded-full bg-green-500 animate-pulse"></span>
+                    <span class="text-gray-600">Active Monitoring</span>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-1" id="contractorName">...</h3>
+                <p class="text-gray-500" id="contractorEmail">...</p>
+                
+                <div class="mt-6">
+                    <button onclick="alert('Compliance Report PDF generation coming soon!')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Download Compliance Report
+                    </button>
+                </div>
+            </div>
+
+            <!-- Risk Score Card -->
+            <div class="bg-white shadow-lg rounded-lg p-6 border-t-4" id="riskCard">
+                <h2 class="text-lg font-semibold text-gray-700 mb-4">Risk Score</h2>
+                <div class="flex flex-col items-center justify-center">
+                    <div class="relative h-32 w-32 flex items-center justify-center rounded-full border-8 mb-2" id="riskCircle">
+                        <span class="text-3xl font-bold text-gray-800" id="riskValue">--</span>
+                    </div>
+                    <p class="text-xl font-bold mb-1" id="riskLevel">--</p>
+                    <p class="text-sm text-gray-500 text-center">
+                        <span id="overdueCount">0</span> overdue out of <span id="totalProjects">0</span> projects
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects Table -->
+        <div class="bg-white shadow-lg rounded-lg p-8">
+            <h2 class="text-2xl font-bold mb-6">Project History</h2>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project / Invoice</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projectsTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="loadingProjects" class="text-center py-8 text-gray-500">
+                Loading projects...
+            </div>
+            <div id="noProjects" class="hidden text-center py-8 text-gray-500">
+                No projects found for this contractor.
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-16 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <p class="text-sm">&copy; 2025 LienDeadline Surety Services.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Get token from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            let token = urlParams.get('token');
+
+            if (!token) {
+                // Try to get from path /surety/view/{token}
+                const pathParts = window.location.pathname.split('/');
+                // pathParts might be ["", "surety", "view", "TOKEN"]
+                if (pathParts.includes('surety') && pathParts.includes('view')) {
+                    const viewIndex = pathParts.indexOf('view');
+                    if (viewIndex + 1 < pathParts.length) {
+                        token = pathParts[viewIndex + 1];
+                    }
+                }
+            }
+
+            if (!token) {
+                showError("Access denied: No token provided.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/surety/view/${token}`);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || "Failed to load dashboard");
+                }
+
+                const data = await response.json();
+                renderDashboard(data);
+
+            } catch (err) {
+                console.error("Error loading surety dashboard:", err);
+                showError(err.message);
+            }
+        });
+
+        function showError(msg) {
+            document.getElementById('errorMessage').classList.remove('hidden');
+            document.getElementById('errorText').textContent = msg;
+            document.getElementById('loadingProjects').classList.add('hidden');
+        }
+
+        function renderDashboard(data) {
+            // 1. Contractor Info
+            document.getElementById('contractorName').textContent = data.contractor.name;
+            document.getElementById('contractorEmail').textContent = data.contractor.email;
+            document.getElementById('contractorInfo').textContent = `Monitoring: ${data.contractor.name}`;
+
+            // 2. Risk Score
+            const risk = data.risk_score;
+            const riskValue = document.getElementById('riskValue');
+            const riskLevel = document.getElementById('riskLevel');
+            const riskCircle = document.getElementById('riskCircle');
+            const riskCard = document.getElementById('riskCard');
+            
+            riskValue.textContent = `${Math.round(risk.value)}%`;
+            riskLevel.textContent = `${risk.level} Risk`;
+            document.getElementById('overdueCount').textContent = risk.overdue_count;
+            document.getElementById('totalProjects').textContent = risk.total_projects;
+
+            // Color logic
+            let colorClass = 'border-green-500 text-green-600';
+            let cardBorderClass = 'border-green-500';
+            
+            if (risk.level === 'High') {
+                colorClass = 'border-red-500 text-red-600';
+                cardBorderClass = 'border-red-500';
+            } else if (risk.level === 'Medium') {
+                colorClass = 'border-orange-500 text-orange-600';
+                cardBorderClass = 'border-orange-500';
+            }
+
+            riskCircle.className = `relative h-32 w-32 flex items-center justify-center rounded-full border-8 mb-2 ${colorClass}`;
+            riskCard.classList.add(cardBorderClass);
+
+            // 3. Projects Table
+            const tbody = document.getElementById('projectsTableBody');
+            const projects = data.projects;
+            
+            document.getElementById('loadingProjects').classList.add('hidden');
+            
+            if (!projects || projects.length === 0) {
+                document.getElementById('noProjects').classList.remove('hidden');
+                return;
+            }
+
+            tbody.innerHTML = projects.map(p => {
+                // Determine status
+                const lienDate = new Date(p.lien_deadline);
+                const today = new Date();
+                const isOverdue = lienDate < today;
+                
+                let statusBadge = '';
+                if (isOverdue) {
+                    statusBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Overdue</span>`;
+                } else {
+                    const daysDiff = Math.ceil((lienDate - today) / (1000 * 60 * 60 * 24));
+                    if (daysDiff < 7) {
+                        statusBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">${daysDiff} days left</span>`;
+                    } else {
+                        statusBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">On Track</span>`;
+                    }
+                }
+
+                return `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${p.project_name || 'Project'}</div>
+                            <div class="text-sm text-gray-500">${p.project_address || ''}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            ${p.invoice_date || '-'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            ${p.state_code || p.state}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">Lien: ${p.lien_deadline || '-'}</div>
+                            <div class="text-xs text-gray-500">Prelim: ${p.prelim_deadline || '-'}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            ${statusBadge}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>

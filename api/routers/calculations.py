@@ -1056,11 +1056,11 @@ async def generate_calculation_pdf(calculation_id: int, request: Request):
             
             # ===== PROFESSIONAL HEADER SECTION =====
             # Add LienDeadline logo
-            # Calculate path: api/routers/calculations.py -> api/ -> project root -> public/images/liendeadline-logo.png
+            # Calculate path: api/routers/calculations.py -> api/ -> project root -> images/liendeadline-logo.png
             current_dir = os.path.dirname(__file__)  # api/routers/
             api_dir = os.path.dirname(current_dir)  # api/
             project_root = os.path.dirname(api_dir)  # project root
-            logo_path = os.path.join(project_root, 'public', 'images', 'liendeadline-logo.png')
+            logo_path = os.path.join(project_root, 'images', 'liendeadline-logo.png')
             if os.path.exists(logo_path):
                 try:
                     # Calculate aspect ratio to maintain proportions
