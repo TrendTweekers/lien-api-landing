@@ -1211,6 +1211,63 @@ async def startup():
     
     print("✅ Application startup complete")
 
+# Explicit Static Page Routes (Must be defined before static mounts and catch-all routes)
+@app.get("/pricing")
+async def serve_pricing():
+    file_path = BASE_DIR / "pricing.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="pricing.html not found")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/pricing.html")
+async def serve_pricing_html():
+    file_path = BASE_DIR / "pricing.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="pricing.html not found")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/state-lien-guides")
+async def serve_state_lien_guides():
+    file_path = BASE_DIR / "state-lien-guides.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="state-lien-guides.html not found")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/state-lien-guides.html")
+async def serve_state_lien_guides_html():
+    file_path = BASE_DIR / "state-lien-guides.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="state-lien-guides.html not found")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/partners")
+async def serve_partners():
+    file_path = BASE_DIR / "partners.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="partners.html not found")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/partners.html")
+async def serve_partners_html():
+    file_path = BASE_DIR / "partners.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="partners.html not found")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/contact")
+async def serve_contact():
+    file_path = BASE_DIR / "contact.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="contact.html not found")
+    return FileResponse(file_path, media_type="text/html")
+
+@app.get("/contact.html")
+async def serve_contact_html():
+    file_path = BASE_DIR / "contact.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="contact.html not found")
+    return FileResponse(file_path, media_type="text/html")
+
 # Serve static files (CSS, JS)
 try:
     static_dir = BASE_DIR / "static"
