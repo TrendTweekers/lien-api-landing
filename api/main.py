@@ -1283,6 +1283,11 @@ images_dir = BASE_DIR / "images"
 if images_dir.exists():
     app.mount("/images", StaticFiles(directory=str(images_dir)), name="images")
 
+# Serve State Lien Guides (PDFs/Static Pages)
+guides_dir = BASE_DIR / "state-lien-guides"
+if guides_dir.exists():
+    app.mount("/state-lien-guides", StaticFiles(directory=str(guides_dir)), name="guides")
+
 # Redirect www to non-www
 @app.middleware("http")
 async def redirect_www(request: Request, call_next):
