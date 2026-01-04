@@ -1278,6 +1278,10 @@ async def serve_broker_dashboard_v2(full_path: str):
     return Response("Broker Dashboard not found", status_code=404)
 
 # Images mount will be moved to right before the / mount to ensure proper order
+# Serve Images
+images_dir = BASE_DIR / "images"
+if images_dir.exists():
+    app.mount("/images", StaticFiles(directory=str(images_dir)), name="images")
 
 # Redirect www to non-www
 @app.middleware("http")
@@ -1343,6 +1347,27 @@ async def test_api():
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="test-api.html not found")
     return FileResponse(file_path, media_type="text/html")
+
+@app.get("/favicon.ico")
+async def favicon():
+    file_path = BASE_DIR / "favicon.ico"
+    if file_path.exists():
+        return FileResponse(file_path)
+    return Response(status_code=404)
+
+@app.get("/robots.txt")
+async def robots():
+    file_path = BASE_DIR / "robots.txt"
+    if file_path.exists():
+        return FileResponse(file_path)
+    return Response(status_code=404)
+
+@app.get("/site.webmanifest")
+async def manifest():
+    file_path = BASE_DIR / "site.webmanifest"
+    if file_path.exists():
+        return FileResponse(file_path)
+    return Response(status_code=404)
 
 @app.get("/api/state-rules")
 async def get_state_rules():
