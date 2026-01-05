@@ -731,6 +731,8 @@ const PopularZaps = () => {
               </CardContent>
             </Card>
 
+            <div>DEBUG REMINDERS CARD</div>
+
             {buildZapTemplates().map((zap) => (
               <Card key={zap.id} className="flex flex-col">
                 <CardHeader>
