@@ -678,3 +678,42 @@ function connectProcore() {
     alert('Procore integration coming soon!');
 }
 
+/**
+ * Regenerate Zapier token
+ */
+function regenerateZapierToken() {
+    const token = localStorage.getItem('session_token');
+    if (!token) {
+        alert('Please log in first');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to regenerate your Zapier token? This will invalidate your current token.')) {
+        return;
+    }
+    
+    fetch('/api/zapier/token/regenerate', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && data.token) {
+            const tokenDisplay = document.getElementById('zapier-token-display');
+            if (tokenDisplay) {
+                tokenDisplay.textContent = data.token;
+                alert('New token generated! Copy it now - it will not be shown again.');
+            }
+        } else {
+            alert('Failed to regenerate token. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error regenerating token:', error);
+        alert('Error regenerating token. Please try again.');
+    });
+}
+
