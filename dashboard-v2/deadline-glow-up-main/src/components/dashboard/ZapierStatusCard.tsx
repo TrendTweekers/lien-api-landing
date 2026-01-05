@@ -267,7 +267,7 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
         {/* Action Buttons */}
         <TooltipProvider>
           <div className="flex flex-wrap gap-2 pt-2">
-            {/* Primary Button */}
+            {/* Primary Button - Dynamic based on state */}
             {!zapierConnected ? (
               <Button
                 size="default"
@@ -289,15 +289,14 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
             ) : (
               <Button
                 size="default"
-                onClick={handleQuickStart}
+                onClick={() => navigate('/zapier')}
                 className="bg-primary hover:bg-primary/90"
               >
-                <Rocket className="h-4 w-4 mr-2" />
-                Quick Start with Slack
+                View All Alert Settings
               </Button>
             )}
 
-            {/* Quick Start Button - Always Visible */}
+            {/* Quick Start Button - Always Visible as Secondary */}
             {!zapierConnected ? (
               <Tooltip>
                 <TooltipTrigger asChild>
