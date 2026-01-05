@@ -651,7 +651,8 @@ async def trigger_reminders(
                         cursor.execute("""
                             SELECT EXISTS (
                                 SELECT 1 FROM information_schema.tables 
-                                WHERE table_name = 'zapier_notification_events'
+                                WHERE table_schema = 'public' 
+                                AND table_name = 'zapier_notification_events'
                             )
                         """)
                         result = cursor.fetchone()
