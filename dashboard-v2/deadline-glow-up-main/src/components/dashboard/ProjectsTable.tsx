@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { RefreshCw, FileSpreadsheet, FileText, Eye, Calendar, Download, Trash2 } from "lucide-react";
+import { RefreshCw, FileSpreadsheet, FileText, Eye, Calendar, Download, Trash2, Bell, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -31,6 +31,7 @@ export const ProjectsTable = () => {
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -196,91 +197,109 @@ export const ProjectsTable = () => {
                </TableRow>
             ) : (
               projects.map((project) => (
-                <TableRow key={project.id} className="border-border hover:bg-muted/30">
-                  <TableCell>
-                    <div>
-                      <p className="font-medium text-foreground">{project.project_name || "Unnamed Project"}</p>
-                      <p className="text-xs text-muted-foreground">{project.description}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-foreground">{project.client_name}</TableCell>
-                  <TableCell className="text-foreground">
-                    {project.invoice_date ? new Date(project.invoice_date).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' }) : "-"}
-                  </TableCell>
-                  <TableCell className="font-semibold text-foreground">
-                    ${typeof project.amount === 'number' ? project.amount.toLocaleString() : project.amount}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="bg-warning/15 text-warning border-warning/30 hover:bg-warning/20">
-                      {project.state}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-foreground">{project.prelim_deadline}</TableCell>
-                  <TableCell className="text-foreground">{project.lien_deadline}</TableCell>
-                  <TableCell>
-                    {(() => {
-                      // CRITICAL: Handle boolean, number (0/1), null, undefined
-                      // Default to reminder_1day = true (1 Day enabled) if null/undefined
-                      // Default to reminder_7days = false (7 Days disabled) if null/undefined
-                      let r1day: boolean;
-                      let r7days: boolean;
-                      
-                      if (project.reminder_1day === null || project.reminder_1day === undefined) {
-                        r1day = true;  // Default to enabled (1 Day)
-                      } else if (typeof project.reminder_1day === 'boolean') {
-                        r1day = project.reminder_1day;
-                      } else if (typeof project.reminder_1day === 'number') {
-                        r1day = project.reminder_1day !== 0;  // 1 = true, 0 = false
-                      } else {
-                        r1day = Boolean(project.reminder_1day);
-                      }
-                      
-                      if (project.reminder_7days === null || project.reminder_7days === undefined) {
-                        r7days = false;  // Default to disabled (7 Days)
-                      } else if (typeof project.reminder_7days === 'boolean') {
-                        r7days = project.reminder_7days;
-                      } else if (typeof project.reminder_7days === 'number') {
-                        r7days = project.reminder_7days !== 0;  // 1 = true, 0 = false
-                      } else {
-                        r7days = Boolean(project.reminder_7days);
-                      }
-                      
-                      // Display badges if at least one reminder is enabled
-                      if (r1day || r7days) {
-                        const badges = [];
-                        if (r1day) badges.push("1 Day");
-                        if (r7days) badges.push("7 Days");
-                        return (
-                          <Badge className="bg-info/15 text-info border-info/30">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {badges.join(", ")}
-                          </Badge>
-                        );
-                      }
-                      return <span className="text-muted-foreground text-sm">None</span>;
-                    })()}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-2">
-                      <NotificationSettings projectId={project.id} projectName={project.project_name} />
-                      <Button 
-                        size="sm" 
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                        onClick={() => handleDownloadPDF(project.id)}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50 text-destructive"
-                        onClick={() => handleDeleteProject(project.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <>
+                  <TableRow key={project.id} className="border-border hover:bg-muted/30">
+                    <TableCell>
+                      <div>
+                        <p className="font-medium text-foreground">{project.project_name || "Unnamed Project"}</p>
+                        <p className="text-xs text-muted-foreground">{project.description}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-foreground">{project.client_name}</TableCell>
+                    <TableCell className="text-foreground">
+                      {project.invoice_date ? new Date(project.invoice_date).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' }) : "-"}
+                    </TableCell>
+                    <TableCell className="font-semibold text-foreground">
+                      ${typeof project.amount === 'number' ? project.amount.toLocaleString() : project.amount}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className="bg-warning/15 text-warning border-warning/30 hover:bg-warning/20">
+                        {project.state}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-foreground">{project.prelim_deadline}</TableCell>
+                    <TableCell className="text-foreground">{project.lien_deadline}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        // CRITICAL: Handle boolean, number (0/1), null, undefined
+                        // Default to reminder_1day = true (1 Day enabled) if null/undefined
+                        // Default to reminder_7days = false (7 Days disabled) if null/undefined
+                        let r1day: boolean;
+                        let r7days: boolean;
+                        
+                        if (project.reminder_1day === null || project.reminder_1day === undefined) {
+                          r1day = true;  // Default to enabled (1 Day)
+                        } else if (typeof project.reminder_1day === 'boolean') {
+                          r1day = project.reminder_1day;
+                        } else if (typeof project.reminder_1day === 'number') {
+                          r1day = project.reminder_1day !== 0;  // 1 = true, 0 = false
+                        } else {
+                          r1day = Boolean(project.reminder_1day);
+                        }
+                        
+                        if (project.reminder_7days === null || project.reminder_7days === undefined) {
+                          r7days = false;  // Default to disabled (7 Days)
+                        } else if (typeof project.reminder_7days === 'boolean') {
+                          r7days = project.reminder_7days;
+                        } else if (typeof project.reminder_7days === 'number') {
+                          r7days = project.reminder_7days !== 0;  // 1 = true, 0 = false
+                        } else {
+                          r7days = Boolean(project.reminder_7days);
+                        }
+                        
+                        // Display badges if at least one reminder is enabled
+                        if (r1day || r7days) {
+                          const badges = [];
+                          if (r1day) badges.push("1 Day");
+                          if (r7days) badges.push("7 Days");
+                          return (
+                            <Badge className="bg-info/15 text-info border-info/30">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {badges.join(", ")}
+                            </Badge>
+                          );
+                        }
+                        return <span className="text-muted-foreground text-sm">None</span>;
+                      })()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs text-muted-foreground hover:text-foreground"
+                          onClick={() => setExpandedProjectId(expandedProjectId === project.id ? null : project.id)}
+                        >
+                          <Bell className="h-3 w-3 mr-1" />
+                          Notifications
+                          {expandedProjectId === project.id ? <ChevronUp className="h-3 w-3 ml-1" /> : <ChevronDown className="h-3 w-3 ml-1" />}
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                          onClick={() => handleDownloadPDF(project.id)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50 text-destructive"
+                          onClick={() => handleDeleteProject(project.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {expandedProjectId === project.id && (
+                    <TableRow>
+                      <TableCell colSpan={9} className="p-4">
+                        <NotificationSettings projectId={String(project.id)} projectName={project.project_name} />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </>
               ))
             )}
           </TableBody>

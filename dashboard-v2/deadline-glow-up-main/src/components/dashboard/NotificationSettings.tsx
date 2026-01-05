@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
-import { Bell, Mail, MessageSquare, Zap, Save, AlertCircle } from "lucide-react";
+import { Mail, MessageSquare, Zap, Save, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface ReminderConfig {
   offset_days: number;
@@ -17,7 +15,7 @@ interface ReminderConfig {
 }
 
 interface NotificationSettingsProps {
-  projectId: number;
+  projectId: string;
   projectName?: string;
 }
 
@@ -25,19 +23,16 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
   const [reminders, setReminders] = useState<ReminderConfig[]>([]);
   const [hasZapierEnabled, setHasZapierEnabled] = useState(false);
 
   // Available offset options
   const availableOffsets = [1, 7, 14];
 
-  // Load notification settings
+  // Load notification settings on mount
   useEffect(() => {
-    if (isOpen) {
-      loadSettings();
-    }
-  }, [isOpen, projectId]);
+    loadSettings();
+  }, [projectId]);
 
   const loadSettings = async () => {
     setLoading(true);
@@ -157,165 +152,148 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
   };
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <CollapsibleTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-xs text-muted-foreground hover:text-foreground"
-        >
-          <Bell className="h-3 w-3 mr-1" />
-          Notifications
-          {isOpen ? <ChevronUp className="h-3 w-3 ml-1" /> : <ChevronDown className="h-3 w-3 ml-1" />}
-        </Button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="mt-2">
-        <div className="bg-muted/30 rounded-lg p-4 border border-border space-y-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <h4 className="text-sm font-semibold text-foreground mb-1">Notification Settings</h4>
-              <p className="text-xs text-muted-foreground">
-                Notifications are configured per project. Configure reminder offsets and delivery channels.
-              </p>
+    <div className="bg-muted/30 rounded-lg p-4 border border-border space-y-4">
+      <div className="flex items-start justify-between">
+        <div>
+          <h4 className="text-sm font-semibold text-foreground mb-1">Notification Settings</h4>
+          <p className="text-xs text-muted-foreground">
+            Notifications are configured per project. Configure reminder offsets and delivery channels.
+          </p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-sm text-muted-foreground py-4">Loading settings...</div>
+      ) : (
+        <>
+          {/* Offset Toggles */}
+          <div className="space-y-3">
+            <Label className="text-xs font-medium text-foreground">Reminder Offsets</Label>
+            <div className="flex flex-wrap gap-2">
+              {availableOffsets.map(offset => {
+                const config = getReminderConfig(offset);
+                const isEnabled = !!config;
+                return (
+                  <div
+                    key={offset}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer transition-colors ${
+                      isEnabled
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "bg-background border-border text-muted-foreground hover:border-primary/50"
+                    }`}
+                    onClick={() => toggleOffset(offset)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isEnabled}
+                      onChange={() => toggleOffset(offset)}
+                      className="h-3 w-3 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <span className="text-xs font-medium">{offset} {offset === 1 ? 'Day' : 'Days'}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {loading ? (
-            <div className="text-sm text-muted-foreground py-4">Loading settings...</div>
-          ) : (
-            <>
-              {/* Offset Toggles */}
+          {/* Channel Settings for Each Enabled Offset */}
+          {reminders.length > 0 && (
+            <div className="space-y-3 pt-2 border-t border-border">
+              <Label className="text-xs font-medium text-foreground">Delivery Channels</Label>
               <div className="space-y-3">
-                <Label className="text-xs font-medium text-foreground">Reminder Offsets</Label>
-                <div className="flex flex-wrap gap-2">
-                  {availableOffsets.map(offset => {
-                    const config = getReminderConfig(offset);
-                    const isEnabled = !!config;
-                    return (
-                      <div
-                        key={offset}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer transition-colors ${
-                          isEnabled
-                            ? "bg-primary/10 border-primary text-primary"
-                            : "bg-background border-border text-muted-foreground hover:border-primary/50"
-                        }`}
-                        onClick={() => toggleOffset(offset)}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isEnabled}
-                          onChange={() => toggleOffset(offset)}
-                          className="h-3 w-3 rounded border-gray-300 text-primary focus:ring-primary"
+                {reminders.map(reminder => (
+                  <div key={reminder.offset_days} className="bg-background rounded-md p-3 border border-border">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-semibold text-foreground">
+                        {reminder.offset_days} {reminder.offset_days === 1 ? 'Day' : 'Days'} Before Deadline
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {/* Email */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          <Label htmlFor={`email-${reminder.offset_days}-${projectId}`} className="text-xs text-foreground cursor-pointer">
+                            Email
+                          </Label>
+                        </div>
+                        <Switch
+                          id={`email-${reminder.offset_days}-${projectId}`}
+                          checked={reminder.channels.email}
+                          onCheckedChange={(checked) => updateChannel(reminder.offset_days, 'email', checked)}
                         />
-                        <span className="text-xs font-medium">{offset} {offset === 1 ? 'Day' : 'Days'}</span>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
 
-              {/* Channel Settings for Each Enabled Offset */}
-              {reminders.length > 0 && (
-                <div className="space-y-3 pt-2 border-t border-border">
-                  <Label className="text-xs font-medium text-foreground">Delivery Channels</Label>
-                  <div className="space-y-3">
-                    {reminders.map(reminder => (
-                      <div key={reminder.offset_days} className="bg-background rounded-md p-3 border border-border">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-xs font-semibold text-foreground">
-                            {reminder.offset_days} {reminder.offset_days === 1 ? 'Day' : 'Days'} Before Deadline
-                          </span>
+                      {/* Slack */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <MessageSquare className="h-3 w-3 text-muted-foreground" />
+                          <Label htmlFor={`slack-${reminder.offset_days}-${projectId}`} className="text-xs text-foreground cursor-pointer">
+                            Slack
+                          </Label>
                         </div>
-                        <div className="space-y-2">
-                          {/* Email */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-3 w-3 text-muted-foreground" />
-                              <Label htmlFor={`email-${reminder.offset_days}`} className="text-xs text-foreground cursor-pointer">
-                                Email
-                              </Label>
-                            </div>
-                            <Switch
-                              id={`email-${reminder.offset_days}`}
-                              checked={reminder.channels.email}
-                              onCheckedChange={(checked) => updateChannel(reminder.offset_days, 'email', checked)}
-                            />
-                          </div>
-
-                          {/* Slack */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <MessageSquare className="h-3 w-3 text-muted-foreground" />
-                              <Label htmlFor={`slack-${reminder.offset_days}`} className="text-xs text-foreground cursor-pointer">
-                                Slack
-                              </Label>
-                            </div>
-                            <Switch
-                              id={`slack-${reminder.offset_days}`}
-                              checked={reminder.channels.slack}
-                              onCheckedChange={(checked) => updateChannel(reminder.offset_days, 'slack', checked)}
-                            />
-                          </div>
-
-                          {/* Zapier */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Zap className="h-3 w-3 text-muted-foreground" />
-                              <Label htmlFor={`zapier-${reminder.offset_days}`} className="text-xs text-foreground cursor-pointer">
-                                Zapier
-                              </Label>
-                            </div>
-                            <Switch
-                              id={`zapier-${reminder.offset_days}`}
-                              checked={reminder.channels.zapier}
-                              onCheckedChange={(checked) => {
-                                updateChannel(reminder.offset_days, 'zapier', checked);
-                              }}
-                            />
-                          </div>
-                        </div>
+                        <Switch
+                          id={`slack-${reminder.offset_days}-${projectId}`}
+                          checked={reminder.channels.slack}
+                          onCheckedChange={(checked) => updateChannel(reminder.offset_days, 'slack', checked)}
+                        />
                       </div>
-                    ))}
+
+                      {/* Zapier */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-3 w-3 text-muted-foreground" />
+                          <Label htmlFor={`zapier-${reminder.offset_days}-${projectId}`} className="text-xs text-foreground cursor-pointer">
+                            Zapier
+                          </Label>
+                        </div>
+                        <Switch
+                          id={`zapier-${reminder.offset_days}-${projectId}`}
+                          checked={reminder.channels.zapier}
+                          onCheckedChange={(checked) => updateChannel(reminder.offset_days, 'zapier', checked)}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* Helper Text for Zapier */}
-              {hasZapierEnabled && (
-                <div className="flex items-start gap-2 p-2 bg-info/10 border border-info/30 rounded-md">
-                  <AlertCircle className="h-3 w-3 text-info mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-muted-foreground">
-                    If no reminders are due, Zapier will not send anything.
-                  </p>
-                </div>
-              )}
-
-              {/* Save Button */}
-              <div className="flex justify-end pt-2 border-t border-border">
-                <Button
-                  size="sm"
-                  onClick={saveSettings}
-                  disabled={saving || reminders.length === 0}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                >
-                  {saving ? (
-                    <>
-                      <div className="h-3 w-3 mr-2 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-3 w-3 mr-1" />
-                      Save Settings
-                    </>
-                  )}
-                </Button>
+                ))}
               </div>
-            </>
+            </div>
           )}
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
+
+          {/* Helper Text for Zapier */}
+          {hasZapierEnabled && (
+            <div className="flex items-start gap-2 p-2 bg-info/10 border border-info/30 rounded-md">
+              <AlertCircle className="h-3 w-3 text-info mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                If no reminders are due, Zapier will not send anything.
+              </p>
+            </div>
+          )}
+
+          {/* Save Button */}
+          <div className="flex justify-end pt-2 border-t border-border">
+            <Button
+              size="sm"
+              onClick={saveSettings}
+              disabled={saving || reminders.length === 0}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {saving ? (
+                <>
+                  <div className="h-3 w-3 mr-2 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-3 w-3 mr-1" />
+                  Save Settings
+                </>
+              )}
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 
