@@ -224,11 +224,11 @@ export const IntegrationsSection = () => {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Zapier Card - Span all columns */}
-          <div className="col-span-1 md:col-span-3 w-full">
-            <ZapierCard />
-          </div>
+        {/* Zapier Card - Full width row outside grid */}
+        <div className="w-full mt-4">
+          <ZapierCard />
         </div>
       </div>
     );
