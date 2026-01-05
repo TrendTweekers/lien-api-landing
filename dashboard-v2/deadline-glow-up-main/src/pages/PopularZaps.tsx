@@ -960,11 +960,11 @@ Amount: \${{project.invoice_amount}}`;
                   <div>
                     <h4 className="text-sm font-semibold text-foreground mb-2">Field Mapping</h4>
                     <div className="bg-muted/30 rounded-md p-3 text-xs space-y-2">
-                      {Object.entries(zap.fieldMapping).map(([key, fields]) => (
+                      {Object.entries(zap?.fieldMapping ?? {}).map(([key, fields]) => (
                         <div key={key}>
                           <div className="font-medium text-foreground mb-1 capitalize">{key}:</div>
                           <div className="pl-2 space-y-1">
-                            {typeof fields === 'object' && Object.entries(fields).map(([field, desc]) => (
+                            {typeof fields === 'object' && Object.entries(fields ?? {}).map(([field, desc]) => (
                               <div key={field} className="text-muted-foreground">
                                 <code className="text-primary">{field}</code>: {desc as string}
                               </div>
