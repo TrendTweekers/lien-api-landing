@@ -25,7 +25,7 @@ export const IntegrationsSection = () => {
         title: "Copied!",
         description: "URL copied to clipboard",
       });
-      setTimeout(() => setCopied(null), 2000);
+      setTimeout(() => setCopied(null), 1500);
     });
   };
 
@@ -50,22 +50,27 @@ export const IntegrationsSection = () => {
                 <p className="text-xs text-muted-foreground mb-2">
                   Use this in Zapier to send invoices to LienDeadline.
                 </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs"
-                  onClick={() => copyToClipboard(webhookUrl, "stepper-webhook")}
-                >
-                  {copied === "stepper-webhook" ? (
-                    <>
-                      <Check className="h-3 w-3 mr-1" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3 w-3 mr-1" /> Copy
-                    </>
+                <div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() => copyToClipboard(webhookUrl, "stepper-webhook")}
+                  >
+                    {copied === "stepper-webhook" ? (
+                      <>
+                        <Check className="h-3 w-3 mr-1" /> Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3 w-3 mr-1" /> Copy Webhook
+                      </>
+                    )}
+                  </Button>
+                  {copied === "stepper-webhook" && (
+                    <p className="text-xs text-muted-foreground mt-1">Copied ✅</p>
                   )}
-                </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -81,22 +86,27 @@ export const IntegrationsSection = () => {
                 <p className="text-xs text-muted-foreground mb-2">
                   Use this in Zapier to pull upcoming deadlines.
                 </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs"
-                  onClick={() => copyToClipboard(triggerUrl, "stepper-trigger")}
-                >
-                  {copied === "stepper-trigger" ? (
-                    <>
-                      <Check className="h-3 w-3 mr-1" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3 w-3 mr-1" /> Copy
-                    </>
+                <div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() => copyToClipboard(triggerUrl, "stepper-trigger")}
+                  >
+                    {copied === "stepper-trigger" ? (
+                      <>
+                        <Check className="h-3 w-3 mr-1" /> Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3 w-3 mr-1" /> Copy Trigger
+                      </>
+                    )}
+                  </Button>
+                  {copied === "stepper-trigger" && (
+                    <p className="text-xs text-muted-foreground mt-1">Copied ✅</p>
                   )}
-                </Button>
+                </div>
               </div>
             </div>
           </div>
