@@ -628,7 +628,7 @@ const PopularZaps = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => copyToClipboard(remindersZapSetupSteps, "reminders-zap-steps")}
+                  onClick={() => copyToClipboard(remindersZapSetupSteps.join("\n"), "reminders-zap-steps")}
                 >
                   {copied === "reminders-zap-steps" ? (
                     <>
@@ -647,7 +647,7 @@ const PopularZaps = () => {
                 <h4 className="text-sm font-semibold text-foreground mb-2">Zap setup steps</h4>
                 <div className="bg-muted/30 rounded-md p-3 text-xs">
                   <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
-                    {remindersZapSetupSteps}
+                    {remindersZapSetupSteps.join("\n")}
                   </pre>
                 </div>
               </div>
