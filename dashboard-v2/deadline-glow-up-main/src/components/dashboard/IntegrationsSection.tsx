@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Copy, Check, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
@@ -7,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const IntegrationsSection = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [webhookUrl, setWebhookUrl] = React.useState("");
   const [triggerUrl, setTriggerUrl] = React.useState("");
@@ -30,7 +32,7 @@ export const IntegrationsSection = () => {
   };
 
   const handleViewZaps = () => {
-    window.open("https://zapier.com/apps/liendeadline/integrations", "_blank");
+    navigate('/zapier');
   };
 
   // Get Started Stepper Component
