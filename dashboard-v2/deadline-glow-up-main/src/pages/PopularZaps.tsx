@@ -274,8 +274,8 @@ const PopularZaps = () => {
 
   return (
     <>
-      <div style={{ background: 'red', color: 'white', padding: 16 }}>
-        DEBUG — THIS IS THE REAL ZAPIER PAGE
+      <div style={{ background: 'red', color: 'white', padding: 8 }}>
+        BUILD_STAMP_REMINDERS_V1
       </div>
       <div className="min-h-screen bg-background">
         <DashboardHeader />
