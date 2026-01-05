@@ -665,7 +665,8 @@ function copyToClipboard(inputId) {
 
 // Placeholder functions for other integrations (to prevent errors)
 function connectQuickBooks() {
-    alert('QuickBooks integration coming soon!');
+    // Redirect to Zapier integration page
+    window.location.href = '/dashboard/zapier';
 }
 
 function connectSage() {

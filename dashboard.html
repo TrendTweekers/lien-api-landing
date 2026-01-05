@@ -266,28 +266,28 @@
 
             <!-- Integrations Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- QuickBooks Integration Card -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-6" id="quickbooks-section">
+                <!-- Zapier Automation Card -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-6" id="zapier-section">
                     <div class="flex flex-col h-full">
                         <div class="flex items-start gap-4 mb-4">
                             <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <span class="text-white text-2xl font-bold">QB</span>
+                                <span class="text-white text-2xl font-bold">⚡</span>
                             </div>
                             <div class="flex-1">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-1">QuickBooks Integration</h3>
-                                <p class="text-sm text-gray-600">Import invoices and auto-calculate deadlines</p>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-1">Zapier Automation</h3>
+                                <p class="text-sm text-gray-600">Send reminders to Slack, Email, CRM, or 6,000+ apps</p>
                             </div>
                         </div>
                         <div class="mt-auto">
                             <div class="flex items-center justify-between mb-4">
-                                <span id="qb-status" class="text-sm text-gray-600">Not connected</span>
+                                <span id="zapier-status" class="text-sm text-gray-600">Connect your Zapier</span>
                             </div>
                             <button 
-                                onclick="connectQuickBooks()"
-                                id="qb-connect-btn"
+                                onclick="window.location.href='/dashboard/zapier'"
+                                id="zapier-connect-btn"
                                 class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
                             >
-                                Connect QuickBooks
+                                Connect Zapier
                             </button>
                         </div>
                     </div>
