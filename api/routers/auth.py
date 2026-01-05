@@ -347,50 +347,92 @@ async def logout(authorization: str = Header(None)):
 # --- Zapier Token Management ---
 
 def ensure_zapier_columns_exist(conn):
-    """Ensure Zapier token columns exist in users table (idempotent)"""
+    """Ensure Zapier token columns exist in users table (idempotent)
+    
+    Runtime column creation is only allowed for:
+    - SQLite databases (local development)
+    - Non-production environments
+    
+    In production PostgreSQL, columns must be created via migration 004.
+    """
     cursor = get_db_cursor(conn)
     
+    # Check if we're in production
+    env = os.getenv('ENV', '').lower() or os.getenv('ENVIRONMENT', '').lower()
+    is_production = env == 'production' or env == 'prod'
+    
     if DB_TYPE == 'postgresql':
-        # PostgreSQL: Check and add columns if they don't exist
-        try:
+        if is_production:
+            # Production PostgreSQL: Do NOT run ALTER TABLE at runtime
+            # Check if columns exist and raise error if missing
             cursor.execute("""
-                DO $$ 
-                BEGIN
-                    IF NOT EXISTS (
-                        SELECT 1 FROM information_schema.columns 
-                        WHERE table_name = 'users' AND column_name = 'zapier_token_hash'
-                    ) THEN
-                        ALTER TABLE users ADD COLUMN zapier_token_hash TEXT;
-                    END IF;
-                    
-                    IF NOT EXISTS (
-                        SELECT 1 FROM information_schema.columns 
-                        WHERE table_name = 'users' AND column_name = 'zapier_token_last4'
-                    ) THEN
-                        ALTER TABLE users ADD COLUMN zapier_token_last4 TEXT;
-                    END IF;
-                    
-                    IF NOT EXISTS (
-                        SELECT 1 FROM information_schema.columns 
-                        WHERE table_name = 'users' AND column_name = 'zapier_token_created_at'
-                    ) THEN
-                        ALTER TABLE users ADD COLUMN zapier_token_created_at TIMESTAMP;
-                    END IF;
-                    
-                    -- Create index if it doesn't exist
-                    IF NOT EXISTS (
-                        SELECT 1 FROM pg_indexes 
-                        WHERE tablename = 'users' AND indexname = 'idx_users_zapier_token_hash'
-                    ) THEN
-                        CREATE INDEX idx_users_zapier_token_hash ON users(zapier_token_hash);
-                    END IF;
-                END $$;
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'users' 
+                AND column_name IN ('zapier_token_hash', 'zapier_token_last4', 'zapier_token_created_at')
             """)
-            conn.commit()
-        except Exception as e:
-            print(f"⚠️ Error ensuring Zapier columns (may already exist): {e}")
+            rows = cursor.fetchall()
+            existing_columns = set()
+            for row in rows:
+                if isinstance(row, dict):
+                    existing_columns.add(row.get('column_name'))
+                elif isinstance(row, (list, tuple)) and len(row) > 0:
+                    existing_columns.add(row[0])
+                elif hasattr(row, 'keys') and 'column_name' in row.keys():
+                    existing_columns.add(row['column_name'])
+            
+            required_columns = {'zapier_token_hash', 'zapier_token_last4', 'zapier_token_created_at'}
+            missing_columns = required_columns - existing_columns
+            
+            if missing_columns:
+                error_msg = (
+                    f"❌ Zapier token columns are missing in production database: {', '.join(missing_columns)}. "
+                    f"Please run migration 004_add_zapier_token_fields.sql to add these columns. "
+                    f"Runtime ALTER TABLE is not allowed in production PostgreSQL."
+                )
+                print(error_msg)
+                raise RuntimeError(error_msg)
+        else:
+            # Non-production PostgreSQL: Allow runtime column creation
+            try:
+                cursor.execute("""
+                    DO $$ 
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_name = 'users' AND column_name = 'zapier_token_hash'
+                        ) THEN
+                            ALTER TABLE users ADD COLUMN zapier_token_hash TEXT;
+                        END IF;
+                        
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_name = 'users' AND column_name = 'zapier_token_last4'
+                        ) THEN
+                            ALTER TABLE users ADD COLUMN zapier_token_last4 TEXT;
+                        END IF;
+                        
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_name = 'users' AND column_name = 'zapier_token_created_at'
+                        ) THEN
+                            ALTER TABLE users ADD COLUMN zapier_token_created_at TIMESTAMP;
+                        END IF;
+                        
+                        -- Create index if it doesn't exist
+                        IF NOT EXISTS (
+                            SELECT 1 FROM pg_indexes 
+                            WHERE tablename = 'users' AND indexname = 'idx_users_zapier_token_hash'
+                        ) THEN
+                            CREATE INDEX idx_users_zapier_token_hash ON users(zapier_token_hash);
+                        END IF;
+                    END $$;
+                """)
+                conn.commit()
+            except Exception as e:
+                print(f"⚠️ Error ensuring Zapier columns (may already exist): {e}")
     else:
-        # SQLite: Try to add columns (will fail silently if they exist)
+        # SQLite: Always allow runtime column creation (local development)
         for column in ['zapier_token_hash', 'zapier_token_last4', 'zapier_token_created_at']:
             try:
                 if column == 'zapier_token_created_at':
