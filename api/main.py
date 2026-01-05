@@ -2996,23 +2996,10 @@ async def serve_terms_clean():
 @app.get("/customer-dashboard")
 async def serve_customer_dashboard_clean(request: Request):
     """
-    Customer dashboard - block brokers from accessing.
-    Clean URL: /customer-dashboard → customer-dashboard.html
+    Redirect /customer-dashboard to React dashboard at /dashboard
     """
-    # Check if user is a broker (via email in query params or session)
-    email = request.query_params.get('email', '').strip()
-    
-    # Block brokers from accessing customer dashboard
-    if email and is_broker_email(email):
-        raise HTTPException(
-            status_code=403,
-            detail="Brokers cannot access customer dashboard. Please use /broker-dashboard"
-        )
-    
-    file_path = BASE_DIR / "customer-dashboard.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="Customer dashboard not found")
-    return FileResponse(file_path)
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/dashboard", status_code=301)
 
 
 
