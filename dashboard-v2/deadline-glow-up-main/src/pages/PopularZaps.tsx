@@ -479,14 +479,66 @@ const PopularZaps = () => {
                     </Button>
                   </div>
                   {expandedCards[0] && (
-                    <div className="mt-3 pt-3 border-t space-y-2 text-xs">
+                    <div className="mt-3 pt-3 border-t space-y-4 text-xs">
+                      {/* What Zapier will do */}
                       <div>
-                        <strong>Headers:</strong>
-                        <pre className="bg-muted/30 p-2 rounded mt-1">{JSON.stringify(remindersHeadersTemplate, null, 2)}</pre>
+                        <h4 className="font-semibold text-foreground mb-2">What Zapier will do</h4>
+                        <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
+                          <li>Checks for reminders due today (1 or 7 days before deadlines)</li>
+                          <li>Sends a Slack message for each reminder found</li>
+                        </ul>
                       </div>
+
+                      {/* Required Zapier steps */}
                       <div>
-                        <strong>Slack Template:</strong>
-                        <pre className="bg-muted/30 p-2 rounded mt-1 whitespace-pre-wrap">{remindersSlackMessageTemplate}</pre>
+                        <h4 className="font-semibold text-foreground mb-2">Required Zapier steps</h4>
+                        <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-2">
+                          <li>Trigger: Schedule by Zapier → Every Hour</li>
+                          <li>Action: Webhooks by Zapier → GET</li>
+                          <li className="ml-4">URL: <code className="bg-muted px-1 rounded">https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10</code></li>
+                          <li className="ml-4">Header: <code className="bg-muted px-1 rounded">Authorization: Bearer &lt;your_token&gt;</code></li>
+                          <li>Action: Slack → Send Channel Message</li>
+                        </ol>
+                      </div>
+
+                      {/* Slack message template */}
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2">Slack message template</h4>
+                        <div className="bg-muted/30 p-2 rounded mt-1">
+                          <pre className="whitespace-pre-wrap text-muted-foreground font-mono">{remindersSlackMessageTemplate}</pre>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 text-xs px-2 mt-2"
+                            onClick={() => copyToClipboard(remindersSlackMessageTemplate, "reminders-slack-expanded")}
+                          >
+                            {copied === "reminders-slack-expanded" ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                            Copy template
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Advanced / Optional */}
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2">Advanced / Optional</h4>
+                        <div className="space-y-2">
+                          <div>
+                            <strong className="text-muted-foreground">Headers:</strong>
+                            <pre className="bg-muted/30 p-2 rounded mt-1 text-muted-foreground font-mono">{JSON.stringify(remindersHeadersTemplate, null, 2)}</pre>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 text-xs px-2 mt-1"
+                              onClick={() => copyToClipboard(JSON.stringify(remindersHeadersTemplate, null, 2), "reminders-headers-expanded")}
+                            >
+                              {copied === "reminders-headers-expanded" ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                              Copy headers
+                            </Button>
+                          </div>
+                          <p className="text-muted-foreground text-xs">
+                            <strong>Note:</strong> If multiple reminders are returned, add Looping by Zapier to send one Slack message per reminder.
+                          </p>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -533,10 +585,64 @@ const PopularZaps = () => {
                     </Button>
                   </div>
                   {expandedCards[1] && (
-                    <div className="mt-3 pt-3 border-t space-y-2 text-xs">
+                    <div className="mt-3 pt-3 border-t space-y-4 text-xs">
+                      {/* What Zapier will do */}
                       <div>
-                        <strong>Example JSON:</strong>
-                        <pre className="bg-muted/30 p-2 rounded mt-1">{JSON.stringify(exampleJsonBody, null, 2)}</pre>
+                        <h4 className="font-semibold text-foreground mb-2">What Zapier will do</h4>
+                        <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
+                          <li>Receives invoice data from your accounting system</li>
+                          <li>Calculates lien deadlines and creates a project in LienDeadline</li>
+                        </ul>
+                      </div>
+
+                      {/* Required Zapier steps */}
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2">Required Zapier steps</h4>
+                        <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-2">
+                          <li>Trigger: Your Accounting System → New Invoice</li>
+                          <li>Action: Webhooks by Zapier → POST</li>
+                          <li className="ml-4">URL: <code className="bg-muted px-1 rounded">{webhookUrl}</code></li>
+                          <li className="ml-4">Headers: <code className="bg-muted px-1 rounded">Authorization: Bearer &lt;your_token&gt;</code></li>
+                          <li>Data: Map invoice fields to JSON body (see Advanced section)</li>
+                        </ol>
+                      </div>
+
+                      {/* Advanced / Optional */}
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2">Advanced / Optional</h4>
+                        <div className="space-y-2">
+                          <div>
+                            <strong className="text-muted-foreground">Example JSON body:</strong>
+                            <pre className="bg-muted/30 p-2 rounded mt-1 text-muted-foreground font-mono">{JSON.stringify(exampleJsonBody, null, 2)}</pre>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 text-xs px-2 mt-1"
+                              onClick={() => copyToClipboard(JSON.stringify(exampleJsonBody, null, 2), "invoice-json-expanded")}
+                            >
+                              {copied === "invoice-json-expanded" ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                              Copy JSON
+                            </Button>
+                          </div>
+                          <div>
+                            <strong className="text-muted-foreground">Headers:</strong>
+                            <pre className="bg-muted/30 p-2 rounded mt-1 text-muted-foreground font-mono">{JSON.stringify(headersTemplate, null, 2)}</pre>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 text-xs px-2 mt-1"
+                              onClick={() => copyToClipboard(JSON.stringify(headersTemplate, null, 2), "invoice-headers-expanded")}
+                            >
+                              {copied === "invoice-headers-expanded" ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                              Copy headers
+                            </Button>
+                          </div>
+                          <p className="text-muted-foreground text-xs">
+                            <strong>Required fields:</strong> state, invoice_date<br />
+                            <strong>Recommended:</strong> invoice_amount_cents, invoice_number<br />
+                            <strong>Optional:</strong> project_name, client_name
+                          </p>
+                        </div>
                       </div>
                     </div>
                   )}
