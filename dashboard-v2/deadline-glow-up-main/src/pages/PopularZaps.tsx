@@ -273,8 +273,12 @@ const PopularZaps = () => {
   const zapTemplates = buildZapTemplates();
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader />
+    <>
+      <div style={{ background: 'red', color: 'white', padding: 16 }}>
+        DEBUG — THIS IS THE REAL ZAPIER PAGE
+      </div>
+      <div className="min-h-screen bg-background">
+        <DashboardHeader />
       
       <main className="container py-8">
         <div className="space-y-6">
@@ -867,6 +871,7 @@ const PopularZaps = () => {
         </div>
       </main>
     </div>
+    </>
   );
 };
 
