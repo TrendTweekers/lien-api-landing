@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Copy, Check, CheckCircle2, HelpCircle, Key, X } from "lucide-react";
+import { Copy, Check, CheckCircle2, HelpCircle, Key, X, Rocket } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
