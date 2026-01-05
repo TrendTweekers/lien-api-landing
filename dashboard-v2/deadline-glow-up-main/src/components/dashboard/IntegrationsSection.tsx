@@ -233,7 +233,7 @@ export const IntegrationsSection = () => {
   const ZapierCard = () => {
 
     return (
-      <div className="bg-card rounded-xl p-6 border-2 border-primary/30 hover:shadow-xl hover:border-primary/50 transition-all duration-300 card-shadow group h-full flex flex-col ring-1 ring-primary/10">
+      <div className="bg-card rounded-xl p-4 md:p-6 border-2 border-primary/30 hover:shadow-xl hover:border-primary/50 transition-all duration-300 card-shadow group w-full max-w-none flex flex-col ring-1 ring-primary/10">
         <div className="flex items-start gap-4 mb-4">
           <div className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-base shrink-0 bg-gradient-to-br from-orange-500 to-orange-600">
             <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
@@ -266,93 +266,94 @@ export const IntegrationsSection = () => {
 
         {/* Zapier API Token Section */}
         <div className="mb-4 p-3 bg-muted/30 rounded-lg border border-border">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div className="flex items-center gap-2">
               <Key className="h-4 w-4 text-muted-foreground" />
               <Label className="text-xs font-medium">Zapier API Token</Label>
-            </div>
-            {tokenStatus?.has_token ? (
-              <Badge variant="secondary" className="text-xs">
-                Active (••••{tokenStatus.last4})
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-xs">
-                Not created
-              </Badge>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {tokenStatus?.has_token ? (
-              <>
+              {tokenStatus?.has_token && (
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-xs flex-1"
+                  className="h-8 text-xs"
                   onClick={handleGenerateToken}
                   disabled={isLoadingToken}
                 >
                   {isLoadingToken ? "Generating..." : "Regenerate"}
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs"
-                  onClick={handleRevokeToken}
-                >
-                  Revoke
-                </Button>
-              </>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs w-full"
-                onClick={handleGenerateToken}
-                disabled={isLoadingToken}
-              >
-                {isLoadingToken ? "Generating..." : "Generate Token"}
-              </Button>
-            )}
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {tokenStatus?.has_token ? (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs"
+                    onClick={handleRevokeToken}
+                  >
+                    Revoke
+                  </Button>
+                  <Badge variant="secondary" className="text-xs">
+                    Active (••••{tokenStatus.last4})
+                  </Badge>
+                </>
+              ) : (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs"
+                    onClick={handleGenerateToken}
+                    disabled={isLoadingToken}
+                  >
+                    {isLoadingToken ? "Generating..." : "Generate Token"}
+                  </Button>
+                  <Badge variant="outline" className="text-xs">
+                    Not created
+                  </Badge>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="space-y-3 mb-4">
+        <div className="space-y-4 mb-4">
           <div>
             <Label className="text-xs font-medium mb-1 block">Webhook URL</Label>
-            <div className="flex gap-1">
+            <div className="flex gap-2 w-full">
               <Input
                 type="text"
                 value={webhookUrl}
                 readOnly
-                className="flex-1 text-xs font-mono h-8"
+                className="flex-1 text-xs font-mono h-9"
               />
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 px-2"
+                className="h-9 px-3 shrink-0"
                 onClick={() => copyToClipboard(webhookUrl, "webhook")}
               >
-                {copied === "webhook" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                {copied === "webhook" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
           </div>
 
           <div>
             <Label className="text-xs font-medium mb-1 block">Trigger URL</Label>
-            <div className="flex gap-1">
+            <div className="flex gap-2 w-full">
               <Input
                 type="text"
                 value={triggerUrl}
                 readOnly
-                className="flex-1 text-xs font-mono h-8"
+                className="flex-1 text-xs font-mono h-9"
               />
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 px-2"
+                className="h-9 px-3 shrink-0"
                 onClick={() => copyToClipboard(triggerUrl, "trigger")}
               >
-                {copied === "trigger" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                {copied === "trigger" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
           </div>
@@ -401,7 +402,7 @@ export const IntegrationsSection = () => {
 
       <GetStartedStepper />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+      <div className="w-full">
         <ZapierCard />
       </div>
 
