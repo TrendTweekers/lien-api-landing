@@ -154,7 +154,6 @@ from .routers import brokers
 from .routers import customer
 from .routers import zapier
 from .routers import notifications
-from .routers import internal_migrations
 
 # Import short link generator
 from .short_link_system import ShortLinkGenerator
@@ -1204,7 +1203,6 @@ app.include_router(brokers.router, tags=["brokers"])
 app.include_router(customer.router, tags=["customer"])
 app.include_router(zapier.router, prefix="/api/zapier", tags=["zapier"])
 app.include_router(notifications.router, tags=["notifications"])
-app.include_router(internal_migrations.router, tags=["internal"])
 
 
 
