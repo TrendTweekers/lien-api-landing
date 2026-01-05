@@ -394,30 +394,43 @@ export const IntegrationsSection = () => {
   return (
     <div className="space-y-6 w-full">
       <h2 className="text-xl font-semibold text-foreground">Accounting Integrations</h2>
-      
-      <Alert className="bg-primary/10 border-primary/30">
-        <CheckCircle2 className="h-5 w-5 text-primary" />
-        <AlertTitle className="font-semibold text-foreground">Connect via Zapier in 3 minutes</AlertTitle>
-        <AlertDescription className="text-muted-foreground space-y-2">
-          <p>Send invoices from any tool → LienDeadline calculates deadlines → get alerts anywhere.</p>
-          <ul className="list-disc list-inside space-y-1 text-sm mt-2">
-            <li>Import invoices from any system</li>
-            <li>Auto-calculate notice + lien deadlines</li>
-            <li>Send alerts to Slack/Email/Asana/CRM</li>
+
+      {/* Zapier Value Proposition Block - Benefits First */}
+      <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg p-6 border border-primary/20 space-y-4">
+        <div className="space-y-3">
+          <h3 className="text-xl font-semibold text-foreground">
+            Get deadline alerts wherever you already work
+          </h3>
+          <p className="text-muted-foreground">
+            Connect Zapier in minutes to send lien deadline reminders to Slack, email, CRM, or spreadsheets — powered by Zapier.
+          </p>
+          
+          <ul className="list-disc list-inside space-y-1.5 text-muted-foreground ml-2">
+            <li>Works with 6,000+ apps</li>
+            <li>No email setup inside LienDeadline</li>
+            <li>LienDeadline decides when — Zapier decides where</li>
           </ul>
-          <div className="mt-3 pt-2 border-t border-primary/20">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs text-primary hover:text-primary hover:bg-primary/10"
-              onClick={() => navigate('/help/zapier')}
-            >
-              <HelpCircle className="h-3 w-3 mr-1" />
-              Need help setting up Zapier?
-            </Button>
-          </div>
-        </AlertDescription>
-      </Alert>
+          
+          <p className="text-sm text-muted-foreground italic">
+            Used by contractors protecting $2.3M+ in receivables monthly
+          </p>
+        </div>
+
+        {/* Quick Start CTA */}
+        <div className="bg-card rounded-lg p-4 border border-border">
+          <Button
+            size="lg"
+            className="w-full md:w-auto"
+            onClick={() => navigate('/zapier')}
+          >
+            <Rocket className="h-4 w-4 mr-2" />
+            Quick Start with Slack
+          </Button>
+          <p className="text-sm text-muted-foreground mt-2">
+            Get your first alert in under 5 minutes
+          </p>
+        </div>
+      </div>
 
       <GetStartedStepper />
 
