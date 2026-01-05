@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { NotificationSettings } from "./NotificationSettings";
 
 interface Project {
   id: number;
@@ -261,6 +262,7 @@ export const ProjectsTable = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-2">
+                      <NotificationSettings projectId={project.id} projectName={project.project_name} />
                       <Button 
                         size="sm" 
                         className="bg-primary hover:bg-primary/90 text-primary-foreground"
