@@ -373,7 +373,7 @@ export const IntegrationsSection = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <h2 className="text-xl font-semibold text-foreground">Accounting Integrations</h2>
       
       <Alert className="bg-primary/10 border-primary/30">
@@ -402,7 +402,8 @@ export const IntegrationsSection = () => {
 
       <GetStartedStepper />
 
-      <div className="w-full">
+      {/* Zapier Card - Full width, same as Get Started section */}
+      <div className="w-full max-w-none">
         <ZapierCard />
       </div>
 
