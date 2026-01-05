@@ -11,10 +11,14 @@ from ..rate_limiter import limiter
 
 router = APIRouter()
 
+# Module-level flag to track if pepper warning has been shown
+PEPPER_WARNING_SHOWN = False
+
 # --- Helper Functions ---
 
 def hash_zapier_token(token: str, use_pepper: bool = True) -> str:
     """Hash a Zapier token using SHA-256 with optional server-side pepper"""
+    global PEPPER_WARNING_SHOWN
     pepper = os.getenv('ZAPIER_TOKEN_PEPPER', '').strip()
     
     if use_pepper and pepper:
@@ -22,8 +26,10 @@ def hash_zapier_token(token: str, use_pepper: bool = True) -> str:
         combined = pepper + token
         return hashlib.sha256(combined.encode('utf-8')).hexdigest()
     elif use_pepper and not pepper:
-        # Pepper missing but requested - log warning and fall back
-        print("⚠️ WARNING: ZAPIER_TOKEN_PEPPER not set. Using unpeppered hashing for compatibility.")
+        # Pepper missing but requested - log warning once and fall back
+        if not PEPPER_WARNING_SHOWN:
+            print("⚠️ WARNING: ZAPIER_TOKEN_PEPPER not set. Using unpeppered hashing for compatibility.")
+            PEPPER_WARNING_SHOWN = True
         return hashlib.sha256(token.encode('utf-8')).hexdigest()
     else:
         # Explicitly unpeppered (for backwards compatibility check)
