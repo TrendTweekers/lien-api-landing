@@ -1,0 +1,10 @@
+{
+  "name": "lien-api-landing",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd dashboard-v2/deadline-glow-up-main && npm ci && npm run build",
+    "postinstall": "cd dashboard-v2/deadline-glow-up-main && (npm ci || npm install)"
+  }
+}
+

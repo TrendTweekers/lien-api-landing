@@ -7,7 +7,7 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   base: '/dashboard/',
   build: {
-    outDir: '../../public/dashboard',
+    outDir: '../../../public/dashboard',
     emptyOutDir: true,
   },
   server: {
