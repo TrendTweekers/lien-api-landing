@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { IntegrationsSection } from "@/components/dashboard/IntegrationsSection";
 import { AccountOverview } from "@/components/dashboard/AccountOverview";
@@ -9,43 +9,7 @@ import { UsageStats } from "@/components/dashboard/UsageStats";
 import { BillingSection } from "@/components/dashboard/BillingSection";
 import { PartnerProgram } from "@/components/dashboard/PartnerProgram";
 import { ApiDocs } from "@/components/dashboard/ApiDocs";
-import { ImportedInvoicesTable } from "@/components/dashboard/ImportedInvoicesTable";
-
 const Index = () => {
-  const [isQuickBooksConnected, setIsQuickBooksConnected] = useState(false);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
-
-  const checkQuickBooksConnection = async () => {
-    try {
-        const token = localStorage.getItem('session_token');
-        if (!token) {
-          console.log("🔍 No session token found");
-          setIsCheckingConnection(false);
-          return;
-        }
-
-        const res = await fetch('/api/quickbooks/status', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (res.ok) {
-            const data = await res.json();
-            console.log("🔍 QuickBooks status response:", data);
-            const isConnected = data.connected === true || data.connected === "true";
-            console.log("🔍 Setting isQuickBooksConnected to:", isConnected);
-            setIsQuickBooksConnected(isConnected);
-        } else {
-          console.log("🔍 QuickBooks status check failed:", res.status, res.statusText);
-          setIsQuickBooksConnected(false);
-        }
-    } catch (error) {
-        console.error("Failed to check QB status", error);
-        setIsQuickBooksConnected(false);
-    } finally {
-        setIsCheckingConnection(false);
-    }
-  };
-
   useEffect(() => {
     // Check for session token and verify session
     const token = localStorage.getItem('session_token');
@@ -63,16 +27,6 @@ const Index = () => {
     }).catch(() => {
       window.location.href = '/login.html';
     });
-
-    // Check for URL param
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('qb_connected') === 'true') {
-        // Clear the param to clean up URL
-        window.history.replaceState({}, '', window.location.pathname);
-        // Force check immediately (though checkQuickBooksConnection is called anyway below)
-    }
-    
-    checkQuickBooksConnection();
   }, []);
 
   return (
@@ -101,11 +55,8 @@ const Index = () => {
 
           {/* Integrations */}
           <div className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
-            <IntegrationsSection isConnected={isQuickBooksConnected} />
+            <IntegrationsSection />
           </div>
-
-          {/* Imported Invoices Table */}
-          <ImportedInvoicesTable isConnected={isQuickBooksConnected} isChecking={isCheckingConnection} />
 
           {/* Projects Table */}
           <div className="animate-slide-up" style={{ animationDelay: "0.25s" }}>
