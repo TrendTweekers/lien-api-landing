@@ -832,6 +832,14 @@ async def save_calculation(request: Request, body: SaveRequest):
             
             conn.commit()
             
+            # Auto-create default notification settings for the project
+            try:
+                from api.routers.notifications import create_default_notification_settings
+                create_default_notification_settings(calculation_id)
+            except Exception as e:
+                logger.warning(f"Failed to create default notification settings for project {calculation_id}: {e}")
+                # Don't fail the save if notification settings creation fails
+            
             # Increment API usage
             increment_api_calls(user_email)
             

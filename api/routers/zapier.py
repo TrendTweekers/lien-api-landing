@@ -359,6 +359,14 @@ async def webhook_invoice(
         
         logger.info(f"✅ Created project via Zapier webhook: ID={calculation_id}, user={user_email}")
         
+        # Auto-create default notification settings for the project
+        try:
+            from api.routers.notifications import create_default_notification_settings
+            create_default_notification_settings(calculation_id)
+        except Exception as e:
+            logger.warning(f"Failed to create default notification settings for project {calculation_id}: {e}")
+            # Don't fail the webhook if notification settings creation fails
+        
         return JSONResponse(
             status_code=201,
             content={
@@ -676,7 +684,11 @@ async def trigger_reminders(
                         )
                 
                 # Find candidate projects where prelim_deadline_days or lien_deadline_days matches requested days
+                # AND where notification settings have zapier channel enabled for the matching offset
                 reminders = []
+                
+                # Import helper to get notification settings
+                from api.routers.notifications import get_notification_settings
                 
                 if DB_TYPE == 'postgresql':
                     cursor.execute("""
@@ -775,7 +787,27 @@ async def trigger_reminders(
                         continue
                     
                     # Check prelim reminders
+                    # Only include if notification settings have zapier channel enabled for this offset
                     if prelim_deadline_days is not None and prelim_deadline_days in days_list and prelim_deadline:
+                        # Check notification settings
+                        notification_settings = get_notification_settings(project_id)
+                        if notification_settings:
+                            reminders_config = notification_settings.get("reminders", [])
+                            # Find reminder config matching this offset
+                            matching_reminder = next(
+                                (r for r in reminders_config if r.get("offset_days") == prelim_deadline_days),
+                                None
+                            )
+                            if matching_reminder:
+                                channels = matching_reminder.get("channels", {})
+                                if not channels.get("zapier", False):
+                                    # Zapier channel not enabled for this offset, skip
+                                    continue
+                        # If no settings exist, use default behavior (zapier=false, so skip)
+                        # This ensures backwards compatibility: only projects with explicit zapier=true get reminders
+                        else:
+                            continue
+                        
                         try:
                             if isinstance(prelim_deadline, str):
                                 deadline_date = datetime.strptime(prelim_deadline, "%Y-%m-%d").date()
@@ -851,6 +883,24 @@ async def trigger_reminders(
                         break
                     
                     if lien_deadline_days is not None and lien_deadline_days in days_list and lien_deadline:
+                        # Check notification settings
+                        notification_settings = get_notification_settings(project_id)
+                        if notification_settings:
+                            reminders_config = notification_settings.get("reminders", [])
+                            # Find reminder config matching this offset
+                            matching_reminder = next(
+                                (r for r in reminders_config if r.get("offset_days") == lien_deadline_days),
+                                None
+                            )
+                            if matching_reminder:
+                                channels = matching_reminder.get("channels", {})
+                                if not channels.get("zapier", False):
+                                    # Zapier channel not enabled for this offset, skip
+                                    continue
+                        # If no settings exist, use default behavior (zapier=false, so skip)
+                        else:
+                            continue
+                        
                         try:
                             if isinstance(lien_deadline, str):
                                 deadline_date = datetime.strptime(lien_deadline, "%Y-%m-%d").date()
