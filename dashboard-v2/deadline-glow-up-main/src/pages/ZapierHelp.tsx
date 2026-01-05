@@ -277,26 +277,36 @@ const ZapierHelp = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
+                <h4 className="text-sm font-semibold text-foreground mb-2">How Reminders Work</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  We send reminders once per deadline per offset. Running the Zap hourly will not duplicate messages.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  The reminders endpoint uses server-side deduplication to ensure each reminder is sent exactly once for each deadline at each configured day offset (e.g., 1 day before, 7 days before). This means you can safely run your Zap every hour without worrying about spam.
+                </p>
+              </div>
+              
+              <div>
                 <h4 className="text-sm font-semibold text-foreground mb-2">Recommended Schedule</h4>
                 <p className="text-sm text-muted-foreground">
-                  Run your Zap hourly using "Schedule by Zapier" to catch all upcoming deadlines. The trigger endpoint returns projects where <code className="bg-muted px-1 rounded">lien_deadline</code> is in the future, sorted by deadline date.
+                  Run your Zap hourly using "Schedule by Zapier" to catch all upcoming deadlines. The reminders endpoint returns projects where deadlines match your configured day offsets (default: 1 and 7 days), sorted by deadline date.
                 </p>
               </div>
               
               <div>
                 <h4 className="text-sm font-semibold text-foreground mb-2">1-Day and 7-Day Reminders</h4>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Use Zapier's Filter step to send reminders at specific intervals:
+                  The reminders endpoint supports multiple day offsets. Default configuration sends reminders at:
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
                   <li>
-                    <strong>1-day reminder:</strong> Filter where <code className="bg-muted px-1 rounded">lien_deadline_days</code> equals 1
+                    <strong>7 days before:</strong> Early warning for upcoming deadlines
                   </li>
                   <li>
-                    <strong>7-day reminder:</strong> Filter where <code className="bg-muted px-1 rounded">lien_deadline_days</code> equals 7
+                    <strong>1 day before:</strong> Final reminder before deadline
                   </li>
                   <li>
-                    <strong>Urgent (within 3 days):</strong> Filter where <code className="bg-muted px-1 rounded">lien_deadline_days</code> is less than or equal to 3
+                    <strong>Custom offsets:</strong> Use <code className="bg-muted px-1 rounded">?days=1,3,7</code> to customize reminder timing
                   </li>
                 </ul>
               </div>
@@ -304,7 +314,7 @@ const ZapierHelp = () => {
               <div>
                 <h4 className="text-sm font-semibold text-foreground mb-2">How It Works</h4>
                 <p className="text-sm text-muted-foreground">
-                  The trigger endpoint returns an array of projects with upcoming deadlines. Each project includes <code className="bg-muted px-1 rounded">prelim_deadline_days</code> and <code className="bg-muted px-1 rounded">lien_deadline_days</code> fields showing how many days until each deadline. Zapier processes each project and can send notifications to Slack, Email, Asana, or any other app.
+                  The reminders endpoint returns an array of reminder objects. Each reminder includes the reminder type (prelim or lien), days until deadline, deadline date, and full project details. Zapier processes each reminder and can send notifications to Slack, Email, Asana, or any other app.
                 </p>
               </div>
             </CardContent>

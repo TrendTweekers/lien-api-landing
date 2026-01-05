@@ -644,7 +644,7 @@ async def trigger_reminders(
             with get_db() as conn:
                 cursor = get_db_cursor(conn)
                 
-                # Ensure table exists (for backwards compatibility)
+                # Verify table exists (migrations should have created it)
                 try:
                     if DB_TYPE == 'postgresql':
                         cursor.execute("""
@@ -663,52 +663,25 @@ async def trigger_reminders(
                         table_exists = cursor.fetchone() is not None
                     
                     if not table_exists:
-                        # Create table if it doesn't exist
-                        if DB_TYPE == 'postgresql':
-                            cursor.execute("""
-                                CREATE TABLE IF NOT EXISTS zapier_notification_events (
-                                    id SERIAL PRIMARY KEY,
-                                    user_id INTEGER NOT NULL,
-                                    project_id INTEGER NOT NULL,
-                                    reminder_type TEXT NOT NULL CHECK (reminder_type IN ('prelim','lien')),
-                                    reminder_days INTEGER NOT NULL,
-                                    deadline_date DATE NOT NULL,
-                                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                                    UNIQUE(user_id, project_id, reminder_type, reminder_days, deadline_date)
-                                )
-                            """)
-                            cursor.execute("""
-                                CREATE INDEX IF NOT EXISTS idx_zapier_notif_user_created 
-                                ON zapier_notification_events(user_id, created_at DESC)
-                            """)
-                            cursor.execute("""
-                                CREATE INDEX IF NOT EXISTS idx_zapier_notif_user_deadline 
-                                ON zapier_notification_events(user_id, deadline_date)
-                            """)
-                        else:
-                            cursor.execute("""
-                                CREATE TABLE IF NOT EXISTS zapier_notification_events (
-                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                    user_id INTEGER NOT NULL,
-                                    project_id INTEGER NOT NULL,
-                                    reminder_type TEXT NOT NULL CHECK (reminder_type IN ('prelim','lien')),
-                                    reminder_days INTEGER NOT NULL,
-                                    deadline_date DATE NOT NULL,
-                                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                    UNIQUE(user_id, project_id, reminder_type, reminder_days, deadline_date)
-                                )
-                            """)
-                            cursor.execute("""
-                                CREATE INDEX IF NOT EXISTS idx_zapier_notif_user_created 
-                                ON zapier_notification_events(user_id, created_at DESC)
-                            """)
-                            cursor.execute("""
-                                CREATE INDEX IF NOT EXISTS idx_zapier_notif_user_deadline 
-                                ON zapier_notification_events(user_id, deadline_date)
-                            """)
-                        conn.commit()
+                        logger.error("zapier_notification_events table does not exist. Migration 006_add_zapier_notification_events.sql must be run.")
+                        return JSONResponse(
+                            status_code=500,
+                            content={
+                                "success": False,
+                                "version": "v1",
+                                "error": "Zapier reminders are temporarily unavailable. Please try again later."
+                            }
+                        )
                 except Exception as table_error:
-                    logger.warning(f"Table check/create error (non-critical): {table_error}")
+                    logger.error(f"Error checking zapier_notification_events table: {table_error}")
+                    return JSONResponse(
+                        status_code=500,
+                        content={
+                            "success": False,
+                            "version": "v1",
+                            "error": "Zapier reminders are temporarily unavailable. Please try again later."
+                        }
+                    )
                 
                 # Find candidate projects where prelim_deadline_days or lien_deadline_days matches requested days
                 reminders = []
