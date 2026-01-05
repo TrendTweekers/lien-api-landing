@@ -646,8 +646,8 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
     # Get invoices from last 90 days - fetch ALL invoices with pagination
     ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
     
-    # Base query - fetch invoices from last 90 days
-    base_query = f"SELECT * FROM Invoice WHERE TxnDate >= '{ninety_days_ago}'"
+    # Base query - fetch invoices from last 90 days, ORDER BY newest first
+    base_query = f"SELECT * FROM Invoice WHERE TxnDate >= '{ninety_days_ago}' ORDER BY TxnDate DESC, Id DESC"
     
     all_invoices = []
     max_results_per_page = 100
@@ -664,6 +664,7 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                 query = f"{base_query} MAXRESULTS {max_results_per_page} STARTPOSITION {start_position}"
                 
                 print(f"   📥 Fetching page starting at position {start_position}...")
+                print(f"🔍 DEBUG: Query being sent to QuickBooks: {query}")
                 
                 response = await client.get(
                     f"{QB_API_BASE}/company/{realm_id}/query",
@@ -675,6 +676,10 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                         "query": query
                     }
                 )
+                
+                # DEBUG: Log the full raw response
+                print(f"🔍 DEBUG: QuickBooks API Response Status: {response.status_code}")
+                print(f"🔍 DEBUG: Full Response Body: {response.text[:500]}")  # First 500 chars
                 
                 if response.status_code == 401:
                     # Token expired, try refreshing
@@ -706,6 +711,8 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                 
                 # DEBUG: Log the raw response
                 print(f"🔍 DEBUG: Full QueryResponse keys: {query_response.keys()}")
+                print(f"🔍 DEBUG: totalCount from QB: {query_response.get('totalCount', 'N/A')}")
+                print(f"🔍 DEBUG: maxResults from QB: {query_response.get('maxResults', 'N/A')}")
                 print(f"🔍 DEBUG: Invoice count in response: {len(query_response.get('Invoice', []))}")
                 if 'Invoice' in query_response:
                     invoices_raw = query_response.get("Invoice", [])
