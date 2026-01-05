@@ -2,33 +2,15 @@
 Temporary internal migration endpoints
 Used for one-time database migrations that cannot be run via Railway UI
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 import logging
 
 from api.database import get_db, get_db_cursor, DB_TYPE
-from api.routers.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/internal", tags=["internal"])
-
-# Admin email allowed to run migrations
-ADMIN_EMAIL = "admin@stackedboost.com"
-
-def verify_admin_user(current_user: dict = Depends(get_current_user)) -> dict:
-    """
-    Verify the current user is an admin.
-    Raises 401 if not authenticated, 403 if not admin.
-    """
-    user_email = current_user.get('email', '').lower().strip()
-    if not user_email:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    if user_email != ADMIN_EMAIL.lower():
-        raise HTTPException(status_code=403, detail="Admin access required")
-    
-    return current_user
 
 @router.post("/migrate/notification-settings")
 async def migrate_notification_settings():
