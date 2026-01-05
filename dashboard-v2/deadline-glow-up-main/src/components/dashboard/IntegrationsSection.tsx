@@ -1,11 +1,13 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Copy, Check, CheckCircle2, HelpCircle } from "lucide-react";
+import { Copy, Check, CheckCircle2, HelpCircle, Key, X } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 export const IntegrationsSection = () => {
   const navigate = useNavigate();
@@ -13,12 +15,100 @@ export const IntegrationsSection = () => {
   const [webhookUrl, setWebhookUrl] = React.useState("");
   const [triggerUrl, setTriggerUrl] = React.useState("");
   const [copied, setCopied] = React.useState<string | null>(null);
+  const [tokenStatus, setTokenStatus] = React.useState<{has_token: boolean; last4: string | null; created_at: string | null} | null>(null);
+  const [showTokenDialog, setShowTokenDialog] = React.useState(false);
+  const [newToken, setNewToken] = React.useState<string | null>(null);
+  const [isLoadingToken, setIsLoadingToken] = React.useState(false);
 
   React.useEffect(() => {
     const baseUrl = window.location.origin;
     setWebhookUrl(`${baseUrl}/api/zapier/webhook/invoice`);
     setTriggerUrl(`${baseUrl}/api/zapier/trigger/upcoming?limit=10`);
+    fetchTokenStatus();
   }, []);
+
+  const fetchTokenStatus = async () => {
+    try {
+      const token = localStorage.getItem('session_token');
+      if (!token) return;
+      
+      const response = await fetch('/api/zapier/token', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setTokenStatus(data);
+      }
+    } catch (error) {
+      console.error('Error fetching token status:', error);
+    }
+  };
+
+  const handleGenerateToken = async () => {
+    setIsLoadingToken(true);
+    try {
+      const token = localStorage.getItem('session_token');
+      if (!token) {
+        toast({
+          title: "Error",
+          description: "Please log in to generate a token.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const response = await fetch('/api/zapier/token/regenerate', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setNewToken(data.token);
+        setShowTokenDialog(true);
+        fetchTokenStatus();
+      } else {
+        throw new Error('Failed to generate token');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate token. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingToken(false);
+    }
+  };
+
+  const handleRevokeToken = async () => {
+    try {
+      const token = localStorage.getItem('session_token');
+      if (!token) return;
+      
+      const response = await fetch('/api/zapier/token/revoke', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Zapier token revoked successfully.",
+        });
+        setTokenStatus({ has_token: false, last4: null, created_at: null });
+      } else {
+        throw new Error('Failed to revoke token');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to revoke token. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -174,6 +264,58 @@ export const IntegrationsSection = () => {
           </p>
         </div>
 
+        {/* Zapier API Token Section */}
+        <div className="mb-4 p-3 bg-muted/30 rounded-lg border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Key className="h-4 w-4 text-muted-foreground" />
+              <Label className="text-xs font-medium">Zapier API Token</Label>
+            </div>
+            {tokenStatus?.has_token ? (
+              <Badge variant="secondary" className="text-xs">
+                Active (••••{tokenStatus.last4})
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-xs">
+                Not created
+              </Badge>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {tokenStatus?.has_token ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs flex-1"
+                  onClick={handleGenerateToken}
+                  disabled={isLoadingToken}
+                >
+                  {isLoadingToken ? "Generating..." : "Regenerate"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={handleRevokeToken}
+                >
+                  Revoke
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs w-full"
+                onClick={handleGenerateToken}
+                disabled={isLoadingToken}
+              >
+                {isLoadingToken ? "Generating..." : "Generate Token"}
+              </Button>
+            )}
+          </div>
+        </div>
+
         <div className="space-y-3 mb-4">
           <div>
             <Label className="text-xs font-medium mb-1 block">Webhook URL</Label>
@@ -262,6 +404,50 @@ export const IntegrationsSection = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
         <ZapierCard />
       </div>
+
+      {/* Token Dialog */}
+      <Dialog open={showTokenDialog} onOpenChange={setShowTokenDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Zapier API Token</DialogTitle>
+            <DialogDescription>
+              Copy this token now — you won't see it again.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Your Zapier API Token</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={newToken || ""}
+                  readOnly
+                  className="flex-1 font-mono text-sm"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (newToken) {
+                      copyToClipboard(newToken, "new-token");
+                    }
+                  }}
+                >
+                  {copied === "new-token" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            <Alert className="bg-warning/10 border-warning/30">
+              <AlertDescription className="text-xs">
+                Store this token securely. Use it in Zapier webhook headers as: <code className="bg-muted px-1 rounded">Authorization: Bearer &lt;token&gt;</code>
+              </AlertDescription>
+            </Alert>
+            <div className="flex justify-end">
+              <Button onClick={() => setShowTokenDialog(false)}>Done</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

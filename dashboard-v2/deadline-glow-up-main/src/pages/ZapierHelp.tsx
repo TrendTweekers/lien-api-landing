@@ -221,10 +221,10 @@ const ZapierHelp = () => {
                     <span className="font-medium text-foreground">URL:</span> Paste the Trigger URL above
                   </li>
                   <li>
-                    <span className="font-medium text-foreground">Authentication:</span> If Zapier requires authentication, add a header: <code className="bg-muted px-1 rounded">Authorization: Bearer &lt;your_session_token&gt;</code>
-                    <Alert className="mt-2 bg-muted/50">
+                    <span className="font-medium text-foreground">Authentication:</span> Add header: <code className="bg-muted px-1 rounded">Authorization: Bearer &lt;your Zapier API token&gt;</code>
+                    <Alert className="mt-2 bg-primary/10 border-primary/30">
                       <AlertDescription className="text-xs">
-                        Your session token is stored in your browser. For production Zaps, consider using a dedicated API key or OAuth token.
+                        Generate your Zapier API token from the Integrations page. This token is stable and won't expire like session tokens. Session tokens still work for backwards compatibility, but Zapier tokens are recommended.
                       </AlertDescription>
                     </Alert>
                   </li>

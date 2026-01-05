@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, date
 import logging
 
 from api.database import get_db, get_db_cursor, DB_TYPE
-from api.routers.auth import get_current_user
+from api.routers.auth import get_current_user_zapier
 from api.calculators import calculate_state_deadline
 from api.rate_limiter import limiter
 
@@ -118,7 +118,7 @@ def normalize_state_code(state: str) -> str:
 async def webhook_invoice(
     request: Request,
     invoice_data: InvoiceWebhookRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user_zapier)
 ):
     """
     Webhook endpoint for Zapier to create a project from an invoice.
@@ -287,7 +287,7 @@ async def webhook_invoice(
 @limiter.limit("30/minute")
 async def trigger_upcoming(
     request: Request,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_zapier),
     limit: int = 10
 ):
     """

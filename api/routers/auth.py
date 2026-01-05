@@ -2,13 +2,60 @@ from fastapi import APIRouter, HTTPException, Request, Depends, Header
 from pydantic import BaseModel
 import secrets
 import bcrypt
+import hashlib
 import traceback
+from datetime import datetime
 from ..database import get_db, get_db_cursor, DB_TYPE
 from ..rate_limiter import limiter
 
 router = APIRouter()
 
 # --- Helper Functions ---
+
+def hash_zapier_token(token: str) -> str:
+    """Hash a Zapier token using SHA-256"""
+    return hashlib.sha256(token.encode('utf-8')).hexdigest()
+
+def get_user_from_zapier_token(token: str):
+    """Helper to get user from Zapier API token (hashed)"""
+    token_hash = hash_zapier_token(token)
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id, email, subscription_status FROM users WHERE zapier_token_hash = %s", (token_hash,))
+            else:
+                cursor.execute("SELECT id, email, subscription_status FROM users WHERE zapier_token_hash = ?", (token_hash,))
+            
+            user = cursor.fetchone()
+            
+            if user:
+                if isinstance(user, dict):
+                    user_id = user.get('id')
+                    email = user.get('email')
+                    subscription_status = user.get('subscription_status')
+                elif hasattr(user, 'keys'):
+                    user_id = user['id'] if 'id' in user.keys() else (user[0] if len(user) > 0 else None)
+                    email = user['email'] if 'email' in user.keys() else (user[1] if len(user) > 1 else None)
+                    subscription_status = user['subscription_status'] if 'subscription_status' in user.keys() else (user[2] if len(user) > 2 else None)
+                else:
+                    user_id = user[0] if user and len(user) > 0 else None
+                    email = user[1] if user and len(user) > 1 else None
+                    subscription_status = user[2] if user and len(user) > 2 else None
+                
+                if subscription_status in ['active', 'trialing']:
+                    return {
+                        'id': user_id,
+                        'email': email,
+                        'subscription_status': subscription_status,
+                        'unlimited': True
+                    }
+    except Exception as e:
+        print(f"⚠️ Error checking Zapier token: {e}")
+    
+    return None
 
 def get_user_from_session(request: Request):
     """Helper to get logged-in user from session token"""
@@ -62,6 +109,28 @@ async def get_current_user(request: Request):
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     return user
+
+# Dependency for Zapier endpoints - accepts either Zapier token or session token
+async def get_current_user_zapier(request: Request):
+    """Get current user from Zapier token OR session token (backwards compatible)"""
+    authorization = request.headers.get('authorization', '')
+    if not authorization or not authorization.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    token = authorization.replace('Bearer ', '')
+    
+    # First try Zapier token (hashed lookup)
+    user = get_user_from_zapier_token(token)
+    if user:
+        return user
+    
+    # Fallback to session token (backwards compatible)
+    user = get_user_from_session(request)
+    if user:
+        return user
+    
+    # Neither worked
+    raise HTTPException(status_code=401, detail="Unauthorized")
 
 # Authentication Models
 class LoginRequest(BaseModel):
@@ -244,3 +313,207 @@ async def logout(authorization: str = Header(None)):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Logout failed")
+
+# --- Zapier Token Management ---
+
+def ensure_zapier_columns_exist(conn):
+    """Ensure Zapier token columns exist in users table (idempotent)"""
+    cursor = get_db_cursor(conn)
+    
+    if DB_TYPE == 'postgresql':
+        # PostgreSQL: Check and add columns if they don't exist
+        try:
+            cursor.execute("""
+                DO $$ 
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'users' AND column_name = 'zapier_token_hash'
+                    ) THEN
+                        ALTER TABLE users ADD COLUMN zapier_token_hash TEXT;
+                    END IF;
+                    
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'users' AND column_name = 'zapier_token_last4'
+                    ) THEN
+                        ALTER TABLE users ADD COLUMN zapier_token_last4 TEXT;
+                    END IF;
+                    
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'users' AND column_name = 'zapier_token_created_at'
+                    ) THEN
+                        ALTER TABLE users ADD COLUMN zapier_token_created_at TIMESTAMP;
+                    END IF;
+                END $$;
+            """)
+            conn.commit()
+        except Exception as e:
+            print(f"⚠️ Error ensuring Zapier columns (may already exist): {e}")
+    else:
+        # SQLite: Try to add columns (will fail silently if they exist)
+        for column in ['zapier_token_hash', 'zapier_token_last4', 'zapier_token_created_at']:
+            try:
+                if column == 'zapier_token_created_at':
+                    cursor.execute(f"ALTER TABLE users ADD COLUMN {column} TIMESTAMP")
+                else:
+                    cursor.execute(f"ALTER TABLE users ADD COLUMN {column} TEXT")
+                conn.commit()
+            except Exception:
+                # Column already exists, ignore
+                pass
+
+@router.get("/api/zapier/token")
+@limiter.limit("30/minute")
+async def get_zapier_token_status(request: Request, current_user: dict = Depends(get_current_user)):
+    """Get Zapier token status (does not return plaintext token)"""
+    try:
+        with get_db() as conn:
+            ensure_zapier_columns_exist(conn)
+            cursor = get_db_cursor(conn)
+            
+            user_id = current_user.get('id')
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT zapier_token_hash, zapier_token_last4, zapier_token_created_at
+                    FROM users WHERE id = %s
+                """, (user_id,))
+            else:
+                cursor.execute("""
+                    SELECT zapier_token_hash, zapier_token_last4, zapier_token_created_at
+                    FROM users WHERE id = ?
+                """, (user_id,))
+            
+            result = cursor.fetchone()
+            
+            if isinstance(result, dict):
+                token_hash = result.get('zapier_token_hash')
+                last4 = result.get('zapier_token_last4')
+                created_at = result.get('zapier_token_created_at')
+            elif hasattr(result, 'keys'):
+                token_hash = result.get('zapier_token_hash') if 'zapier_token_hash' in result.keys() else (result[0] if len(result) > 0 else None)
+                last4 = result.get('zapier_token_last4') if 'zapier_token_last4' in result.keys() else (result[1] if len(result) > 1 else None)
+                created_at = result.get('zapier_token_created_at') if 'zapier_token_created_at' in result.keys() else (result[2] if len(result) > 2 else None)
+            else:
+                token_hash = result[0] if result and len(result) > 0 else None
+                last4 = result[1] if result and len(result) > 1 else None
+                created_at = result[2] if result and len(result) > 2 else None
+            
+            has_token = token_hash is not None and token_hash != ''
+            
+            return {
+                "has_token": has_token,
+                "last4": last4 if has_token else None,
+                "created_at": created_at.isoformat() if created_at and has_token else None
+            }
+    except Exception as e:
+        print(f"❌ Error getting Zapier token status: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to get token status")
+
+@router.post("/api/zapier/token/regenerate")
+@limiter.limit("5/minute")
+async def regenerate_zapier_token(request: Request, current_user: dict = Depends(get_current_user)):
+    """Generate a new Zapier API token (returns plaintext ONCE)"""
+    try:
+        with get_db() as conn:
+            ensure_zapier_columns_exist(conn)
+            cursor = get_db_cursor(conn)
+            
+            user_id = current_user.get('id')
+            
+            # Generate new token
+            plaintext_token = secrets.token_urlsafe(48)  # 48 bytes = ~64 chars
+            token_hash = hash_zapier_token(plaintext_token)
+            last4 = plaintext_token[-4:] if len(plaintext_token) >= 4 else plaintext_token
+            
+            # Update user record
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE users 
+                    SET zapier_token_hash = %s,
+                        zapier_token_last4 = %s,
+                        zapier_token_created_at = NOW()
+                    WHERE id = %s
+                """, (token_hash, last4, user_id))
+            else:
+                cursor.execute("""
+                    UPDATE users 
+                    SET zapier_token_hash = ?,
+                        zapier_token_last4 = ?,
+                        zapier_token_created_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                """, (token_hash, last4, user_id))
+            
+            conn.commit()
+            
+            print(f"✅ Generated new Zapier token for user {user_id}")
+            
+            # Get created_at
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT zapier_token_created_at FROM users WHERE id = %s", (user_id,))
+            else:
+                cursor.execute("SELECT zapier_token_created_at FROM users WHERE id = ?", (user_id,))
+            
+            result = cursor.fetchone()
+            if isinstance(result, dict):
+                created_at = result.get('zapier_token_created_at')
+            elif hasattr(result, 'keys'):
+                created_at = result.get('zapier_token_created_at') if 'zapier_token_created_at' in result.keys() else (result[0] if len(result) > 0 else None)
+            else:
+                created_at = result[0] if result and len(result) > 0 else None
+            
+            return {
+                "token": plaintext_token,  # Return plaintext ONCE
+                "last4": last4,
+                "created_at": created_at.isoformat() if created_at else datetime.now().isoformat(),
+                "message": "Copy this token now — you won't see it again."
+            }
+    except Exception as e:
+        print(f"❌ Error regenerating Zapier token: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to generate token")
+
+@router.post("/api/zapier/token/revoke")
+@limiter.limit("5/minute")
+async def revoke_zapier_token(request: Request, current_user: dict = Depends(get_current_user)):
+    """Revoke/delete Zapier API token"""
+    try:
+        with get_db() as conn:
+            ensure_zapier_columns_exist(conn)
+            cursor = get_db_cursor(conn)
+            
+            user_id = current_user.get('id')
+            
+            # Clear token fields
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE users 
+                    SET zapier_token_hash = NULL,
+                        zapier_token_last4 = NULL,
+                        zapier_token_created_at = NULL
+                    WHERE id = %s
+                """, (user_id,))
+            else:
+                cursor.execute("""
+                    UPDATE users 
+                    SET zapier_token_hash = NULL,
+                        zapier_token_last4 = NULL,
+                        zapier_token_created_at = NULL
+                    WHERE id = ?
+                """, (user_id,))
+            
+            conn.commit()
+            
+            print(f"✅ Revoked Zapier token for user {user_id}")
+            
+            return {"success": True, "message": "Zapier token revoked successfully"}
+    except Exception as e:
+        print(f"❌ Error revoking Zapier token: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to revoke token")
