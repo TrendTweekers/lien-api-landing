@@ -298,8 +298,12 @@ export const ProjectsTable = () => {
                           }}
                         >
                           <Bell className="h-3 w-3 mr-1" />
-                          Notifications
-                          {expandedProjectId === project.id ? <ChevronUp className="h-3 w-3 ml-1" /> : <ChevronDown className="h-3 w-3 ml-1" />}
+                          {expandedProjectId === project.id ? "Hide notifications" : "Notifications"}
+                          <ChevronDown 
+                            className={`h-3 w-3 ml-1 transition-transform duration-200 ${
+                              expandedProjectId === project.id ? "rotate-180" : ""
+                            }`}
+                          />
                         </Button>
                         <Button 
                           size="sm" 
@@ -321,7 +325,7 @@ export const ProjectsTable = () => {
                   </TableRow>
                   {expandedProjectId === project.id && (
                     <TableRow id={`notif-panel-${project.id}`} className={flashProjectId === String(project.id) ? "bg-orange-50/40 ring-1 ring-orange-200" : ""}>
-                      <TableCell colSpan={9} className="p-4">
+                      <TableCell colSpan={9} className="pt-4 pb-4 px-4">
                         <NotificationSettings projectId={String(project.id)} projectName={project.project_name} />
                       </TableCell>
                     </TableRow>
