@@ -713,7 +713,7 @@ const PopularZaps = () => {
 Invoice: {{project.invoice_number}}
 Deadline: {{deadline_date}}
 Type: {{reminder_type}} ({{reminder_days}} days remaining)
-Amount: ${{project.invoice_amount}}`;
+Amount: ${{`{{project.invoice_amount}}`}}`;
               const getRemindersZapSetupSteps = () => [
                 "1) Trigger: Schedule by Zapier → Every Hour",
                 "2) Action: Webhooks by Zapier → GET (use Reminders URL + Headers)",
