@@ -11,18 +11,9 @@ RUN cd dashboard-v2/deadline-glow-up-main && npm ci
 COPY dashboard-v2/deadline-glow-up-main dashboard-v2/deadline-glow-up-main
 RUN cd dashboard-v2/deadline-glow-up-main && npm run build
 
-# Sanity check: see where Vite output actually went
-RUN ls -la /app/dashboard-v2/deadline-glow-up-main && ls -la /app/dashboard-v2/deadline-glow-up-main/dist || true
-RUN ls -la /app/public || true
-
-# Ensure build output is in /app/public/dashboard (handle both dist and public/dashboard)
-RUN mkdir -p /app/public/dashboard && \
-    if [ -d /app/public/dashboard ] && [ "$(ls -A /app/public/dashboard 2>/dev/null)" ]; then \
-      echo "Using /app/public/dashboard"; \
-    else \
-      echo "Using dist -> /app/public/dashboard"; \
-      cp -r /app/dashboard-v2/deadline-glow-up-main/dist/* /app/public/dashboard/; \
-    fi
+# Verify build output and copy to public/dashboard
+RUN ls -la /app/dashboard-v2/deadline-glow-up-main/dist
+RUN mkdir -p /app/public/dashboard && cp -r /app/dashboard-v2/deadline-glow-up-main/dist/* /app/public/dashboard/
 
 # Stage 2: Python API
 FROM python:3.11-slim AS runtime
