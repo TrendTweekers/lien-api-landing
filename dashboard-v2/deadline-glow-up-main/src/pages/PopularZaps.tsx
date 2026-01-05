@@ -41,10 +41,10 @@ const PopularZaps = () => {
   // New Slack message template for reminders card
   const remindersSlackMessageTemplate = "🚨 LienDeadline reminder: {{reminder_type}} deadline in {{reminder_days}} day(s)\nDeadline: {{deadline_date}}\nProject: {{project.project_name}} ({{project.state_code}})\nInvoice: {{project.invoice_date}} — ${{project.invoice_amount}}\nPrelim: {{project.prelim_deadline}} ({{project.prelim_deadline_days}}d)\nLien: {{project.lien_deadline}} ({{project.lien_deadline_days}}d)";
   
-  // Zap setup steps for reminders
-  const remindersZapSetupSteps = `1) Trigger: Schedule by Zapier → Every Hour
+  // Zap setup steps for reminders (URL will be replaced dynamically)
+  const getRemindersZapSetupSteps = (baseUrl: string) => `1) Trigger: Schedule by Zapier → Every Hour
 2) Action: Webhooks by Zapier → GET
-   URL: ${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50
+   URL: ${baseUrl}/api/zapier/trigger/reminders?days=1,7&limit=50
    Header: Authorization: Bearer <token>
 3) Action: Slack → Send Channel Message (use template)`;
 
@@ -85,6 +85,16 @@ const PopularZaps = () => {
   };
 
   const zapTemplates = [
+    {
+      id: 0,
+      title: "Deadline reminders → Slack (1 & 7 days)",
+      description: "Run hourly. Sends Slack alerts when deadlines are approaching (deduplicated).",
+      type: "reminders",
+      remindersUrl: remindersUrl || `${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`,
+      headers: remindersHeadersTemplate,
+      slackMessage: remindersSlackMessageTemplate,
+      zapSteps: remindersZapSetupSteps.replace('${window.location.origin}', window.location.origin)
+    },
     {
       id: 1,
       title: "Invoices → Lien deadlines → Slack alert",
@@ -687,102 +697,212 @@ const PopularZaps = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1 space-y-4">
-                  {/* Trigger */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-2">Trigger</h4>
-                    <div className="bg-muted/50 rounded-md p-3 text-sm">
-                      <div className="font-medium">{zap.trigger.app}</div>
-                      <div className="text-muted-foreground text-xs mt-1">{zap.trigger.event}</div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-2">Actions</h4>
-                    <div className="space-y-2">
-                      {zap.actions.map((action, idx) => (
-                        <div key={idx} className="bg-muted/50 rounded-md p-3 text-sm">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline" className="text-xs">
-                              {action.type === "webhook" ? "POST" : action.type === "trigger" ? "GET" : action.type}
-                            </Badge>
-                            <span className="font-medium">{action.app}</span>
-                          </div>
-                          <div className="text-muted-foreground text-xs">{action.description}</div>
-                          {action.url && (
-                            <div className="mt-2">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 text-xs px-2"
-                                onClick={() => copyToClipboard(action.url!, `zap-${zap.id}-${action.type}`)}
-                              >
-                                {copied === `zap-${zap.id}-${action.type}` ? (
-                                  <>
-                                    <Check className="h-3 w-3 mr-1" /> Copied
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="h-3 w-3 mr-1" /> Copy URL
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          )}
+                  {zap.type === "reminders" ? (
+                    <>
+                      {/* Reminders URL Display */}
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Reminders URL</label>
+                        <div className="flex gap-2">
+                          <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
+                            {zap.remindersUrl}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyToClipboard(zap.remindersUrl!, `reminders-url-zap-${zap.id}`)}
+                          >
+                            {copied === `reminders-url-zap-${zap.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </Button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
 
-                  {/* Webhook JSON Example */}
-                  {zap.webhookExample && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-foreground mb-2">Webhook JSON Example</h4>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Required: state, invoice_date. Recommended: invoice_amount_cents, invoice_number. Optional: project_name, client_name.
-                      </p>
-                      <div className="bg-muted/30 rounded-md p-3 text-xs">
-                        <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
-                          {JSON.stringify(zap.webhookExample, null, 2)}
-                        </pre>
+                      {/* Copy Buttons Row */}
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="h-6 text-xs px-2 mt-2"
-                          onClick={() => copyToClipboard(JSON.stringify(zap.webhookExample, null, 2), `zap-${zap.id}-json`)}
+                          variant="outline"
+                          onClick={() => copyToClipboard(zap.remindersUrl!, `reminders-url-btn-zap-${zap.id}`)}
                         >
-                          {copied === `zap-${zap.id}-json` ? (
+                          {copied === `reminders-url-btn-zap-${zap.id}` ? (
                             <>
-                              <Check className="h-3 w-3 mr-1" /> Copied
+                              <Check className="h-4 w-4 mr-2" /> Copied
                             </>
                           ) : (
                             <>
-                              <Copy className="h-3 w-3 mr-1" /> Copy JSON
+                              <Copy className="h-4 w-4 mr-2" /> Copy Reminders URL
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(JSON.stringify(zap.headers, null, 2), `reminders-headers-zap-${zap.id}`)}
+                        >
+                          {copied === `reminders-headers-zap-${zap.id}` ? (
+                            <>
+                              <Check className="h-4 w-4 mr-2" /> Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4 mr-2" /> Copy Headers
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(zap.slackMessage!, `reminders-slack-zap-${zap.id}`)}
+                        >
+                          {copied === `reminders-slack-zap-${zap.id}` ? (
+                            <>
+                              <Check className="h-4 w-4 mr-2" /> Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4 mr-2" /> Copy Slack Message Template
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(zap.zapSteps!, `reminders-steps-zap-${zap.id}`)}
+                        >
+                          {copied === `reminders-steps-zap-${zap.id}` ? (
+                            <>
+                              <Check className="h-4 w-4 mr-2" /> Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4 mr-2" /> Copy Zap Setup Steps
                             </>
                           )}
                         </Button>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Field Mapping */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-2">Field Mapping</h4>
-                    <div className="bg-muted/30 rounded-md p-3 text-xs space-y-2">
-                      {Object.entries(zap.fieldMapping).map(([key, fields]) => (
-                        <div key={key}>
-                          <div className="font-medium text-foreground mb-1 capitalize">{key}:</div>
-                          <div className="pl-2 space-y-1">
-                            {typeof fields === 'object' && Object.entries(fields).map(([field, desc]) => (
-                              <div key={field} className="text-muted-foreground">
-                                <code className="text-primary">{field}</code>: {desc as string}
+                      {/* Zap Setup Steps Display */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-foreground mb-2">Zap setup steps</h4>
+                        <div className="bg-muted/30 rounded-md p-3 text-xs">
+                          <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
+                            {zap.zapSteps}
+                          </pre>
+                        </div>
+                      </div>
+
+                      {/* Slack Message Template Display */}
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Slack Message Template</label>
+                        <div className="bg-muted/30 rounded-md p-3 text-xs">
+                          <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
+                            {zap.slackMessage}
+                          </pre>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Use Zapier's field mapping to replace the <code className="bg-muted px-1 rounded">{`{{field}}`}</code> placeholders with actual values from the trigger response
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Trigger */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-foreground mb-2">Trigger</h4>
+                        <div className="bg-muted/50 rounded-md p-3 text-sm">
+                          <div className="font-medium">{zap.trigger.app}</div>
+                          <div className="text-muted-foreground text-xs mt-1">{zap.trigger.event}</div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-foreground mb-2">Actions</h4>
+                        <div className="space-y-2">
+                          {zap.actions.map((action, idx) => (
+                            <div key={idx} className="bg-muted/50 rounded-md p-3 text-sm">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline" className="text-xs">
+                                  {action.type === "webhook" ? "POST" : action.type === "trigger" ? "GET" : action.type}
+                                </Badge>
+                                <span className="font-medium">{action.app}</span>
                               </div>
-                            ))}
+                              <div className="text-muted-foreground text-xs">{action.description}</div>
+                              {action.url && (
+                                <div className="mt-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 text-xs px-2"
+                                    onClick={() => copyToClipboard(action.url!, `zap-${zap.id}-${action.type}`)}
+                                  >
+                                    {copied === `zap-${zap.id}-${action.type}` ? (
+                                      <>
+                                        <Check className="h-3 w-3 mr-1" /> Copied
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="h-3 w-3 mr-1" /> Copy URL
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Webhook JSON Example */}
+                      {zap.webhookExample && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-foreground mb-2">Webhook JSON Example</h4>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Required: state, invoice_date. Recommended: invoice_amount_cents, invoice_number. Optional: project_name, client_name.
+                          </p>
+                          <div className="bg-muted/30 rounded-md p-3 text-xs">
+                            <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
+                              {JSON.stringify(zap.webhookExample, null, 2)}
+                            </pre>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 text-xs px-2 mt-2"
+                              onClick={() => copyToClipboard(JSON.stringify(zap.webhookExample, null, 2), `zap-${zap.id}-json`)}
+                            >
+                              {copied === `zap-${zap.id}-json` ? (
+                                <>
+                                  <Check className="h-3 w-3 mr-1" /> Copied
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="h-3 w-3 mr-1" /> Copy JSON
+                                </>
+                              )}
+                            </Button>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      )}
+
+                      {/* Field Mapping */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-foreground mb-2">Field Mapping</h4>
+                        <div className="bg-muted/30 rounded-md p-3 text-xs space-y-2">
+                          {Object.entries(zap.fieldMapping).map(([key, fields]) => (
+                            <div key={key}>
+                              <div className="font-medium text-foreground mb-1 capitalize">{key}:</div>
+                              <div className="pl-2 space-y-1">
+                                {typeof fields === 'object' && Object.entries(fields).map(([field, desc]) => (
+                                  <div key={field} className="text-muted-foreground">
+                                    <code className="text-primary">{field}</code>: {desc as string}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             ))}
