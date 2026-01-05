@@ -301,15 +301,7 @@ export const ProjectsTable = () => {
                   {expandedProjectId === project.id && (
                     <TableRow>
                       <TableCell colSpan={9} className="p-4">
-                        <div style={{
-                          border: "4px solid red",
-                          background: "yellow",
-                          padding: "16px",
-                          fontSize: "18px",
-                          fontWeight: "bold"
-                        }}>
-                          EXPANDED ROW RENDERED ✅ projectId={project.id} name={project.project_name}
-                        </div>
+                        <NotificationSettings projectId={String(project.id)} projectName={project.project_name} />
                       </TableCell>
                     </TableRow>
                   )}
