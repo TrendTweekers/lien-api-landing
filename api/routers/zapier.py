@@ -169,6 +169,13 @@ async def webhook_invoice(
         
         lien_days = (lien_deadline.date() - today).days
         
+        # Format invoice amount for Zapier (cents + formatted string)
+        invoice_amount_cents = None
+        invoice_amount_formatted = None
+        if invoice_data.invoice_amount is not None:
+            invoice_amount_cents = int(invoice_data.invoice_amount * 100)
+            invoice_amount_formatted = f"{invoice_data.invoice_amount:.2f}"
+        
         # Format dates as strings
         prelim_deadline_str = prelim_deadline.strftime("%Y-%m-%d") if prelim_deadline else None
         lien_deadline_str = lien_deadline.strftime("%Y-%m-%d")
@@ -257,6 +264,8 @@ async def webhook_invoice(
                 "project_name": invoice_data.project_name or "",
                 "invoice_date": invoice_data.invoice_date,
                 "state": state_code,
+                "invoice_amount": invoice_amount_formatted,
+                "invoice_amount_cents": invoice_amount_cents,
                 "preliminary_deadline": prelim_deadline_str,
                 "preliminary_deadline_days": prelim_days,
                 "lien_deadline": lien_deadline_str,
@@ -383,6 +392,27 @@ async def trigger_upcoming(
                     project[k] = v.strftime("%Y-%m-%d") if k == "invoice_date" else v.isoformat()
                 elif isinstance(v, _date):
                     project[k] = v.isoformat()
+            
+            # Calculate prelim_deadline_days if missing but prelim_deadline exists
+            if project.get('prelim_deadline') and project.get('prelim_deadline_days') is None:
+                try:
+                    prelim_date_str = project.get('prelim_deadline')
+                    if isinstance(prelim_date_str, str):
+                        # Parse date string (YYYY-MM-DD format)
+                        prelim_date = datetime.strptime(prelim_date_str, "%Y-%m-%d").date()
+                        today = datetime.now().date()
+                        project['prelim_deadline_days'] = (prelim_date - today).days
+                except (ValueError, AttributeError) as e:
+                    logger.warning(f"Could not calculate prelim_deadline_days: {e}")
+            
+            # Format invoice amount for Zapier (cents + formatted string)
+            invoice_amount = project.get('invoice_amount')
+            if invoice_amount is not None:
+                project['invoice_amount_cents'] = int(invoice_amount * 100)
+                project['invoice_amount'] = f"{invoice_amount:.2f}"
+            else:
+                project['invoice_amount_cents'] = None
+                project['invoice_amount'] = None
             
             projects.append(project)
         
