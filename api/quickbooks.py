@@ -234,7 +234,8 @@ async def quickbooks_connect(request: Request):
         "redirect_uri": QB_REDIRECT_URI,
         "response_type": "code",
         "state": state,
-        "locale": "en_US"  # Force English locale to prevent Swedish locale issues
+        "locale": "en_US",  # Force English locale to prevent Swedish locale issues
+        "prompt": "select_account"  # Force "Select Company" screen to appear even if already logged in
     }
     
     auth_url = f"{QB_AUTH_URL}?{urlencode(params)}"
