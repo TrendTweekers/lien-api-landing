@@ -437,6 +437,28 @@ export const IntegrationsSection = () => {
                 </Button>
               </div>
             </div>
+            {newToken && (
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1">
+                    Authorization: Bearer {newToken}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      if (newToken) {
+                        copyToClipboard(`Authorization: Bearer ${newToken}`, "header");
+                      }
+                    }}
+                  >
+                    {copied === "header" ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                    Copy header
+                  </Button>
+                </div>
+              </div>
+            )}
             <Alert className="bg-warning/10 border-warning/30">
               <AlertDescription className="text-xs">
                 Store this token securely. Use it in Zapier webhook headers as: <code className="bg-muted px-1 rounded">Authorization: Bearer &lt;token&gt;</code>
