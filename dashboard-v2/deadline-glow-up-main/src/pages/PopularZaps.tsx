@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, ExternalLink, ChevronDown, ChevronUp, Key } from "lucide-react";
+import { ArrowLeft, Copy, Check, ExternalLink, ChevronDown, ChevronUp, Key, Rocket } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -8,6 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
+
+// Constants
+const SOCIAL_PROOF_TEXT = "Used by contractors protecting $2.3M+ in receivables monthly";
+const QUICK_START_SLACK_URL = "https://zapier.com/app/editor";
 
 const PopularZaps = () => {
   const navigate = useNavigate();
@@ -357,78 +361,48 @@ const PopularZaps = () => {
             </Button>
           </div>
 
-          {/* Top Section */}
+          {/* A) Hero / Value Proposition */}
           <div className="space-y-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Automate LienDeadline with Zapier</h1>
-              <p className="text-muted-foreground mt-2">Send deadline reminders and automate workflows in minutes.</p>
+              <h2 className="text-3xl font-bold text-foreground">Get deadline alerts wherever you already work</h2>
+              <p className="text-muted-foreground mt-2 text-lg">
+                Connect Zapier in minutes to send lien deadline reminders to Slack, email, CRM, or spreadsheets — powered by Zapier.
+              </p>
             </div>
 
-            {/* Simple 3-Step Setup */}
-            <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="pt-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Quick Setup</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
-                      1
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-foreground mb-1">Copy your Zapier API token</h4>
-                      <p className="text-sm text-muted-foreground">Get your token from Dashboard → Integrations</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
-                      2
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-foreground mb-1">Choose a Zap template below</h4>
-                      <p className="text-sm text-muted-foreground">Pick the workflow that fits your needs</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
-                      3
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-foreground mb-1">Paste into Zapier and test</h4>
-                      <p className="text-sm text-muted-foreground">Copy the URLs and templates, then test</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
+              <li>Works with 6,000+ apps</li>
+              <li>No email setup inside LienDeadline</li>
+              <li>LienDeadline decides when — Zapier decides where</li>
+            </ul>
+
+            <p className="text-sm text-muted-foreground italic">
+              {SOCIAL_PROOF_TEXT}
+            </p>
           </div>
 
-          {/* Your Zapier Token Section */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Key className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-xl font-semibold text-foreground">Your Zapier Token</h2>
-            </div>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <Input
-                    type="text"
-                    value={zapierToken || "Generate token from Dashboard → Integrations"}
-                    readOnly
-                    className="flex-1 font-mono text-sm"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate('/')}
-                  >
-                    Get Token
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Generate your Zapier API token from the Integrations page. Use it in all Zapier webhook headers.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          {/* B) Quick Start */}
+          <Card className="bg-primary/10 border-primary/30 shadow-lg">
+            <CardHeader>
+              <div className="flex items-center gap-2 mb-2">
+                <Rocket className="h-6 w-6 text-primary" />
+                <CardTitle className="text-2xl">🚀 Quick Start with Slack</CardTitle>
+              </div>
+              <CardDescription className="text-base">
+                Get your first alert in under 5 minutes
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                size="lg"
+                className="w-full md:w-auto"
+                onClick={() => window.open(QUICK_START_SLACK_URL, '_blank')}
+              >
+                Connect QuickBooks → LienDeadline → Slack
+                <ExternalLink className="h-4 w-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
 
           {/* Popular Zap Templates Section */}
           <div className="space-y-4">
@@ -771,13 +745,13 @@ const PopularZaps = () => {
             </div>
           </div>
 
-          {/* Advanced / API Endpoints Section - Collapsed by default */}
+          {/* D) Advanced Setup (Optional) - Collapsed by default */}
           <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
             <div className="space-y-3">
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" className="w-full justify-between p-0 h-auto">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-semibold text-foreground">Advanced / API Endpoints</h2>
+                    <h2 className="text-xl font-semibold text-foreground">Advanced Setup (Optional)</h2>
                   </div>
                   {showAdvanced ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                 </Button>
@@ -785,53 +759,85 @@ const PopularZaps = () => {
               <CollapsibleContent>
                 <Card>
                   <CardContent className="pt-6 space-y-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Webhook URL (POST)</label>
-                      <div className="flex gap-2">
-                        <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
-                          {webhookUrl}
-                        </code>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Use these only if you want to build a custom Zap from scratch.
+                    </p>
+
+                    {/* Zapier API Token */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Key className="h-4 w-4 text-muted-foreground" />
+                        <label className="text-sm font-medium">Zapier API Token</label>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          type="text"
+                          value={zapierToken || "Generate token from Dashboard → Integrations"}
+                          readOnly
+                          className="flex-1 font-mono text-sm"
+                        />
                         <Button
-                          size="sm"
                           variant="outline"
-                          onClick={() => copyToClipboard(webhookUrl, "webhook-advanced")}
+                          size="sm"
+                          onClick={() => navigate('/')}
                         >
-                          {copied === "webhook-advanced" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          Get Token
                         </Button>
                       </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Trigger URL (GET) - Upcoming deadlines</label>
-                      <div className="flex gap-2">
-                        <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
-                          {triggerUrl}
-                        </code>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => copyToClipboard(triggerUrl, "trigger-advanced")}
-                        >
-                          {copied === "trigger-advanced" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Reminders URL (GET) - Deduplicated reminders</label>
-                      <div className="flex gap-2">
-                        <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
-                          {remindersUrl}
-                        </code>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => copyToClipboard(remindersUrl, "reminders-advanced")}
-                        >
-                          {copied === "reminders-advanced" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Returns reminders for specified day offsets (default: 1,7 days) with server-side deduplication
+                      <p className="text-xs text-muted-foreground">
+                        Generate your Zapier API token from the Integrations page. Use it in all Zapier webhook headers.
                       </p>
+                    </div>
+
+                    <div className="border-t pt-4 space-y-4">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Webhook URL (POST)</label>
+                        <div className="flex gap-2">
+                          <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
+                            {webhookUrl}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyToClipboard(webhookUrl, "webhook-advanced")}
+                          >
+                            {copied === "webhook-advanced" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Trigger URL (GET) - Upcoming deadlines</label>
+                        <div className="flex gap-2">
+                          <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
+                            {triggerUrl}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyToClipboard(triggerUrl, "trigger-advanced")}
+                          >
+                            {copied === "trigger-advanced" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Reminders URL (GET) - Deduplicated reminders</label>
+                        <div className="flex gap-2">
+                          <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
+                            {remindersUrl}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyToClipboard(remindersUrl, "reminders-advanced")}
+                          >
+                            {copied === "reminders-advanced" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Returns reminders for specified day offsets (default: 1,7 days) with server-side deduplication
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
