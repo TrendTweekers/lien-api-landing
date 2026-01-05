@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Copy, Check, CheckCircle2 } from "lucide-react";
+import { Copy, Check, CheckCircle2, HelpCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -243,6 +243,17 @@ export const IntegrationsSection = () => {
             <li>Auto-calculate notice + lien deadlines</li>
             <li>Send alerts to Slack/Email/Asana/CRM</li>
           </ul>
+          <div className="mt-3 pt-2 border-t border-primary/20">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs text-primary hover:text-primary hover:bg-primary/10"
+              onClick={() => navigate('/help/zapier')}
+            >
+              <HelpCircle className="h-3 w-3 mr-1" />
+              Need help setting up Zapier?
+            </Button>
+          </div>
         </AlertDescription>
       </Alert>
 
