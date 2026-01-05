@@ -493,6 +493,45 @@ async def save_calculation(request: Request, body: SaveRequest):
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid user")
     
+    # 1.5. Check free tier limits
+    user_email = user.get("email", "")
+    subscription_status = user.get("subscription_status", "")
+    
+    if subscription_status == 'free':
+        # Count existing calculations for this user
+        try:
+            with get_db() as conn:
+                cursor = get_db_cursor(conn)
+                
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        SELECT COUNT(*) as count FROM calculations 
+                        WHERE user_email = %s
+                    """, (user_email,))
+                else:
+                    cursor.execute("""
+                        SELECT COUNT(*) as count FROM calculations 
+                        WHERE user_email = ?
+                    """, (user_email,))
+                
+                result = cursor.fetchone()
+                if result:
+                    if isinstance(result, dict):
+                        calc_count = result.get('count', 0)
+                    else:
+                        calc_count = result[0] if len(result) > 0 else 0
+                    
+                    if calc_count >= 3:
+                        raise HTTPException(
+                            status_code=403, 
+                            detail="Free tier limit reached. Please upgrade to continue."
+                        )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error checking free tier limit: {e}")
+            # Don't block save if check fails - log and continue
+    
     # 2. Map camelCase to snake_case (support both formats)
     p_name = body.project_name or body.projectName or ""
     c_name = body.client_name or body.clientName

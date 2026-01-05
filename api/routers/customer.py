@@ -6,6 +6,52 @@ import logging
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+@router.get("/api/user/stats")
+async def get_user_stats(request: Request):
+    """Get user statistics including subscription status and calculation counts"""
+    user = get_user_from_session(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    email = user.get('email')
+    subscription_status = user.get('subscription_status', 'free')
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="User email not found")
+        
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Count calculations
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE user_email = %s", (email,))
+            else:
+                cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE user_email = ?", (email,))
+            
+            calc_result = cursor.fetchone()
+            calc_count = 0
+            if calc_result:
+                if isinstance(calc_result, dict):
+                    calc_count = calc_result.get('count', 0)
+                elif hasattr(calc_result, 'keys'):
+                    try:
+                        calc_count = calc_result['count']
+                    except KeyError:
+                        calc_count = calc_result[0] if len(calc_result) > 0 else 0
+                else:
+                    calc_count = calc_result[0] if len(calc_result) > 0 else 0
+            
+            return {
+                "email": email,
+                "subscriptionStatus": subscription_status,
+                "calculationsUsed": calc_count,
+                "calculationsLimit": 3 if subscription_status == 'free' else None
+            }
+    except Exception as e:
+        logger.error(f"Error fetching user stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch user stats")
+
 @router.get("/api/customer/stats")
 async def get_customer_stats(request: Request):
     """Get statistics for the logged-in customer"""

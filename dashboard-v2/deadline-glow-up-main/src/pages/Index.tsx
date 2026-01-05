@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { IntegrationsSection } from "@/components/dashboard/IntegrationsSection";
 import { AccountOverview } from "@/components/dashboard/AccountOverview";
@@ -9,7 +9,15 @@ import { UsageStats } from "@/components/dashboard/UsageStats";
 import { BillingSection } from "@/components/dashboard/BillingSection";
 import { PartnerProgram } from "@/components/dashboard/PartnerProgram";
 import { ApiDocs } from "@/components/dashboard/ApiDocs";
+import UpgradePrompt from "@/components/UpgradePrompt";
+
 const Index = () => {
+  const [userStats, setUserStats] = useState<{
+    calculationsUsed: number;
+    calculationsLimit: number | null;
+    subscriptionStatus: string;
+  } | null>(null);
+
   useEffect(() => {
     // Check for session token and verify session
     const token = localStorage.getItem('session_token');
@@ -27,6 +35,22 @@ const Index = () => {
     }).catch(() => {
       window.location.href = '/login.html';
     });
+
+    // Fetch user stats
+    fetch('/api/user/stats', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setUserStats({
+          calculationsUsed: data.calculationsUsed || 0,
+          calculationsLimit: data.calculationsLimit || null,
+          subscriptionStatus: data.subscriptionStatus || 'free'
+        });
+      })
+      .catch(err => {
+        console.error('Error fetching user stats:', err);
+      });
   }, []);
 
   return (
@@ -42,6 +66,14 @@ const Index = () => {
             </h1>
             <p className="text-muted-foreground">Manage your lien deadlines and integrations from one place.</p>
           </div>
+
+          {/* Upgrade Prompt for Free Tier Users */}
+          {userStats && userStats.subscriptionStatus === 'free' && (
+            <UpgradePrompt 
+              calculationsUsed={userStats.calculationsUsed}
+              calculationsLimit={userStats.calculationsLimit || 3}
+            />
+          )}
 
           {/* Account Overview */}
           <div className="animate-slide-up" style={{ animationDelay: "0.1s" }}>

@@ -194,7 +194,7 @@ class LoginRequest(BaseModel):
 class RegisterRequest(BaseModel):
     email: str
     password: str
-    session_id: Optional[str] = None
+    stripe_session_id: Optional[str] = None  # Optional - for users coming from Stripe payment
 
 # Authentication Endpoints
 @router.post("/api/login")
@@ -331,63 +331,97 @@ async def register(request: Request, req: RegisterRequest):
             password_hash = bcrypt.hashpw(req.password.encode('utf-8'), bcrypt.gensalt())
             
             if user_id:
-                # User exists (created by webhook) - update password
-                print(f"✅ User exists, updating password for {email}")
-                
-                # Check subscription status
-                if subscription_status not in ['active', 'trialing']:
-                    raise HTTPException(status_code=403, detail="Account not active. Please contact support.")
-                
-                # Update password
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        UPDATE users 
-                        SET password_hash = %s
-                        WHERE email = %s
-                    """, (password_hash.decode(), email))
+                # User exists (created by webhook or previous registration)
+                if existing_password_hash:
+                    # User already has password - account exists, should login instead
+                    raise HTTPException(status_code=400, detail="Account already exists. Please login.")
                 else:
-                    cursor.execute("""
-                        UPDATE users 
-                        SET password_hash = ?
-                        WHERE email = ?
-                    """, (password_hash.decode(), email))
+                    # Webhook created account, user setting password for first time
+                    print(f"✅ User exists (from webhook), setting password for {email}")
+                    
+                    # Update password
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute("""
+                            UPDATE users 
+                            SET password_hash = %s
+                            WHERE email = %s
+                        """, (password_hash.decode(), email))
+                    else:
+                        cursor.execute("""
+                            UPDATE users 
+                            SET password_hash = ?
+                            WHERE email = ?
+                        """, (password_hash.decode(), email))
             else:
-                # User doesn't exist - create new account
-                # This should only happen if webhook hasn't run yet (edge case)
-                print(f"⚠️ User doesn't exist, creating new account for {email}")
+                # New user - create free tier account (unless coming from Stripe payment)
+                print(f"📝 Creating new account for {email}")
                 
-                # Generate session token
-                token = secrets.token_urlsafe(32)
-                
-                # Create user account
-                # Note: This assumes they have a subscription. If not, they'll need to sign up via pricing page.
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        INSERT INTO users (email, password_hash, session_token, subscription_status, created_at)
-                        VALUES (%s, %s, %s, 'active', NOW())
-                        RETURNING id
-                    """, (email, password_hash.decode(), token))
-                    result = cursor.fetchone()
-                    user_id = result[0] if result else None
+                # Determine subscription status
+                if req.stripe_session_id:
+                    # User came from Stripe payment - get their subscription details
+                    try:
+                        session = stripe.checkout.Session.retrieve(req.stripe_session_id)
+                        customer_id = session.get('customer')
+                        subscription_id = session.get('subscription')
+                        subscription_status = 'active'
+                        
+                        # Create user with active subscription
+                        if DB_TYPE == 'postgresql':
+                            cursor.execute("""
+                                INSERT INTO users (email, password_hash, subscription_status, stripe_customer_id, subscription_id, created_at)
+                                VALUES (%s, %s, %s, %s, %s, NOW())
+                                RETURNING id
+                            """, (email, password_hash.decode(), subscription_status, customer_id, subscription_id))
+                            result = cursor.fetchone()
+                            user_id = result[0] if result else None
+                        else:
+                            cursor.execute("""
+                                INSERT INTO users (email, password_hash, subscription_status, stripe_customer_id, subscription_id, created_at)
+                                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                            """, (email, password_hash.decode(), subscription_status, customer_id, subscription_id))
+                            user_id = cursor.lastrowid
+                    except Exception as stripe_error:
+                        print(f"⚠️ Error fetching Stripe session: {stripe_error}")
+                        # Fallback to free tier if Stripe lookup fails
+                        subscription_status = 'free'
+                        
+                        if DB_TYPE == 'postgresql':
+                            cursor.execute("""
+                                INSERT INTO users (email, password_hash, subscription_status, created_at)
+                                VALUES (%s, %s, %s, NOW())
+                                RETURNING id
+                            """, (email, password_hash.decode(), subscription_status))
+                            result = cursor.fetchone()
+                            user_id = result[0] if result else None
+                        else:
+                            cursor.execute("""
+                                INSERT INTO users (email, password_hash, subscription_status, created_at)
+                                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                            """, (email, password_hash.decode(), subscription_status))
+                            user_id = cursor.lastrowid
                 else:
-                    cursor.execute("""
-                        INSERT INTO users (email, password_hash, session_token, subscription_status, created_at)
-                        VALUES (?, ?, ?, 'active', CURRENT_TIMESTAMP)
-                    """, (email, password_hash.decode(), token))
-                    user_id = cursor.lastrowid
+                    # Free tier user (no payment)
+                    subscription_status = 'free'
+                    
+                    if DB_TYPE == 'postgresql':
+                        cursor.execute("""
+                            INSERT INTO users (email, password_hash, subscription_status, created_at)
+                            VALUES (%s, %s, %s, NOW())
+                            RETURNING id
+                        """, (email, password_hash.decode(), subscription_status))
+                        result = cursor.fetchone()
+                        user_id = result[0] if result else None
+                    else:
+                        cursor.execute("""
+                            INSERT INTO users (email, password_hash, subscription_status, created_at)
+                            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                        """, (email, password_hash.decode(), subscription_status))
+                        user_id = cursor.lastrowid
                 
                 conn.commit()
-                
-                print(f"✅ Account created for {email}")
-                
-                return {
-                    "success": True,
-                    "token": token,
-                    "email": email,
-                    "message": "Account created successfully"
-                }
+                print(f"✅ Account created for {email} with status: {subscription_status}")
             
-            # Generate session token for existing user
+            # Generate session token
             token = secrets.token_urlsafe(32)
             
             # Update session token
@@ -410,9 +444,10 @@ async def register(request: Request, req: RegisterRequest):
             
             return {
                 "success": True,
-                "token": token,
+                "session_token": token,
+                "token": token,  # Keep for backwards compatibility
                 "email": email,
-                "message": "Password set successfully"
+                "redirect": "/dashboard"
             }
             
     except HTTPException:
