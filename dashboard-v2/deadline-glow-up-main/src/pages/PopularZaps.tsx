@@ -296,7 +296,10 @@ const PopularZaps = () => {
           </div>
 
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Popular Zaps</h1>
+            <div className="flex items-center gap-2 mb-2">
+              <h1 className="text-3xl font-bold text-foreground">Popular Zaps</h1>
+              <Badge variant="secondary" className="text-xs">BUILD_STAMP: REMINDERS_CARD_V1</Badge>
+            </div>
             <p className="text-muted-foreground">Pick a template. Build it in Zapier in minutes.</p>
           </div>
 

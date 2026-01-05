@@ -1279,7 +1279,7 @@ try:
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
     
     # Serve React Dashboard Assets
-    dashboard_assets = BASE_DIR / "dashboard" / "assets"
+    dashboard_assets = BASE_DIR / "public" / "dashboard" / "assets"
     if dashboard_assets.exists():
         app.mount("/dashboard/assets", StaticFiles(directory=str(dashboard_assets)), name="dashboard-assets")
 
@@ -1295,23 +1295,19 @@ except Exception as e:
 @app.get("/dashboard")
 async def serve_dashboard_root():
     """Serve React App Root"""
-    file_path = BASE_DIR / "dashboard" / "index.html"
+    file_path = BASE_DIR / "public" / "dashboard" / "index.html"
     if file_path.exists():
-        return FileResponse(file_path)
+        return FileResponse(file_path, headers={"Cache-Control": "no-store"})
     return Response("Dashboard not found", status_code=404)
 
 @app.get("/dashboard/{full_path:path}")
 async def serve_dashboard(full_path: str):
     """Serve React App Paths (SPA Routing)"""
-    # Check if file exists (e.g. favicon.ico, manifest.json)
-    file_path = BASE_DIR / "dashboard" / full_path
-    if file_path.exists() and file_path.is_file():
-        return FileResponse(file_path)
-    
-    # Fallback to index.html for SPA routing
-    index_path = BASE_DIR / "dashboard" / "index.html"
+    # If requesting assets, they're handled by the mount above
+    # For all other paths, serve index.html for SPA routing
+    index_path = BASE_DIR / "public" / "dashboard" / "index.html"
     if index_path.exists():
-        return FileResponse(index_path)
+        return FileResponse(index_path, headers={"Cache-Control": "no-store"})
     return Response("Dashboard not found", status_code=404)
 
 
