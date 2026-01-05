@@ -39,12 +39,12 @@ const PopularZaps = () => {
   const slackMessageTemplate = "🚨 {{project.project_name}} ({{project.state_code}}) — {{reminder_type}} deadline in {{reminder_days}} day(s)\nDeadline: {{deadline_date}}\nLien: {{project.lien_deadline}} ({{project.lien_deadline_days}} days)\nPrelim: {{project.prelim_deadline}} ({{project.prelim_deadline_days}} days)\nAmount: ${{project.invoice_amount}}";
   
   // New Slack message template for reminders card
-  const remindersSlackMessageTemplate = "🚨 LienDeadline reminder: {{reminder_type}} deadline in {{reminder_days}} day(s)\nDeadline: {{deadline_date}}\nProject: {{project.project_name}} ({{project.state_code}})\nInvoice: {{project.invoice_date}} — ${{project.invoice_amount}}\nPrelim: {{project.prelim_deadline}} ({{project.prelim_deadline_days}}d)\nLien: {{project.lien_deadline}} ({{project.lien_deadline_days}}d)";
+  const remindersSlackMessageTemplate = "🔔 *LienDeadline reminder*\n\nProject: {{project__project_name}}\nDeadline: {{deadline_date}}\nReminder: {{reminder_type}} ({{reminder_days}} days before)\nState: {{project__state_code}}";
   
   // Zap setup steps for reminders (URL will be replaced dynamically)
   const getRemindersZapSetupSteps = (baseUrl: string) => `1) Trigger: Schedule by Zapier → Every Hour
 2) Action: Webhooks by Zapier → GET
-   URL: ${baseUrl}/api/zapier/trigger/reminders?days=1,7&limit=50
+   URL: https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10
    Header: Authorization: Bearer <token>
 3) Action: Slack → Send Channel Message (use template)`;
 
@@ -93,7 +93,7 @@ const PopularZaps = () => {
     const baseUrl = window.location.origin;
     setWebhookUrl(`${baseUrl}/api/zapier/webhook/invoice`);
     setTriggerUrl(`${baseUrl}/api/zapier/trigger/upcoming?limit=10`);
-    setRemindersUrl(`${baseUrl}/api/zapier/trigger/reminders?days=1,7&limit=50`);
+    setRemindersUrl(`https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10`);
   }, []);
 
   const copyToClipboard = (text: string, type: string) => {
@@ -110,7 +110,7 @@ const PopularZaps = () => {
   // Build zapTemplates array dynamically to use state variables
   const buildZapTemplates = () => {
     const baseUrl = window.location.origin;
-    const remindersUrlValue = remindersUrl || `${baseUrl}/api/zapier/trigger/reminders?days=1,7&limit=50`;
+    const remindersUrlValue = remindersUrl || `https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10`;
     
     return [
       {
@@ -123,7 +123,7 @@ const PopularZaps = () => {
         slackMessage: remindersSlackMessageTemplate,
         zapSteps: `1) Trigger: Schedule by Zapier → Every Hour
 2) Action: Webhooks by Zapier → GET
-   URL: ${baseUrl}/api/zapier/trigger/reminders?days=1,7&limit=50
+   URL: https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10
    Header: Authorization: Bearer <token>
 3) Action: Slack → Send Channel Message (use template)`
       },
@@ -362,12 +362,12 @@ const PopularZaps = () => {
                 <label className="text-sm font-medium mb-2 block">Reminders URL</label>
                 <div className="flex gap-2">
                   <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
-                    {`${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`}
+                    https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10
                   </code>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => copyToClipboard(`${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`, "reminders-url-top")}
+                    onClick={() => copyToClipboard(`https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10`, "reminders-url-top")}
                   >
                     {copied === "reminders-url-top" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
@@ -379,7 +379,7 @@ const PopularZaps = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => copyToClipboard(`${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`, "reminders-url-btn-top")}
+                  onClick={() => copyToClipboard(`https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10`, "reminders-url-btn-top")}
                 >
                   {copied === "reminders-url-btn-top" ? (
                     <>
@@ -433,7 +433,7 @@ const PopularZaps = () => {
                   <li>
                     <span className="font-medium text-foreground">Action:</span> Webhooks by Zapier → GET
                     <div className="mt-1 ml-4 text-xs">
-                      URL: <code className="bg-muted px-1 rounded">/api/zapier/trigger/reminders?days=1,7&limit=50</code>
+                      URL: <code className="bg-muted px-1 rounded">https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10</code>
                     </div>
                     <div className="mt-1 ml-4 text-xs">
                       Header: <code className="bg-muted px-1 rounded">Authorization: Bearer &lt;token&gt;</code>
@@ -454,6 +454,9 @@ const PopularZaps = () => {
                   </pre>
                   <p className="text-xs text-muted-foreground mt-2">
                     Use Zapier's field mapping to replace the <code className="bg-muted px-1 rounded">{`{{field}}`}</code> placeholders with actual values from the trigger response
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    If multiple reminders are returned, add Looping by Zapier to send one Slack message per reminder.
                   </p>
                 </div>
               </div>
@@ -582,12 +585,12 @@ const PopularZaps = () => {
                 <label className="text-sm font-medium mb-2 block">Reminders URL</label>
                 <div className="flex gap-2">
                   <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
-                    {`${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`}
+                    https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10
                   </code>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => copyToClipboard(`${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`, "reminders-url")}
+                    onClick={() => copyToClipboard(`https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10`, "reminders-url")}
                   >
                     {copied === "reminders-url" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
@@ -599,7 +602,7 @@ const PopularZaps = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => copyToClipboard(`${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`, "reminders-url-btn")}
+                  onClick={() => copyToClipboard(`https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10`, "reminders-url-btn")}
                 >
                   {copied === "reminders-url-btn" ? (
                     <>
@@ -678,6 +681,9 @@ const PopularZaps = () => {
                   <p className="text-xs text-muted-foreground mt-2">
                     Use Zapier's field mapping to replace the <code className="bg-muted px-1 rounded">{`{{field}}`}</code> placeholders with actual values from the trigger response
                   </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    If multiple reminders are returned, add Looping by Zapier to send one Slack message per reminder.
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -746,13 +752,14 @@ const PopularZaps = () => {
             {/* REMINDERS_CARD_V1 */}
             {(() => {
               // Define constants directly in this card
-              const remindersUrl = `${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`;
+              const remindersUrl = `https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10`;
               const remindersHeadersTemplate = `{"Authorization":"Bearer <YOUR_TOKEN_HERE>","Content-Type":"application/json"}`;
-              const remindersSlackMessageTemplate = `🚨 Deadline Reminder: {{project.project_name}}
-Invoice: {{project.invoice_number}}
+              const remindersSlackMessageTemplate = `🔔 *LienDeadline reminder*
+
+Project: {{project__project_name}}
 Deadline: {{deadline_date}}
-Type: {{reminder_type}} ({{reminder_days}} days remaining)
-Amount: \${{project.invoice_amount}}`;
+Reminder: {{reminder_type}} ({{reminder_days}} days before)
+State: {{project__state_code}}`;
               const getRemindersZapSetupSteps = () => [
                 "1) Trigger: Schedule by Zapier → Every Hour",
                 "2) Action: Webhooks by Zapier → GET (use Reminders URL + Headers)",
@@ -822,6 +829,9 @@ Amount: \${{project.invoice_amount}}`;
                           <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
                             {remindersSlackMessageTemplate}
                           </pre>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            If multiple reminders are returned, add Looping by Zapier to send one Slack message per reminder.
+                          </p>
                         </div>
                         <Button
                           size="sm"
