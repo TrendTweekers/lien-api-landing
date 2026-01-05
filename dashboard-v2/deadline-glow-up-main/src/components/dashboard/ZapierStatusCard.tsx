@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Zap, Bell, Rocket, ExternalLink } from "lucide-react";
+import { Zap, Bell, Rocket, ExternalLink, Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { usePlan } from "@/hooks/usePlan";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface Project {
   id: number;
@@ -22,6 +24,7 @@ interface ZapierStatusCardProps {
 
 export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => {
   const navigate = useNavigate();
+  const { planInfo } = usePlan();
   const [zapierConnected, setZapierConnected] = useState<boolean | null>(null);
   const [lastStatusCheckAt, setLastStatusCheckAt] = useState<Date | null>(null);
   const [projectsWithAlerts, setProjectsWithAlerts] = useState(0);
@@ -29,6 +32,10 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
   const [totalProjects, setTotalProjects] = useState(0);
   const [firstProjectNeedingSetup, setFirstProjectNeedingSetup] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  
+  // Check if Zapier is locked (free plan)
+  const isZapierLocked = planInfo.plan === "free";
 
   // Format relative time
   const formatRelativeTime = (date: Date | null): string => {
@@ -245,89 +252,117 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Alerts Status */}
-        {zapierConnected && (
-          <div>
-            <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
-              <Bell className="h-4 w-4" />
-              Alerts Status
-            </h4>
-            <p className="text-sm text-muted-foreground">
-              {projectsWithAlerts} {projectsWithAlerts === 1 ? 'project' : 'projects'} with alerts • {projectsNeedingSetup} {projectsNeedingSetup === 1 ? 'project' : 'projects'} need setup
-            </p>
+        {/* Locked State for Free Plan */}
+        {isZapierLocked ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border border-border">
+              <Lock className="h-5 w-5 text-muted-foreground" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">
+                  Zapier Automation is available on paid plans
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Upgrade to Basic ($49/month) or Automated ($149/month) to unlock Zapier integrations.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="default"
+              onClick={() => setUpgradeModalOpen(true)}
+              className="w-full bg-primary hover:bg-primary/90"
+            >
+              Upgrade to Unlock Zapier
+            </Button>
           </div>
-        )}
-
-        {!zapierConnected && (
-          <p className="text-sm text-muted-foreground">
-            Connect Zapier to enable alerts for your projects.
-          </p>
-        )}
-
-        {/* Action Buttons */}
-        <TooltipProvider>
-          <div className="flex flex-wrap gap-2 pt-2">
-            {/* Primary Button - Dynamic based on state */}
-            {!zapierConnected ? (
-              <Button
-                size="default"
-                onClick={handleConnectZapier}
-                className="bg-primary hover:bg-primary/90"
-              >
-                <Zap className="h-4 w-4 mr-2" />
-                Connect Zapier
-              </Button>
-            ) : projectsNeedingSetup > 0 && firstProjectNeedingSetup ? (
-              <Button
-                size="default"
-                onClick={handleSetUpAlerts}
-                className="bg-primary hover:bg-primary/90"
-              >
-                <Bell className="h-4 w-4 mr-2" />
-                Set Up Alerts for {projectsNeedingSetup} {projectsNeedingSetup === 1 ? 'Project' : 'Projects'}
-              </Button>
-            ) : (
-              <Button
-                size="default"
-                onClick={() => navigate('/zapier')}
-                className="bg-primary hover:bg-primary/90"
-              >
-                View All Alert Settings
-              </Button>
+        ) : (
+          <>
+            {/* Alerts Status */}
+            {zapierConnected && (
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
+                  <Bell className="h-4 w-4" />
+                  Alerts Status
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  {projectsWithAlerts} {projectsWithAlerts === 1 ? 'project' : 'projects'} with alerts • {projectsNeedingSetup} {projectsNeedingSetup === 1 ? 'project' : 'projects'} need setup
+                </p>
+              </div>
             )}
 
-            {/* Quick Start Button - Always Visible as Secondary */}
-            {!zapierConnected ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span>
-                    <Button
-                      variant="outline"
-                      size="default"
-                      disabled
-                    >
-                      <Rocket className="h-4 w-4 mr-2" />
-                      Quick Start with Slack
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Connect Zapier first</p>
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <Button
-                variant="outline"
-                size="default"
-                onClick={handleQuickStart}
-              >
-                <Rocket className="h-4 w-4 mr-2" />
-                Quick Start with Slack
-              </Button>
+            {!zapierConnected && (
+              <p className="text-sm text-muted-foreground">
+                Connect Zapier to enable alerts for your projects.
+              </p>
             )}
-          </div>
-        </TooltipProvider>
+
+            {/* Action Buttons */}
+            <TooltipProvider>
+              <div className="flex flex-wrap gap-2 pt-2">
+                {/* Primary Button - Dynamic based on state */}
+                {!zapierConnected ? (
+                  <Button
+                    size="default"
+                    onClick={handleConnectZapier}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    <Zap className="h-4 w-4 mr-2" />
+                    Connect Zapier
+                  </Button>
+                ) : projectsNeedingSetup > 0 && firstProjectNeedingSetup ? (
+                  <Button
+                    size="default"
+                    onClick={handleSetUpAlerts}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    <Bell className="h-4 w-4 mr-2" />
+                    Set Up Alerts for {projectsNeedingSetup} {projectsNeedingSetup === 1 ? 'Project' : 'Projects'}
+                  </Button>
+                ) : (
+                  <Button
+                    size="default"
+                    onClick={() => navigate('/zapier')}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    View All Alert Settings
+                  </Button>
+                )}
+
+                {/* Quick Start Button - Always Visible as Secondary */}
+                {!zapierConnected ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          variant="outline"
+                          size="default"
+                          disabled
+                        >
+                          <Rocket className="h-4 w-4 mr-2" />
+                          Quick Start with Slack
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Connect Zapier first</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="default"
+                    onClick={handleQuickStart}
+                  >
+                    <Rocket className="h-4 w-4 mr-2" />
+                    Quick Start with Slack
+                  </Button>
+                )}
+              </div>
+            </TooltipProvider>
+          </>
+        )}
       </CardContent>
+      
+      <UpgradeModal open={upgradeModalOpen} onOpenChange={setUpgradeModalOpen} />
     </Card>
   );
 };

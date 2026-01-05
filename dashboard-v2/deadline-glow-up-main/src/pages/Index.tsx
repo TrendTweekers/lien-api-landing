@@ -12,6 +12,7 @@ import { PartnerProgram } from "@/components/dashboard/PartnerProgram";
 import { ApiDocs } from "@/components/dashboard/ApiDocs";
 import UpgradePrompt from "@/components/UpgradePrompt";
 import { ZapierStatusCard } from "@/components/dashboard/ZapierStatusCard";
+import { AdminSimulator } from "@/components/AdminSimulator";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -142,6 +143,9 @@ const Index = () => {
           © 2025 LienDeadline. All rights reserved.
         </div>
       </footer>
+      
+      {/* Admin Simulator (only visible to admin) */}
+      <AdminSimulator />
     </div>
   );
 };

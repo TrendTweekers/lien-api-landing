@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, MapPin, Calculator, Save, AlertCircle, Building2 } from "lucide-react";
+import { Calendar, MapPin, Calculator, Save, AlertCircle, Building2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { usePlan } from "@/hooks/usePlan";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const US_STATES = [
   { name: "Alabama", code: "AL" },
@@ -82,6 +84,7 @@ const STATE_TO_ABBR: Record<string, string> = {
 
 export const DeadlineCalculator = () => {
   const { toast } = useToast();
+  const { planInfo } = usePlan();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedState, setSelectedState] = useState("");
   const [projectType, setProjectType] = useState("commercial");
@@ -93,8 +96,12 @@ export const DeadlineCalculator = () => {
   const [notes, setNotes] = useState("");
   const [reminder1Day, setReminder1Day] = useState(false);
   const [reminder7Days, setReminder7Days] = useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   // Track supported states from backend (same source as ImportedInvoicesTable)
   const [supportedStates, setSupportedStates] = useState<Set<string>>(new Set());
+  
+  // Check if calculations are locked (free plan limit reached)
+  const isCalculationsLocked = planInfo.plan === "free" && planInfo.remainingCalculations <= 0;
 
   // Fetch supported states from backend (same endpoint as ImportedInvoicesTable)
   useEffect(() => {
@@ -130,6 +137,12 @@ export const DeadlineCalculator = () => {
     : US_STATES; // Fallback to all states if not loaded yet
 
   const handleCalculate = async () => {
+    // Check if calculations are locked
+    if (isCalculationsLocked) {
+      setUpgradeModalOpen(true);
+      return;
+    }
+    
     if (!selectedState || !date) {
       toast({
         title: "Missing Information",
@@ -243,6 +256,27 @@ export const DeadlineCalculator = () => {
 
   return (
     <div className="space-y-6">
+      {isCalculationsLocked && (
+        <div className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <Lock className="h-5 w-5 text-orange-600" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-orange-900">
+              Free calculation limit reached
+            </p>
+            <p className="text-xs text-orange-700 mt-1">
+              You've used all your free calculations. Upgrade to continue calculating deadlines.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => setUpgradeModalOpen(true)}
+            className="bg-orange-600 hover:bg-orange-700 text-white"
+          >
+            Upgrade Now
+          </Button>
+        </div>
+      )}
+      
       <div className="bg-card rounded-xl p-6 border border-border card-shadow">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
@@ -419,6 +453,8 @@ export const DeadlineCalculator = () => {
           </CardContent>
         </Card>
       )}
+      
+      <UpgradeModal open={upgradeModalOpen} onOpenChange={setUpgradeModalOpen} />
     </div>
   );
 };
