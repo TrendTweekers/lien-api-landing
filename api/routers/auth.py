@@ -5,9 +5,14 @@ import bcrypt
 import hashlib
 import traceback
 import os
+import stripe
 from datetime import datetime
+from typing import Optional
 from ..database import get_db, get_db_cursor, DB_TYPE
 from ..rate_limiter import limiter
+
+# Initialize Stripe (if available)
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY', '')
 
 router = APIRouter()
 
@@ -186,6 +191,11 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    session_id: Optional[str] = None
+
 # Authentication Endpoints
 @router.post("/api/login")
 @limiter.limit("5/minute")
@@ -274,6 +284,163 @@ async def login(request: Request, req: LoginRequest):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Login failed. Please try again.")
+
+@router.post("/api/register")
+@limiter.limit("5/minute")
+async def register(request: Request, req: RegisterRequest):
+    """Registration endpoint - creates account or updates password for existing user"""
+    print(f"📝 Registration attempt for {req.email}")
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Validate email
+            email = req.email.lower().strip()
+            if not email or '@' not in email:
+                raise HTTPException(status_code=400, detail="Invalid email address")
+            
+            # Validate password
+            if len(req.password) < 8:
+                raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
+            
+            # Check if user exists (created by webhook after payment)
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id, email, password_hash, subscription_status FROM users WHERE email = %s", (email,))
+            else:
+                cursor.execute("SELECT id, email, password_hash, subscription_status FROM users WHERE email = ?", (email,))
+            
+            user = cursor.fetchone()
+            
+            # Extract user data
+            if user:
+                if isinstance(user, dict):
+                    user_id = user.get('id')
+                    existing_password_hash = user.get('password_hash', '')
+                    subscription_status = user.get('subscription_status', '')
+                else:
+                    user_id = user[0] if len(user) > 0 else None
+                    existing_password_hash = user[2] if len(user) > 2 else ''
+                    subscription_status = user[3] if len(user) > 3 else ''
+            else:
+                user_id = None
+                existing_password_hash = ''
+                subscription_status = ''
+            
+            # Hash new password
+            password_hash = bcrypt.hashpw(req.password.encode('utf-8'), bcrypt.gensalt())
+            
+            if user_id:
+                # User exists (created by webhook) - update password
+                print(f"✅ User exists, updating password for {email}")
+                
+                # Check subscription status
+                if subscription_status not in ['active', 'trialing']:
+                    raise HTTPException(status_code=403, detail="Account not active. Please contact support.")
+                
+                # Update password
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        UPDATE users 
+                        SET password_hash = %s
+                        WHERE email = %s
+                    """, (password_hash.decode(), email))
+                else:
+                    cursor.execute("""
+                        UPDATE users 
+                        SET password_hash = ?
+                        WHERE email = ?
+                    """, (password_hash.decode(), email))
+            else:
+                # User doesn't exist - create new account
+                # This should only happen if webhook hasn't run yet (edge case)
+                print(f"⚠️ User doesn't exist, creating new account for {email}")
+                
+                # Generate session token
+                token = secrets.token_urlsafe(32)
+                
+                # Create user account
+                # Note: This assumes they have a subscription. If not, they'll need to sign up via pricing page.
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("""
+                        INSERT INTO users (email, password_hash, session_token, subscription_status, created_at)
+                        VALUES (%s, %s, %s, 'active', NOW())
+                        RETURNING id
+                    """, (email, password_hash.decode(), token))
+                    result = cursor.fetchone()
+                    user_id = result[0] if result else None
+                else:
+                    cursor.execute("""
+                        INSERT INTO users (email, password_hash, session_token, subscription_status, created_at)
+                        VALUES (?, ?, ?, 'active', CURRENT_TIMESTAMP)
+                    """, (email, password_hash.decode(), token))
+                    user_id = cursor.lastrowid
+                
+                conn.commit()
+                
+                print(f"✅ Account created for {email}")
+                
+                return {
+                    "success": True,
+                    "token": token,
+                    "email": email,
+                    "message": "Account created successfully"
+                }
+            
+            # Generate session token for existing user
+            token = secrets.token_urlsafe(32)
+            
+            # Update session token
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE users 
+                    SET session_token = %s, last_login_at = NOW()
+                    WHERE email = %s
+                """, (token, email))
+            else:
+                cursor.execute("""
+                    UPDATE users 
+                    SET session_token = ?, last_login_at = CURRENT_TIMESTAMP
+                    WHERE email = ?
+                """, (token, email))
+            
+            conn.commit()
+            
+            print(f"✅ Registration successful for {email}")
+            
+            return {
+                "success": True,
+                "token": token,
+                "email": email,
+                "message": "Password set successfully"
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Registration error: {repr(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Registration failed. Please try again.")
+
+@router.get("/api/stripe-session-email")
+async def get_stripe_session_email(session_id: str):
+    """Get email from Stripe checkout session (for registration flow)"""
+    if not stripe.api_key:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        email = session.get('customer_details', {}).get('email') or session.get('customer_email')
+        
+        if not email:
+            raise HTTPException(status_code=404, detail="Email not found in session")
+        
+        return {"email": email}
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to retrieve session")
 
 @router.get("/api/verify-session")
 async def verify_session(authorization: str = Header(None)):

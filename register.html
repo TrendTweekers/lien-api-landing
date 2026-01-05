@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account - LienDeadline</title>
+  <meta name="description" content="Create your LienDeadline account to access mechanics lien deadline calculations, manage projects, and track filing deadlines across all 50 states.">
+  
+  <!-- Open Graph Tags -->
+  <meta property="og:title" content="Create Account - LienDeadline">
+  <meta property="og:description" content="Create your LienDeadline account to access mechanics lien deadline calculations and track filing deadlines.">
+  <meta property="og:image" content="https://liendeadline.com/images/liendeadline-logo.png">
+  <meta property="og:url" content="https://liendeadline.com/register.html">
+  <meta property="og:type" content="website">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Create Account - LienDeadline">
+  <meta name="twitter:description" content="Create your LienDeadline account to access mechanics lien deadline calculations.">
+  <meta name="twitter:image" content="https://liendeadline.com/images/liendeadline-logo.png">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://liendeadline.com/register.html">
+  
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-KYZG0TN07Z"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-KYZG0TN07Z');
+  </script>
+  
+  <!-- Umami Analytics -->
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="02250d35-ee17-41be-845d-2fe0f7f15e63"></script>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico">
+  
+  <style>
+    /* Logo sizing - prevent flash */
+    .ld-brand-icon {
+      height: 32px !important;
+      width: auto !important;
+      max-height: 32px !important;
+      display: block !important;
+    }
+    .ld-brand-wordmark {
+      height: 28px !important;
+      width: auto !important;
+      max-height: 28px !important;
+      display: block !important;
+    }
+    @media (max-width: 768px) {
+      .ld-brand-icon {
+        height: 28px !important;
+        max-height: 28px !important;
+      }
+      .ld-brand-wordmark {
+        height: 24px !important;
+        max-height: 24px !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+  
+  <!-- Navigation Header -->
+  <header class="bg-white border-b border-gray-200">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+      <a href="/" class="flex items-center gap-2">
+        <img class="ld-brand-icon" src="/images/liendeadline-icon-transparent.png" alt="LienDeadline" />
+        <img class="ld-brand-wordmark" src="/images/liendeadline-wordmark-transparent.png" alt="LienDeadline" />
+      </a>
+      <div class="flex items-center gap-6">
+        <a href="/" class="text-gray-600 hover:text-gray-900">Home</a>
+        <a href="/pricing.html" class="text-gray-600 hover:text-gray-900">Pricing</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Registration Form -->
+  <main class="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+    <div class="max-w-md w-full space-y-8">
+      
+      <!-- Header -->
+      <div class="text-center">
+        <h1 class="text-3xl font-bold text-gray-900">Create your account</h1>
+        <p class="mt-2 text-sm text-gray-600">
+          Set up your password to get started
+        </p>
+      </div>
+
+      <!-- Registration Form -->
+      <form id="register-form" class="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md">
+        
+        <!-- Error Message -->
+        <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <span class="block sm:inline" id="error-text"></span>
+        </div>
+
+        <!-- Success Message -->
+        <div id="success-message" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded relative" role="alert">
+          <span class="block sm:inline" id="success-text"></span>
+        </div>
+
+        <!-- Email Field (Pre-filled) -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+            Email Address
+          </label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email"
+            required
+            readonly
+            autocomplete="email"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            placeholder="you@example.com"
+          >
+        </div>
+
+        <!-- Password Field -->
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+            Password
+          </label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password"
+            required
+            autocomplete="new-password"
+            minlength="8"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            placeholder="Enter your password (min. 8 characters)"
+          >
+          <p class="mt-1 text-xs text-gray-500">Must be at least 8 characters long</p>
+        </div>
+
+        <!-- Confirm Password Field -->
+        <div>
+          <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-2">
+            Confirm Password
+          </label>
+          <input 
+            type="password" 
+            id="confirm-password" 
+            name="confirm-password"
+            required
+            autocomplete="new-password"
+            minlength="8"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            placeholder="Confirm your password"
+          >
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          type="submit" 
+          id="register-button"
+          class="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg transition-colors duration-200"
+        >
+          Create Account
+        </button>
+
+        <!-- Divider -->
+        <div class="relative my-6">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white text-gray-500">Already have an account?</span>
+          </div>
+        </div>
+
+        <!-- Login Link -->
+        <div class="text-center">
+          <a href="/login.html" class="text-orange-600 hover:text-orange-500 font-medium">
+            Sign In
+          </a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- Registration JavaScript -->
+  <script>
+    // Pre-fill email from URL parameter or Stripe session
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailParam = urlParams.get('email');
+    const sessionIdParam = urlParams.get('session_id');
+    
+    // If email is in URL, use it
+    if (emailParam) {
+      document.getElementById('email').value = decodeURIComponent(emailParam);
+    } 
+    // Otherwise, try to get email from Stripe session
+    else if (sessionIdParam) {
+      fetch(`/api/stripe-session-email?session_id=${encodeURIComponent(sessionIdParam)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.email) {
+            document.getElementById('email').value = data.email;
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch email from Stripe session:', err);
+          // User can still enter email manually
+        });
+    }
+
+    // Handle form submission
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+      const errorDiv = document.getElementById('error-message');
+      const errorText = document.getElementById('error-text');
+      const successDiv = document.getElementById('success-message');
+      const successText = document.getElementById('success-text');
+      const submitButton = document.getElementById('register-button');
+      
+      // Hide previous messages
+      errorDiv.classList.add('hidden');
+      successDiv.classList.add('hidden');
+      
+      // Validate passwords match
+      if (password !== confirmPassword) {
+        errorText.textContent = 'Passwords do not match';
+        errorDiv.classList.remove('hidden');
+        return;
+      }
+      
+      // Validate password length
+      if (password.length < 8) {
+        errorText.textContent = 'Password must be at least 8 characters long';
+        errorDiv.classList.remove('hidden');
+        return;
+      }
+      
+      // Disable button and show loading state
+      submitButton.disabled = true;
+      submitButton.textContent = 'Creating account...';
+      
+      try {
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            email, 
+            password,
+            session_id: sessionIdParam 
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          // Store session token and user info
+          if (data.token) {
+            localStorage.setItem('session_token', data.token);
+            localStorage.setItem('user_email', email);
+          }
+          
+          // Show success message briefly, then redirect
+          successText.textContent = 'Account created successfully! Redirecting...';
+          successDiv.classList.remove('hidden');
+          
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 1500);
+        } else {
+          // Show error message
+          errorText.textContent = data.detail || data.error || 'Failed to create account. Please try again.';
+          errorDiv.classList.remove('hidden');
+          
+          // Re-enable button
+          submitButton.disabled = false;
+          submitButton.textContent = 'Create Account';
+        }
+      } catch (error) {
+        console.error('Registration error:', error);
+        errorText.textContent = 'An error occurred. Please try again.';
+        errorDiv.classList.remove('hidden');
+        
+        // Re-enable button
+        submitButton.disabled = false;
+        submitButton.textContent = 'Create Account';
+      }
+    });
+  </script>
+</body>
+</html>
+

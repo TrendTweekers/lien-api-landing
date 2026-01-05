@@ -816,6 +816,9 @@
             }
             
             // Use Stripe Payment Links directly - simpler and more reliable
+            // NOTE: Configure Stripe Payment Links success URL in Stripe Dashboard to:
+            // /register?session_id={CHECKOUT_SESSION_ID}
+            // This will redirect users to registration page after payment
             const planType = monthlyBtn.classList.contains('active') ? 'monthly' : 'annual';
             
             const paymentLinks = {

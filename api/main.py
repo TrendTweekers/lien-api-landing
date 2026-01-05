@@ -1406,6 +1406,18 @@ async def serve_login_html():
         raise HTTPException(status_code=404, detail="login.html not found")
     return FileResponse(file_path, media_type="text/html")
 
+@app.get("/register.html")
+async def serve_register_html():
+    """Serve register.html page directly"""
+    # Try root directory first (for compatibility)
+    file_path = BASE_DIR / "register.html"
+    if not file_path.exists():
+        # Fallback to public directory
+        file_path = BASE_DIR / "public" / "register.html"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="register.html not found")
+    return FileResponse(file_path, media_type="text/html")
+
 @app.get("/test-api")
 async def test_api():
     """Serve test-api.html API tester page"""
