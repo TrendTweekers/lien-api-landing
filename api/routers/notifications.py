@@ -30,8 +30,23 @@ class ReminderConfig(BaseModel):
     offset_days: int = Field(..., gt=0, description="Days before deadline (e.g., 1, 7, 14)")
     channels: ReminderChannel
 
+class NotificationSettingsRequestV1(BaseModel):
+    """Request model for v1 notification settings (Zapier-only)"""
+    reminder_offsets_days: List[int] = Field(..., min_items=0, description="List of reminder offset days (e.g., [1, 7, 14])")
+    zapier_enabled: bool = Field(default=False, description="Whether Zapier reminders are enabled")
+    
+    @validator('reminder_offsets_days')
+    def validate_offsets(cls, v):
+        """Ensure no duplicate offsets and all > 0"""
+        if len(v) != len(set(v)):
+            raise ValueError("Duplicate offset_days not allowed.")
+        for offset in v:
+            if offset <= 0:
+                raise ValueError("All offset_days must be > 0")
+        return v
+
 class NotificationSettingsRequest(BaseModel):
-    """Request model for updating notification settings"""
+    """Request model for updating notification settings (legacy format)"""
     reminders: List[ReminderConfig] = Field(..., min_items=0, description="List of reminder configurations")
     
     @validator('reminders')
@@ -45,7 +60,9 @@ class NotificationSettingsRequest(BaseModel):
 class NotificationSettingsResponse(BaseModel):
     """Response model for notification settings"""
     project_id: int
-    reminders: List[ReminderConfig]
+    reminders: List[ReminderConfig] = Field(default_factory=list)
+    reminder_offsets_days: List[int] = Field(default_factory=list)
+    zapier_enabled: bool = False
     created_at: str
     updated_at: str
 
@@ -53,25 +70,37 @@ class NotificationSettingsResponse(BaseModel):
 
 def create_default_notification_settings(project_id: int) -> bool:
     """
-    Create default notification settings for a project.
-    Default: offset_days=7, email=true, slack=false, zapier=false
+    Create default notification settings for a project (v1 format).
+    Default: reminder_offsets_days=[7], zapier_enabled=false
     
     Returns True if created successfully, False otherwise.
     """
     try:
-        default_reminders = [
-            {
-                "offset_days": 7,
-                "channels": {
-                    "email": True,
-                    "slack": False,
-                    "zapier": False
-                }
-            }
-        ]
+        # V1 format: simple array of offsets + zapier_enabled flag
+        default_reminders = [7]  # Single offset: 7 days
+        zapier_enabled = False
         
         with get_db() as conn:
             cursor = get_db_cursor(conn)
+            
+            # Store as JSONB with both formats for backwards compatibility
+            # New format: {reminder_offsets_days: [7], zapier_enabled: false}
+            # Legacy format: [{offset_days: 7, channels: {email: true, slack: false, zapier: false}}]
+            settings_data = {
+                "reminder_offsets_days": default_reminders,
+                "zapier_enabled": zapier_enabled,
+                # Legacy format for backwards compatibility
+                "reminders": [
+                    {
+                        "offset_days": 7,
+                        "channels": {
+                            "email": True,
+                            "slack": False,
+                            "zapier": False
+                        }
+                    }
+                ]
+            }
             
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
@@ -79,7 +108,7 @@ def create_default_notification_settings(project_id: int) -> bool:
                     VALUES (%s, %s::jsonb, NOW(), NOW())
                     ON CONFLICT (project_id) DO NOTHING
                     RETURNING id
-                """, (project_id, json.dumps(default_reminders)))
+                """, (project_id, json.dumps(settings_data)))
                 result = cursor.fetchone()
                 created = result is not None
             else:
@@ -87,7 +116,7 @@ def create_default_notification_settings(project_id: int) -> bool:
                 cursor.execute("""
                     INSERT OR IGNORE INTO notification_settings (project_id, reminders, created_at, updated_at)
                     VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                """, (project_id, json.dumps(default_reminders)))
+                """, (project_id, json.dumps(settings_data)))
                 created = cursor.rowcount > 0
             
             conn.commit()
@@ -99,7 +128,7 @@ def create_default_notification_settings(project_id: int) -> bool:
 def get_notification_settings(project_id: int) -> Optional[Dict]:
     """
     Get notification settings for a project.
-    Returns None if not found, otherwise returns dict with reminders.
+    Returns None if not found, otherwise returns dict with both v1 and legacy formats.
     """
     try:
         with get_db() as conn:
@@ -133,12 +162,36 @@ def get_notification_settings(project_id: int) -> Optional[Dict]:
             
             # Parse JSON
             if isinstance(reminders_json, str):
-                reminders = json.loads(reminders_json)
+                settings_data = json.loads(reminders_json)
             else:
-                reminders = reminders_json
+                settings_data = reminders_json
+            
+            # Handle both v1 format and legacy format
+            if isinstance(settings_data, dict):
+                # V1 format: {reminder_offsets_days: [7], zapier_enabled: false, reminders: [...]}
+                reminder_offsets_days = settings_data.get("reminder_offsets_days", [])
+                zapier_enabled = settings_data.get("zapier_enabled", False)
+                reminders = settings_data.get("reminders", [])
+            elif isinstance(settings_data, list):
+                # Legacy format: [{offset_days: 7, channels: {...}}]
+                reminders = settings_data
+                # Extract offsets and zapier_enabled from legacy format
+                reminder_offsets_days = [r.get("offset_days") for r in reminders if isinstance(r, dict) and "offset_days" in r]
+                zapier_enabled = any(
+                    r.get("channels", {}).get("zapier", False) 
+                    for r in reminders 
+                    if isinstance(r, dict) and "channels" in r
+                )
+            else:
+                # Fallback
+                reminders = []
+                reminder_offsets_days = []
+                zapier_enabled = False
             
             return {
-                "reminders": reminders,
+                "reminders": reminders,  # Legacy format
+                "reminder_offsets_days": reminder_offsets_days,  # V1 format
+                "zapier_enabled": zapier_enabled,  # V1 format
                 "created_at": created_at.isoformat() if hasattr(created_at, 'isoformat') else str(created_at),
                 "updated_at": updated_at.isoformat() if hasattr(updated_at, 'isoformat') else str(updated_at)
             }
@@ -212,8 +265,9 @@ async def get_notifications(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Get notification settings for a project.
+    Get notification settings for a project (v1 format).
     Requires authentication and project ownership.
+    Returns v1 format: reminder_offsets_days and zapier_enabled.
     """
     try:
         user_email = current_user.get('email', '').lower().strip()
@@ -238,10 +292,12 @@ async def get_notifications(
             else:
                 raise HTTPException(status_code=500, detail="Failed to create default notification settings")
         
+        # Return v1 format
         return JSONResponse(content={
             "success": True,
             "project_id": project_id,
-            "reminders": settings["reminders"],
+            "reminder_offsets_days": settings.get("reminder_offsets_days", [7]),
+            "zapier_enabled": settings.get("zapier_enabled", False),
             "created_at": settings["created_at"],
             "updated_at": settings["updated_at"]
         })
@@ -334,12 +390,13 @@ async def create_notifications(
 @router.put("/api/projects/{project_id}/notifications")
 async def update_notifications(
     project_id: int,
-    settings: NotificationSettingsRequest,
+    settings: NotificationSettingsRequestV1,
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Update notification settings for a project.
+    Update notification settings for a project (v1 format).
     Requires authentication and project ownership.
+    Accepts v1 format: reminder_offsets_days and zapier_enabled.
     """
     try:
         user_id = current_user.get('id')
@@ -354,18 +411,29 @@ async def update_notifications(
         if project_user_id != user_id:
             raise HTTPException(status_code=403, detail="Access denied. You can only modify your own projects.")
         
-        # Prepare reminders JSON
-        reminders_data = [
+        # Prepare settings JSON (v1 format with legacy compatibility)
+        reminder_offsets_days = settings.reminder_offsets_days
+        zapier_enabled = settings.zapier_enabled
+        
+        # Build legacy format for backwards compatibility
+        reminders_legacy = [
             {
-                "offset_days": r.offset_days,
+                "offset_days": offset,
                 "channels": {
-                    "email": r.channels.email,
-                    "slack": r.channels.slack,
-                    "zapier": r.channels.zapier
+                    "email": False,  # Email/Slack disabled in v1
+                    "slack": False,
+                    "zapier": zapier_enabled
                 }
             }
-            for r in settings.reminders
+            for offset in reminder_offsets_days
         ]
+        
+        # Store both formats
+        settings_data = {
+            "reminder_offsets_days": reminder_offsets_days,
+            "zapier_enabled": zapier_enabled,
+            "reminders": reminders_legacy  # Legacy format for backwards compatibility
+        }
         
         with get_db() as conn:
             cursor = get_db_cursor(conn)
@@ -376,7 +444,7 @@ async def update_notifications(
                     SET reminders = %s::jsonb, updated_at = NOW()
                     WHERE project_id = %s
                     RETURNING id
-                """, (json.dumps(reminders_data), project_id))
+                """, (json.dumps(settings_data), project_id))
                 result = cursor.fetchone()
                 if not result:
                     # Create if doesn't exist
@@ -384,29 +452,30 @@ async def update_notifications(
                         INSERT INTO notification_settings (project_id, reminders, created_at, updated_at)
                         VALUES (%s, %s::jsonb, NOW(), NOW())
                         RETURNING id
-                    """, (project_id, json.dumps(reminders_data)))
+                    """, (project_id, json.dumps(settings_data)))
             else:
                 cursor.execute("""
                     UPDATE notification_settings
                     SET reminders = ?, updated_at = CURRENT_TIMESTAMP
                     WHERE project_id = ?
-                """, (json.dumps(reminders_data), project_id))
+                """, (json.dumps(settings_data), project_id))
                 if cursor.rowcount == 0:
                     # Create if doesn't exist
                     cursor.execute("""
                         INSERT INTO notification_settings (project_id, reminders, created_at, updated_at)
                         VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                    """, (project_id, json.dumps(reminders_data)))
+                    """, (project_id, json.dumps(settings_data)))
             
             conn.commit()
         
-        # Return updated settings
+        # Return updated settings (v1 format)
         updated_settings = get_notification_settings(project_id)
         
         return JSONResponse(content={
             "success": True,
             "project_id": project_id,
-            "reminders": updated_settings["reminders"],
+            "reminder_offsets_days": updated_settings.get("reminder_offsets_days", []),
+            "zapier_enabled": updated_settings.get("zapier_enabled", False),
             "created_at": updated_settings["created_at"],
             "updated_at": updated_settings["updated_at"]
         })

@@ -787,25 +787,19 @@ async def trigger_reminders(
                         continue
                     
                     # Check prelim reminders
-                    # Only include if notification settings have zapier channel enabled for this offset
+                    # Only include if notification settings have zapier_enabled=true AND this offset is in reminder_offsets_days
                     if prelim_deadline_days is not None and prelim_deadline_days in days_list and prelim_deadline:
-                        # Check notification settings
+                        # Check notification settings (v1 format)
                         notification_settings = get_notification_settings(project_id)
                         if notification_settings:
-                            reminders_config = notification_settings.get("reminders", [])
-                            # Find reminder config matching this offset
-                            matching_reminder = next(
-                                (r for r in reminders_config if r.get("offset_days") == prelim_deadline_days),
-                                None
-                            )
-                            if matching_reminder:
-                                channels = matching_reminder.get("channels", {})
-                                if not channels.get("zapier", False):
-                                    # Zapier channel not enabled for this offset, skip
-                                    continue
-                        # If no settings exist, use default behavior (zapier=false, so skip)
-                        # This ensures backwards compatibility: only projects with explicit zapier=true get reminders
+                            zapier_enabled = notification_settings.get("zapier_enabled", False)
+                            reminder_offsets_days = notification_settings.get("reminder_offsets_days", [])
+                            
+                            # V1: Check if zapier is enabled AND this offset is configured
+                            if not zapier_enabled or prelim_deadline_days not in reminder_offsets_days:
+                                continue
                         else:
+                            # No settings = default (zapier_enabled=false), skip
                             continue
                         
                         try:
@@ -883,22 +877,17 @@ async def trigger_reminders(
                         break
                     
                     if lien_deadline_days is not None and lien_deadline_days in days_list and lien_deadline:
-                        # Check notification settings
+                        # Check notification settings (v1 format)
                         notification_settings = get_notification_settings(project_id)
                         if notification_settings:
-                            reminders_config = notification_settings.get("reminders", [])
-                            # Find reminder config matching this offset
-                            matching_reminder = next(
-                                (r for r in reminders_config if r.get("offset_days") == lien_deadline_days),
-                                None
-                            )
-                            if matching_reminder:
-                                channels = matching_reminder.get("channels", {})
-                                if not channels.get("zapier", False):
-                                    # Zapier channel not enabled for this offset, skip
-                                    continue
-                        # If no settings exist, use default behavior (zapier=false, so skip)
+                            zapier_enabled = notification_settings.get("zapier_enabled", False)
+                            reminder_offsets_days = notification_settings.get("reminder_offsets_days", [])
+                            
+                            # V1: Check if zapier is enabled AND this offset is configured
+                            if not zapier_enabled or lien_deadline_days not in reminder_offsets_days:
+                                continue
                         else:
+                            # No settings = default (zapier_enabled=false), skip
                             continue
                         
                         try:

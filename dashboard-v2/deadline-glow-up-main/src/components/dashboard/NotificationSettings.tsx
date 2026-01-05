@@ -1,18 +1,9 @@
 import { useState, useEffect } from "react";
-import { Mail, MessageSquare, Zap, Save, AlertCircle } from "lucide-react";
+import { Zap, Save, AlertCircle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-
-interface ReminderConfig {
-  offset_days: number;
-  channels: {
-    email: boolean;
-    slack: boolean;
-    zapier: boolean;
-  };
-}
 
 interface NotificationSettingsProps {
   projectId: string;
@@ -23,16 +14,47 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [reminders, setReminders] = useState<ReminderConfig[]>([]);
-  const [hasZapierEnabled, setHasZapierEnabled] = useState(false);
+  const [reminderOffsets, setReminderOffsets] = useState<number[]>([]);
+  const [zapierEnabled, setZapierEnabled] = useState(false);
+  const [zapierConnected, setZapierConnected] = useState(false);
+  const [loadingZapierStatus, setLoadingZapierStatus] = useState(true);
 
   // Available offset options
   const availableOffsets = [1, 7, 14];
 
+  // Load Zapier connection status
+  useEffect(() => {
+    loadZapierStatus();
+  }, []);
+
   // Load notification settings on mount
   useEffect(() => {
-    loadSettings();
-  }, [projectId]);
+    if (zapierConnected !== undefined) {
+      loadSettings();
+    }
+  }, [projectId, zapierConnected]);
+
+  const loadZapierStatus = async () => {
+    setLoadingZapierStatus(true);
+    try {
+      const token = localStorage.getItem('session_token');
+      const headers: HeadersInit = {
+        "Content-Type": "application/json"
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/user/stats`, { headers });
+      if (!res.ok) throw new Error("Failed to load Zapier status");
+
+      const data = await res.json();
+      setZapierConnected(data.zapier_connected === true);
+    } catch (error) {
+      console.error("Error loading Zapier status:", error);
+      setZapierConnected(false);
+    } finally {
+      setLoadingZapierStatus(false);
+    }
+  };
 
   const loadSettings = async () => {
     setLoading(true);
@@ -47,34 +69,28 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
       if (!res.ok) throw new Error("Failed to load settings");
 
       const data = await res.json();
-      const loadedReminders = data.reminders || [];
-      
-      // Ensure we have at least the default (7 days, email only)
-      if (loadedReminders.length === 0) {
-        loadedReminders.push({
-          offset_days: 7,
-          channels: { email: true, slack: false, zapier: false }
-        });
-      }
-
-      setReminders(loadedReminders);
-      
-      // Check if any reminder has zapier enabled
-      const zapierEnabled = loadedReminders.some((r: ReminderConfig) => r.channels.zapier);
-      setHasZapierEnabled(zapierEnabled);
+      setReminderOffsets(data.reminder_offsets_days || [7]);
+      setZapierEnabled(data.zapier_enabled || false);
     } catch (error) {
       console.error("Error loading notification settings:", error);
-      // Set default if load fails
-      setReminders([{
-        offset_days: 7,
-        channels: { email: true, slack: false, zapier: false }
-      }]);
+      // Set defaults
+      setReminderOffsets([7]);
+      setZapierEnabled(false);
     } finally {
       setLoading(false);
     }
   };
 
   const saveSettings = async () => {
+    if (!zapierConnected) {
+      toast({
+        title: "Zapier not connected",
+        description: "Please connect Zapier first to enable reminders.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const token = localStorage.getItem('session_token');
@@ -86,17 +102,16 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
       const res = await fetch(`/api/projects/${projectId}/notifications`, {
         method: "PUT",
         headers,
-        body: JSON.stringify({ reminders })
+        body: JSON.stringify({
+          reminder_offsets_days: reminderOffsets,
+          zapier_enabled: zapierEnabled
+        })
       });
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ detail: "Failed to save settings" }));
-        throw new Error(errorData.detail || "Failed to save settings");
+        throw new Error(errorData.detail || "Failed to save notification settings");
       }
-
-      // Check if zapier is enabled
-      const zapierEnabled = reminders.some(r => r.channels.zapier);
-      setHasZapierEnabled(zapierEnabled);
 
       toast({
         title: "Settings saved",
@@ -114,42 +129,27 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
   };
 
   const toggleOffset = (offsetDays: number) => {
-    setReminders(prev => {
-      const existing = prev.find(r => r.offset_days === offsetDays);
-      if (existing) {
-        // Remove if exists
-        return prev.filter(r => r.offset_days !== offsetDays);
+    if (!zapierConnected) return;
+    
+    setReminderOffsets(prev => {
+      if (prev.includes(offsetDays)) {
+        return prev.filter(d => d !== offsetDays);
       } else {
-        // Add with default channels (email=true, others=false)
-        return [...prev, {
-          offset_days: offsetDays,
-          channels: { email: true, slack: false, zapier: false }
-        }];
+        return [...prev, offsetDays].sort((a, b) => a - b);
       }
     });
   };
 
-  const updateChannel = (offsetDays: number, channel: 'email' | 'slack' | 'zapier', value: boolean) => {
-    setReminders(prev => {
-      const updated = prev.map(r => {
-        if (r.offset_days === offsetDays) {
-          return {
-            ...r,
-            channels: { ...r.channels, [channel]: value }
-          };
-        }
-        return r;
-      });
-      // Update hasZapierEnabled based on updated reminders
-      const zapierEnabled = updated.some(r => r.channels.zapier);
-      setHasZapierEnabled(zapierEnabled);
-      return updated;
-    });
+  const scrollToZapier = () => {
+    // Navigate to Zapier dashboard page
+    window.location.href = '/dashboard/zapier';
   };
 
-  const getReminderConfig = (offsetDays: number): ReminderConfig | undefined => {
-    return reminders.find(r => r.offset_days === offsetDays);
+  const isOffsetEnabled = (offsetDays: number) => {
+    return reminderOffsets.includes(offsetDays);
   };
+
+  const isDisabled = !zapierConnected || loadingZapierStatus;
 
   return (
     <div className="bg-muted/30 rounded-lg p-4 border border-border space-y-4">
@@ -157,111 +157,87 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
         <div>
           <h4 className="text-sm font-semibold text-foreground mb-1">Notification Settings</h4>
           <p className="text-xs text-muted-foreground">
-            Notifications are configured per project. Configure reminder offsets and delivery channels.
+            Configure reminder offsets for Zapier delivery. Zapier will send email/Slack/etc.
           </p>
         </div>
       </div>
 
-      {loading ? (
+      {loadingZapierStatus || loading ? (
         <div className="text-sm text-muted-foreground py-4">Loading settings...</div>
+      ) : !zapierConnected ? (
+        <div className="space-y-4">
+          <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/30 rounded-md">
+            <AlertCircle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs font-medium text-foreground mb-1">Zapier not connected</p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Connect Zapier to enable reminders. Zapier will deliver email/Slack/etc.
+              </p>
+              <Button
+                size="sm"
+                onClick={scrollToZapier}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Connect Zapier
+              </Button>
+            </div>
+          </div>
+        </div>
       ) : (
         <>
-          {/* Offset Toggles */}
+          {/* Zapier Toggle */}
           <div className="space-y-3">
-            <Label className="text-xs font-medium text-foreground">Reminder Offsets</Label>
-            <div className="flex flex-wrap gap-2">
-              {availableOffsets.map(offset => {
-                const config = getReminderConfig(offset);
-                const isEnabled = !!config;
-                return (
-                  <div
-                    key={offset}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer transition-colors ${
-                      isEnabled
-                        ? "bg-primary/10 border-primary text-primary"
-                        : "bg-background border-border text-muted-foreground hover:border-primary/50"
-                    }`}
-                    onClick={() => toggleOffset(offset)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isEnabled}
-                      onChange={() => toggleOffset(offset)}
-                      className="h-3 w-3 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <span className="text-xs font-medium">{offset} {offset === 1 ? 'Day' : 'Days'}</span>
-                  </div>
-                );
-              })}
+            <div className="flex items-center justify-between p-3 bg-background rounded-md border border-border">
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor={`zapier-enabled-${projectId}`} className="text-sm font-medium text-foreground cursor-pointer">
+                  Send via Zapier
+                </Label>
+              </div>
+              <Switch
+                id={`zapier-enabled-${projectId}`}
+                checked={zapierEnabled}
+                onCheckedChange={setZapierEnabled}
+                disabled={isDisabled}
+              />
             </div>
           </div>
 
-          {/* Channel Settings for Each Enabled Offset */}
-          {reminders.length > 0 && (
+          {/* Offset Toggles */}
+          {zapierEnabled && (
             <div className="space-y-3 pt-2 border-t border-border">
-              <Label className="text-xs font-medium text-foreground">Delivery Channels</Label>
-              <div className="space-y-3">
-                {reminders.map(reminder => (
-                  <div key={reminder.offset_days} className="bg-background rounded-md p-3 border border-border">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-semibold text-foreground">
-                        {reminder.offset_days} {reminder.offset_days === 1 ? 'Day' : 'Days'} Before Deadline
-                      </span>
+              <Label className="text-xs font-medium text-foreground">Reminder Offsets</Label>
+              <div className="flex flex-wrap gap-2">
+                {availableOffsets.map(offset => {
+                  const isEnabled = isOffsetEnabled(offset);
+                  return (
+                    <div
+                      key={offset}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer transition-colors ${
+                        isEnabled
+                          ? "bg-primary/10 border-primary text-primary"
+                          : "bg-background border-border text-muted-foreground hover:border-primary/50"
+                      } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                      onClick={() => !isDisabled && toggleOffset(offset)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isEnabled}
+                        onChange={() => !isDisabled && toggleOffset(offset)}
+                        disabled={isDisabled}
+                        className="h-3 w-3 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <span className="text-xs font-medium">{offset} {offset === 1 ? 'Day' : 'Days'}</span>
                     </div>
-                    <div className="space-y-2">
-                      {/* Email */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-3 w-3 text-muted-foreground" />
-                          <Label htmlFor={`email-${reminder.offset_days}-${projectId}`} className="text-xs text-foreground cursor-pointer">
-                            Email
-                          </Label>
-                        </div>
-                        <Switch
-                          id={`email-${reminder.offset_days}-${projectId}`}
-                          checked={reminder.channels.email}
-                          onCheckedChange={(checked) => updateChannel(reminder.offset_days, 'email', checked)}
-                        />
-                      </div>
-
-                      {/* Slack */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <MessageSquare className="h-3 w-3 text-muted-foreground" />
-                          <Label htmlFor={`slack-${reminder.offset_days}-${projectId}`} className="text-xs text-foreground cursor-pointer">
-                            Slack
-                          </Label>
-                        </div>
-                        <Switch
-                          id={`slack-${reminder.offset_days}-${projectId}`}
-                          checked={reminder.channels.slack}
-                          onCheckedChange={(checked) => updateChannel(reminder.offset_days, 'slack', checked)}
-                        />
-                      </div>
-
-                      {/* Zapier */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Zap className="h-3 w-3 text-muted-foreground" />
-                          <Label htmlFor={`zapier-${reminder.offset_days}-${projectId}`} className="text-xs text-foreground cursor-pointer">
-                            Zapier
-                          </Label>
-                        </div>
-                        <Switch
-                          id={`zapier-${reminder.offset_days}-${projectId}`}
-                          checked={reminder.channels.zapier}
-                          onCheckedChange={(checked) => updateChannel(reminder.offset_days, 'zapier', checked)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* Helper Text for Zapier */}
-          {hasZapierEnabled && (
+          {/* Helper Text */}
+          {zapierEnabled && reminderOffsets.length > 0 && (
             <div className="flex items-start gap-2 p-2 bg-info/10 border border-info/30 rounded-md">
               <AlertCircle className="h-3 w-3 text-info mt-0.5 flex-shrink-0" />
               <p className="text-xs text-muted-foreground">
@@ -275,7 +251,7 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
             <Button
               size="sm"
               onClick={saveSettings}
-              disabled={saving || reminders.length === 0}
+              disabled={saving || isDisabled || !zapierEnabled || reminderOffsets.length === 0}
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {saving ? (
@@ -296,4 +272,3 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
     </div>
   );
 };
-

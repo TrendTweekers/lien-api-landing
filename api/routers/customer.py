@@ -42,11 +42,26 @@ async def get_user_stats(request: Request):
                 else:
                     calc_count = calc_result[0] if len(calc_result) > 0 else 0
             
+            # Check if user has Zapier token
+            zapier_connected = False
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT zapier_token_hash FROM users WHERE email = %s", (email,))
+            else:
+                cursor.execute("SELECT zapier_token_hash FROM users WHERE email = ?", (email,))
+            
+            zapier_result = cursor.fetchone()
+            if zapier_result:
+                if isinstance(zapier_result, dict):
+                    zapier_connected = zapier_result.get('zapier_token_hash') is not None
+                else:
+                    zapier_connected = zapier_result[0] is not None if len(zapier_result) > 0 else False
+            
             return {
                 "email": email,
                 "subscriptionStatus": subscription_status,
                 "calculationsUsed": calc_count,
-                "calculationsLimit": 3 if subscription_status == 'free' else None
+                "calculationsLimit": 3 if subscription_status == 'free' else None,
+                "zapier_connected": zapier_connected
             }
     except Exception as e:
         logger.error(f"Error fetching user stats: {e}")
