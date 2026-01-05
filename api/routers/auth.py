@@ -4,6 +4,7 @@ import secrets
 import bcrypt
 import hashlib
 import traceback
+import os
 from datetime import datetime
 from ..database import get_db, get_db_cursor, DB_TYPE
 from ..rate_limiter import limiter
@@ -12,24 +13,53 @@ router = APIRouter()
 
 # --- Helper Functions ---
 
-def hash_zapier_token(token: str) -> str:
-    """Hash a Zapier token using SHA-256"""
-    return hashlib.sha256(token.encode('utf-8')).hexdigest()
+def hash_zapier_token(token: str, use_pepper: bool = True) -> str:
+    """Hash a Zapier token using SHA-256 with optional server-side pepper"""
+    pepper = os.getenv('ZAPIER_TOKEN_PEPPER', '').strip()
+    
+    if use_pepper and pepper:
+        # Use peppered hash (new method)
+        combined = pepper + token
+        return hashlib.sha256(combined.encode('utf-8')).hexdigest()
+    elif use_pepper and not pepper:
+        # Pepper missing but requested - log warning and fall back
+        print("⚠️ WARNING: ZAPIER_TOKEN_PEPPER not set. Using unpeppered hashing for compatibility.")
+        return hashlib.sha256(token.encode('utf-8')).hexdigest()
+    else:
+        # Explicitly unpeppered (for backwards compatibility check)
+        return hashlib.sha256(token.encode('utf-8')).hexdigest()
 
 def get_user_from_zapier_token(token: str):
-    """Helper to get user from Zapier API token (hashed)"""
-    token_hash = hash_zapier_token(token)
+    """Helper to get user from Zapier API token (hashed)
+    
+    Checks both peppered and unpeppered hashes for backwards compatibility.
+    """
+    # First try peppered hash (new method)
+    token_hash_peppered = hash_zapier_token(token, use_pepper=True)
+    
+    # Also compute unpeppered hash for backwards compatibility
+    token_hash_unpeppered = hash_zapier_token(token, use_pepper=False)
     
     try:
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
+            # Try peppered hash first (new tokens)
             if DB_TYPE == 'postgresql':
-                cursor.execute("SELECT id, email, subscription_status FROM users WHERE zapier_token_hash = %s", (token_hash,))
+                cursor.execute("SELECT id, email, subscription_status FROM users WHERE zapier_token_hash = %s", (token_hash_peppered,))
             else:
-                cursor.execute("SELECT id, email, subscription_status FROM users WHERE zapier_token_hash = ?", (token_hash,))
+                cursor.execute("SELECT id, email, subscription_status FROM users WHERE zapier_token_hash = ?", (token_hash_peppered,))
             
             user = cursor.fetchone()
+            
+            # If not found with peppered hash, try unpeppered (old tokens)
+            if not user and token_hash_peppered != token_hash_unpeppered:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("SELECT id, email, subscription_status FROM users WHERE zapier_token_hash = %s", (token_hash_unpeppered,))
+                else:
+                    cursor.execute("SELECT id, email, subscription_status FROM users WHERE zapier_token_hash = ?", (token_hash_unpeppered,))
+                
+                user = cursor.fetchone()
             
             if user:
                 if isinstance(user, dict):
