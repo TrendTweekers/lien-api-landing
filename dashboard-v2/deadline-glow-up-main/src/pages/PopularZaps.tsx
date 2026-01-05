@@ -13,6 +13,23 @@ const PopularZaps = () => {
   const [webhookUrl, setWebhookUrl] = useState("");
   const [triggerUrl, setTriggerUrl] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+  
+  // Headers template (user needs to replace YOUR_ZAPIER_TOKEN with their actual token)
+  const headersTemplate = {
+    "Authorization": "Bearer YOUR_ZAPIER_TOKEN",
+    "Content-Type": "application/json"
+  };
+  
+  // Example JSON body for webhook
+  const exampleJsonBody = {
+    "state": "TX",
+    "invoice_date": "2025-12-31",
+    "invoice_amount_cents": 4992,
+    "project_name": "Test Invoice"
+  };
+  
+  // Slack message template
+  const slackMessageTemplate = "🚨 Deadline reminder — {{project_name}} ({{state}})\nPrelim due in {{prelim_deadline_days}} day(s): {{prelim_deadline}}\nLien due in {{lien_deadline_days}} day(s): {{lien_deadline}}\nAmount: ${{invoice_amount}}";
 
   useEffect(() => {
     // Check for session token and verify session
@@ -238,6 +255,212 @@ const PopularZaps = () => {
             <h1 className="text-3xl font-bold text-foreground mb-2">Popular Zaps</h1>
             <p className="text-muted-foreground">Pick a template. Build it in Zapier in minutes.</p>
           </div>
+
+          {/* Golden Path Template - Invoice -> LienDeadline */}
+          <Card className="bg-primary/5 border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-xl">New Invoice → Create deadlines in LienDeadline</CardTitle>
+              <CardDescription>
+                The fastest way to get started. Send invoices from any system and automatically calculate lien deadlines.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Copy Buttons Row */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => copyToClipboard(webhookUrl, "golden-webhook")}
+                >
+                  {copied === "golden-webhook" ? (
+                    <>
+                      <Check className="h-4 w-4 mr-2" /> Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-2" /> Copy Webhook URL
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => copyToClipboard(JSON.stringify(headersTemplate, null, 2), "golden-headers")}
+                >
+                  {copied === "golden-headers" ? (
+                    <>
+                      <Check className="h-4 w-4 mr-2" /> Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-2" /> Copy Headers
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => copyToClipboard(JSON.stringify(exampleJsonBody, null, 2), "golden-json")}
+                >
+                  {copied === "golden-json" ? (
+                    <>
+                      <Check className="h-4 w-4 mr-2" /> Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-2" /> Copy Example JSON Body
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Headers Display */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Headers</label>
+                <div className="bg-muted/30 rounded-md p-3 text-xs">
+                  <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
+                    {JSON.stringify(headersTemplate, null, 2)}
+                  </pre>
+                  <p className="text-xs text-muted-foreground mt-2 italic">
+                    Replace YOUR_ZAPIER_TOKEN with your actual token from Dashboard → Integrations
+                  </p>
+                </div>
+              </div>
+
+              {/* Example JSON Body */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Example JSON Body</label>
+                <div className="bg-muted/30 rounded-md p-3 text-xs">
+                  <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
+                    {JSON.stringify(exampleJsonBody, null, 2)}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Setup Instructions */}
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-3">Zapier Setup Steps:</h4>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                  <li>
+                    <span className="font-medium text-foreground">Trigger:</span> Choose your invoice source app (QuickBooks, Xero, Sage, Procore, Email Parser, Google Sheets, etc.) and select "New Invoice" event
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">Action:</span> Add "Webhooks by Zapier" → Select "POST"
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">URL:</span> Paste the Webhook URL above
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">Headers:</span> Paste the Headers JSON above (replace YOUR_ZAPIER_TOKEN with your token)
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">Data:</span> Map fields from your trigger to the JSON body (state, invoice_date, invoice_amount_cents, project_name)
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">Test:</span> Run a test and verify the project appears in Dashboard → Projects
+                  </li>
+                </ol>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Slack Template - Upcoming deadlines -> Slack */}
+          <Card className="bg-primary/5 border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-xl">Upcoming deadlines → Slack reminders</CardTitle>
+              <CardDescription>
+                Get notified in Slack when lien deadlines are approaching. Run hourly to catch all upcoming deadlines.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Copy Buttons Row */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => copyToClipboard(triggerUrl, "slack-trigger")}
+                >
+                  {copied === "slack-trigger" ? (
+                    <>
+                      <Check className="h-4 w-4 mr-2" /> Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-2" /> Copy Trigger URL
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => copyToClipboard(JSON.stringify(headersTemplate, null, 2), "slack-headers")}
+                >
+                  {copied === "slack-headers" ? (
+                    <>
+                      <Check className="h-4 w-4 mr-2" /> Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-2" /> Copy Headers
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => copyToClipboard(slackMessageTemplate, "slack-message")}
+                >
+                  {copied === "slack-message" ? (
+                    <>
+                      <Check className="h-4 w-4 mr-2" /> Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-2" /> Copy Slack Message Template
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Setup Instructions */}
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-3">Zapier Setup Steps:</h4>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                  <li>
+                    <span className="font-medium text-foreground">Trigger:</span> Choose "Schedule by Zapier" (run every hour) OR "Webhooks by Zapier" → Select "GET"
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">If using Webhooks GET:</span> Paste the Trigger URL above
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">Headers:</span> Add Authorization header: <code className="bg-muted px-1 rounded">Bearer YOUR_ZAPIER_TOKEN</code> (replace with your token)
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">Action:</span> Add "Slack" → Select "Send Channel Message"
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">Message:</span> Paste the Slack Message Template above and map fields from the trigger response
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">Filter (optional):</span> Add a Filter step to only send messages when <code className="bg-muted px-1 rounded">lien_deadline_days</code> is less than or equal to 7
+                  </li>
+                </ol>
+              </div>
+
+              {/* Slack Message Template */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Slack Message Template</label>
+                <div className="bg-muted/30 rounded-md p-3 text-xs">
+                  <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
+                    {slackMessageTemplate}
+                  </pre>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Use Zapier's field mapping to replace the <code className="bg-muted px-1 rounded">{`{{field}}`}</code> placeholders with actual values from the trigger response
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* URL Reference Section */}
           <Card>

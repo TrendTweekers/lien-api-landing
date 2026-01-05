@@ -267,6 +267,49 @@ const ZapierHelp = () => {
             </CardContent>
           </Card>
 
+          {/* Notifications */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Notifications & Reminders</CardTitle>
+              <CardDescription>
+                Best practices for setting up deadline reminders and notifications.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-2">Recommended Schedule</h4>
+                <p className="text-sm text-muted-foreground">
+                  Run your Zap hourly using "Schedule by Zapier" to catch all upcoming deadlines. The trigger endpoint returns projects where <code className="bg-muted px-1 rounded">lien_deadline</code> is in the future, sorted by deadline date.
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-2">1-Day and 7-Day Reminders</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Use Zapier's Filter step to send reminders at specific intervals:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
+                  <li>
+                    <strong>1-day reminder:</strong> Filter where <code className="bg-muted px-1 rounded">lien_deadline_days</code> equals 1
+                  </li>
+                  <li>
+                    <strong>7-day reminder:</strong> Filter where <code className="bg-muted px-1 rounded">lien_deadline_days</code> equals 7
+                  </li>
+                  <li>
+                    <strong>Urgent (within 3 days):</strong> Filter where <code className="bg-muted px-1 rounded">lien_deadline_days</code> is less than or equal to 3
+                  </li>
+                </ul>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-2">How It Works</h4>
+                <p className="text-sm text-muted-foreground">
+                  The trigger endpoint returns an array of projects with upcoming deadlines. Each project includes <code className="bg-muted px-1 rounded">prelim_deadline_days</code> and <code className="bg-muted px-1 rounded">lien_deadline_days</code> fields showing how many days until each deadline. Zapier processes each project and can send notifications to Slack, Email, Asana, or any other app.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Common Examples */}
           <Card>
             <CardHeader>
