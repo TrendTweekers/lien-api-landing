@@ -154,6 +154,160 @@
             border: 2px solid #F97316;
         }
         
+        /* Pricing Hero Styles */
+        .pricing-hero {
+            padding: 80px 24px;
+            background: linear-gradient(to bottom, #FAFAFA 0%, #FFFFFF 100%);
+        }
+        
+        .pricing-hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .pricing-hero-title {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1.2;
+            color: #1F2937;
+            margin-bottom: 16px;
+            font-family: 'Instrument Serif', serif;
+        }
+        
+        .pricing-hero-subtitle {
+            font-size: 20px;
+            color: #6B7280;
+            margin-bottom: 48px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .pricing-compare-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .pricing-compare-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .pricing-hero-title {
+                font-size: 36px;
+            }
+            
+            .pricing-hero-subtitle {
+                font-size: 18px;
+            }
+        }
+        
+        .pricing-compare-card {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            border: 1px solid #E5E7EB;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+        
+        .pricing-compare-problem {
+            border-left: 3px solid #EF4444;
+        }
+        
+        .pricing-compare-solution {
+            border-left: 3px solid #10B981;
+        }
+        
+        .pricing-compare-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1F2937;
+            margin-bottom: 12px;
+            font-family: 'Instrument Serif', serif;
+        }
+        
+        .pricing-compare-cost {
+            font-size: 16px;
+            font-weight: 600;
+            color: #6B7280;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .pricing-compare-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .pricing-compare-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 15px;
+            color: #4B5563;
+            line-height: 1.6;
+        }
+        
+        .pricing-compare-icon {
+            flex-shrink: 0;
+            font-size: 20px;
+            margin-top: 2px;
+        }
+        
+        .pricing-compare-icon-x {
+            color: #EF4444;
+        }
+        
+        .pricing-compare-icon-check {
+            color: #10B981;
+        }
+        
+        .pricing-roi-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 16px;
+            background: white;
+            border: 2px solid #F97316;
+            border-radius: 12px;
+            padding: 20px 32px;
+            box-shadow: 0 4px 6px rgba(249, 115, 22, 0.1);
+            margin-top: 16px;
+        }
+        
+        .pricing-roi-chip {
+            background: #F97316;
+            color: white;
+            font-weight: 700;
+            font-size: 18px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+        
+        .pricing-roi-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1F2937;
+        }
+        
+        @media (max-width: 640px) {
+            .pricing-roi-badge {
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+        }
+        
         .pricing-toggle {
             display: inline-flex;
             background: #F3F4F6;
