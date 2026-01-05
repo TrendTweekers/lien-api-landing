@@ -46,6 +46,9 @@ export const IntegrationsSection = () => {
   };
 
   const handleGenerateToken = async () => {
+    // Prevent double execution
+    if (isLoadingToken) return;
+    
     setIsLoadingToken(true);
     try {
       const token = localStorage.getItem('session_token');
@@ -55,6 +58,7 @@ export const IntegrationsSection = () => {
           description: "Please log in to generate a token.",
           variant: "destructive",
         });
+        setIsLoadingToken(false);
         return;
       }
       
@@ -65,9 +69,19 @@ export const IntegrationsSection = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setNewToken(data.token);
+        // Update state immutably - update tokenStatus directly from response
+        const newTokenValue = data.token;
+        setNewToken(newTokenValue);
         setShowTokenDialog(true);
-        fetchTokenStatus();
+        // Update tokenStatus directly instead of fetching again to avoid re-render issues
+        if (newTokenValue && newTokenValue.length >= 4) {
+          setTokenStatus(prev => ({
+            ...prev,
+            has_token: true,
+            last4: newTokenValue.slice(-4),
+            created_at: new Date().toISOString()
+          }));
+        }
       } else {
         throw new Error('Failed to generate token');
       }
