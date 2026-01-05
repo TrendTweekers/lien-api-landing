@@ -346,6 +346,14 @@ def ensure_zapier_columns_exist(conn):
                     ) THEN
                         ALTER TABLE users ADD COLUMN zapier_token_created_at TIMESTAMP;
                     END IF;
+                    
+                    -- Create index if it doesn't exist
+                    IF NOT EXISTS (
+                        SELECT 1 FROM pg_indexes 
+                        WHERE tablename = 'users' AND indexname = 'idx_users_zapier_token_hash'
+                    ) THEN
+                        CREATE INDEX idx_users_zapier_token_hash ON users(zapier_token_hash);
+                    END IF;
                 END $$;
             """)
             conn.commit()
@@ -363,6 +371,13 @@ def ensure_zapier_columns_exist(conn):
             except Exception:
                 # Column already exists, ignore
                 pass
+        
+        # Create index for SQLite (IF NOT EXISTS is supported)
+        try:
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_zapier_token_hash ON users(zapier_token_hash)")
+            conn.commit()
+        except Exception as e:
+            print(f"⚠️ Error creating Zapier token index (may already exist): {e}")
 
 @router.get("/api/zapier/token")
 @limiter.limit("30/minute")
