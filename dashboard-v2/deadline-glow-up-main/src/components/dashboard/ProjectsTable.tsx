@@ -265,15 +265,11 @@ export const ProjectsTable = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
-                        <div className="text-xs text-muted-foreground mr-2">
-                          Expanded: {expandedProjectId === project.id ? "YES" : "NO"}
-                        </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="text-xs text-muted-foreground hover:text-foreground"
                           onClick={() => {
-                            console.log("[NOTIF CLICK]", project.id);
                             const isExpanding = expandedProjectId !== project.id;
                             const newExpandedId = isExpanding ? project.id : null;
                             setExpandedProjectId(newExpandedId);
