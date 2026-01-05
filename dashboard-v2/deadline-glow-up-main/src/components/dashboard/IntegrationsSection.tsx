@@ -45,8 +45,8 @@ export const IntegrationsSection = () => {
               <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors text-base">
                 Zapier (Recommended)
               </h3>
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-                Primary
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground border border-border">
+                6,000+ apps
               </span>
             </div>
             <div className="text-sm text-muted-foreground leading-relaxed mb-1">
@@ -136,7 +136,7 @@ export const IntegrationsSection = () => {
         </AlertDescription>
       </Alert>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
         <ZapierCard />
       </div>
     </div>
