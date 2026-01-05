@@ -1,0 +1,20 @@
+[nixpacks]
+providers = ["python", "node"]
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "python311"]
+
+[phases.install]
+cmds = [
+  "cd dashboard-v2/deadline-glow-up-main && (npm ci || npm install)",
+  "pip install -r api/requirements.txt"
+]
+
+[phases.build]
+cmds = [
+  "cd dashboard-v2/deadline-glow-up-main && npm run build"
+]
+
+[start]
+cmd = "python -m uvicorn api.main:app --host 0.0.0.0 --port $PORT"
+
