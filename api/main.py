@@ -2912,13 +2912,7 @@ async def serve_calculator_clean():
         raise HTTPException(status_code=404, detail="Calculator not found")
     return FileResponse(file_path)
 
-@app.get("/dashboard")
-async def serve_dashboard_clean(request: Request):
-    """
-    Clean URL: /dashboard → redirects to /customer-dashboard
-    """
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/customer-dashboard", status_code=301)
+# Removed redirect - /dashboard now serves React app (see line 1295)
 
 
 @app.get("/broker-dashboard")
