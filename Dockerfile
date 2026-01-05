@@ -12,18 +12,17 @@ COPY dashboard-v2/deadline-glow-up-main dashboard-v2/deadline-glow-up-main
 RUN cd dashboard-v2/deadline-glow-up-main && npm run build
 
 # Stage 2: Python API
-FROM python:3.11-slim
+FROM python:3.11-slim AS runtime
 
 WORKDIR /app
 
-# Install Python dependencies
-COPY api/requirements.txt /app/api/requirements.txt
-RUN pip install --no-cache-dir -r /app/api/requirements.txt
-
-# Copy application code
+# Copy app first so any -r ../requirements.txt inside api/requirements.txt works
 COPY . /app
 
-# Copy built dashboard from build stage
+# Install Python deps (now /app/requirements.txt exists if referenced)
+RUN pip install --no-cache-dir -r /app/api/requirements.txt
+
+# Copy built dashboard from node stage (overwrite with fresh build output)
 COPY --from=build /app/public/dashboard /app/public/dashboard
 
 ENV PYTHONUNBUFFERED=1
