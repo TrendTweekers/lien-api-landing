@@ -27,12 +27,28 @@ interface Project {
   reminder_7days: boolean | number | null | undefined;  // Can be boolean, number (0/1), or null
 }
 
-export const ProjectsTable = () => {
+interface ProjectsTableProps {
+  expandedProjectId?: number | null;
+  onExpandedProjectChange?: (projectId: number | null) => void;
+}
+
+export const ProjectsTable = ({ expandedProjectId: externalExpandedProjectId, onExpandedProjectChange }: ProjectsTableProps = {}) => {
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null);
+  const [internalExpandedProjectId, setInternalExpandedProjectId] = useState<number | null>(null);
   const [flashProjectId, setFlashProjectId] = useState<string | null>(null);
+  const [projectNotificationStatuses, setProjectNotificationStatuses] = useState<Record<number, { zapierEnabled: boolean; reminderOffsetsDays: number[] }>>({});
+  
+  // Use external expandedProjectId if provided, otherwise use internal state
+  const expandedProjectId = externalExpandedProjectId !== undefined ? externalExpandedProjectId : internalExpandedProjectId;
+  const setExpandedProjectId = (id: number | null) => {
+    if (onExpandedProjectChange) {
+      onExpandedProjectChange(id);
+    } else {
+      setInternalExpandedProjectId(id);
+    }
+  };
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -59,6 +75,53 @@ export const ProjectsTable = () => {
     }
   };
 
+  // Fetch notification status for all projects
+  const fetchProjectNotificationStatuses = async () => {
+    try {
+      const token = localStorage.getItem('session_token');
+      const headers: HeadersInit = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      // Fetch notification settings for all projects in parallel
+      const notificationPromises = projects.map(async (project) => {
+        try {
+          const res = await fetch(`/api/projects/${project.id}/notifications`, { headers });
+          if (!res.ok) {
+            return {
+              projectId: project.id,
+              zapierEnabled: false,
+              reminderOffsetsDays: []
+            };
+          }
+          const data = await res.json();
+          return {
+            projectId: project.id,
+            zapierEnabled: data.zapier_enabled === true,
+            reminderOffsetsDays: data.reminder_offsets_days || []
+          };
+        } catch (error) {
+          return {
+            projectId: project.id,
+            zapierEnabled: false,
+            reminderOffsetsDays: []
+          };
+        }
+      });
+
+      const statuses = await Promise.all(notificationPromises);
+      const statusMap: Record<number, { zapierEnabled: boolean; reminderOffsetsDays: number[] }> = {};
+      statuses.forEach((status) => {
+        statusMap[status.projectId] = {
+          zapierEnabled: status.zapierEnabled,
+          reminderOffsetsDays: status.reminderOffsetsDays
+        };
+      });
+      setProjectNotificationStatuses(statusMap);
+    } catch (error) {
+      console.error('Error fetching project notification statuses:', error);
+    }
+  };
+
   useEffect(() => {
     fetchProjects();
 
@@ -72,6 +135,14 @@ export const ProjectsTable = () => {
       window.removeEventListener('project-saved', handleProjectSaved);
     };
   }, []);
+
+  // Fetch notification statuses when projects change
+  useEffect(() => {
+    if (projects.length > 0) {
+      fetchProjectNotificationStatuses();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projects.length]);
 
   const handleDownloadPDF = async (id: number) => {
     try {
@@ -190,20 +261,32 @@ export const ProjectsTable = () => {
           <TableBody>
             {loading ? (
                <TableRow>
-                 <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading projects...</TableCell>
+                 <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading projects...</TableCell>
                </TableRow>
             ) : projects.length === 0 ? (
                <TableRow>
-                 <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No projects found.</TableCell>
+                 <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No projects found.</TableCell>
                </TableRow>
             ) : (
-              projects.map((project) => (
+              projects.map((project) => {
+                const notificationStatus = projectNotificationStatuses[project.id];
+                const alertsEnabled = notificationStatus?.zapierEnabled && notificationStatus?.reminderOffsetsDays.length > 0;
+                
+                return (
                 <>
-                  <TableRow key={project.id} className="border-border hover:bg-muted/30">
+                  <TableRow 
+                    key={project.id} 
+                    className={`border-border hover:bg-muted/30 ${alertsEnabled ? 'bg-success/5' : ''}`}
+                  >
                     <TableCell>
-                      <div>
-                        <p className="font-medium text-foreground">{project.project_name || "Unnamed Project"}</p>
-                        <p className="text-xs text-muted-foreground">{project.description}</p>
+                      <div className="flex items-center gap-2">
+                        {alertsEnabled && (
+                          <Bell className="h-4 w-4 text-success flex-shrink-0" />
+                        )}
+                        <div>
+                          <p className="font-medium text-foreground">{project.project_name || "Unnamed Project"}</p>
+                          <p className="text-xs text-muted-foreground">{project.description}</p>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-foreground">{project.client_name}</TableCell>
@@ -222,45 +305,118 @@ export const ProjectsTable = () => {
                     <TableCell className="text-foreground">{project.lien_deadline}</TableCell>
                     <TableCell>
                       {(() => {
-                        // CRITICAL: Handle boolean, number (0/1), null, undefined
-                        // Default to reminder_1day = true (1 Day enabled) if null/undefined
-                        // Default to reminder_7days = false (7 Days disabled) if null/undefined
+                        // Check notification settings first (new system)
+                        const notificationStatus = projectNotificationStatuses[project.id];
+                        if (notificationStatus) {
+                          const alertsEnabled = notificationStatus.zapierEnabled && notificationStatus.reminderOffsetsDays.length > 0;
+                          if (alertsEnabled) {
+                            const offsets = notificationStatus.reminderOffsetsDays.map(d => `${d}d`).join(", ");
+                            return (
+                              <Badge className="bg-success/15 text-success border-success/30">
+                                <Bell className="h-3 w-3 mr-1" />
+                                Alerts on ({offsets})
+                              </Badge>
+                            );
+                          } else {
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const isExpanding = expandedProjectId !== project.id;
+                                  const newExpandedId = isExpanding ? project.id : null;
+                                  setExpandedProjectId(newExpandedId);
+                                  
+                                  if (isExpanding) {
+                                    setFlashProjectId(String(project.id));
+                                    requestAnimationFrame(() => {
+                                      const anchorId = `notif-panel-${project.id}`;
+                                      const anchorElement = document.getElementById(anchorId);
+                                      if (anchorElement) {
+                                        anchorElement.scrollIntoView({ 
+                                          behavior: "smooth", 
+                                          block: "nearest" 
+                                        });
+                                      }
+                                    });
+                                    setTimeout(() => {
+                                      setFlashProjectId(null);
+                                    }, 1500);
+                                  }
+                                }}
+                                className="text-primary hover:text-primary/80 text-sm font-medium underline underline-offset-2"
+                              >
+                                Set up alerts
+                              </button>
+                            );
+                          }
+                        }
+                        
+                        // Fallback to legacy reminder fields if notification status not loaded yet
                         let r1day: boolean;
                         let r7days: boolean;
                         
                         if (project.reminder_1day === null || project.reminder_1day === undefined) {
-                          r1day = true;  // Default to enabled (1 Day)
+                          r1day = false;
                         } else if (typeof project.reminder_1day === 'boolean') {
                           r1day = project.reminder_1day;
                         } else if (typeof project.reminder_1day === 'number') {
-                          r1day = project.reminder_1day !== 0;  // 1 = true, 0 = false
+                          r1day = project.reminder_1day !== 0;
                         } else {
                           r1day = Boolean(project.reminder_1day);
                         }
                         
                         if (project.reminder_7days === null || project.reminder_7days === undefined) {
-                          r7days = false;  // Default to disabled (7 Days)
+                          r7days = false;
                         } else if (typeof project.reminder_7days === 'boolean') {
                           r7days = project.reminder_7days;
                         } else if (typeof project.reminder_7days === 'number') {
-                          r7days = project.reminder_7days !== 0;  // 1 = true, 0 = false
+                          r7days = project.reminder_7days !== 0;
                         } else {
                           r7days = Boolean(project.reminder_7days);
                         }
                         
-                        // Display badges if at least one reminder is enabled
                         if (r1day || r7days) {
                           const badges = [];
-                          if (r1day) badges.push("1 Day");
-                          if (r7days) badges.push("7 Days");
+                          if (r1day) badges.push("1d");
+                          if (r7days) badges.push("7d");
                           return (
-                            <Badge className="bg-info/15 text-info border-info/30">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              {badges.join(", ")}
+                            <Badge className="bg-success/15 text-success border-success/30">
+                              <Bell className="h-3 w-3 mr-1" />
+                              Alerts on ({badges.join(", ")})
                             </Badge>
                           );
                         }
-                        return <span className="text-muted-foreground text-sm">None</span>;
+                        
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const isExpanding = expandedProjectId !== project.id;
+                              const newExpandedId = isExpanding ? project.id : null;
+                              setExpandedProjectId(newExpandedId);
+                              
+                              if (isExpanding) {
+                                setFlashProjectId(String(project.id));
+                                requestAnimationFrame(() => {
+                                  const anchorId = `notif-panel-${project.id}`;
+                                  const anchorElement = document.getElementById(anchorId);
+                                  if (anchorElement) {
+                                    anchorElement.scrollIntoView({ 
+                                      behavior: "smooth", 
+                                      block: "nearest" 
+                                    });
+                                  }
+                                });
+                                setTimeout(() => {
+                                  setFlashProjectId(null);
+                                }, 1500);
+                              }
+                            }}
+                            className="text-primary hover:text-primary/80 text-sm font-medium underline underline-offset-2"
+                          >
+                            Set up alerts
+                          </button>
+                        );
                       })()}
                     </TableCell>
                     <TableCell>
@@ -331,7 +487,8 @@ export const ProjectsTable = () => {
                     </TableRow>
                   )}
                 </>
-              ))
+              );
+              })
             )}
           </TableBody>
         </Table>

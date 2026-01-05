@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Copy, Check, ExternalLink, ChevronDown, ChevronUp, Key, Rocket } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ const QUICK_START_SLACK_URL = "https://zapier.com/app/editor";
 
 const PopularZaps = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [webhookUrl, setWebhookUrl] = useState("");
   const [triggerUrl, setTriggerUrl] = useState("");
@@ -119,6 +120,42 @@ const PopularZaps = () => {
         // Token fetch failed, user can generate one
       });
   }, []);
+
+  // Handle focus query params
+  useEffect(() => {
+    const focus = searchParams.get('focus');
+    const projectId = searchParams.get('project');
+    
+    if (focus === 'slack') {
+      // Scroll to quick-start card and pulse highlight
+      setTimeout(() => {
+        const quickStartCard = document.getElementById('quick-start');
+        if (quickStartCard) {
+          quickStartCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          
+          // Add pulse highlight effect
+          quickStartCard.classList.add('animate-pulse');
+          quickStartCard.style.transition = 'box-shadow 0.3s ease';
+          quickStartCard.style.boxShadow = '0 0 0 4px rgba(249, 115, 22, 0.3)';
+          
+          // Remove highlight after 2 seconds
+          setTimeout(() => {
+            quickStartCard.classList.remove('animate-pulse');
+            quickStartCard.style.boxShadow = '';
+          }, 2000);
+        }
+      }, 300);
+    }
+    
+    if (projectId) {
+      // Future: Handle project-specific focus
+      // For now, just show a toast
+      toast({
+        title: "Project Focus",
+        description: `Set up alerts for project ${projectId}`,
+      });
+    }
+  }, [searchParams, toast]);
 
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text).then(() => {

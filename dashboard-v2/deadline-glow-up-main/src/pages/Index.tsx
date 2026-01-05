@@ -11,8 +11,7 @@ import { BillingSection } from "@/components/dashboard/BillingSection";
 import { PartnerProgram } from "@/components/dashboard/PartnerProgram";
 import { ApiDocs } from "@/components/dashboard/ApiDocs";
 import UpgradePrompt from "@/components/UpgradePrompt";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { ZapierStatusCard } from "@/components/dashboard/ZapierStatusCard";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -21,6 +20,7 @@ const Index = () => {
     calculationsLimit: number | null;
     subscriptionStatus: string;
   } | null>(null);
+  const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null);
 
   useEffect(() => {
     // Check for session token and verify session
@@ -89,62 +89,28 @@ const Index = () => {
             <DeadlineCalculator />
           </div>
 
-          {/* Zapier Automation Card - Small Summary */}
+          {/* Zapier Automation Card - Status-Driven */}
           <div className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
-            <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Zapier Automation</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* One-line value prop */}
-                <p className="text-sm font-medium text-foreground">
-                  Get deadline alerts wherever you already work.
-                </p>
-                
-                {/* 3 bullets (concise) */}
-                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
-                  <li>Works with 6,000+ apps</li>
-                  <li>No email setup inside LienDeadline</li>
-                  <li>LienDeadline decides when — Zapier decides where</li>
-                </ul>
-                
-                {/* Social proof */}
-                <p className="text-xs text-muted-foreground italic">
-                  Used by contractors protecting $2.3M+ in receivables monthly
-                </p>
-
-                {/* Two buttons */}
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <Button
-                    size="default"
-                    onClick={() => {
-                      navigate('/zapier#quick-start');
-                      // Scroll to quick-start after navigation
-                      setTimeout(() => {
-                        const element = document.getElementById('quick-start');
-                        if (element) {
-                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }
-                      }, 100);
-                    }}
-                  >
-                    Quick Start with Slack
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="default"
-                    onClick={() => navigate('/zapier')}
-                  >
-                    Open Zapier Setup
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <ZapierStatusCard 
+              onProjectExpand={(projectId) => {
+                setExpandedProjectId(projectId);
+                // Scroll to projects table after a brief delay
+                setTimeout(() => {
+                  const projectsSection = document.querySelector('[data-projects-section]');
+                  if (projectsSection) {
+                    projectsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }, 100);
+              }}
+            />
           </div>
 
           {/* Projects Table */}
-          <div className="animate-slide-up" style={{ animationDelay: "0.25s" }}>
-            <ProjectsTable />
+          <div className="animate-slide-up" style={{ animationDelay: "0.25s" }} data-projects-section>
+            <ProjectsTable 
+              expandedProjectId={expandedProjectId}
+              onExpandedProjectChange={setExpandedProjectId}
+            />
           </div>
 
           {/* Two Column Layout */}
