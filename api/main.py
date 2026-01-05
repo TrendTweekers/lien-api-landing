@@ -1463,6 +1463,74 @@ async def get_state_rules():
 def health():
     return {"status": "ok", "message": "API is running"}
 
+@app.get("/run-migration-secret-endpoint-12345")
+async def run_migration():
+    """Temporary endpoint to run migration - DELETE AFTER USE"""
+    try:
+        from api.database import get_db, get_db_cursor, DB_TYPE
+        
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Add calculations_used column if it doesn't exist
+            if DB_TYPE == 'postgresql':
+                # PostgreSQL: Use DO block to check if column exists
+                cursor.execute("""
+                    DO $$ 
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_name = 'users' AND column_name = 'calculations_used'
+                        ) THEN
+                            ALTER TABLE users ADD COLUMN calculations_used INTEGER DEFAULT 0;
+                        END IF;
+                    END $$;
+                """)
+                
+                # Create indexes
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_users_subscription_status 
+                    ON users(subscription_status)
+                """)
+                
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_users_calculations_used 
+                    ON users(calculations_used)
+                """)
+            else:
+                # SQLite: Try to add column (will fail silently if exists in some SQLite versions)
+                try:
+                    cursor.execute("""
+                        ALTER TABLE users 
+                        ADD COLUMN calculations_used INTEGER DEFAULT 0
+                    """)
+                except Exception as e:
+                    # Column might already exist - check first
+                    cursor.execute("PRAGMA table_info(users)")
+                    columns = [row[1] for row in cursor.fetchall()]
+                    if 'calculations_used' not in columns:
+                        raise e  # Re-raise if it's a different error
+                
+                # Create indexes
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_users_subscription_status 
+                    ON users(subscription_status)
+                """)
+                
+                cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_users_calculations_used 
+                    ON users(calculations_used)
+                """)
+            
+            conn.commit()
+        
+        return {"success": True, "message": "Migration complete - calculations_used column and indexes added"}
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Migration error: {error_trace}")
+        return {"success": False, "error": str(e), "trace": error_trace}
+
 # Legacy referral route removed - Tolt handles referral tracking now
 # Old route: /r/{short_code} - No longer needed
 
