@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import datetime, timedelta, date
+from decimal import Decimal, InvalidOperation
 import logging
 
 from api.database import get_db, get_db_cursor, DB_TYPE
@@ -21,12 +22,22 @@ router = APIRouter(tags=["zapier"])
 # --- Request Models ---
 
 class InvoiceWebhookRequest(BaseModel):
-    """Request model for invoice webhook from Zapier"""
+    """Request model for invoice webhook from Zapier
+    
+    Accepts invoice amount in two formats:
+    - invoice_amount: dollars as float/string (e.g., 49.92)
+    - invoice_amount_cents: cents as integer (e.g., 4992)
+    
+    Example payloads:
+    1. {"invoice_date": "2025-01-15", "state": "CA", "invoice_amount": 49.92}
+    2. {"invoice_date": "2025-01-15", "state": "CA", "invoice_amount_cents": 4992}
+    """
     invoice_date: str = Field(..., description="Invoice date in YYYY-MM-DD format")
     state: str = Field(..., description="State code (2 letters) or full state name")
     project_name: Optional[str] = Field(None, description="Project name")
     client_name: Optional[str] = Field(None, description="Client/customer name")
-    invoice_amount: Optional[float] = Field(None, description="Invoice amount")
+    invoice_amount: Optional[float] = Field(None, description="Invoice amount in dollars")
+    invoice_amount_cents: Optional[int] = Field(None, description="Invoice amount in cents (integer)")
     project_type: Optional[str] = Field("Commercial", description="Project type: Commercial or Residential")
     role: Optional[str] = Field("supplier", description="Role: supplier, contractor, etc.")
     notes: Optional[str] = Field(None, description="Additional notes")
@@ -59,6 +70,16 @@ class InvoiceWebhookRequest(BaseModel):
         if v in reverse_map:
             return reverse_map[v]
         # If not found, return as-is (will be validated later)
+        return v
+    
+    @validator('invoice_amount_cents')
+    def validate_invoice_amount_cents(cls, v):
+        """Validate invoice_amount_cents is non-negative integer"""
+        if v is not None:
+            if not isinstance(v, int):
+                raise ValueError("invoice_amount_cents must be an integer")
+            if v < 0:
+                raise ValueError("invoice_amount_cents must be >= 0")
         return v
 
 
@@ -169,15 +190,51 @@ async def webhook_invoice(
         
         lien_days = (lien_deadline.date() - today).days
         
-        # Format invoice amount for Zapier (cents + formatted string)
-        # DB stores DOLLARS, so we convert dollars → cents for response
+        # Process invoice amount: accept both invoice_amount (dollars) and invoice_amount_cents
+        # Rules:
+        # 1) If invoice_amount_cents is provided (int): dollars = invoice_amount_cents / 100
+        # 2) Else if invoice_amount is provided (string/float): dollars = invoice_amount
+        # 3) If neither provided: return 400 error
+        
+        invoice_amount_dollars = None
         invoice_amount_cents = None
         invoice_amount_formatted = None
-        if invoice_data.invoice_amount is not None:
-            # invoice_data.invoice_amount is in DOLLARS (e.g., 4992.00)
-            # Convert to cents: dollars * 100
-            invoice_amount_cents = int(invoice_data.invoice_amount * 100)
-            invoice_amount_formatted = f"{invoice_data.invoice_amount:.2f}"
+        
+        if invoice_data.invoice_amount_cents is not None:
+            # Format 1: invoice_amount_cents provided (integer)
+            # Convert cents → dollars using Decimal for precision
+            try:
+                invoice_amount_dollars = Decimal(invoice_data.invoice_amount_cents) / Decimal(100)
+                invoice_amount_cents = invoice_data.invoice_amount_cents
+                invoice_amount_formatted = f"{invoice_amount_dollars:.2f}"
+            except (InvalidOperation, ValueError, TypeError) as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid invoice_amount_cents: {str(e)}"
+                )
+        elif invoice_data.invoice_amount is not None:
+            # Format 2: invoice_amount provided (dollars as float/string)
+            # Convert dollars → cents using Decimal for precision
+            try:
+                invoice_amount_dollars = Decimal(str(invoice_data.invoice_amount))
+                if invoice_amount_dollars < 0:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="invoice_amount must be >= 0"
+                    )
+                invoice_amount_cents = int(round(invoice_amount_dollars * 100))
+                invoice_amount_formatted = f"{invoice_amount_dollars:.2f}"
+            except (InvalidOperation, ValueError, TypeError) as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid invoice_amount: {str(e)}"
+                )
+        else:
+            # Format 3: Neither provided
+            raise HTTPException(
+                status_code=400,
+                detail="Missing invoice_amount or invoice_amount_cents"
+            )
         
         # Format dates as strings
         prelim_deadline_str = prelim_deadline.strftime("%Y-%m-%d") if prelim_deadline else None
@@ -207,7 +264,7 @@ async def webhook_invoice(
                             user_email,
                             invoice_data.project_name or "",
                             invoice_data.client_name or "",
-                            invoice_data.invoice_amount,
+                            float(invoice_amount_dollars),  # Store dollars in DB
                             invoice_data.notes or "",
                             state_name,
                             state_code,
@@ -233,7 +290,7 @@ async def webhook_invoice(
                             user_email,
                             invoice_data.project_name or "",
                             invoice_data.client_name or "",
-                            invoice_data.invoice_amount,
+                            float(invoice_amount_dollars),  # Store dollars in DB
                             invoice_data.notes or "",
                             state_name,
                             state_code,
