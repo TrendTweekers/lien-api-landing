@@ -32,6 +32,7 @@ export const ProjectsTable = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null);
+  const [flashProjectId, setFlashProjectId] = useState<string | null>(null);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -273,7 +274,31 @@ export const ProjectsTable = () => {
                           className="text-xs text-muted-foreground hover:text-foreground"
                           onClick={() => {
                             console.log("[NOTIF CLICK]", project.id);
-                            setExpandedProjectId(expandedProjectId === project.id ? null : project.id);
+                            const isExpanding = expandedProjectId !== project.id;
+                            const newExpandedId = isExpanding ? project.id : null;
+                            setExpandedProjectId(newExpandedId);
+                            
+                            // Auto-scroll and highlight only when expanding
+                            if (isExpanding) {
+                              setFlashProjectId(String(project.id));
+                              
+                              // Wait for DOM paint, then scroll into view
+                              requestAnimationFrame(() => {
+                                const anchorId = `notif-panel-${project.id}`;
+                                const anchorElement = document.getElementById(anchorId);
+                                if (anchorElement) {
+                                  anchorElement.scrollIntoView({ 
+                                    behavior: "smooth", 
+                                    block: "nearest" 
+                                  });
+                                }
+                              });
+                              
+                              // Clear highlight after 1.5s
+                              setTimeout(() => {
+                                setFlashProjectId(null);
+                              }, 1500);
+                            }
                           }}
                         >
                           <Bell className="h-3 w-3 mr-1" />
@@ -299,7 +324,7 @@ export const ProjectsTable = () => {
                     </TableCell>
                   </TableRow>
                   {expandedProjectId === project.id && (
-                    <TableRow>
+                    <TableRow id={`notif-panel-${project.id}`} className={flashProjectId === String(project.id) ? "bg-orange-50/40 ring-1 ring-orange-200" : ""}>
                       <TableCell colSpan={9} className="p-4">
                         <NotificationSettings projectId={String(project.id)} projectName={project.project_name} />
                       </TableCell>
