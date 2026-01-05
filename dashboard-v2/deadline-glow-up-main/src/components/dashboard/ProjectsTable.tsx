@@ -265,10 +265,8 @@ export const ProjectsTable = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs text-muted-foreground hover:text-foreground"
+                        <button
+                          type="button"
                           onClick={() => {
                             const isExpanding = expandedProjectId !== project.id;
                             const newExpandedId = isExpanding ? project.id : null;
@@ -296,15 +294,17 @@ export const ProjectsTable = () => {
                               }, 1500);
                             }
                           }}
+                          className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground font-medium"
                         >
-                          <Bell className="h-3 w-3 mr-1" />
-                          {expandedProjectId === project.id ? "Hide notifications" : "Notifications"}
-                          <ChevronDown 
-                            className={`h-3 w-3 ml-1 transition-transform duration-200 ${
-                              expandedProjectId === project.id ? "rotate-180" : ""
-                            }`}
+                          <Bell className="h-3 w-3" />
+                          <span>{expandedProjectId === project.id ? "Hide notifications" : "Notifications"}</span>
+                          <ChevronDown
+                            className={[
+                              "h-4 w-4 transition-transform duration-200",
+                              expandedProjectId === project.id ? "rotate-180" : "rotate-0",
+                            ].join(" ")}
                           />
-                        </Button>
+                        </button>
                         <Button 
                           size="sm" 
                           className="bg-primary hover:bg-primary/90 text-primary-foreground"
