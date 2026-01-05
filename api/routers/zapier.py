@@ -9,7 +9,6 @@ from typing import Optional, List
 from datetime import datetime, timedelta, date
 from decimal import Decimal, InvalidOperation
 import logging
-import os
 
 from api.database import get_db, get_db_cursor, DB_TYPE
 from api.routers.auth import get_current_user_zapier
@@ -972,91 +971,3 @@ async def trigger_reminders(
                 "error": "Internal server error. Please try again."
             }
         )
-
-
-@router.get("/admin/migrate-notifications")
-async def migrate_notifications(request: Request, key: Optional[str] = None):
-    """
-    TEMPORARY endpoint to create zapier_notification_events table in production.
-    Protected by ZAPIER_MIGRATE_KEY environment variable.
-    Safe to call multiple times (uses IF NOT EXISTS).
-    """
-    # Verify key
-    expected_key = os.getenv("ZAPIER_MIGRATE_KEY")
-    if not expected_key or key != expected_key:
-        return JSONResponse(
-            status_code=401,
-            content={
-                "success": False,
-                "version": "v1",
-                "error": "Unauthorized"
-            }
-        )
-    
-    try:
-        with get_db() as conn:
-            cursor = get_db_cursor(conn)
-            
-            # Only run on PostgreSQL (Railway production)
-            if DB_TYPE != 'postgresql':
-                return JSONResponse(
-                    status_code=400,
-                    content={
-                        "success": False,
-                        "version": "v1",
-                        "error": "This migration is for PostgreSQL only"
-                    }
-                )
-            
-            # Create table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS zapier_notification_events (
-                    id SERIAL PRIMARY KEY,
-                    user_id INTEGER NOT NULL,
-                    project_id INTEGER NOT NULL,
-                    reminder_type TEXT NOT NULL CHECK (reminder_type IN ('prelim','lien')),
-                    reminder_days INTEGER NOT NULL,
-                    deadline_date DATE NOT NULL,
-                    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-                    CONSTRAINT zapier_notification_events_unique
-                        UNIQUE (user_id, project_id, reminder_type, reminder_days, deadline_date)
-                )
-            """)
-            
-            # Create indexes
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_zapier_notification_events_user_created
-                    ON zapier_notification_events (user_id, created_at DESC)
-            """)
-            
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_zapier_notification_events_user_deadline
-                    ON zapier_notification_events (user_id, deadline_date)
-            """)
-            
-            conn.commit()
-            
-            logger.info("✅ zapier_notification_events table created/verified via migration endpoint")
-            
-            return JSONResponse(
-                status_code=200,
-                content={
-                    "success": True,
-                    "version": "v1",
-                    "message": "zapier_notification_events created/verified"
-                }
-            )
-            
-    except Exception as e:
-        logger.error(f"❌ Error in migrate_notifications: {e}")
-        import traceback
-        traceback.print_exc()
-        return JSONResponse(
-            status_code=500,
-            content={
-                "success": False,
-                "version": "v1",
-                "error": "Internal server error. Please try again."
-            }
-        )
-
