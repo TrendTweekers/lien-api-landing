@@ -703,6 +703,16 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
                 
                 data = response.json()
                 query_response = data.get("QueryResponse", {})
+                
+                # DEBUG: Log the raw response
+                print(f"🔍 DEBUG: Full QueryResponse keys: {query_response.keys()}")
+                print(f"🔍 DEBUG: Invoice count in response: {len(query_response.get('Invoice', []))}")
+                if 'Invoice' in query_response:
+                    invoices_raw = query_response.get("Invoice", [])
+                    if isinstance(invoices_raw, list):
+                        for idx, inv in enumerate(invoices_raw):
+                            print(f"   Invoice {idx+1}: DocNumber={inv.get('DocNumber')}, TxnDate={inv.get('TxnDate')}, Balance={inv.get('Balance')}")
+                
                 page_invoices = query_response.get("Invoice", [])
                 
                 # If single invoice, convert to list
