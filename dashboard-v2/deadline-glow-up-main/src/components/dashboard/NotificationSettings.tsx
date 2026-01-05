@@ -18,6 +18,7 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
   const [zapierEnabled, setZapierEnabled] = useState(false);
   const [zapierConnected, setZapierConnected] = useState(false);
   const [loadingZapierStatus, setLoadingZapierStatus] = useState(true);
+  const [zapierStatusError, setZapierStatusError] = useState(false);
 
   // Available offset options
   const availableOffsets = [1, 7, 14];
@@ -36,21 +37,38 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
 
   const loadZapierStatus = async () => {
     setLoadingZapierStatus(true);
+    setZapierStatusError(false);
     try {
       const token = localStorage.getItem('session_token');
+      if (!token) {
+        setZapierConnected(false);
+        setLoadingZapierStatus(false);
+        setZapierStatusError(true);
+        return;
+      }
+
       const headers: HeadersInit = {
-        "Content-Type": "application/json"
+        "Authorization": `Bearer ${token}`
       };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
 
       const res = await fetch(`/api/user/stats`, { headers });
-      if (!res.ok) throw new Error("Failed to load Zapier status");
+      if (!res.ok) {
+        // If 401, token might be invalid - default to false
+        if (res.status === 401) {
+          setZapierConnected(false);
+          setZapierStatusError(true);
+          return;
+        }
+        throw new Error(`Failed to load Zapier status: ${res.status}`);
+      }
 
       const data = await res.json();
       setZapierConnected(data.zapier_connected === true);
+      setZapierStatusError(false);
     } catch (error) {
-      console.error("Error loading Zapier status:", error);
+      // Silently default to false - don't spam console
       setZapierConnected(false);
+      setZapierStatusError(true);
     } finally {
       setLoadingZapierStatus(false);
     }
@@ -183,6 +201,11 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
               </Button>
             </div>
           </div>
+          {zapierStatusError && (
+            <p className="text-xs text-muted-foreground italic">
+              Could not verify Zapier connection
+            </p>
+          )}
         </div>
       ) : (
         <>
