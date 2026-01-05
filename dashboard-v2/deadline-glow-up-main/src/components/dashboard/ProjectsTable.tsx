@@ -264,11 +264,17 @@ export const ProjectsTable = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
+                        <div className="text-xs text-muted-foreground mr-2">
+                          Expanded: {expandedProjectId === project.id ? "YES" : "NO"}
+                        </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="text-xs text-muted-foreground hover:text-foreground"
-                          onClick={() => setExpandedProjectId(expandedProjectId === project.id ? null : project.id)}
+                          onClick={() => {
+                            console.log("[NOTIF CLICK]", project.id);
+                            setExpandedProjectId(expandedProjectId === project.id ? null : project.id);
+                          }}
                         >
                           <Bell className="h-3 w-3 mr-1" />
                           Notifications
@@ -295,7 +301,15 @@ export const ProjectsTable = () => {
                   {expandedProjectId === project.id && (
                     <TableRow>
                       <TableCell colSpan={9} className="p-4">
-                        <NotificationSettings projectId={String(project.id)} projectName={project.project_name} />
+                        <div style={{
+                          border: "4px solid red",
+                          background: "yellow",
+                          padding: "16px",
+                          fontSize: "18px",
+                          fontWeight: "bold"
+                        }}>
+                          EXPANDED ROW RENDERED ✅ projectId={project.id} name={project.project_name}
+                        </div>
                       </TableCell>
                     </TableRow>
                   )}
