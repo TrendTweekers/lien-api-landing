@@ -17,20 +17,33 @@ PEPPER_WARNING_SHOWN = False
 # --- Helper Functions ---
 
 def hash_zapier_token(token: str, use_pepper: bool = True) -> str:
-    """Hash a Zapier token using SHA-256 with optional server-side pepper"""
+    """Hash a Zapier token using SHA-256 with optional server-side pepper
+    
+    In production, ZAPIER_TOKEN_PEPPER must be set or RuntimeError is raised.
+    In non-production, falls back to unpeppered hashing with a warning.
+    """
     global PEPPER_WARNING_SHOWN
     pepper = os.getenv('ZAPIER_TOKEN_PEPPER', '').strip()
+    
+    # Check if we're in production
+    env = os.getenv('ENV', '').lower() or os.getenv('ENVIRONMENT', '').lower()
+    is_production = env == 'production' or env == 'prod'
     
     if use_pepper and pepper:
         # Use peppered hash (new method)
         combined = pepper + token
         return hashlib.sha256(combined.encode('utf-8')).hexdigest()
     elif use_pepper and not pepper:
-        # Pepper missing but requested - log warning once and fall back
-        if not PEPPER_WARNING_SHOWN:
-            print("⚠️ WARNING: ZAPIER_TOKEN_PEPPER not set. Using unpeppered hashing for compatibility.")
-            PEPPER_WARNING_SHOWN = True
-        return hashlib.sha256(token.encode('utf-8')).hexdigest()
+        # Pepper missing but requested
+        if is_production:
+            # Production: pepper is required
+            raise RuntimeError("ZAPIER_TOKEN_PEPPER must be set in production")
+        else:
+            # Non-production: log warning once and fall back
+            if not PEPPER_WARNING_SHOWN:
+                print("⚠️ WARNING: ZAPIER_TOKEN_PEPPER not set. Using unpeppered hashing for compatibility.")
+                PEPPER_WARNING_SHOWN = True
+            return hashlib.sha256(token.encode('utf-8')).hexdigest()
     else:
         # Explicitly unpeppered (for backwards compatibility check)
         return hashlib.sha256(token.encode('utf-8')).hexdigest()
