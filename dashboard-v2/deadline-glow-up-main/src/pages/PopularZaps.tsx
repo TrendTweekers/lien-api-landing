@@ -71,6 +71,14 @@ const PopularZaps = () => {
           description: "Send channel message"
         }
       ],
+      webhookExample: {
+        project_name: "Ironclad Construction Partners - 1001",
+        client_name: "Ironclad Construction Partners",
+        state: "CA",
+        invoice_date: "2025-12-31",
+        invoice_amount_cents: 499200,
+        invoice_number: "1001"
+      },
       fieldMapping: {
         webhook: {
           invoice_date: "Invoice date (YYYY-MM-DD)",
@@ -178,6 +186,14 @@ const PopularZaps = () => {
           description: "Add row to spreadsheet"
         }
       ],
+      webhookExample: {
+        project_name: "Downtown Office Renovation",
+        client_name: "ABC Properties LLC",
+        state: "TX",
+        invoice_date: "2025-01-15",
+        invoice_amount_cents: 1250000,
+        invoice_number: "INV-2025-001"
+      },
       fieldMapping: {
         webhook: {
           invoice_date: "Invoice date",
@@ -323,6 +339,34 @@ const PopularZaps = () => {
                       ))}
                     </div>
                   </div>
+
+                  {/* Webhook JSON Example */}
+                  {zap.webhookExample && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground mb-2">Webhook JSON Example</h4>
+                      <div className="bg-muted/30 rounded-md p-3 text-xs">
+                        <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
+                          {JSON.stringify(zap.webhookExample, null, 2)}
+                        </pre>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 text-xs px-2 mt-2"
+                          onClick={() => copyToClipboard(JSON.stringify(zap.webhookExample, null, 2), `zap-${zap.id}-json`)}
+                        >
+                          {copied === `zap-${zap.id}-json` ? (
+                            <>
+                              <Check className="h-3 w-3 mr-1" /> Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3 w-3 mr-1" /> Copy JSON
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Field Mapping */}
                   <div>
