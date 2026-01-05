@@ -194,6 +194,9 @@ class LoginRequest(BaseModel):
 class RegisterRequest(BaseModel):
     email: str
     password: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    company: Optional[str] = None
     stripe_session_id: Optional[str] = None  # Optional - for users coming from Stripe payment
 
 # Authentication Endpoints
@@ -365,39 +368,123 @@ async def register(request: Request, req: RegisterRequest):
                         subscription_id = session.get('subscription')
                         subscription_status = 'active'
                         
+                        # Check if columns exist, if not add them
+                        try:
+                            if DB_TYPE == 'postgresql':
+                                cursor.execute("""
+                                    DO $$ 
+                                    BEGIN
+                                        IF NOT EXISTS (
+                                            SELECT 1 FROM information_schema.columns 
+                                            WHERE table_name = 'users' AND column_name = 'first_name'
+                                        ) THEN
+                                            ALTER TABLE users ADD COLUMN first_name VARCHAR;
+                                        END IF;
+                                        IF NOT EXISTS (
+                                            SELECT 1 FROM information_schema.columns 
+                                            WHERE table_name = 'users' AND column_name = 'last_name'
+                                        ) THEN
+                                            ALTER TABLE users ADD COLUMN last_name VARCHAR;
+                                        END IF;
+                                        IF NOT EXISTS (
+                                            SELECT 1 FROM information_schema.columns 
+                                            WHERE table_name = 'users' AND column_name = 'company'
+                                        ) THEN
+                                            ALTER TABLE users ADD COLUMN company VARCHAR;
+                                        END IF;
+                                    END $$;
+                                """)
+                            else:
+                                try:
+                                    cursor.execute("ALTER TABLE users ADD COLUMN first_name TEXT")
+                                except:
+                                    pass
+                                try:
+                                    cursor.execute("ALTER TABLE users ADD COLUMN last_name TEXT")
+                                except:
+                                    pass
+                                try:
+                                    cursor.execute("ALTER TABLE users ADD COLUMN company TEXT")
+                                except:
+                                    pass
+                        except Exception as col_error:
+                            print(f"⚠️ Column check/add error (non-critical): {col_error}")
+                        
                         # Create user with active subscription
                         if DB_TYPE == 'postgresql':
                             cursor.execute("""
-                                INSERT INTO users (email, password_hash, subscription_status, stripe_customer_id, subscription_id, created_at)
-                                VALUES (%s, %s, %s, %s, %s, NOW())
+                                INSERT INTO users (email, password_hash, subscription_status, stripe_customer_id, subscription_id, first_name, last_name, company, created_at)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
                                 RETURNING id
-                            """, (email, password_hash.decode(), subscription_status, customer_id, subscription_id))
+                            """, (email, password_hash.decode(), subscription_status, customer_id, subscription_id, req.first_name, req.last_name, req.company))
                             result = cursor.fetchone()
                             user_id = result[0] if result else None
                         else:
                             cursor.execute("""
-                                INSERT INTO users (email, password_hash, subscription_status, stripe_customer_id, subscription_id, created_at)
-                                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                            """, (email, password_hash.decode(), subscription_status, customer_id, subscription_id))
+                                INSERT INTO users (email, password_hash, subscription_status, stripe_customer_id, subscription_id, first_name, last_name, company, created_at)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                            """, (email, password_hash.decode(), subscription_status, customer_id, subscription_id, req.first_name, req.last_name, req.company))
                             user_id = cursor.lastrowid
                     except Exception as stripe_error:
                         print(f"⚠️ Error fetching Stripe session: {stripe_error}")
                         # Fallback to free tier if Stripe lookup fails
                         subscription_status = 'free'
                         
+                        # Check if columns exist, if not add them
+                        try:
+                            if DB_TYPE == 'postgresql':
+                                cursor.execute("""
+                                    DO $$ 
+                                    BEGIN
+                                        IF NOT EXISTS (
+                                            SELECT 1 FROM information_schema.columns 
+                                            WHERE table_name = 'users' AND column_name = 'first_name'
+                                        ) THEN
+                                            ALTER TABLE users ADD COLUMN first_name VARCHAR;
+                                        END IF;
+                                        IF NOT EXISTS (
+                                            SELECT 1 FROM information_schema.columns 
+                                            WHERE table_name = 'users' AND column_name = 'last_name'
+                                        ) THEN
+                                            ALTER TABLE users ADD COLUMN last_name VARCHAR;
+                                        END IF;
+                                        IF NOT EXISTS (
+                                            SELECT 1 FROM information_schema.columns 
+                                            WHERE table_name = 'users' AND column_name = 'company'
+                                        ) THEN
+                                            ALTER TABLE users ADD COLUMN company VARCHAR;
+                                        END IF;
+                                    END $$;
+                                """)
+                            else:
+                                try:
+                                    cursor.execute("ALTER TABLE users ADD COLUMN first_name TEXT")
+                                except:
+                                    pass
+                                try:
+                                    cursor.execute("ALTER TABLE users ADD COLUMN last_name TEXT")
+                                except:
+                                    pass
+                                try:
+                                    cursor.execute("ALTER TABLE users ADD COLUMN company TEXT")
+                                except:
+                                    pass
+                        except Exception as col_error:
+                            print(f"⚠️ Column check/add error (non-critical): {col_error}")
+                        
                         if DB_TYPE == 'postgresql':
                             cursor.execute("""
-                                INSERT INTO users (email, password_hash, subscription_status, created_at)
-                                VALUES (%s, %s, %s, NOW())
+                                INSERT INTO users (email, password_hash, subscription_status, first_name, last_name, company, created_at)
+                                VALUES (%s, %s, %s, %s, %s, %s, NOW())
                                 RETURNING id
-                            """, (email, password_hash.decode(), subscription_status))
+                            """, (email, password_hash.decode(), subscription_status, req.first_name, req.last_name, req.company))
                             result = cursor.fetchone()
                             user_id = result[0] if result else None
                         else:
                             cursor.execute("""
-                                INSERT INTO users (email, password_hash, subscription_status, created_at)
-                                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-                            """, (email, password_hash.decode(), subscription_status))
+                                INSERT INTO users (email, password_hash, subscription_status, first_name, last_name, company, created_at)
+                                VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                            """, (email, password_hash.decode(), subscription_status, req.first_name, req.last_name, req.company))
                             user_id = cursor.lastrowid
                 else:
                     # Free tier user (no payment)
