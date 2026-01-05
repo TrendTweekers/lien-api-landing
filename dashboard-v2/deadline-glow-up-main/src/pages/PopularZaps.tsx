@@ -295,6 +295,22 @@ const PopularZaps = () => {
   
   const zapTemplates = buildZapTemplates();
 
+  // Prevent runtime crash if API returns null/undefined items or missing app
+  const safeZapTemplates = (zapTemplates ?? [])
+    .filter(Boolean)
+    .filter((z: any) => z && typeof z === "object")
+    .map((z: any) => ({
+      ...z,
+      trigger: {
+        ...z.trigger,
+        app: z.trigger?.app ?? "Unknown app",
+      },
+      actions: (z.actions ?? []).map((action: any) => ({
+        ...action,
+        app: action?.app ?? "Unknown app",
+      })),
+    }));
+
   return (
     <>
       <div style={{ background: 'red', color: 'white', padding: 8 }}>
@@ -850,7 +866,7 @@ Amount: \${{project.invoice_amount}}`;
               );
             })()}
 
-            {buildZapTemplates().map((zap) => (
+            {safeZapTemplates.map((zap) => (
               <Card key={zap.id} className="flex flex-col">
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -866,8 +882,8 @@ Amount: \${{project.invoice_amount}}`;
                   <div>
                     <h4 className="text-sm font-semibold text-foreground mb-2">Trigger</h4>
                     <div className="bg-muted/50 rounded-md p-3 text-sm">
-                      <div className="font-medium">{zap.trigger.app}</div>
-                      <div className="text-muted-foreground text-xs mt-1">{zap.trigger.event}</div>
+                      <div className="font-medium">{zap?.trigger?.app ?? "Unknown app"}</div>
+                      <div className="text-muted-foreground text-xs mt-1">{zap?.trigger?.event ?? ""}</div>
                     </div>
                   </div>
 
@@ -881,7 +897,7 @@ Amount: \${{project.invoice_amount}}`;
                             <Badge variant="outline" className="text-xs">
                               {action.type === "webhook" ? "POST" : action.type === "trigger" ? "GET" : action.type}
                             </Badge>
-                            <span className="font-medium">{action.app}</span>
+                            <span className="font-medium">{action?.app ?? "Unknown app"}</span>
                           </div>
                           <div className="text-muted-foreground text-xs">{action.description}</div>
                           {action.url && (
