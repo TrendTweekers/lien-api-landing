@@ -1,0 +1,114 @@
+<!-- Zapier Automations Integration Card -->
+<div class="bg-orange-50 border border-orange-200 rounded-lg p-6 mb-8" id="zapier-section">
+    <div class="flex flex-col h-full">
+        <!-- Header -->
+        <div class="flex items-start gap-4 mb-4">
+            <!-- Zapier Logo/Icon -->
+            <div class="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10zm-1-11V7h2v4h4v2h-4v4h-2v-4H7v-2h4z"/>
+                </svg>
+            </div>
+            
+            <div class="flex-1">
+                <h3 class="text-lg font-semibold text-gray-900 mb-1">Zapier Automations</h3>
+                <p class="text-sm text-gray-600">Automate invoice processing and deadline tracking</p>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="mb-6">
+            <p class="text-sm text-gray-700 mb-4">
+                Connect Zapier to automatically create projects from invoices and get notified about upcoming deadlines. 
+                Use the webhook URLs below in your Zapier workflows.
+            </p>
+        </div>
+
+        <!-- Webhook URLs -->
+        <div class="space-y-4 mb-6">
+            <!-- Webhook URL for Creating Invoices -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Webhook URL (Create Invoice)
+                </label>
+                <div class="flex gap-2">
+                    <input 
+                        type="text" 
+                        id="zapier-webhook-url" 
+                        readonly
+                        class="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-mono text-gray-700 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        value="Loading..."
+                    >
+                    <button 
+                        onclick="copyToClipboard('zapier-webhook-url')"
+                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition duration-200 text-sm font-medium"
+                        title="Copy to clipboard"
+                    >
+                        📋 Copy
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">
+                    POST endpoint: Send invoice data to create a project automatically
+                </p>
+            </div>
+
+            <!-- Trigger URL for Upcoming Projects -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Trigger URL (Upcoming Deadlines)
+                </label>
+                <div class="flex gap-2">
+                    <input 
+                        type="text" 
+                        id="zapier-trigger-url" 
+                        readonly
+                        class="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-mono text-gray-700 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        value="Loading..."
+                    >
+                    <button 
+                        onclick="copyToClipboard('zapier-trigger-url')"
+                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition duration-200 text-sm font-medium"
+                        title="Copy to clipboard"
+                    >
+                        📋 Copy
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">
+                    GET endpoint: Poll for projects with upcoming lien deadlines
+                </p>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-3">
+            <a 
+                href="https://zapier.com/apps/liendeadline/integrations" 
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 text-center"
+            >
+                🔗 View Popular Zaps
+            </a>
+            <a 
+                href="https://zapier.com/help/create/guide" 
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex-1 bg-white border border-orange-300 text-orange-600 hover:bg-orange-50 font-semibold py-3 px-6 rounded-lg transition duration-200 text-center"
+            >
+                📚 Zapier Setup Guide
+            </a>
+        </div>
+
+        <!-- Documentation Link -->
+        <div class="mt-4 pt-4 border-t border-orange-200">
+            <a 
+                href="#" 
+                onclick="reportIntegrationIssue('Zapier'); return false;"
+                class="block text-center text-xs text-gray-500 hover:text-gray-700 underline"
+            >
+                Report Issue
+            </a>
+        </div>
+    </div>
+</div>
+
