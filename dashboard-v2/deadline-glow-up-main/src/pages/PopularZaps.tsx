@@ -435,17 +435,25 @@ const PopularZaps = () => {
             <div>
               <h2 className="text-xl font-semibold text-foreground mb-1">Popular Zap Templates</h2>
               <p className="text-sm text-muted-foreground">Choose a template to get started. If no reminders are due, the Zap will not send anything.</p>
+              <p className="text-sm text-foreground mt-2 font-medium">Most users start with Slack deadline reminders. You can add more automations later.</p>
             </div>
 
             {/* Simplified Zap Templates Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Reminders Template */}
-              <Card>
+              {/* Reminders Template - Recommended */}
+              <Card className="border-primary/30 shadow-md">
                 <CardHeader>
-                  <CardTitle>Deadline reminders → Slack</CardTitle>
-                  <CardDescription>
-                    Sends Slack alerts when deadlines are approaching (1 & 7 days before).
-                  </CardDescription>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CardTitle>Deadline reminders → Slack</CardTitle>
+                        <Badge className="bg-primary text-primary-foreground">Recommended</Badge>
+                      </div>
+                      <CardDescription>
+                        Sends Slack alerts when deadlines are approaching (1 & 7 days before).
+                      </CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
@@ -494,10 +502,10 @@ const PopularZaps = () => {
               </Card>
 
               {/* Invoice → LienDeadline Template */}
-              <Card>
+              <Card className="opacity-75 border-border/50">
                 <CardHeader>
-                  <CardTitle>New Invoice → Create deadlines</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-muted-foreground">New Invoice → Create deadlines</CardTitle>
+                  <CardDescription className="text-muted-foreground/80">
                     Automatically calculate lien deadlines when invoices are created.
                   </CardDescription>
                 </CardHeader>
@@ -545,10 +553,10 @@ const PopularZaps = () => {
 
               {/* Other Templates */}
               {safeZapTemplates.filter(z => z.id > 1).map((zap) => (
-                <Card key={zap.id}>
+                <Card key={zap.id} className="opacity-75 border-border/50">
                   <CardHeader>
-                    <CardTitle className="text-base">{zap.title}</CardTitle>
-                    <CardDescription className="text-xs">{zap.description}</CardDescription>
+                    <CardTitle className="text-base text-muted-foreground">{zap.title}</CardTitle>
+                    <CardDescription className="text-xs text-muted-foreground/80">{zap.description}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
