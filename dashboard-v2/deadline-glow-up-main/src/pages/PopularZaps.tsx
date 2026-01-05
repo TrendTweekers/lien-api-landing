@@ -382,7 +382,7 @@ const PopularZaps = () => {
           </div>
 
           {/* B) Quick Start */}
-          <Card className="bg-primary/10 border-primary/30 shadow-lg">
+          <Card id="quick-start" className="bg-primary/10 border-primary/30 shadow-lg scroll-mt-8">
             <CardHeader>
               <div className="flex items-center gap-2 mb-2">
                 <Rocket className="h-6 w-6 text-primary" />
