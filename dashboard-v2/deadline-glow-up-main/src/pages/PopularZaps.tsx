@@ -12,6 +12,7 @@ const PopularZaps = () => {
   const { toast } = useToast();
   const [webhookUrl, setWebhookUrl] = useState("");
   const [triggerUrl, setTriggerUrl] = useState("");
+  const [remindersUrl, setRemindersUrl] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
   
   // Headers template (user needs to replace YOUR_ZAPIER_TOKEN with their actual token)
@@ -28,8 +29,8 @@ const PopularZaps = () => {
     "project_name": "Test Invoice"
   };
   
-  // Slack message template
-  const slackMessageTemplate = "🚨 Deadline reminder — {{project_name}} ({{state}})\nPrelim due in {{prelim_deadline_days}} day(s): {{prelim_deadline}}\nLien due in {{lien_deadline_days}} day(s): {{lien_deadline}}\nAmount: ${{invoice_amount}}";
+  // Slack message template (updated for reminders endpoint structure)
+  const slackMessageTemplate = "🚨 {{project.project_name}} ({{project.state_code}}) — {{reminder_type}} deadline in {{reminder_days}} day(s)\nDeadline: {{deadline_date}}\nLien: {{project.lien_deadline}} ({{project.lien_deadline_days}} days)\nPrelim: {{project.prelim_deadline}} ({{project.prelim_deadline_days}} days)\nAmount: ${{project.invoice_amount}}";
 
   useEffect(() => {
     // Check for session token and verify session
@@ -53,6 +54,7 @@ const PopularZaps = () => {
     const baseUrl = window.location.origin;
     setWebhookUrl(`${baseUrl}/api/zapier/webhook/invoice`);
     setTriggerUrl(`${baseUrl}/api/zapier/trigger/upcoming?limit=10`);
+    setRemindersUrl(`${baseUrl}/api/zapier/trigger/reminders?days=1,7&limit=10`);
   }, []);
 
   const copyToClipboard = (text: string, type: string) => {
@@ -378,7 +380,7 @@ const PopularZaps = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => copyToClipboard(triggerUrl, "slack-trigger")}
+                  onClick={() => copyToClipboard(remindersUrl, "slack-trigger")}
                 >
                   {copied === "slack-trigger" ? (
                     <>
@@ -430,7 +432,7 @@ const PopularZaps = () => {
                     <span className="font-medium text-foreground">Trigger:</span> Choose "Schedule by Zapier" (run every hour) OR "Webhooks by Zapier" → Select "GET"
                   </li>
                   <li>
-                    <span className="font-medium text-foreground">If using Webhooks GET:</span> Paste the Trigger URL above
+                    <span className="font-medium text-foreground">URL:</span> Paste the Trigger URL above (uses reminders endpoint with deduplication)
                   </li>
                   <li>
                     <span className="font-medium text-foreground">Headers:</span> Add Authorization header: <code className="bg-muted px-1 rounded">Bearer YOUR_ZAPIER_TOKEN</code> (replace with your token)
@@ -485,7 +487,7 @@ const PopularZaps = () => {
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Trigger URL (GET)</label>
+                <label className="text-sm font-medium mb-2 block">Trigger URL (GET) - Upcoming deadlines</label>
                 <div className="flex gap-2">
                   <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
                     {triggerUrl}
@@ -498,6 +500,24 @@ const PopularZaps = () => {
                     {copied === "trigger" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Reminders URL (GET) - Deduplicated reminders</label>
+                <div className="flex gap-2">
+                  <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
+                    {remindersUrl}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(remindersUrl, "reminders")}
+                  >
+                    {copied === "reminders" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Returns reminders for specified day offsets (default: 1,7 days) with server-side deduplication
+                </p>
               </div>
             </CardContent>
           </Card>
