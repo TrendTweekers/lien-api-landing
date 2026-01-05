@@ -8,29 +8,127 @@ import { Label } from "@/components/ui/label";
 
 export const IntegrationsSection = () => {
   const { toast } = useToast();
+  const [webhookUrl, setWebhookUrl] = React.useState("");
+  const [triggerUrl, setTriggerUrl] = React.useState("");
+  const [copied, setCopied] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const baseUrl = window.location.origin;
+    setWebhookUrl(`${baseUrl}/api/zapier/webhook/invoice`);
+    setTriggerUrl(`${baseUrl}/api/zapier/trigger/upcoming?limit=10`);
+  }, []);
+
+  const copyToClipboard = (text: string, type: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(type);
+      toast({
+        title: "Copied!",
+        description: "URL copied to clipboard",
+      });
+      setTimeout(() => setCopied(null), 2000);
+    });
+  };
+
+  const handleViewZaps = () => {
+    window.open("https://zapier.com/apps/liendeadline/integrations", "_blank");
+  };
+
+  // Get Started Stepper Component
+  const GetStartedStepper = () => {
+    return (
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-foreground">Get started</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Step 1 */}
+          <div className="bg-card rounded-lg p-4 border border-border">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
+                1
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-foreground text-sm mb-1">Copy Webhook URL</h4>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Use this in Zapier to send invoices to LienDeadline.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => copyToClipboard(webhookUrl, "stepper-webhook")}
+                >
+                  {copied === "stepper-webhook" ? (
+                    <>
+                      <Check className="h-3 w-3 mr-1" /> Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3 w-3 mr-1" /> Copy
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 2 */}
+          <div className="bg-card rounded-lg p-4 border border-border">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
+                2
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-foreground text-sm mb-1">Copy Trigger URL</h4>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Use this in Zapier to pull upcoming deadlines.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => copyToClipboard(triggerUrl, "stepper-trigger")}
+                >
+                  {copied === "stepper-trigger" ? (
+                    <>
+                      <Check className="h-3 w-3 mr-1" /> Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3 w-3 mr-1" /> Copy
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 3 */}
+          <div className="bg-card rounded-lg p-4 border border-border">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
+                3
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-foreground text-sm mb-1">Choose a Zap template</h4>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Browse pre-built workflows to get started quickly.
+                </p>
+                <Button
+                  size="sm"
+                  className="h-7 text-xs bg-orange-600 hover:bg-orange-700 text-white"
+                  onClick={handleViewZaps}
+                >
+                  View Popular Zaps
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Zapier Card Component
   const ZapierCard = () => {
-    const [webhookUrl, setWebhookUrl] = React.useState("");
-    const [triggerUrl, setTriggerUrl] = React.useState("");
-    const [copied, setCopied] = React.useState<string | null>(null);
-
-    React.useEffect(() => {
-      const baseUrl = window.location.origin;
-      setWebhookUrl(`${baseUrl}/api/zapier/webhook/invoice`);
-      setTriggerUrl(`${baseUrl}/api/zapier/trigger/upcoming?limit=10`);
-    }, []);
-
-    const copyToClipboard = (text: string, type: string) => {
-      navigator.clipboard.writeText(text).then(() => {
-        setCopied(type);
-        toast({
-          title: "Copied!",
-          description: "URL copied to clipboard",
-        });
-        setTimeout(() => setCopied(null), 2000);
-      });
-    };
 
     return (
       <div className="bg-card rounded-xl p-6 border-2 border-primary/30 hover:shadow-xl hover:border-primary/50 transition-all duration-300 card-shadow group h-full flex flex-col ring-1 ring-primary/10">
@@ -110,7 +208,7 @@ export const IntegrationsSection = () => {
           <Button
             className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium"
             size="sm"
-            onClick={() => window.open("https://zapier.com/apps/liendeadline/integrations", "_blank")}
+            onClick={handleViewZaps}
           >
             🔗 View Popular Zaps
           </Button>
@@ -135,6 +233,8 @@ export const IntegrationsSection = () => {
           </ul>
         </AlertDescription>
       </Alert>
+
+      <GetStartedStepper />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
         <ZapierCard />
