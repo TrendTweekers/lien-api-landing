@@ -9,6 +9,7 @@ from typing import Optional, List
 from datetime import datetime, timedelta, date
 from decimal import Decimal, InvalidOperation
 import logging
+import os
 
 from api.database import get_db, get_db_cursor, DB_TYPE
 from api.routers.auth import get_current_user_zapier
