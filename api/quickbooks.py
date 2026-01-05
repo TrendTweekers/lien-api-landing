@@ -579,9 +579,10 @@ async def get_valid_access_token(user_id: int):
 @router.get("/invoices")
 async def get_quickbooks_invoices(request: Request, current_user: dict = Depends(get_current_user)):
     """
-    Fetch invoices from QuickBooks for the logged-in user
-    Returns invoices from last 90 days
-    Updated: Fixed cursor closure issue and imported status display
+    Fetch FRESH invoices directly from QuickBooks API for the logged-in user.
+    This endpoint always queries QuickBooks API directly (no caching).
+    Returns invoices from last 90 days with pagination support.
+    Updated: Added pagination to fetch ALL invoices, not just first 100
     """
     # Use current_user from dependency
     # Redeploy trigger: 2026-01-01
@@ -640,51 +641,95 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
         raise HTTPException(status_code=500, detail="Error accessing QuickBooks connection")
     
     # Fetch invoices from QuickBooks API
-    # Get invoices from last 90 days
+    # Get invoices from last 90 days - fetch ALL invoices with pagination
     ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
     
-    query = f"SELECT * FROM Invoice WHERE TxnDate >= '{ninety_days_ago}' MAXRESULTS 100"
+    # Base query - fetch invoices from last 90 days
+    base_query = f"SELECT * FROM Invoice WHERE TxnDate >= '{ninety_days_ago}'"
+    
+    all_invoices = []
+    max_results_per_page = 100
+    start_position = 1
+    
+    print(f"🔄 Starting fresh fetch from QuickBooks API for user {user['id']}")
+    print(f"   Date range: {ninety_days_ago} to today")
+    print(f"   Realm ID: {realm_id}")
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{QB_API_BASE}/company/{realm_id}/query",
-                headers={
-                    "Accept": "application/json",
-                    "Authorization": f"Bearer {access_token}"
-                },
-                params={
-                    "query": query
-                }
-            )
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # Fetch all pages of invoices
+            while True:
+                query = f"{base_query} MAXRESULTS {max_results_per_page} STARTPOSITION {start_position}"
+                
+                print(f"   📥 Fetching page starting at position {start_position}...")
+                
+                response = await client.get(
+                    f"{QB_API_BASE}/company/{realm_id}/query",
+                    headers={
+                        "Accept": "application/json",
+                        "Authorization": f"Bearer {access_token}"
+                    },
+                    params={
+                        "query": query
+                    }
+                )
+                
+                if response.status_code == 401:
+                    # Token expired, try refreshing
+                    print("   🔄 Token expired, refreshing...")
+                    new_token = await refresh_access_token(user['id'])
+                    if new_token:
+                        access_token = new_token
+                        # Retry with new token
+                        response = await client.get(
+                            f"{QB_API_BASE}/company/{realm_id}/query",
+                            headers={
+                                "Accept": "application/json",
+                                "Authorization": f"Bearer {new_token}"
+                            },
+                            params={
+                                "query": query
+                            }
+                        )
+                    else:
+                        raise HTTPException(status_code=401, detail="Failed to refresh QuickBooks token")
+                
+                if response.status_code != 200:
+                    error_detail = response.text
+                    print(f"❌ QuickBooks API error: {error_detail}")
+                    raise HTTPException(status_code=500, detail=f"Failed to fetch invoices from QuickBooks: {error_detail}")
+                
+                data = response.json()
+                query_response = data.get("QueryResponse", {})
+                page_invoices = query_response.get("Invoice", [])
+                
+                # If single invoice, convert to list
+                if isinstance(page_invoices, dict):
+                    page_invoices = [page_invoices]
+                
+                if not page_invoices or len(page_invoices) == 0:
+                    # No more invoices
+                    break
+                
+                all_invoices.extend(page_invoices)
+                print(f"   ✅ Fetched {len(page_invoices)} invoices (total so far: {len(all_invoices)})")
+                
+                # Check if there are more results
+                max_results = query_response.get("maxResults")
+                if max_results and len(page_invoices) < max_results:
+                    # This was the last page
+                    break
+                
+                # Move to next page
+                start_position += len(page_invoices)
+                
+                # Safety limit: don't fetch more than 1000 invoices total
+                if len(all_invoices) >= 1000:
+                    print(f"   ⚠️ Reached safety limit of 1000 invoices")
+                    break
             
-            if response.status_code == 401:
-                # Token expired, try refreshing
-                new_token = await refresh_access_token(user['id'])
-                if new_token:
-                    # Retry with new token
-                    response = await client.get(
-                        f"{QB_API_BASE}/company/{realm_id}/query",
-                        headers={
-                            "Accept": "application/json",
-                            "Authorization": f"Bearer {new_token}"
-                        },
-                        params={
-                            "query": query
-                        }
-                    )
-            
-            if response.status_code != 200:
-                error_detail = response.text
-                print(f"QuickBooks API error: {error_detail}")
-                raise HTTPException(status_code=500, detail=f"Failed to fetch invoices from QuickBooks: {error_detail}")
-            
-            data = response.json()
-            invoices = data.get("QueryResponse", {}).get("Invoice", [])
-            
-            # If single invoice, convert to list
-            if isinstance(invoices, dict):
-                invoices = [invoices]
+            invoices = all_invoices
+            print(f"✅ Total invoices fetched from QuickBooks: {len(invoices)}")
             
             # Check which invoices have been saved as projects
             # CRITICAL: Fetch all data BEFORE the connection context closes
@@ -922,7 +967,9 @@ async def get_quickbooks_invoices(request: Request, current_user: dict = Depends
             
             return {
                 "invoices": formatted_invoices,
-                "count": len(formatted_invoices)
+                "count": len(formatted_invoices),
+                "fetched_at": datetime.now().isoformat(),
+                "source": "quickbooks_api_fresh"
             }
             
     except httpx.HTTPError as e:
