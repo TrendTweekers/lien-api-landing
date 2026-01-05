@@ -48,6 +48,29 @@ const PopularZaps = () => {
    Header: Authorization: Bearer <token>
 3) Action: Slack → Send Channel Message (use template)`;
 
+  // --- Reminders Zap helpers (fix runtime crash) ---
+  const getRemindersZapSetupStepsArray = () => [
+    "1) Trigger: Schedule by Zapier → Every Hour",
+    "2) Action: Webhooks by Zapier → GET",
+    "3) URL: https://liendeadline.com/api/zapier/reminders/due",
+    "4) Headers: Authorization: Bearer {{YOUR_ZAPIER_TOKEN}}",
+    "5) Action: Slack → Send Channel Message",
+    "6) Message: Use the template shown on this page (copy/paste)",
+  ];
+
+  const remindersZapSetupSteps = getRemindersZapSetupStepsArray();
+
+  const renderRemindersZapSetupSteps = () => (
+    <ol className="list-decimal pl-5 space-y-1">
+      {remindersZapSetupSteps.map((s, i) => (
+        <li key={i} className="text-sm text-muted-foreground">
+          {s}
+        </li>
+      ))}
+    </ol>
+  );
+  // --- end helpers ---
+
   useEffect(() => {
     // Check for session token and verify session
     const token = localStorage.getItem('session_token');
