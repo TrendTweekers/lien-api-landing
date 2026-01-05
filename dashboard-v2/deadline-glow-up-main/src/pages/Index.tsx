@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Rocket, ExternalLink } from "lucide-react";
+import { Rocket } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { IntegrationsSection } from "@/components/dashboard/IntegrationsSection";
 import { AccountOverview } from "@/components/dashboard/AccountOverview";
 import { DeadlineCalculator } from "@/components/dashboard/DeadlineCalculator";
 import { ProjectsTable } from "@/components/dashboard/ProjectsTable";
@@ -12,7 +11,7 @@ import { BillingSection } from "@/components/dashboard/BillingSection";
 import { PartnerProgram } from "@/components/dashboard/PartnerProgram";
 import { ApiDocs } from "@/components/dashboard/ApiDocs";
 import UpgradePrompt from "@/components/UpgradePrompt";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
@@ -90,67 +89,54 @@ const Index = () => {
             <DeadlineCalculator />
           </div>
 
-          {/* Zapier Automation Card */}
+          {/* Zapier Automation Card - Small Summary */}
           <div className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
             <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-              <CardHeader>
-                <CardTitle className="text-2xl">Zapier Automation</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Zapier Automation</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Value Proposition */}
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-foreground">
-                    Get deadline alerts wherever you already work
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Connect Zapier in minutes to send lien deadline reminders to Slack, email, CRM, or spreadsheets — powered by Zapier.
-                  </p>
-                  
-                  <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-2">
-                    <li>Works with 6,000+ apps</li>
-                    <li>No email setup inside LienDeadline</li>
-                    <li>LienDeadline decides when — Zapier decides where</li>
-                  </ul>
-                  
-                  <p className="text-sm text-muted-foreground italic">
-                    Used by contractors protecting $2.3M+ in receivables monthly
-                  </p>
-                </div>
+              <CardContent className="space-y-4">
+                {/* One-line value prop */}
+                <p className="text-sm font-medium text-foreground">
+                  Get deadline alerts wherever you already work.
+                </p>
+                
+                {/* 3 bullets (concise) */}
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
+                  <li>Works with 6,000+ apps</li>
+                  <li>No email setup inside LienDeadline</li>
+                  <li>LienDeadline decides when — Zapier decides where</li>
+                </ul>
+                
+                {/* Social proof */}
+                <p className="text-xs text-muted-foreground italic">
+                  Used by contractors protecting $2.3M+ in receivables monthly
+                </p>
 
-                {/* Quick Start Block */}
-                <div className="bg-card rounded-lg p-4 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Rocket className="h-5 w-5 text-primary" />
-                    <h4 className="font-semibold text-foreground">🚀 Quick Start with Slack</h4>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Get your first alert in under 5 minutes
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      size="lg"
-                      onClick={() => {
-                        navigate('/zapier#quick-start');
-                        // Scroll to quick-start after navigation
-                        setTimeout(() => {
-                          const element = document.getElementById('quick-start');
-                          if (element) {
-                            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                          }
-                        }, 100);
-                      }}
-                    >
-                      Quick Start with Slack
-                      <ExternalLink className="h-4 w-4 ml-2" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => navigate('/zapier')}
-                    >
-                      Open Zapier Setup
-                    </Button>
-                  </div>
+                {/* Two buttons */}
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button
+                    size="default"
+                    onClick={() => {
+                      navigate('/zapier#quick-start');
+                      // Scroll to quick-start after navigation
+                      setTimeout(() => {
+                        const element = document.getElementById('quick-start');
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }, 100);
+                    }}
+                  >
+                    Quick Start with Slack
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="default"
+                    onClick={() => navigate('/zapier')}
+                  >
+                    Open Zapier Setup
+                  </Button>
                 </div>
               </CardContent>
             </Card>
