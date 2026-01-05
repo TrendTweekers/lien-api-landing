@@ -645,26 +645,16 @@ async def trigger_reminders(
             with get_db() as conn:
                 cursor = get_db_cursor(conn)
                 
-                # Verify table exists (migrations should have created it)
+                # Verify table exists by direct probe query
                 try:
-                    if DB_TYPE == 'postgresql':
-                        cursor.execute("""
-                            SELECT EXISTS (
-                                SELECT 1 FROM information_schema.tables 
-                                WHERE table_schema = 'public' 
-                                AND table_name = 'zapier_notification_events'
-                            )
-                        """)
-                        result = cursor.fetchone()
-                        table_exists = result[0] if result else False
-                    else:
-                        cursor.execute("""
-                            SELECT name FROM sqlite_master 
-                            WHERE type='table' AND name='zapier_notification_events'
-                        """)
-                        table_exists = cursor.fetchone() is not None
-                    
-                    if not table_exists:
+                    cursor.execute("SELECT 1 FROM zapier_notification_events LIMIT 1")
+                    cursor.fetchone()  # Consume the result
+                except Exception as table_error:
+                    # Check if error is due to missing table
+                    error_str = str(table_error).lower()
+                    if ('undefinedtable' in error_str or 
+                        'relation' in error_str and 'does not exist' in error_str or
+                        '42p01' in error_str):  # PostgreSQL error code for undefined table
                         logger.error("zapier_notification_events table does not exist. Migration 006_add_zapier_notification_events.sql must be run.")
                         return JSONResponse(
                             status_code=500,
@@ -674,16 +664,17 @@ async def trigger_reminders(
                                 "error": "Zapier reminders are temporarily unavailable. Please try again later."
                             }
                         )
-                except Exception as table_error:
-                    logger.error(f"Error checking zapier_notification_events table: {table_error}")
-                    return JSONResponse(
-                        status_code=500,
-                        content={
-                            "success": False,
-                            "version": "v1",
-                            "error": "Zapier reminders are temporarily unavailable. Please try again later."
-                        }
-                    )
+                    else:
+                        # Other DB error - log and return same error
+                        logger.error(f"Error probing zapier_notification_events table: {table_error}")
+                        return JSONResponse(
+                            status_code=500,
+                            content={
+                                "success": False,
+                                "version": "v1",
+                                "error": "Zapier reminders are temporarily unavailable. Please try again later."
+                            }
+                        )
                 
                 # Find candidate projects where prelim_deadline_days or lien_deadline_days matches requested days
                 reminders = []
