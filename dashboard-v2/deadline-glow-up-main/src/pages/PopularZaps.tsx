@@ -683,13 +683,79 @@ const PopularZaps = () => {
                         Copy URL
                       </Button>
                     )}
-                    {expandedCards[zap.id] && zap.webhookExample && (
-                      <div className="mt-3 pt-3 border-t text-xs">
-                        <strong>Example JSON:</strong>
-                        <pre className="bg-muted/30 p-2 rounded mt-1">{JSON.stringify(zap.webhookExample, null, 2)}</pre>
+                    {expandedCards[zap.id] && (
+                      <div className="mt-3 pt-3 border-t space-y-4 text-xs">
+                        {/* What Zapier will do */}
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">What Zapier will do</h4>
+                          <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
+                            <li>{zap.description}</li>
+                          </ul>
+                        </div>
+
+                        {/* Required Zapier steps */}
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Required Zapier steps</h4>
+                          <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-2">
+                            <li>Trigger: {zap?.trigger?.app ?? "Unknown"} → {zap?.trigger?.event ?? ""}</li>
+                            {zap.actions.map((action, idx) => (
+                              <li key={idx}>
+                                Action: {action.app} → {action.description}
+                                {action.url && (
+                                  <span className="ml-2">
+                                    (<code className="bg-muted px-1 rounded text-xs">{action.type === "webhook" ? "POST" : "GET"}</code>)
+                                  </span>
+                                )}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+
+                        {/* Advanced / Optional */}
+                        {(zap.webhookExample || zap.fieldMapping) && (
+                          <div>
+                            <h4 className="font-semibold text-foreground mb-2">Advanced / Optional</h4>
+                            <div className="space-y-2">
+                              {zap.webhookExample && (
+                                <div>
+                                  <strong className="text-muted-foreground">Example JSON:</strong>
+                                  <pre className="bg-muted/30 p-2 rounded mt-1 text-muted-foreground font-mono">{JSON.stringify(zap.webhookExample, null, 2)}</pre>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 text-xs px-2 mt-1"
+                                    onClick={() => copyToClipboard(JSON.stringify(zap.webhookExample, null, 2), `zap-${zap.id}-json-expanded`)}
+                                  >
+                                    {copied === `zap-${zap.id}-json-expanded` ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                                    Copy JSON
+                                  </Button>
+                                </div>
+                              )}
+                              {zap.fieldMapping && (
+                                <div>
+                                  <strong className="text-muted-foreground">Field mapping:</strong>
+                                  <div className="bg-muted/30 p-2 rounded mt-1 space-y-2">
+                                    {Object.entries(zap.fieldMapping ?? {}).map(([key, fields]) => (
+                                      <div key={key}>
+                                        <div className="font-medium text-muted-foreground mb-1 capitalize">{key}:</div>
+                                        <div className="pl-2 space-y-1">
+                                          {typeof fields === 'object' && Object.entries(fields ?? {}).map(([field, desc]) => (
+                                            <div key={field} className="text-muted-foreground text-xs">
+                                              <code className="text-primary">{field}</code>: {desc as string}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
-                    {(zap.webhookExample || zap.fieldMapping) && (
+                    {(zap.webhookExample || zap.fieldMapping || zap.actions.find(a => a.url)) && (
                       <Button
                         size="sm"
                         variant="ghost"
