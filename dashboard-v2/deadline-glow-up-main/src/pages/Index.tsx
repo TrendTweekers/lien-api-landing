@@ -59,11 +59,6 @@ const Index = () => {
       
       <main className="container py-8">
         <div className="space-y-8">
-          {/* Build Marker */}
-          <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
-            BUILD CHECK: notifications-ui-v1
-          </div>
-
           {/* Welcome */}
           <div className="animate-fade-in">
             <h1 className="text-3xl font-bold text-foreground mb-2">
