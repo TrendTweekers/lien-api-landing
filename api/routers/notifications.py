@@ -172,6 +172,38 @@ def get_project_user_email(project_id: int) -> Optional[str]:
         logger.error(f"Error getting user_email for project {project_id}: {e}")
         return None
 
+def get_project_user_id(project_id: int) -> Optional[int]:
+    """
+    Get the user_id for a project (from calculations table via users table lookup).
+    Returns None if project not found or user not found.
+    """
+    try:
+        # First get user_email from calculations table
+        user_email = get_project_user_email(project_id)
+        if not user_email:
+            return None
+        
+        # Then get user_id from users table
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT id FROM users WHERE email = %s", (user_email.lower().strip(),))
+            else:
+                cursor.execute("SELECT id FROM users WHERE email = ?", (user_email.lower().strip(),))
+            
+            row = cursor.fetchone()
+            if not row:
+                return None
+            
+            if isinstance(row, dict):
+                return row.get('id')
+            else:
+                return row[0] if len(row) > 0 else None
+    except Exception as e:
+        logger.error(f"Error getting user_id for project {project_id}: {e}")
+        return None
+
 # --- Endpoints ---
 
 @router.get("/api/projects/{project_id}/notifications")
