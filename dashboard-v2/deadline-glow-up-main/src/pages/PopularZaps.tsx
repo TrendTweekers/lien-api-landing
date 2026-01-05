@@ -21,6 +21,12 @@ const PopularZaps = () => {
     "Content-Type": "application/json"
   };
   
+  // Headers template for reminders (with placeholder)
+  const remindersHeadersTemplate = {
+    "Authorization": "Bearer PASTE_YOUR_ZAPIER_TOKEN_HERE",
+    "Content-Type": "application/json"
+  };
+  
   // Example JSON body for webhook
   const exampleJsonBody = {
     "state": "TX",
@@ -31,6 +37,16 @@ const PopularZaps = () => {
   
   // Slack message template (updated for reminders endpoint structure)
   const slackMessageTemplate = "🚨 {{project.project_name}} ({{project.state_code}}) — {{reminder_type}} deadline in {{reminder_days}} day(s)\nDeadline: {{deadline_date}}\nLien: {{project.lien_deadline}} ({{project.lien_deadline_days}} days)\nPrelim: {{project.prelim_deadline}} ({{project.prelim_deadline_days}} days)\nAmount: ${{project.invoice_amount}}";
+  
+  // New Slack message template for reminders card
+  const remindersSlackMessageTemplate = "🚨 LienDeadline reminder: {{reminder_type}} deadline in {{reminder_days}} day(s)\nDeadline: {{deadline_date}}\nProject: {{project.project_name}} ({{project.state_code}})\nInvoice: {{project.invoice_date}} — ${{project.invoice_amount}}\nPrelim: {{project.prelim_deadline}} ({{project.prelim_deadline_days}}d)\nLien: {{project.lien_deadline}} ({{project.lien_deadline_days}}d)";
+  
+  // Zap setup steps for reminders
+  const remindersZapSetupSteps = `1) Trigger: Schedule by Zapier → Every Hour
+2) Action: Webhooks by Zapier → GET
+   URL: ${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50
+   Header: Authorization: Bearer <token>
+3) Action: Slack → Send Channel Message (use template)`;
 
   useEffect(() => {
     // Check for session token and verify session
@@ -54,7 +70,7 @@ const PopularZaps = () => {
     const baseUrl = window.location.origin;
     setWebhookUrl(`${baseUrl}/api/zapier/webhook/invoice`);
     setTriggerUrl(`${baseUrl}/api/zapier/trigger/upcoming?limit=10`);
-    setRemindersUrl(`${baseUrl}/api/zapier/trigger/reminders?days=1,7&limit=10`);
+    setRemindersUrl(`${baseUrl}/api/zapier/trigger/reminders?days=1,7&limit=50`);
   }, []);
 
   const copyToClipboard = (text: string, type: string) => {
@@ -366,38 +382,55 @@ const PopularZaps = () => {
             </CardContent>
           </Card>
 
-          {/* Slack Template - Upcoming deadlines -> Slack */}
+          {/* Deadline Reminders → Slack Card */}
           <Card className="bg-primary/5 border-primary/20">
             <CardHeader>
-              <CardTitle className="text-xl">Upcoming deadlines → Slack reminders</CardTitle>
+              <CardTitle className="text-xl">Deadline reminders → Slack (1 & 7 days)</CardTitle>
               <CardDescription>
-                Get notified in Slack when lien deadlines are approaching. Run hourly to catch all upcoming deadlines.
+                Run hourly. LienDeadline returns reminders due now (deduped). Send to Slack.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Reminders URL Display */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Reminders URL</label>
+                <div className="flex gap-2">
+                  <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
+                    {`${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(`${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`, "reminders-url")}
+                  >
+                    {copied === "reminders-url" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
               {/* Copy Buttons Row */}
               <div className="flex flex-wrap gap-2">
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => copyToClipboard(remindersUrl, "slack-trigger")}
+                  onClick={() => copyToClipboard(`${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`, "reminders-url-btn")}
                 >
-                  {copied === "slack-trigger" ? (
+                  {copied === "reminders-url-btn" ? (
                     <>
                       <Check className="h-4 w-4 mr-2" /> Copied
                     </>
                   ) : (
                     <>
-                      <Copy className="h-4 w-4 mr-2" /> Copy Trigger URL
+                      <Copy className="h-4 w-4 mr-2" /> Copy Reminders URL
                     </>
                   )}
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => copyToClipboard(JSON.stringify(headersTemplate, null, 2), "slack-headers")}
+                  onClick={() => copyToClipboard(JSON.stringify(remindersHeadersTemplate, null, 2), "reminders-headers")}
                 >
-                  {copied === "slack-headers" ? (
+                  {copied === "reminders-headers" ? (
                     <>
                       <Check className="h-4 w-4 mr-2" /> Copied
                     </>
@@ -410,9 +443,9 @@ const PopularZaps = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => copyToClipboard(slackMessageTemplate, "slack-message")}
+                  onClick={() => copyToClipboard(remindersSlackMessageTemplate, "reminders-slack-message")}
                 >
-                  {copied === "slack-message" ? (
+                  {copied === "reminders-slack-message" ? (
                     <>
                       <Check className="h-4 w-4 mr-2" /> Copied
                     </>
@@ -422,39 +455,39 @@ const PopularZaps = () => {
                     </>
                   )}
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => copyToClipboard(remindersZapSetupSteps, "reminders-zap-steps")}
+                >
+                  {copied === "reminders-zap-steps" ? (
+                    <>
+                      <Check className="h-4 w-4 mr-2" /> Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-2" /> Copy Zap Setup Steps
+                    </>
+                  )}
+                </Button>
               </div>
 
-              {/* Setup Instructions */}
+              {/* Zap Setup Steps Display */}
               <div>
-                <h4 className="text-sm font-semibold text-foreground mb-3">Zapier Setup Steps:</h4>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                  <li>
-                    <span className="font-medium text-foreground">Trigger:</span> Choose "Schedule by Zapier" (run every hour) OR "Webhooks by Zapier" → Select "GET"
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">URL:</span> Paste the Trigger URL above (uses reminders endpoint with deduplication)
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">Headers:</span> Add Authorization header: <code className="bg-muted px-1 rounded">Bearer YOUR_ZAPIER_TOKEN</code> (replace with your token)
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">Action:</span> Add "Slack" → Select "Send Channel Message"
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">Message:</span> Paste the Slack Message Template above and map fields from the trigger response
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">Filter (optional):</span> Add a Filter step to only send messages when <code className="bg-muted px-1 rounded">lien_deadline_days</code> is less than or equal to 7
-                  </li>
-                </ol>
+                <h4 className="text-sm font-semibold text-foreground mb-2">Zap setup steps</h4>
+                <div className="bg-muted/30 rounded-md p-3 text-xs">
+                  <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
+                    {remindersZapSetupSteps}
+                  </pre>
+                </div>
               </div>
 
-              {/* Slack Message Template */}
+              {/* Slack Message Template Display */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Slack Message Template</label>
                 <div className="bg-muted/30 rounded-md p-3 text-xs">
                   <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
-                    {slackMessageTemplate}
+                    {remindersSlackMessageTemplate}
                   </pre>
                   <p className="text-xs text-muted-foreground mt-2">
                     Use Zapier's field mapping to replace the <code className="bg-muted px-1 rounded">{`{{field}}`}</code> placeholders with actual values from the trigger response
