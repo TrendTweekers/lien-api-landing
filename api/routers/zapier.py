@@ -587,7 +587,7 @@ async def trigger_upcoming(
         )
 
 
-@router.get("/api/zapier/trigger/reminders")
+@router.get("/trigger/reminders")
 @limiter.limit("30/minute")
 async def trigger_reminders(
     request: Request,
