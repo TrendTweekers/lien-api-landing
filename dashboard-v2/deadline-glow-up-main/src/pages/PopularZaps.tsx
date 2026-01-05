@@ -84,17 +84,26 @@ const PopularZaps = () => {
     });
   };
 
-  const zapTemplates = [
-    {
-      id: 0,
-      title: "Deadline reminders → Slack (1 & 7 days)",
-      description: "Run hourly. Sends Slack alerts when deadlines are approaching (deduplicated).",
-      type: "reminders",
-      remindersUrl: remindersUrl || `${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`,
-      headers: remindersHeadersTemplate,
-      slackMessage: remindersSlackMessageTemplate,
-      zapSteps: remindersZapSetupSteps.replace('${window.location.origin}', window.location.origin)
-    },
+  // Build zapTemplates array dynamically to use state variables
+  const buildZapTemplates = () => {
+    const baseUrl = window.location.origin;
+    const remindersUrlValue = remindersUrl || `${baseUrl}/api/zapier/trigger/reminders?days=1,7&limit=50`;
+    
+    return [
+      {
+        id: 0,
+        title: "Deadline reminders → Slack (1 & 7 days)",
+        description: "Run hourly. Sends Slack alerts when deadlines are approaching (deduplicated).",
+        type: "reminders",
+        remindersUrl: remindersUrlValue,
+        headers: remindersHeadersTemplate,
+        slackMessage: remindersSlackMessageTemplate,
+        zapSteps: `1) Trigger: Schedule by Zapier → Every Hour
+2) Action: Webhooks by Zapier → GET
+   URL: ${baseUrl}/api/zapier/trigger/reminders?days=1,7&limit=50
+   Header: Authorization: Bearer <token>
+3) Action: Slack → Send Channel Message (use template)`
+      },
     {
       id: 1,
       title: "Invoices → Lien deadlines → Slack alert",
@@ -258,7 +267,10 @@ const PopularZaps = () => {
         }
       }
     }
-  ];
+    ];
+  };
+  
+  const zapTemplates = buildZapTemplates();
 
   return (
     <div className="min-h-screen bg-background">
@@ -685,7 +697,10 @@ const PopularZaps = () => {
 
           {/* Zap Templates */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {zapTemplates.map((zap) => (
+            {(() => {
+              const templates = buildZapTemplates();
+              console.log('zapTemplates:', templates);
+              return templates.map((zap) => (
               <Card key={zap.id} className="flex flex-col">
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -905,7 +920,8 @@ const PopularZaps = () => {
                   )}
                 </CardContent>
               </Card>
-            ))}
+            ));
+            })()}
           </div>
 
           {/* Footer CTA */}
