@@ -14,33 +14,64 @@ async def get_user_stats(request: Request):
         raise HTTPException(status_code=401, detail="Unauthorized")
     
     email = user.get('email')
-    subscription_status = user.get('subscription_status', 'free')
+    user_id = user.get('id')
     
     if not email:
         raise HTTPException(status_code=400, detail="User email not found")
         
     try:
+        # Check if admin (case-insensitive)
+        is_admin = email.lower().strip() == "admin@stackedboost.com"
+        
+        # Get plan and usage from billing module
+        from api.routers.billing import get_user_plan_and_usage, ensure_month_rollover
+        
+        if user_id:
+            ensure_month_rollover(user_id, email)
+            usage = get_user_plan_and_usage(user_id, email)
+            plan = usage.get('plan', 'free')
+            manual_count = usage.get('manual_calc_count', 0)
+            api_count = usage.get('api_call_count', 0)
+            usage_month = usage.get('usage_month')
+        else:
+            # Fallback if user_id not available
+            plan = user.get('subscription_status', 'free')
+            manual_count = 0
+            api_count = 0
+            usage_month = None
+        
+        # Determine limits based on plan
+        manual_limit = 3 if plan == 'free' else None
+        api_limit = 500 if plan == 'automated' else None
+        
+        # Calculate remaining
+        manual_remaining = None
+        if manual_limit is not None:
+            manual_remaining = max(0, manual_limit - manual_count)
+        
+        api_remaining = None
+        if api_limit is not None:
+            api_remaining = max(0, api_limit - api_count)
+        
+        # Get next reset date (first day of next month)
+        next_reset = None
+        if usage_month:
+            try:
+                if isinstance(usage_month, str):
+                    from datetime import datetime
+                    usage_month_date = datetime.strptime(usage_month, '%Y-%m-%d').date()
+                else:
+                    usage_month_date = usage_month
+                from datetime import date
+                if usage_month_date.month == 12:
+                    next_reset = date(usage_month_date.year + 1, 1, 1)
+                else:
+                    next_reset = date(usage_month_date.year, usage_month_date.month + 1, 1)
+            except:
+                pass
+        
         with get_db() as conn:
             cursor = get_db_cursor(conn)
-            
-            # Count calculations
-            if DB_TYPE == 'postgresql':
-                cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE user_email = %s", (email,))
-            else:
-                cursor.execute("SELECT COUNT(*) as count FROM calculations WHERE user_email = ?", (email,))
-            
-            calc_result = cursor.fetchone()
-            calc_count = 0
-            if calc_result:
-                if isinstance(calc_result, dict):
-                    calc_count = calc_result.get('count', 0)
-                elif hasattr(calc_result, 'keys'):
-                    try:
-                        calc_count = calc_result['count']
-                    except KeyError:
-                        calc_count = calc_result[0] if len(calc_result) > 0 else 0
-                else:
-                    calc_count = calc_result[0] if len(calc_result) > 0 else 0
             
             # Check if user has Zapier token
             zapier_connected = False
@@ -55,16 +86,30 @@ async def get_user_stats(request: Request):
                     zapier_connected = zapier_result.get('zapier_token_hash') is not None
                 else:
                     zapier_connected = zapier_result[0] is not None if len(zapier_result) > 0 else False
-            
-            return {
-                "email": email,
-                "subscriptionStatus": subscription_status,
-                "calculationsUsed": calc_count,
-                "calculationsLimit": 3 if subscription_status == 'free' else None,
-                "zapier_connected": zapier_connected
-            }
+        
+        return {
+            "email": email,
+            "plan": plan,
+            "subscriptionStatus": plan,  # Backward compatibility
+            "manual_calc_used": manual_count,
+            "manual_calc_limit": manual_limit,
+            "manual_calc_remaining": manual_remaining,
+            "api_calls_used": api_count,
+            "api_calls_limit": api_limit,
+            "api_calls_remaining": api_remaining,
+            "zapier_connected": zapier_connected,
+            "is_admin": is_admin,
+            "usage_month": usage_month.isoformat() if usage_month else None,
+            "next_reset": next_reset.isoformat() if next_reset else None,
+            # Backward compatibility fields
+            "calculationsUsed": manual_count,
+            "calculationsLimit": manual_limit,
+            "calculationsRemaining": manual_remaining,
+        }
     except Exception as e:
         logger.error(f"Error fetching user stats: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to fetch user stats")
 
 @router.get("/api/customer/stats")

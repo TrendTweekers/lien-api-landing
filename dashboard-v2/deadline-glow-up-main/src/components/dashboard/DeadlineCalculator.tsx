@@ -101,7 +101,7 @@ export const DeadlineCalculator = () => {
   const [supportedStates, setSupportedStates] = useState<Set<string>>(new Set());
   
   // Check if calculations are locked (free plan limit reached)
-  const isCalculationsLocked = planInfo.plan === "free" && planInfo.remainingCalculations <= 0;
+  const isCalculationsLocked = planInfo.plan === "free" && (planInfo.remainingCalculations ?? Infinity) <= 0;
 
   // Fetch supported states from backend (same endpoint as ImportedInvoicesTable)
   useEffect(() => {

@@ -1204,6 +1204,9 @@ app.include_router(customer.router, tags=["customer"])
 app.include_router(zapier.router, prefix="/api/zapier", tags=["zapier"])
 app.include_router(notifications.router, tags=["notifications"])
 
+# Import billing router (no endpoints, just helpers)
+from api.routers import billing
+
 
 
 
@@ -1269,6 +1272,18 @@ async def startup():
     #     #     
     # except Exception as e:
     #     print(f"❌ Schema check/fix failed: {e}")
+    
+    # Run plan/usage fields migration
+    try:
+        from api.routers.migrations import migrate_add_plan_usage_fields
+        print("🔄 Running plan/usage fields migration...")
+        migrate_add_plan_usage_fields()
+        print("✅ Plan/usage fields migration completed")
+    except Exception as e:
+        print(f"⚠️ Plan/usage fields migration had issues: {e}")
+        import traceback
+        traceback.print_exc()
+        # Don't fail startup if migration fails - columns might already exist
     
     print("✅ Application startup complete")
 

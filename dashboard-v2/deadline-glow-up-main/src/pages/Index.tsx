@@ -7,6 +7,7 @@ import { DeadlineCalculator } from "@/components/dashboard/DeadlineCalculator";
 import { ProjectsTable } from "@/components/dashboard/ProjectsTable";
 import { ApiKeySection } from "@/components/dashboard/ApiKeySection";
 import { UsageStats } from "@/components/dashboard/UsageStats";
+import { UsageWidget } from "@/components/dashboard/UsageWidget";
 import { BillingSection } from "@/components/dashboard/BillingSection";
 import { PartnerProgram } from "@/components/dashboard/PartnerProgram";
 import { ApiDocs } from "@/components/dashboard/ApiDocs";
@@ -117,6 +118,11 @@ const Index = () => {
           {/* Two Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: "0.3s" }}>
             <ApiKeySection />
+            <UsageWidget />
+          </div>
+          
+          {/* Legacy Usage Stats (keep for now) */}
+          <div className="animate-slide-up" style={{ animationDelay: "0.35s" }}>
             <UsageStats />
           </div>
 

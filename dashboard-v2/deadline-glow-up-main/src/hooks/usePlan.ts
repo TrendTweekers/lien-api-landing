@@ -31,6 +31,11 @@ export const usePlan = () => {
           return;
         }
 
+        // Fetch real stats from API first to get email
+        const headers: HeadersInit = {
+          "Authorization": `Bearer ${token}`
+        };
+        
         // Check if user is admin (case-insensitive)
         // Try to get email from session API if not in localStorage
         let userEmail = localStorage.getItem('user_email') || localStorage.getItem('userEmail') || '';
@@ -76,11 +81,6 @@ export const usePlan = () => {
           }
         }
 
-        // Fetch real stats from API
-        const headers: HeadersInit = {
-          "Authorization": `Bearer ${token}`
-        };
-
         const res = await fetch('/api/user/stats', { headers });
         if (!res.ok) {
           // Default to free plan if API fails
@@ -98,19 +98,19 @@ export const usePlan = () => {
         const data = await res.json();
         
         // Apply admin simulator overrides if active
-        const finalPlan: PlanType = simulatedPlan || (data.subscriptionStatus || "free");
+        const finalPlan: PlanType = simulatedPlan || (data.plan || data.subscriptionStatus || "free");
         const finalRemaining = simulatedRemaining !== null 
           ? simulatedRemaining 
-          : (data.calculationsRemaining ?? (data.calculationsLimit ? data.calculationsLimit - (data.calculationsUsed || 0) : Infinity));
+          : (data.manual_calc_remaining ?? data.calculationsRemaining ?? (data.manual_calc_limit ? data.manual_calc_limit - (data.manual_calc_used || 0) : Infinity));
         const finalZapier = simulatedZapier !== null 
           ? simulatedZapier 
           : (data.zapier_connected === true);
 
         setPlanInfo({
           plan: finalPlan,
-          remainingCalculations: finalRemaining,
+          remainingCalculations: finalRemaining ?? Infinity,
           zapierConnected: finalZapier,
-          isAdmin,
+          isAdmin: data.is_admin === true || isAdmin,
           isSimulated,
         });
       } catch (error) {

@@ -149,6 +149,7 @@ async def webhook_invoice(
     """
     try:
         user_email = current_user.get('email', '').lower().strip()
+        user_id = current_user.get('id')
         if not user_email:
             return JSONResponse(
                 status_code=401,
@@ -158,6 +159,34 @@ async def webhook_invoice(
                     "error": "Invalid Zapier token. Generate a new one in Dashboard → Integrations."
                 }
             )
+        
+        # Check Zapier plan limit
+        if user_id:
+            from api.routers.billing import check_plan_limit
+            limit_check = check_plan_limit(user_id, "zapier", user_email)
+            if not limit_check.get('allowed'):
+                error_info = limit_check.get('error', {})
+                return JSONResponse(
+                    status_code=402,
+                    content={
+                        "success": False,
+                        "version": "v1",
+                        **error_info
+                    }
+                )
+            
+            # Check API call limit (zapier webhooks count toward API limit)
+            limit_check_api = check_plan_limit(user_id, "api", user_email)
+            if not limit_check_api.get('allowed'):
+                error_info = limit_check_api.get('error', {})
+                return JSONResponse(
+                    status_code=402,
+                    content={
+                        "success": False,
+                        "version": "v1",
+                        **error_info
+                    }
+                )
         
         # Parse invoice date
         try:
@@ -358,6 +387,11 @@ async def webhook_invoice(
             raise HTTPException(status_code=500, detail="Database connection failed")
         
         logger.info(f"✅ Created project via Zapier webhook: ID={calculation_id}, user={user_email}")
+        
+        # Increment usage (zapier_webhook counts toward both zapier_webhook_count and api_call_count)
+        if user_id:
+            from api.routers.billing import increment_usage
+            increment_usage(user_id, "zapier_webhook", user_email)
         
         # Auto-create default notification settings for the project
         try:

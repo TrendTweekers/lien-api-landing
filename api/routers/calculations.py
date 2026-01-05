@@ -321,8 +321,27 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
     # 1. Auth & Quota
     user = get_user_from_session(request)
     quota_remaining = 3  # Public users get 3 calculations
+    
+    # Check plan limits for authenticated users
     if user:
-        quota_remaining = 9999  # Admins get integer (not "Unlimited" string) to prevent JS math errors
+        user_id = user.get("id")
+        user_email = user.get("email", "")
+        if user_id:
+            from api.routers.billing import check_plan_limit, get_user_plan_and_usage
+            limit_check = check_plan_limit(user_id, "manual_calc", user_email)
+            if not limit_check.get('allowed'):
+                error_info = limit_check.get('error', {})
+                raise HTTPException(
+                    status_code=402,
+                    detail=error_info
+                )
+            # Get actual remaining count
+            usage = get_user_plan_and_usage(user_id, user_email)
+            plan = usage.get('plan', 'free')
+            if plan == 'free':
+                quota_remaining = max(0, 3 - usage.get('manual_calc_count', 0))
+            else:
+                quota_remaining = 9999  # Unlimited for paid plans
 
     # 2. Calculation
     try:
@@ -493,44 +512,17 @@ async def save_calculation(request: Request, body: SaveRequest):
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid user")
     
-    # 1.5. Check free tier limits
+    # 1.5. Check plan limits using billing helpers
     user_email = user.get("email", "")
-    subscription_status = user.get("subscription_status", "")
+    from api.routers.billing import check_plan_limit, increment_usage
     
-    if subscription_status == 'free':
-        # Count existing calculations for this user
-        try:
-            with get_db() as conn:
-                cursor = get_db_cursor(conn)
-                
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        SELECT COUNT(*) as count FROM calculations 
-                        WHERE user_email = %s
-                    """, (user_email,))
-                else:
-                    cursor.execute("""
-                        SELECT COUNT(*) as count FROM calculations 
-                        WHERE user_email = ?
-                    """, (user_email,))
-                
-                result = cursor.fetchone()
-                if result:
-                    if isinstance(result, dict):
-                        calc_count = result.get('count', 0)
-                    else:
-                        calc_count = result[0] if len(result) > 0 else 0
-                    
-                    if calc_count >= 3:
-                        raise HTTPException(
-                            status_code=403, 
-                            detail="Free tier limit reached. Please upgrade to continue."
-                        )
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error checking free tier limit: {e}")
-            # Don't block save if check fails - log and continue
+    limit_check = check_plan_limit(user_id, "manual_calc", user_email)
+    if not limit_check.get('allowed'):
+        error_info = limit_check.get('error', {})
+        raise HTTPException(
+            status_code=402,
+            detail=error_info
+        )
     
     # 2. Map camelCase to snake_case (support both formats)
     p_name = body.project_name or body.projectName or ""
@@ -840,8 +832,8 @@ async def save_calculation(request: Request, body: SaveRequest):
                 logger.warning(f"Failed to create default notification settings for project {calculation_id}: {e}")
                 # Don't fail the save if notification settings creation fails
             
-            # Increment API usage
-            increment_api_calls(user_email)
+            # Increment manual calculation usage
+            increment_usage(user_id, "manual", user_email)
             
             return JSONResponse(content={
                 "success": True,

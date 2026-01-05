@@ -19,25 +19,29 @@ export const AdminSimulator = () => {
   const { planInfo } = usePlan();
   const [simulatedPlan, setSimulatedPlan] = useState<PlanType>("free");
   const [simulatedRemaining, setSimulatedRemaining] = useState<number>(3);
+  const [simulatedManualUsed, setSimulatedManualUsed] = useState<number>(0);
+  const [simulatedApiUsed, setSimulatedApiUsed] = useState<number>(0);
   const [simulatedZapier, setSimulatedZapier] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     if (!planInfo.isAdmin) return;
 
-    try {
-      const simData = localStorage.getItem('admin_billing_sim');
-      if (simData) {
-        const parsed = JSON.parse(simData);
-        if (parsed.simulated_plan) {
-          setSimulatedPlan(parsed.simulated_plan);
-          setSimulatedRemaining(parsed.simulated_remaining_calculations ?? 3);
-          setSimulatedZapier(parsed.simulated_zapier_connected ?? false);
+        try {
+          const simData = localStorage.getItem('admin_billing_sim');
+          if (simData) {
+            const parsed = JSON.parse(simData);
+            if (parsed.simulated_plan) {
+              setSimulatedPlan(parsed.simulated_plan);
+              setSimulatedRemaining(parsed.simulated_remaining_calculations ?? 3);
+              setSimulatedManualUsed(parsed.simulated_manual_used ?? 0);
+              setSimulatedApiUsed(parsed.simulated_api_used ?? 0);
+              setSimulatedZapier(parsed.simulated_zapier_connected ?? false);
+            }
+          }
+        } catch (e) {
+          console.error('Error loading admin simulator:', e);
         }
-      }
-    } catch (e) {
-      console.error('Error loading admin simulator:', e);
-    }
   }, [planInfo.isAdmin]);
 
   if (!planInfo.isAdmin) {
@@ -48,6 +52,8 @@ export const AdminSimulator = () => {
     const simData = {
       simulated_plan: simulatedPlan,
       simulated_remaining_calculations: simulatedRemaining,
+      simulated_manual_used: simulatedManualUsed,
+      simulated_api_used: simulatedApiUsed,
       simulated_zapier_connected: simulatedZapier,
     };
     localStorage.setItem('admin_billing_sim', JSON.stringify(simData));
@@ -62,6 +68,8 @@ export const AdminSimulator = () => {
     localStorage.removeItem('admin_billing_sim');
     setSimulatedPlan("free");
     setSimulatedRemaining(3);
+    setSimulatedManualUsed(0);
+    setSimulatedApiUsed(0);
     setSimulatedZapier(false);
     window.dispatchEvent(new CustomEvent('admin_sim_changed'));
     setIsOpen(false);
@@ -134,6 +142,30 @@ export const AdminSimulator = () => {
                   type="number"
                   value={simulatedRemaining}
                   onChange={(e) => setSimulatedRemaining(parseInt(e.target.value) || 0)}
+                  min={0}
+                  max={999}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="sim-manual-used">Manual Calculations Used</Label>
+                <Input
+                  id="sim-manual-used"
+                  type="number"
+                  value={simulatedManualUsed}
+                  onChange={(e) => setSimulatedManualUsed(parseInt(e.target.value) || 0)}
+                  min={0}
+                  max={999}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="sim-api-used">API Calls Used</Label>
+                <Input
+                  id="sim-api-used"
+                  type="number"
+                  value={simulatedApiUsed}
+                  onChange={(e) => setSimulatedApiUsed(parseInt(e.target.value) || 0)}
                   min={0}
                   max={999}
                 />
