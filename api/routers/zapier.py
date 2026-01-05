@@ -170,9 +170,12 @@ async def webhook_invoice(
         lien_days = (lien_deadline.date() - today).days
         
         # Format invoice amount for Zapier (cents + formatted string)
+        # DB stores DOLLARS, so we convert dollars → cents for response
         invoice_amount_cents = None
         invoice_amount_formatted = None
         if invoice_data.invoice_amount is not None:
+            # invoice_data.invoice_amount is in DOLLARS (e.g., 4992.00)
+            # Convert to cents: dollars * 100
             invoice_amount_cents = int(invoice_data.invoice_amount * 100)
             invoice_amount_formatted = f"{invoice_data.invoice_amount:.2f}"
         
@@ -406,8 +409,11 @@ async def trigger_upcoming(
                     logger.warning(f"Could not calculate prelim_deadline_days: {e}")
             
             # Format invoice amount for Zapier (cents + formatted string)
+            # DB stores DOLLARS, so we convert dollars → cents for response
             invoice_amount = project.get('invoice_amount')
             if invoice_amount is not None:
+                # invoice_amount from DB is in DOLLARS (e.g., 4992.00)
+                # Convert to cents: dollars * 100
                 project['invoice_amount_cents'] = int(invoice_amount * 100)
                 project['invoice_amount'] = f"{invoice_amount:.2f}"
             else:
