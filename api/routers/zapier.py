@@ -150,19 +150,46 @@ async def webhook_invoice(
     try:
         user_email = current_user.get('email', '').lower().strip()
         if not user_email:
-            raise HTTPException(status_code=401, detail="User email not found")
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "success": False,
+                    "version": "v1",
+                    "error": "Invalid Zapier token. Generate a new one in Dashboard → Integrations."
+                }
+            )
         
         # Parse invoice date
         try:
             invoice_date_dt = parse_invoice_date(invoice_data.invoice_date)
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            error_msg = str(e)
+            if "date" in error_msg.lower():
+                error_msg = "invoice_date is required (YYYY-MM-DD)."
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "success": False,
+                    "version": "v1",
+                    "error": error_msg
+                }
+            )
         
         # Normalize state code
         try:
             state_code = normalize_state_code(invoice_data.state)
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            error_msg = str(e)
+            if "state" in error_msg.lower():
+                error_msg = "state is required (2-letter code like TX)."
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "success": False,
+                    "version": "v1",
+                    "error": error_msg
+                }
+            )
         
         # Calculate deadlines using existing calculator
         try:
@@ -208,9 +235,13 @@ async def webhook_invoice(
                 invoice_amount_cents = invoice_data.invoice_amount_cents
                 invoice_amount_formatted = f"{invoice_amount_dollars:.2f}"
             except (InvalidOperation, ValueError, TypeError) as e:
-                raise HTTPException(
+                return JSONResponse(
                     status_code=400,
-                    detail=f"Invalid invoice_amount_cents: {str(e)}"
+                    content={
+                        "success": False,
+                        "version": "v1",
+                        "error": f"Invalid invoice_amount_cents: {str(e)}"
+                    }
                 )
         elif invoice_data.invoice_amount is not None:
             # Format 2: invoice_amount provided (dollars as float/string)
@@ -218,22 +249,34 @@ async def webhook_invoice(
             try:
                 invoice_amount_dollars = Decimal(str(invoice_data.invoice_amount))
                 if invoice_amount_dollars < 0:
-                    raise HTTPException(
+                    return JSONResponse(
                         status_code=400,
-                        detail="invoice_amount must be >= 0"
+                        content={
+                            "success": False,
+                            "version": "v1",
+                            "error": "invoice_amount must be >= 0"
+                        }
                     )
                 invoice_amount_cents = int(round(invoice_amount_dollars * 100))
                 invoice_amount_formatted = f"{invoice_amount_dollars:.2f}"
             except (InvalidOperation, ValueError, TypeError) as e:
-                raise HTTPException(
+                return JSONResponse(
                     status_code=400,
-                    detail=f"Invalid invoice_amount: {str(e)}"
+                    content={
+                        "success": False,
+                        "version": "v1",
+                        "error": f"Invalid invoice_amount: {str(e)}"
+                    }
                 )
         else:
             # Format 3: Neither provided
-            raise HTTPException(
+            return JSONResponse(
                 status_code=400,
-                detail="Missing invoice_amount or invoice_amount_cents"
+                content={
+                    "success": False,
+                    "version": "v1",
+                    "error": "invoice_amount_cents is required (integer cents)."
+                }
             )
         
         # Format dates as strings
@@ -320,6 +363,7 @@ async def webhook_invoice(
             status_code=201,
             content={
                 "success": True,
+                "version": "v1",
                 "id": calculation_id,
                 "project_name": invoice_data.project_name or "",
                 "invoice_date": invoice_data.invoice_date,
@@ -334,13 +378,31 @@ async def webhook_invoice(
             }
         )
         
-    except HTTPException:
+    except HTTPException as e:
+        # Convert HTTPException to standardized JSONResponse for Zapier API
+        if e.status_code == 401:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "success": False,
+                    "version": "v1",
+                    "error": "Invalid Zapier token. Generate a new one in Dashboard → Integrations."
+                }
+            )
+        # Re-raise other HTTPExceptions (they may already be JSONResponse from above)
         raise
     except Exception as e:
         logger.error(f"❌ Error in webhook_invoice: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "version": "v1",
+                "error": "Internal server error. Please try again."
+            }
+        )
 
 
 @router.get("/trigger/upcoming")
@@ -359,7 +421,14 @@ async def trigger_upcoming(
     try:
         user_email = current_user.get('email', '').lower().strip()
         if not user_email:
-            raise HTTPException(status_code=401, detail="User email not found")
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "success": False,
+                    "version": "v1",
+                    "error": "Invalid Zapier token. Generate a new one in Dashboard → Integrations."
+                }
+            )
         
         # Validate limit
         if limit < 1 or limit > 100:
@@ -485,16 +554,35 @@ async def trigger_upcoming(
             status_code=200,
             content={
                 "success": True,
+                "version": "v1",
                 "count": len(projects),
                 "projects": projects
             }
         )
         
-    except HTTPException:
+    except HTTPException as e:
+        # Convert HTTPException to standardized JSONResponse for Zapier API
+        if e.status_code == 401:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "success": False,
+                    "version": "v1",
+                    "error": "Invalid Zapier token. Generate a new one in Dashboard → Integrations."
+                }
+            )
+        # Re-raise other HTTPExceptions
         raise
     except Exception as e:
         logger.error(f"❌ Error in trigger_upcoming: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "version": "v1",
+                "error": "Internal server error. Please try again."
+            }
+        )
 

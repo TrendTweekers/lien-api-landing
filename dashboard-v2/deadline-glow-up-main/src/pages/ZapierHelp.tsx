@@ -100,6 +100,37 @@ const ZapierHelp = () => {
             </p>
           </div>
 
+          {/* Zapier API v1 Info */}
+          <Card className="bg-primary/5 border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                Zapier API v1 (Stable)
+                <Badge variant="secondary" className="text-xs">v1</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div>
+                <span className="font-medium">Auth header:</span>{" "}
+                <code className="bg-muted px-1 rounded text-xs">Authorization: Bearer &lt;zapier_token&gt;</code>
+              </div>
+              <div>
+                <span className="font-medium">Webhook endpoint:</span>{" "}
+                <code className="bg-muted px-1 rounded text-xs">POST /api/zapier/webhook/invoice</code>
+              </div>
+              <div>
+                <span className="font-medium">Trigger endpoint:</span>{" "}
+                <code className="bg-muted px-1 rounded text-xs">GET /api/zapier/trigger/upcoming?limit=10</code>
+              </div>
+              <div>
+                <span className="font-medium">Required fields:</span>{" "}
+                <code className="bg-muted px-1 rounded text-xs">state, invoice_date, invoice_amount_cents</code>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 italic">
+                Breaking changes will only be introduced under a new version.
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Step 1: Webhook POST */}
           <Card>
             <CardHeader>
