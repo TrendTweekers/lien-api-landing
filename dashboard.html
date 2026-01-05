@@ -248,107 +248,23 @@
             </div>
         </div>
 
-        <!-- Accounting Integrations Section -->
-        <div class="mb-8 max-w-5xl mx-auto">
-            <!-- A) Intro Block -->
-            <div class="mb-8">
-                <h2 class="text-2xl font-bold text-gray-900 mb-2">Accounting Integrations</h2>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">Get deadline alerts wherever you already work</h3>
-                <p class="text-gray-600 mb-4">Automatically send lien deadline reminders to Slack, email, CRM, or spreadsheets — powered by Zapier.</p>
-                
-                <ul class="list-disc list-inside space-y-1 text-gray-700 mb-4 ml-4">
-                    <li>Works with 6,000+ apps</li>
-                    <li>No email setup inside LienDeadline</li>
-                    <li>LienDeadline decides when — Zapier decides where</li>
-                </ul>
-                
-                <!-- E) Social proof line -->
-                <p class="text-sm text-gray-500 italic mt-4 pt-4 border-t border-gray-200">Trusted by contractors protecting $2.3M+ in receivables every month</p>
-            </div>
-            
-            <!-- B) Connect your tools section -->
-            <div class="bg-gray-50 rounded-lg p-6 mb-6">
-                <h3 class="text-xl font-bold text-gray-900 mb-2">Connect your tools</h3>
-                <p class="text-gray-600 mb-6">Choose QuickBooks, Xero, Procore, Google Sheets, or any of 6,000+ Zapier apps.</p>
-                
-                <!-- Zapier Card -->
-                <div class="bg-white rounded-lg p-6 border border-gray-200">
-                    <h4 class="text-lg font-semibold text-gray-900 mb-2">Zapier (Recommended) <span class="text-sm font-normal text-gray-600">6,000+ apps</span></h4>
-                    <p class="text-gray-700 mb-4">Import invoices from ANY system via Zapier. Turn invoices from any system into lien deadlines automatically.</p>
-                    
-                    <!-- Zapier token section (if exists) -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Zapier API Token</label>
-                        <div class="flex items-center gap-2">
-                            <span id="zapier-token-display" class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded font-mono text-sm">••••••••••••</span>
-                            <button 
-                                onclick="regenerateZapierToken()"
-                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium"
-                            >
-                                Regenerate
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- D) View Popular Zaps button -->
-                    <div class="mt-6">
-                        <a 
-                            href="/dashboard/zapier"
-                            class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
-                        >
-                            View Popular Zaps
-                        </a>
-                        <p class="text-sm text-gray-600 mt-2">Need help setting up Zapier?</p>
-                    </div>
+        <!-- Zapier Automation Section -->
+        <div class="bg-white shadow-lg rounded-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Zapier Automation</h2>
+            <p class="text-gray-600 mb-4">
+                Connect Zapier to send deadline reminders to Slack, email, CRM, or any of 6,000+ apps. 
+                Works with QuickBooks, Xero, Procore, Google Sheets, and more.
+            </p>
+            <div class="flex items-center justify-between">
+                <div>
+                    <span id="zapier-status" class="text-sm text-gray-600">Not connected</span>
                 </div>
-            </div>
-            
-            <!-- C) Advanced setup (optional) section -->
-            <div class="bg-gray-50 rounded-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-600 mb-2">Advanced setup (optional)</h3>
-                <p class="text-sm text-gray-600 mb-6">Use these URLs if you want to build a custom Zap from scratch.</p>
-                
-                <!-- Webhook URL Card -->
-                <div class="bg-white rounded-lg p-4 border border-gray-200 mb-4">
-                    <h4 class="font-semibold text-gray-900 mb-2">1. Copy Webhook URL</h4>
-                    <p class="text-sm text-gray-600 mb-3">Use this in Zapier to send invoices to LienDeadline.</p>
-                    <div class="flex gap-2">
-                        <input 
-                            type="text" 
-                            readonly 
-                            value="https://liendeadline.com/api/zapier/webhook/invoice" 
-                            id="webhook-url"
-                            class="flex-1 px-3 py-2 border border-gray-300 rounded font-mono text-sm"
-                        >
-                        <button 
-                            onclick="copyToClipboard('webhook-url')"
-                            class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm font-medium"
-                        >
-                            Copy Webhook
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Trigger URL Card -->
-                <div class="bg-white rounded-lg p-4 border border-gray-200">
-                    <h4 class="font-semibold text-gray-900 mb-2">2. Copy Trigger URL</h4>
-                    <p class="text-sm text-gray-600 mb-3">Use this in Zapier to pull upcoming deadlines.</p>
-                    <div class="flex gap-2">
-                        <input 
-                            type="text" 
-                            readonly 
-                            value="https://liendeadline.com/api/zapier/trigger/upcoming?limit=10" 
-                            id="trigger-url"
-                            class="flex-1 px-3 py-2 border border-gray-300 rounded font-mono text-sm"
-                        >
-                        <button 
-                            onclick="copyToClipboard('trigger-url')"
-                            class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm font-medium"
-                        >
-                            Copy Trigger
-                        </button>
-                    </div>
-                </div>
+                <a 
+                    href="/dashboard/zapier"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition duration-200"
+                >
+                    Connect Zapier
+                </a>
             </div>
         </div>
     </div>
