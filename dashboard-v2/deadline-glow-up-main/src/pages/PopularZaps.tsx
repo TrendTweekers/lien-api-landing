@@ -701,131 +701,128 @@ const PopularZaps = () => {
 
           {/* Zap Templates */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border border-orange-200 bg-orange-50">
-              <CardHeader>
-                <CardTitle>Deadline reminders → Slack (1 & 7 days)</CardTitle>
-                <CardDescription>
-                  Run on a schedule. Sends alerts when deadlines are approaching.
-                </CardDescription>
-              </CardHeader>
+            {/* REMINDERS_CARD_V1 */}
+            {(() => {
+              // Define constants directly in this card
+              const remindersUrl = `${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`;
+              const remindersHeadersTemplate = `{"Authorization":"Bearer <YOUR_TOKEN_HERE>","Content-Type":"application/json"}`;
+              const remindersSlackMessageTemplate = `🚨 Deadline Reminder: {{project.project_name}}
+Invoice: {{project.invoice_number}}
+Deadline: {{deadline_date}}
+Type: {{reminder_type}} ({{reminder_days}} days remaining)
+Amount: ${{project.invoice_amount}}`;
+              const getRemindersZapSetupSteps = () => [
+                "1) Trigger: Schedule by Zapier → Every Hour",
+                "2) Action: Webhooks by Zapier → GET (use Reminders URL + Headers)",
+                "3) Action: Slack → Send Channel Message (use Slack template)"
+              ];
+              const setupStepsText = getRemindersZapSetupSteps().join("\n");
 
-              <CardContent className="space-y-4 text-sm">
-                {/* Reminders URL */}
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Reminders URL (GET)</label>
-                  <div className="flex gap-2">
-                    <code className="flex-1 px-3 py-2 bg-muted rounded-md text-xs font-mono overflow-x-auto">
-                      {remindersUrl || `${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`}
-                    </code>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyToClipboard(remindersUrl || `${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`, "reminders-url-card")}
-                    >
-                      {copied === "reminders-url-card" ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
+              return (
+                <Card key="reminders-card-v1" className="border border-orange-200 bg-orange-50">
+                  <CardHeader>
+                    <CardTitle>Deadline reminders → Slack (1 & 7 days) — REMINDERS_CARD_V1</CardTitle>
+                    <CardDescription>
+                      Run on a schedule. Sends alerts when deadlines are approaching.
+                    </CardDescription>
+                  </CardHeader>
 
-                {/* Copy Buttons */}
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(remindersUrl || `${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`, "reminders-url-btn")}
-                  >
-                    {copied === "reminders-url-btn" ? (
-                      <>
-                        <Check className="h-3 w-3 mr-1" /> Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3 w-3 mr-1" /> Copy Reminders URL
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(JSON.stringify(remindersHeadersTemplate, null, 2), "reminders-headers-btn")}
-                  >
-                    {copied === "reminders-headers-btn" ? (
-                      <>
-                        <Check className="h-3 w-3 mr-1" /> Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3 w-3 mr-1" /> Copy Headers
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(remindersSlackMessageTemplate, "reminders-slack-template-btn")}
-                  >
-                    {copied === "reminders-slack-template-btn" ? (
-                      <>
-                        <Check className="h-3 w-3 mr-1" /> Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3 w-3 mr-1" /> Copy Slack Template
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(getRemindersZapSetupSteps(window.location.origin), "reminders-setup-steps-btn")}
-                  >
-                    {copied === "reminders-setup-steps-btn" ? (
-                      <>
-                        <Check className="h-3 w-3 mr-1" /> Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3 w-3 mr-1" /> Copy Setup Steps
-                      </>
-                    )}
-                  </Button>
-                </div>
+                  <CardContent className="space-y-4 text-sm">
+                    {/* Reminders URL */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Reminders URL (GET)</label>
+                      <div className="flex gap-2">
+                        <code className="flex-1 px-3 py-2 bg-muted rounded-md text-xs font-mono overflow-x-auto">
+                          {remindersUrl}
+                        </code>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(remindersUrl, "reminders-url-v1")}
+                        >
+                          {copied === "reminders-url-v1" ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
 
-                {/* Headers */}
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Headers</label>
-                  <div className="bg-muted/30 rounded-md p-3 text-xs">
-                    <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
-                      {JSON.stringify(remindersHeadersTemplate, null, 2)}
-                    </pre>
-                  </div>
-                </div>
+                    {/* Headers */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Headers</label>
+                      <div className="flex gap-2">
+                        <div className="flex-1 bg-muted/30 rounded-md p-3 text-xs">
+                          <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
+                            {remindersHeadersTemplate}
+                          </pre>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(remindersHeadersTemplate, "reminders-headers-v1")}
+                        >
+                          {copied === "reminders-headers-v1" ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
 
-                {/* Slack Message Template */}
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Slack Message Template</label>
-                  <div className="bg-muted/30 rounded-md p-3 text-xs">
-                    <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
-                      {remindersSlackMessageTemplate}
-                    </pre>
-                  </div>
-                </div>
+                    {/* Slack Message Template */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Slack Message Template</label>
+                      <div className="flex gap-2">
+                        <div className="flex-1 bg-muted/30 rounded-md p-3 text-xs">
+                          <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
+                            {remindersSlackMessageTemplate}
+                          </pre>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(remindersSlackMessageTemplate, "reminders-slack-v1")}
+                        >
+                          {copied === "reminders-slack-v1" ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
 
-                {/* Setup Steps */}
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Setup Steps</label>
-                  <div className="bg-muted/30 rounded-md p-3 text-xs">
-                    <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
-                      {getRemindersZapSetupSteps(window.location.origin)}
-                    </pre>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                    {/* Setup Steps */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Setup Steps</label>
+                      <div className="flex gap-2">
+                        <div className="flex-1 bg-muted/30 rounded-md p-3 text-xs">
+                          <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                            {getRemindersZapSetupSteps().map((step, idx) => (
+                              <li key={idx}>{step}</li>
+                            ))}
+                          </ol>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(setupStepsText, "reminders-steps-v1")}
+                        >
+                          {copied === "reminders-steps-v1" ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             {buildZapTemplates().map((zap) => (
               <Card key={zap.id} className="flex flex-col">
