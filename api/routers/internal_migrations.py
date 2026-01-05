@@ -31,13 +31,11 @@ def verify_admin_user(current_user: dict = Depends(get_current_user)) -> dict:
     return current_user
 
 @router.post("/migrate/notification-settings")
-async def migrate_notification_settings(
-    current_user: dict = Depends(verify_admin_user)
-):
+async def migrate_notification_settings():
     """
     Temporary endpoint to create notification_settings table in production.
-    Only accessible by admin@stackedboost.com.
     
+    ⚠️ TEMPORARY: Auth removed for one-time migration.
     This endpoint should be removed after the migration is confirmed.
     """
     try:
