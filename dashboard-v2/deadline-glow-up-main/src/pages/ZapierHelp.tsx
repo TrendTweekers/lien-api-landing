@@ -276,45 +276,73 @@ const ZapierHelp = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <h4 className="text-sm font-semibold text-foreground mb-2">How Reminders Work</h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  We send reminders once per deadline per offset. Running the Zap hourly will not duplicate messages.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  The reminders endpoint uses server-side deduplication to ensure each reminder is sent exactly once for each deadline at each configured day offset (e.g., 1 day before, 7 days before). This means you can safely run your Zap every hour without worrying about spam.
+              <div className="rounded-lg border border-border bg-muted/30 p-4">
+                <h4 className="text-sm font-semibold text-foreground">What this does</h4>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Run a Zap on a schedule (hourly) → LienDeadline returns reminders due today (e.g. 7 days before, 1 day before) → Zapier sends them to Slack/Email/Asana.
+                  Each reminder is returned <span className="font-medium text-foreground">once</span> (no duplicates), even if your Zap runs every hour.
                 </p>
               </div>
-              
-              <div>
-                <h4 className="text-sm font-semibold text-foreground mb-2">Recommended Schedule</h4>
-                <p className="text-sm text-muted-foreground">
-                  Run your Zap hourly using "Schedule by Zapier" to catch all upcoming deadlines. The reminders endpoint returns projects where deadlines match your configured day offsets (default: 1 and 7 days), sorted by deadline date.
-                </p>
+
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-foreground">3-step setup (recommended)</h4>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                  <li>
+                    <span className="font-medium text-foreground">Trigger:</span> Use{" "}
+                    <span className="font-medium text-foreground">Schedule by Zapier</span>{" "}
+                    → <span className="font-medium text-foreground">Every Hour</span>
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">Action:</span> Webhooks by Zapier →{" "}
+                    <span className="font-medium text-foreground">GET</span>
+                    <div className="mt-2 flex items-center gap-2">
+                      <code className="flex-1 px-3 py-2 bg-muted rounded-md text-xs font-mono overflow-x-auto">
+                        {window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50
+                      </code>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          copyToClipboard(
+                            `${window.location.origin}/api/zapier/trigger/reminders?days=1,7&limit=50`,
+                            "reminders-url"
+                          )
+                        }
+                      >
+                        {copied === "reminders-url" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Add header:{" "}
+                      <code className="bg-muted px-1 rounded">Authorization: Bearer &lt;your_zapier_token&gt;</code>
+                    </div>
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">Notify:</span> Send the reminder to Slack / Email / Asana (any app).
+                    Zapier will process each reminder in the list.
+                  </li>
+                </ol>
               </div>
-              
-              <div>
-                <h4 className="text-sm font-semibold text-foreground mb-2">1-Day and 7-Day Reminders</h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  The reminders endpoint supports multiple day offsets. Default configuration sends reminders at:
-                </p>
+
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-foreground">Recommended offsets</h4>
                 <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
+                  <li><span className="font-medium text-foreground">7 days</span> = early warning</li>
+                  <li><span className="font-medium text-foreground">1 day</span> = final reminder</li>
                   <li>
-                    <strong>7 days before:</strong> Early warning for upcoming deadlines
-                  </li>
-                  <li>
-                    <strong>1 day before:</strong> Final reminder before deadline
-                  </li>
-                  <li>
-                    <strong>Custom offsets:</strong> Use <code className="bg-muted px-1 rounded">?days=1,3,7</code> to customize reminder timing
+                    Custom: <code className="bg-muted px-1 rounded">?days=1,3,7</code>
                   </li>
                 </ul>
               </div>
-              
-              <div>
-                <h4 className="text-sm font-semibold text-foreground mb-2">How It Works</h4>
-                <p className="text-sm text-muted-foreground">
-                  The reminders endpoint returns an array of reminder objects. Each reminder includes the reminder type (prelim or lien), days until deadline, deadline date, and full project details. Zapier processes each reminder and can send notifications to Slack, Email, Asana, or any other app.
+
+              <div className="rounded-lg border border-border bg-muted/30 p-4">
+                <h4 className="text-sm font-semibold text-foreground">Fields you can use in your notification</h4>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Each reminder includes:
+                  <code className="bg-muted px-1 rounded ml-1">reminder_type</code>,{" "}
+                  <code className="bg-muted px-1 rounded">reminder_days</code>,{" "}
+                  <code className="bg-muted px-1 rounded">deadline_date</code>, and full{" "}
+                  <code className="bg-muted px-1 rounded">project</code> details (state, dates, amount).
                 </p>
               </div>
             </CardContent>
