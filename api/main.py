@@ -1294,9 +1294,11 @@ except Exception as e:
 # Serve React Dashboard SPA
 @app.get("/dashboard")
 async def serve_dashboard_root():
-    """Redirect /dashboard to /customer-dashboard (where Zapier integration is)"""
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/customer-dashboard", status_code=301)
+    """Serve React App Root"""
+    file_path = BASE_DIR / "dashboard" / "index.html"
+    if file_path.exists():
+        return FileResponse(file_path)
+    return Response("Dashboard not found", status_code=404)
 
 @app.get("/dashboard/{full_path:path}")
 async def serve_dashboard(full_path: str):
