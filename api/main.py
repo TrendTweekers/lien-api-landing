@@ -5265,6 +5265,8 @@ async def get_procore_projects(request: Request, current_user: dict = Depends(ge
 # Serve images from public/images directory
 # IMPORTANT: Use explicit route instead of mount to avoid conflicts with catch-all / mount
 images_dir = PROJECT_ROOT / "public" / "images"
+# Create directories if they don't exist (resilience fix)
+os.makedirs(str(images_dir), exist_ok=True)
 print(f"🖼️ images_dir={images_dir} exists={images_dir.exists()}")
 if images_dir.exists():
     logo_path = images_dir / "liendeadline-logo.png"
@@ -5280,11 +5282,13 @@ if images_dir.exists():
     
     print(f"✅ Registered /images/{{filename}} route -> {images_dir}")
 else:
-    print(f"❌ ERROR: images_dir does not exist: {images_dir}")
+    print(f"⚠️ WARNING: images_dir does not exist: {images_dir}")
 
 # Serve static files from public directory (favicons, manifest, etc.)
 # This mount must be LAST so API routes take precedence
 public_dir = PROJECT_ROOT / "public"
+# Create directory if it doesn't exist (resilience fix)
+os.makedirs(str(public_dir), exist_ok=True)
 print(f"📁 public_dir={public_dir} exists={public_dir.exists()}")
 
 # State guide routes - must be BEFORE StaticFiles mount to prevent redirect loops
