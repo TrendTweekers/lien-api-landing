@@ -224,6 +224,11 @@ export const IntegrationsSection = () => {
               </div>
             </div>
           </div>
+
+          {/* Zapier Card - Span all columns */}
+          <div className="col-span-1 md:col-span-3 w-full">
+            <ZapierCard />
+          </div>
         </div>
       </div>
     );
@@ -401,11 +406,6 @@ export const IntegrationsSection = () => {
       </Alert>
 
       <GetStartedStepper />
-
-      {/* Zapier Card - Full width, same as Get Started section */}
-      <div className="w-full max-w-none">
-        <ZapierCard />
-      </div>
 
       {/* Token Dialog */}
       <Dialog open={showTokenDialog} onOpenChange={setShowTokenDialog}>
