@@ -344,6 +344,9 @@ const PopularZaps = () => {
                   {zap.webhookExample && (
                     <div>
                       <h4 className="text-sm font-semibold text-foreground mb-2">Webhook JSON Example</h4>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Required: state, invoice_date. Recommended: invoice_amount_cents, invoice_number. Optional: project_name, client_name.
+                      </p>
                       <div className="bg-muted/30 rounded-md p-3 text-xs">
                         <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
                           {JSON.stringify(zap.webhookExample, null, 2)}
