@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import logging
 
 from api.database import get_db, get_db_cursor, DB_TYPE
@@ -372,11 +372,17 @@ async def trigger_upcoming(
                     "created_at": row[11] if len(row) > 11 else ""
                 }
             
-            # Format dates if they're datetime objects
-            if project.get('invoice_date') and isinstance(project['invoice_date'], datetime):
-                project['invoice_date'] = project['invoice_date'].strftime("%Y-%m-%d")
-            if project.get('created_at') and isinstance(project['created_at'], datetime):
-                project['created_at'] = project['created_at'].isoformat()
+            # Ensure all date/datetime fields are JSON-serializable
+            # (DB drivers often return datetime.date for DATE columns)
+            from datetime import date as _date, datetime as _datetime
+
+            for k in ("invoice_date", "prelim_deadline", "lien_deadline", "created_at"):
+                v = project.get(k)
+                if isinstance(v, _datetime):
+                    # Keep invoice_date as YYYY-MM-DD, everything else can be full ISO
+                    project[k] = v.strftime("%Y-%m-%d") if k == "invoice_date" else v.isoformat()
+                elif isinstance(v, _date):
+                    project[k] = v.isoformat()
             
             projects.append(project)
         
