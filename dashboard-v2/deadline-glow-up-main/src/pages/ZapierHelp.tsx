@@ -221,6 +221,9 @@ const ZapierHelp = () => {
               <CardTitle className="text-xl">Step 2 — Pull upcoming deadlines (Trigger GET)</CardTitle>
               <CardDescription>
                 Set up a Zapier trigger to poll for projects with upcoming lien deadlines.
+                <span className="block mt-1 text-xs text-muted-foreground">
+                  For notifications, use <code className="bg-muted px-1 rounded">/trigger/reminders</code> (recommended). <code className="bg-muted px-1 rounded">/trigger/upcoming</code> is for dashboards/reports.
+                </span>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
