@@ -274,6 +274,12 @@ const PopularZaps = () => {
             <p className="text-muted-foreground">Pick a template. Build it in Zapier in minutes.</p>
           </div>
 
+          {/* REMINDERS Section */}
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-foreground mb-1">REMINDERS</h2>
+            <p className="text-sm text-muted-foreground">Run on a schedule. Sends alerts when deadlines are approaching.</p>
+          </div>
+
           {/* Deadline Reminders → Slack Card (NEW - Top) */}
           <Card className="bg-primary/5 border-primary/20">
             <CardHeader>
