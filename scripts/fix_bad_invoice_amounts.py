@@ -25,9 +25,42 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from api.database import get_db, get_db_cursor, DB_TYPE
 
 
+def check_table_has_column(conn, table_name, column_name):
+    """Check if table has the specified column"""
+    cursor = get_db_cursor(conn)
+    if DB_TYPE == 'postgresql':
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = %s AND column_name = %s
+        """, (table_name, column_name))
+        return cursor.fetchone() is not None
+    else:
+        # SQLite: PRAGMA table_info returns (cid, name, type, notnull, dflt_value, pk)
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        rows = cursor.fetchall()
+        columns = []
+        for row in rows:
+            if isinstance(row, (list, tuple)):
+                columns.append(row[1])  # name is at index 1
+            elif hasattr(row, 'keys'):  # sqlite3.Row
+                columns.append(row['name'])
+            else:
+                columns.append(row[1] if len(row) > 1 else None)
+        return column_name in columns
+
+
 def find_bad_invoice_amounts():
     """Find all records with invoice_amount >= 10000"""
     with get_db() as conn:
+        # Check if invoice_amount column exists
+        if not check_table_has_column(conn, 'calculations', 'invoice_amount'):
+            raise ValueError(
+                "The calculations table does not have an 'invoice_amount' column. "
+                "This script is designed for the production database schema with invoice_amount, "
+                "project_name, client_name, etc. Your local database may have an older schema."
+            )
+        
         cursor = get_db_cursor(conn)
         
         if DB_TYPE == 'postgresql':
