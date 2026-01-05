@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, ExternalLink } from "lucide-react";
+import { ArrowLeft, Copy, Check, ExternalLink, ChevronDown, ChevronUp, Key } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
 
 const PopularZaps = () => {
   const navigate = useNavigate();
@@ -14,6 +16,9 @@ const PopularZaps = () => {
   const [triggerUrl, setTriggerUrl] = useState("");
   const [remindersUrl, setRemindersUrl] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+  const [zapierToken, setZapierToken] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({});
   
   // Headers template (user needs to replace YOUR_ZAPIER_TOKEN with their actual token)
   const headersTemplate = {
@@ -94,6 +99,21 @@ const PopularZaps = () => {
     setWebhookUrl(`${baseUrl}/api/zapier/webhook/invoice`);
     setTriggerUrl(`${baseUrl}/api/zapier/trigger/upcoming?limit=10`);
     setRemindersUrl(`https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10`);
+    
+    // Fetch Zapier token status
+    fetch('/api/zapier/token', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.has_token && data.last4) {
+          // We can't show the full token, but we can show it exists
+          setZapierToken(`••••${data.last4}`);
+        }
+      })
+      .catch(() => {
+        // Token fetch failed, user can generate one
+      });
   }, []);
 
   const copyToClipboard = (text: string, type: string) => {
@@ -311,17 +331,20 @@ const PopularZaps = () => {
       })),
     }));
 
+  const toggleCardExpansion = (cardId: number) => {
+    setExpandedCards(prev => ({
+      ...prev,
+      [cardId]: !prev[cardId]
+    }));
+  };
+
   return (
-    <>
-      <div style={{ background: 'red', color: 'white', padding: 8 }}>
-        BUILD_STAMP_REMINDERS_V1
-      </div>
-      <div className="min-h-screen bg-background">
-        <DashboardHeader />
+    <div className="min-h-screen bg-background">
+      <DashboardHeader />
       
       <main className="container py-8">
-        <div className="space-y-6">
-          {/* Header */}
+        <div className="space-y-8">
+          {/* Back Button */}
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -334,683 +357,310 @@ const PopularZaps = () => {
             </Button>
           </div>
 
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-3xl font-bold text-foreground">Popular Zaps</h1>
-              <Badge variant="secondary" className="text-xs">BUILD_STAMP: REMINDERS_CARD_V1</Badge>
+          {/* Top Section */}
+          <div className="space-y-4">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Automate LienDeadline with Zapier</h1>
+              <p className="text-muted-foreground mt-2">Send deadline reminders and automate workflows in minutes.</p>
             </div>
-            <p className="text-muted-foreground">Pick a template. Build it in Zapier in minutes.</p>
-          </div>
 
-          {/* REMINDERS Section */}
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-foreground mb-1">REMINDERS</h2>
-            <p className="text-sm text-muted-foreground">Run on a schedule. Sends alerts when deadlines are approaching.</p>
-          </div>
-
-          {/* Deadline Reminders → Slack Card (NEW - Top) */}
-          <Card className="bg-primary/5 border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-xl">Deadline reminders → Slack (1 & 7 days)</CardTitle>
-              <CardDescription>
-                Run hourly. LienDeadline returns reminders due now (deduped). Send to Slack.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Reminders URL Display */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Reminders URL</label>
-                <div className="flex gap-2">
-                  <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
-                    https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(`https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10`, "reminders-url-top")}
-                  >
-                    {copied === "reminders-url-top" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Copy Buttons Row */}
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(`https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10`, "reminders-url-btn-top")}
-                >
-                  {copied === "reminders-url-btn-top" ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" /> Copy Reminders URL
-                    </>
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(JSON.stringify(remindersHeadersTemplate, null, 2), "reminders-headers-top")}
-                >
-                  {copied === "reminders-headers-top" ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" /> Copy Headers
-                    </>
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(remindersSlackMessageTemplate, "reminders-slack-message-top")}
-                >
-                  {copied === "reminders-slack-message-top" ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" /> Copy Slack Message Template
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {/* 3-Step Setup */}
-              <div>
-                <h4 className="text-sm font-semibold text-foreground mb-2">3-step setup</h4>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                  <li>
-                    <span className="font-medium text-foreground">Trigger:</span> Schedule by Zapier → Every Hour
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">Action:</span> Webhooks by Zapier → GET
-                    <div className="mt-1 ml-4 text-xs">
-                      URL: <code className="bg-muted px-1 rounded">https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10</code>
+            {/* Simple 3-Step Setup */}
+            <Card className="bg-primary/5 border-primary/20">
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Quick Setup</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+                      1
                     </div>
-                    <div className="mt-1 ml-4 text-xs">
-                      Header: <code className="bg-muted px-1 rounded">Authorization: Bearer &lt;token&gt;</code>
-                    </div>
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">Action:</span> Slack → Send Channel Message (use template)
-                  </li>
-                </ol>
-              </div>
-
-              {/* Slack Message Template Display */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Slack Message Template</label>
-                <div className="bg-muted/30 rounded-md p-3 text-xs">
-                  <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
-                    {remindersSlackMessageTemplate}
-                  </pre>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Use Zapier's field mapping to replace the <code className="bg-muted px-1 rounded">{`{{field}}`}</code> placeholders with actual values from the trigger response
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    If multiple reminders are returned, add Looping by Zapier to send one Slack message per reminder.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Golden Path Template - Invoice -> LienDeadline */}
-          <Card className="bg-primary/5 border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-xl">New Invoice → Create deadlines in LienDeadline</CardTitle>
-              <CardDescription>
-                The fastest way to get started. Send invoices from any system and automatically calculate lien deadlines.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Copy Buttons Row */}
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(webhookUrl, "golden-webhook")}
-                >
-                  {copied === "golden-webhook" ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" /> Copy Webhook URL
-                    </>
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(JSON.stringify(headersTemplate, null, 2), "golden-headers")}
-                >
-                  {copied === "golden-headers" ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" /> Copy Headers
-                    </>
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(JSON.stringify(exampleJsonBody, null, 2), "golden-json")}
-                >
-                  {copied === "golden-json" ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" /> Copy Example JSON Body
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {/* Headers Display */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Headers</label>
-                <div className="bg-muted/30 rounded-md p-3 text-xs">
-                  <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
-                    {JSON.stringify(headersTemplate, null, 2)}
-                  </pre>
-                  <p className="text-xs text-muted-foreground mt-2 italic">
-                    Replace YOUR_ZAPIER_TOKEN with your actual token from Dashboard → Integrations
-                  </p>
-                </div>
-              </div>
-
-              {/* Example JSON Body */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Example JSON Body</label>
-                <div className="bg-muted/30 rounded-md p-3 text-xs">
-                  <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
-                    {JSON.stringify(exampleJsonBody, null, 2)}
-                  </pre>
-                </div>
-              </div>
-
-              {/* Setup Instructions */}
-              <div>
-                <h4 className="text-sm font-semibold text-foreground mb-3">Zapier Setup Steps:</h4>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                  <li>
-                    <span className="font-medium text-foreground">Trigger:</span> Choose your invoice source app (QuickBooks, Xero, Sage, Procore, Email Parser, Google Sheets, etc.) and select "New Invoice" event
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">Action:</span> Add "Webhooks by Zapier" → Select "POST"
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">URL:</span> Paste the Webhook URL above
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">Headers:</span> Paste the Headers JSON above (replace YOUR_ZAPIER_TOKEN with your token)
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">Data:</span> Map fields from your trigger to the JSON body (state, invoice_date, invoice_amount_cents, project_name)
-                  </li>
-                  <li>
-                    <span className="font-medium text-foreground">Test:</span> Run a test and verify the project appears in Dashboard → Projects
-                  </li>
-                </ol>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Deadline Reminders → Slack Card */}
-          <Card className="bg-primary/5 border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-xl">Deadline reminders → Slack (1 & 7 days)</CardTitle>
-              <CardDescription>
-                Run hourly. LienDeadline returns reminders due now (deduped). Send to Slack.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Reminders URL Display */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Reminders URL</label>
-                <div className="flex gap-2">
-                  <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
-                    https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(`https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10`, "reminders-url")}
-                  >
-                    {copied === "reminders-url" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Copy Buttons Row */}
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(`https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10`, "reminders-url-btn")}
-                >
-                  {copied === "reminders-url-btn" ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" /> Copy Reminders URL
-                    </>
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(JSON.stringify(remindersHeadersTemplate, null, 2), "reminders-headers")}
-                >
-                  {copied === "reminders-headers" ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" /> Copy Headers
-                    </>
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(remindersSlackMessageTemplate, "reminders-slack-message")}
-                >
-                  {copied === "reminders-slack-message" ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" /> Copy Slack Message Template
-                    </>
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(remindersZapSetupSteps.join("\n"), "reminders-zap-steps")}
-                >
-                  {copied === "reminders-zap-steps" ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" /> Copy Zap Setup Steps
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {/* Zap Setup Steps Display */}
-              <div>
-                <h4 className="text-sm font-semibold text-foreground mb-2">Zap setup steps</h4>
-                <div className="bg-muted/30 rounded-md p-3 text-xs">
-                  <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
-                    {remindersZapSetupSteps.join("\n")}
-                  </pre>
-                </div>
-              </div>
-
-              {/* Slack Message Template Display */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Slack Message Template</label>
-                <div className="bg-muted/30 rounded-md p-3 text-xs">
-                  <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
-                    {remindersSlackMessageTemplate}
-                  </pre>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Use Zapier's field mapping to replace the <code className="bg-muted px-1 rounded">{`{{field}}`}</code> placeholders with actual values from the trigger response
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    If multiple reminders are returned, add Looping by Zapier to send one Slack message per reminder.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* URL Reference Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">API Endpoints</CardTitle>
-              <CardDescription>Copy these URLs to use in your Zapier workflows</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Webhook URL (POST)</label>
-                <div className="flex gap-2">
-                  <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
-                    {webhookUrl}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(webhookUrl, "webhook")}
-                  >
-                    {copied === "webhook" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Trigger URL (GET) - Upcoming deadlines</label>
-                <div className="flex gap-2">
-                  <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
-                    {triggerUrl}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(triggerUrl, "trigger")}
-                  >
-                    {copied === "trigger" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Reminders URL (GET) - Deduplicated reminders</label>
-                <div className="flex gap-2">
-                  <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
-                    {remindersUrl}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(remindersUrl, "reminders")}
-                  >
-                    {copied === "reminders" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Returns reminders for specified day offsets (default: 1,7 days) with server-side deduplication
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Zap Templates */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* REMINDERS_CARD_V1 */}
-            {(() => {
-              // Define constants directly in this card
-              const remindersUrl = `https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10`;
-              const remindersHeadersTemplate = `{"Authorization":"Bearer <YOUR_TOKEN_HERE>","Content-Type":"application/json"}`;
-              const remindersSlackMessageTemplate = `🔔 *LienDeadline reminder*
-
-Project: {{project__project_name}}
-Deadline: {{deadline_date}}
-Reminder: {{reminder_type}} ({{reminder_days}} days before)
-State: {{project__state_code}}`;
-              const getRemindersZapSetupSteps = () => [
-                "1) Trigger: Schedule by Zapier → Every Hour",
-                "2) Action: Webhooks by Zapier → GET (use Reminders URL + Headers)",
-                "3) Action: Slack → Send Channel Message (use Slack template)"
-              ];
-              const setupStepsText = getRemindersZapSetupSteps().join("\n");
-
-              return (
-                <Card key="reminders-card-v1" className="border border-orange-200 bg-orange-50">
-                  <CardHeader>
-                    <CardTitle>Deadline reminders → Slack (1 & 7 days) — REMINDERS_CARD_V1</CardTitle>
-                    <CardDescription>
-                      Run on a schedule. Sends alerts when deadlines are approaching.
-                    </CardDescription>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4 text-sm">
-                    {/* Reminders URL */}
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Reminders URL (GET)</label>
+                      <h4 className="font-medium text-foreground mb-1">Copy your Zapier API token</h4>
+                      <p className="text-sm text-muted-foreground">Get your token from Dashboard → Integrations</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+                      2
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-foreground mb-1">Choose a Zap template below</h4>
+                      <p className="text-sm text-muted-foreground">Pick the workflow that fits your needs</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+                      3
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-foreground mb-1">Paste into Zapier and test</h4>
+                      <p className="text-sm text-muted-foreground">Copy the URLs and templates, then test</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Your Zapier Token Section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-xl font-semibold text-foreground">Your Zapier Token</h2>
+            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="text"
+                    value={zapierToken || "Generate token from Dashboard → Integrations"}
+                    readOnly
+                    className="flex-1 font-mono text-sm"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/')}
+                  >
+                    Get Token
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Generate your Zapier API token from the Integrations page. Use it in all Zapier webhook headers.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Popular Zap Templates Section */}
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-xl font-semibold text-foreground mb-1">Popular Zap Templates</h2>
+              <p className="text-sm text-muted-foreground">Choose a template to get started. If no reminders are due, the Zap will not send anything.</p>
+            </div>
+
+            {/* Simplified Zap Templates Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Reminders Template */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Deadline reminders → Slack</CardTitle>
+                  <CardDescription>
+                    Sends Slack alerts when deadlines are approaching (1 & 7 days before).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Trigger: Schedule by Zapier → Every Hour</p>
+                    <p className="text-sm text-muted-foreground mb-2">Action: Webhooks GET → Slack Message</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(`https://liendeadline.com/api/zapier/trigger/reminders?days=1,7&limit=10`, "reminders-url-simple")}
+                    >
+                      {copied === "reminders-url-simple" ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                      Copy URL
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(remindersSlackMessageTemplate, "reminders-slack-simple")}
+                    >
+                      {copied === "reminders-slack-simple" ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                      Copy Template
+                    </Button>
+                  </div>
+                  {expandedCards[0] && (
+                    <div className="mt-3 pt-3 border-t space-y-2 text-xs">
+                      <div>
+                        <strong>Headers:</strong>
+                        <pre className="bg-muted/30 p-2 rounded mt-1">{JSON.stringify(remindersHeadersTemplate, null, 2)}</pre>
+                      </div>
+                      <div>
+                        <strong>Slack Template:</strong>
+                        <pre className="bg-muted/30 p-2 rounded mt-1 whitespace-pre-wrap">{remindersSlackMessageTemplate}</pre>
+                      </div>
+                    </div>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => toggleCardExpansion(0)}
+                  >
+                    {expandedCards[0] ? "Hide Details" : "Show Details"}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Invoice → LienDeadline Template */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>New Invoice → Create deadlines</CardTitle>
+                  <CardDescription>
+                    Automatically calculate lien deadlines when invoices are created.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Trigger: Your Accounting System → New Invoice</p>
+                    <p className="text-sm text-muted-foreground mb-2">Action: Webhooks POST → LienDeadline</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(webhookUrl, "webhook-simple")}
+                    >
+                      {copied === "webhook-simple" ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                      Copy Webhook URL
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(JSON.stringify(headersTemplate, null, 2), "headers-simple")}
+                    >
+                      {copied === "headers-simple" ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                      Copy Headers
+                    </Button>
+                  </div>
+                  {expandedCards[1] && (
+                    <div className="mt-3 pt-3 border-t space-y-2 text-xs">
+                      <div>
+                        <strong>Example JSON:</strong>
+                        <pre className="bg-muted/30 p-2 rounded mt-1">{JSON.stringify(exampleJsonBody, null, 2)}</pre>
+                      </div>
+                    </div>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => toggleCardExpansion(1)}
+                  >
+                    {expandedCards[1] ? "Hide Details" : "Show Details"}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Other Templates */}
+              {safeZapTemplates.filter(z => z.id > 1).map((zap) => (
+                <Card key={zap.id}>
+                  <CardHeader>
+                    <CardTitle className="text-base">{zap.title}</CardTitle>
+                    <CardDescription className="text-xs">{zap.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        <strong>Trigger:</strong> {zap?.trigger?.app ?? "Unknown"}
+                      </p>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        <strong>Action:</strong> {zap.actions.map(a => a.app).join(" → ")}
+                      </p>
+                    </div>
+                    {zap.actions.find(a => a.url) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyToClipboard(zap.actions.find(a => a.url)!.url!, `zap-${zap.id}-url`)}
+                      >
+                        {copied === `zap-${zap.id}-url` ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                        Copy URL
+                      </Button>
+                    )}
+                    {expandedCards[zap.id] && zap.webhookExample && (
+                      <div className="mt-3 pt-3 border-t text-xs">
+                        <strong>Example JSON:</strong>
+                        <pre className="bg-muted/30 p-2 rounded mt-1">{JSON.stringify(zap.webhookExample, null, 2)}</pre>
+                      </div>
+                    )}
+                    {(zap.webhookExample || zap.fieldMapping) && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-full"
+                        onClick={() => toggleCardExpansion(zap.id)}
+                      >
+                        {expandedCards[zap.id] ? "Hide Details" : "Show Details"}
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* Advanced / API Endpoints Section - Collapsed by default */}
+          <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+            <div className="space-y-3">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-semibold text-foreground">Advanced / API Endpoints</h2>
+                  </div>
+                  {showAdvanced ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <Card>
+                  <CardContent className="pt-6 space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Webhook URL (POST)</label>
                       <div className="flex gap-2">
-                        <code className="flex-1 px-3 py-2 bg-muted rounded-md text-xs font-mono overflow-x-auto">
+                        <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
+                          {webhookUrl}
+                        </code>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(webhookUrl, "webhook-advanced")}
+                        >
+                          {copied === "webhook-advanced" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Trigger URL (GET) - Upcoming deadlines</label>
+                      <div className="flex gap-2">
+                        <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
+                          {triggerUrl}
+                        </code>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(triggerUrl, "trigger-advanced")}
+                        >
+                          {copied === "trigger-advanced" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Reminders URL (GET) - Deduplicated reminders</label>
+                      <div className="flex gap-2">
+                        <code className="flex-1 px-3 py-2 bg-muted rounded-md text-sm font-mono text-xs overflow-x-auto">
                           {remindersUrl}
                         </code>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => copyToClipboard(remindersUrl, "reminders-url-v1")}
+                          onClick={() => copyToClipboard(remindersUrl, "reminders-advanced")}
                         >
-                          {copied === "reminders-url-v1" ? (
-                            <Check className="h-4 w-4" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
+                          {copied === "reminders-advanced" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                         </Button>
                       </div>
-                    </div>
-
-                    {/* Headers */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Headers</label>
-                      <div className="flex gap-2">
-                        <div className="flex-1 bg-muted/30 rounded-md p-3 text-xs">
-                          <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
-                            {remindersHeadersTemplate}
-                          </pre>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => copyToClipboard(remindersHeadersTemplate, "reminders-headers-v1")}
-                        >
-                          {copied === "reminders-headers-v1" ? (
-                            <Check className="h-4 w-4" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Slack Message Template */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Slack Message Template</label>
-                      <div className="flex gap-2">
-                        <div className="flex-1 bg-muted/30 rounded-md p-3 text-xs">
-                          <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
-                            {remindersSlackMessageTemplate}
-                          </pre>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            If multiple reminders are returned, add Looping by Zapier to send one Slack message per reminder.
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => copyToClipboard(remindersSlackMessageTemplate, "reminders-slack-v1")}
-                        >
-                          {copied === "reminders-slack-v1" ? (
-                            <Check className="h-4 w-4" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Setup Steps */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Setup Steps</label>
-                      <div className="flex gap-2">
-                        <div className="flex-1 bg-muted/30 rounded-md p-3 text-xs">
-                          <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                            {getRemindersZapSetupSteps().map((step, idx) => (
-                              <li key={idx}>{step}</li>
-                            ))}
-                          </ol>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => copyToClipboard(setupStepsText, "reminders-steps-v1")}
-                        >
-                          {copied === "reminders-steps-v1" ? (
-                            <Check className="h-4 w-4" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Returns reminders for specified day offsets (default: 1,7 days) with server-side deduplication
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
-              );
-            })()}
-
-            {safeZapTemplates.map((zap) => (
-              <Card key={zap.id} className="flex flex-col">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg mb-2">{zap.title}</CardTitle>
-                      <CardDescription>{zap.description}</CardDescription>
-                    </div>
-                    <Badge variant="secondary">Template {zap.id}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 space-y-4">
-                  {/* Trigger */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-2">Trigger</h4>
-                    <div className="bg-muted/50 rounded-md p-3 text-sm">
-                      <div className="font-medium">{zap?.trigger?.app ?? "Unknown app"}</div>
-                      <div className="text-muted-foreground text-xs mt-1">{zap?.trigger?.event ?? ""}</div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-2">Actions</h4>
-                    <div className="space-y-2">
-                      {zap.actions.map((action, idx) => (
-                        <div key={idx} className="bg-muted/50 rounded-md p-3 text-sm">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline" className="text-xs">
-                              {action.type === "webhook" ? "POST" : action.type === "trigger" ? "GET" : action.type}
-                            </Badge>
-                            <span className="font-medium">{action?.app ?? "Unknown app"}</span>
-                          </div>
-                          <div className="text-muted-foreground text-xs">{action.description}</div>
-                          {action.url && (
-                            <div className="mt-2">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 text-xs px-2"
-                                onClick={() => copyToClipboard(action.url!, `zap-${zap.id}-${action.type}`)}
-                              >
-                                {copied === `zap-${zap.id}-${action.type}` ? (
-                                  <>
-                                    <Check className="h-3 w-3 mr-1" /> Copied
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="h-3 w-3 mr-1" /> Copy URL
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Webhook JSON Example */}
-                  {zap.webhookExample && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-foreground mb-2">Webhook JSON Example</h4>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Required: state, invoice_date. Recommended: invoice_amount_cents, invoice_number. Optional: project_name, client_name.
-                      </p>
-                      <div className="bg-muted/30 rounded-md p-3 text-xs">
-                        <pre className="text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
-                          {JSON.stringify(zap.webhookExample, null, 2)}
-                        </pre>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 text-xs px-2 mt-2"
-                          onClick={() => copyToClipboard(JSON.stringify(zap.webhookExample, null, 2), `zap-${zap.id}-json`)}
-                        >
-                          {copied === `zap-${zap.id}-json` ? (
-                            <>
-                              <Check className="h-3 w-3 mr-1" /> Copied
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-3 w-3 mr-1" /> Copy JSON
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Field Mapping */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-2">Field Mapping</h4>
-                    <div className="bg-muted/30 rounded-md p-3 text-xs space-y-2">
-                      {Object.entries(zap?.fieldMapping ?? {}).map(([key, fields]) => (
-                        <div key={key}>
-                          <div className="font-medium text-foreground mb-1 capitalize">{key}:</div>
-                          <div className="pl-2 space-y-1">
-                            {typeof fields === 'object' && Object.entries(fields ?? {}).map(([field, desc]) => (
-                              <div key={field} className="text-muted-foreground">
-                                <code className="text-primary">{field}</code>: {desc as string}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Footer CTA */}
-          <Card className="bg-primary/5 border-primary/20">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-4">
-                <h3 className="text-lg font-semibold text-foreground">Ready to build your Zap?</h3>
-                <p className="text-sm text-muted-foreground">
-                  Create your first Zap in Zapier using one of these templates.
-                </p>
-                <Button
-                  onClick={() => window.open("https://zapier.com/apps/liendeadline/integrations", "_blank")}
-                  className="bg-orange-600 hover:bg-orange-700 text-white"
-                >
-                  Open Zapier
-                  <ExternalLink className="h-4 w-4 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
         </div>
       </main>
     </div>
-    </>
   );
 };
 
