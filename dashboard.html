@@ -249,187 +249,104 @@
         </div>
 
         <!-- Accounting Integrations Section -->
-        <div class="mb-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6">Accounting Integrations</h2>
+        <div class="mb-8 max-w-5xl mx-auto">
+            <!-- A) Intro Block -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Accounting Integrations</h2>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">Get deadline alerts wherever you already work</h3>
+                <p class="text-gray-600 mb-4">Automatically send lien deadline reminders to Slack, email, CRM, or spreadsheets — powered by Zapier.</p>
+                
+                <ul class="list-disc list-inside space-y-1 text-gray-700 mb-4 ml-4">
+                    <li>Works with 6,000+ apps</li>
+                    <li>No email setup inside LienDeadline</li>
+                    <li>LienDeadline decides when — Zapier decides where</li>
+                </ul>
+                
+                <!-- E) Social proof line -->
+                <p class="text-sm text-gray-500 italic mt-4 pt-4 border-t border-gray-200">Trusted by contractors protecting $2.3M+ in receivables every month</p>
+            </div>
             
-            <!-- Beta Warning -->
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                <div class="flex items-start">
-                    <svg class="w-5 h-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                    </svg>
-                    <p class="text-sm text-yellow-800">
-                        <strong>Beta Feature</strong> Integrations are currently in beta testing. For now, we recommend manually entering invoice dates into the calculator above.
-                    </p>
+            <!-- B) Connect your tools section -->
+            <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Connect your tools</h3>
+                <p class="text-gray-600 mb-6">Choose QuickBooks, Xero, Procore, Google Sheets, or any of 6,000+ Zapier apps.</p>
+                
+                <!-- Zapier Card -->
+                <div class="bg-white rounded-lg p-6 border border-gray-200">
+                    <h4 class="text-lg font-semibold text-gray-900 mb-2">Zapier (Recommended) <span class="text-sm font-normal text-gray-600">6,000+ apps</span></h4>
+                    <p class="text-gray-700 mb-4">Import invoices from ANY system via Zapier. Turn invoices from any system into lien deadlines automatically.</p>
+                    
+                    <!-- Zapier token section (if exists) -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Zapier API Token</label>
+                        <div class="flex items-center gap-2">
+                            <span id="zapier-token-display" class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded font-mono text-sm">••••••••••••</span>
+                            <button 
+                                onclick="regenerateZapierToken()"
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium"
+                            >
+                                Regenerate
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- D) View Popular Zaps button -->
+                    <div class="mt-6">
+                        <a 
+                            href="/dashboard/zapier"
+                            class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
+                        >
+                            View Popular Zaps
+                        </a>
+                        <p class="text-sm text-gray-600 mt-2">Need help setting up Zapier?</p>
+                    </div>
                 </div>
             </div>
-
-            <!-- Integrations Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- Zapier Automation Card -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-6" id="zapier-section">
-                    <div class="flex flex-col h-full">
-                        <div class="flex items-start gap-4 mb-4">
-                            <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <span class="text-white text-2xl font-bold">⚡</span>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-1">Zapier Automation</h3>
-                                <p class="text-sm text-gray-600">Send reminders to Slack, Email, CRM, or 6,000+ apps</p>
-                            </div>
-                        </div>
-                        <div class="mt-auto">
-                            <div class="flex items-center justify-between mb-4">
-                                <span id="zapier-status" class="text-sm text-gray-600">Connect your Zapier</span>
-                            </div>
-                            <button 
-                                onclick="window.location.href='/dashboard/zapier'"
-                                id="zapier-connect-btn"
-                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
-                            >
-                                Connect Zapier
-                            </button>
-                        </div>
+            
+            <!-- C) Advanced setup (optional) section -->
+            <div class="bg-gray-50 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-600 mb-2">Advanced setup (optional)</h3>
+                <p class="text-sm text-gray-600 mb-6">Use these URLs if you want to build a custom Zap from scratch.</p>
+                
+                <!-- Webhook URL Card -->
+                <div class="bg-white rounded-lg p-4 border border-gray-200 mb-4">
+                    <h4 class="font-semibold text-gray-900 mb-2">1. Copy Webhook URL</h4>
+                    <p class="text-sm text-gray-600 mb-3">Use this in Zapier to send invoices to LienDeadline.</p>
+                    <div class="flex gap-2">
+                        <input 
+                            type="text" 
+                            readonly 
+                            value="https://liendeadline.com/api/zapier/webhook/invoice" 
+                            id="webhook-url"
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded font-mono text-sm"
+                        >
+                        <button 
+                            onclick="copyToClipboard('webhook-url')"
+                            class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm font-medium"
+                        >
+                            Copy Webhook
+                        </button>
                     </div>
                 </div>
-
-                <!-- Sage Integration Card -->
-                <div class="bg-green-50 border border-green-200 rounded-lg p-6" id="sage-section">
-                    <div class="flex flex-col h-full">
-                        <div class="flex items-start gap-4 mb-4">
-                            <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <span class="text-white text-2xl font-bold">S</span>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-1">Sage Integration</h3>
-                                <p class="text-sm text-gray-600">Import invoices from Sage accounting</p>
-                            </div>
-                        </div>
-                        <div class="mt-auto">
-                            <div class="flex items-center justify-between mb-4">
-                                <span id="sage-status" class="text-sm text-gray-600">Not connected</span>
-                            </div>
-                            <button 
-                                onclick="connectSage()"
-                                id="sage-connect-btn"
-                                class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
-                            >
-                                Connect Sage
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Procore Integration Card -->
-                <div class="bg-purple-50 border border-purple-200 rounded-lg p-6" id="procore-section">
-                    <div class="flex flex-col h-full">
-                        <div class="flex items-start gap-4 mb-4">
-                            <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <span class="text-white text-2xl font-bold">P</span>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-1">Procore Integration</h3>
-                                <p class="text-sm text-gray-600">Import projects and calculate lien deadlines</p>
-                            </div>
-                        </div>
-                        <div class="mt-auto">
-                            <div class="flex items-center justify-between mb-4">
-                                <span id="procore-status" class="text-sm text-gray-600">Not connected</span>
-                            </div>
-                            <button 
-                                onclick="connectProcore()"
-                                id="procore-connect-btn"
-                                class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
-                            >
-                                Connect Procore
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Zapier Automations Integration Card -->
-                <div class="bg-orange-50 border border-orange-200 rounded-lg p-6" id="zapier-section">
-                    <div class="flex flex-col h-full">
-                        <!-- Header -->
-                        <div class="flex items-start gap-4 mb-4">
-                            <div class="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10zm-1-11V7h2v4h4v2h-4v4h-2v-4H7v-2h4z"/>
-                                </svg>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-1">Zapier Automations</h3>
-                                <p class="text-sm text-gray-600">Automate invoice processing and deadline tracking</p>
-                            </div>
-                        </div>
-
-                        <!-- Instructions -->
-                        <div class="mb-4">
-                            <p class="text-xs text-gray-700 mb-3">
-                                Connect Zapier to automatically create projects from invoices and get notified about upcoming deadlines.
-                            </p>
-                        </div>
-
-                        <!-- Webhook URLs -->
-                        <div class="space-y-3 mb-4">
-                            <!-- Webhook URL for Creating Invoices -->
-                            <div>
-                                <label class="block text-xs font-medium text-gray-700 mb-1">
-                                    Webhook URL
-                                </label>
-                                <div class="flex gap-1">
-                                    <input 
-                                        type="text" 
-                                        id="zapier-webhook-url" 
-                                        readonly
-                                        class="flex-1 px-2 py-1 bg-white border border-gray-300 rounded text-xs font-mono text-gray-700"
-                                        value="Loading..."
-                                    >
-                                    <button 
-                                        onclick="copyToClipboard('zapier-webhook-url')"
-                                        class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs"
-                                        title="Copy"
-                                    >
-                                        📋
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Trigger URL for Upcoming Projects -->
-                            <div>
-                                <label class="block text-xs font-medium text-gray-700 mb-1">
-                                    Trigger URL
-                                </label>
-                                <div class="flex gap-1">
-                                    <input 
-                                        type="text" 
-                                        id="zapier-trigger-url" 
-                                        readonly
-                                        class="flex-1 px-2 py-1 bg-white border border-gray-300 rounded text-xs font-mono text-gray-700"
-                                        value="Loading..."
-                                    >
-                                    <button 
-                                        onclick="copyToClipboard('zapier-trigger-url')"
-                                        class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs"
-                                        title="Copy"
-                                    >
-                                        📋
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Action Button -->
-                        <div class="mt-auto">
-                            <a 
-                                href="https://zapier.com/apps/liendeadline/integrations" 
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="block w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 text-center text-sm"
-                            >
-                                🔗 View Popular Zaps
-                            </a>
-                        </div>
+                
+                <!-- Trigger URL Card -->
+                <div class="bg-white rounded-lg p-4 border border-gray-200">
+                    <h4 class="font-semibold text-gray-900 mb-2">2. Copy Trigger URL</h4>
+                    <p class="text-sm text-gray-600 mb-3">Use this in Zapier to pull upcoming deadlines.</p>
+                    <div class="flex gap-2">
+                        <input 
+                            type="text" 
+                            readonly 
+                            value="https://liendeadline.com/api/zapier/trigger/upcoming?limit=10" 
+                            id="trigger-url"
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded font-mono text-sm"
+                        >
+                        <button 
+                            onclick="copyToClipboard('trigger-url')"
+                            class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm font-medium"
+                        >
+                            Copy Trigger
+                        </button>
                     </div>
                 </div>
             </div>

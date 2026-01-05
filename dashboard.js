@@ -588,9 +588,9 @@ async function loadZapierUrls() {
         const webhookUrl = `${baseUrl}/api/zapier/webhook/invoice`;
         const triggerUrl = `${baseUrl}/api/zapier/trigger/upcoming?limit=10`;
 
-        // Update input fields
-        const webhookInput = document.getElementById('zapier-webhook-url');
-        const triggerInput = document.getElementById('zapier-trigger-url');
+        // Update input fields (support both old and new IDs)
+        const webhookInput = document.getElementById('webhook-url') || document.getElementById('zapier-webhook-url');
+        const triggerInput = document.getElementById('trigger-url') || document.getElementById('zapier-trigger-url');
 
         if (webhookInput) {
             webhookInput.value = webhookUrl;
@@ -611,8 +611,9 @@ async function loadZapierUrls() {
  */
 function setDefaultZapierUrls() {
     const baseUrl = window.location.origin;
-    const webhookInput = document.getElementById('zapier-webhook-url');
-    const triggerInput = document.getElementById('zapier-trigger-url');
+    // Support both old and new IDs for backwards compatibility
+    const webhookInput = document.getElementById('webhook-url') || document.getElementById('zapier-webhook-url');
+    const triggerInput = document.getElementById('trigger-url') || document.getElementById('zapier-trigger-url');
 
     if (webhookInput) {
         webhookInput.value = `${baseUrl}/api/zapier/webhook/invoice`;
