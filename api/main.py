@@ -1339,6 +1339,18 @@ async def startup():
         traceback.print_exc()
         # Don't fail startup if migration fails - columns might already exist
     
+    # Run email alert preferences migration
+    try:
+        from api.routers.migrations import migrate_add_email_alert_prefs
+        print("🔄 Running email alert preferences migration...")
+        migrate_add_email_alert_prefs()
+        print("✅ Email alert preferences migration completed")
+    except Exception as e:
+        print(f"⚠️ Email alert preferences migration had issues: {e}")
+        import traceback
+        traceback.print_exc()
+        # Don't fail startup if migration fails - columns might already exist
+    
     print("✅ Application startup complete")
 
 

@@ -17,6 +17,8 @@ export interface PlanInfo {
   apiCallsRemaining?: number | null;
   resetDate?: string | null;
   lastSyncAt?: Date | null;
+  alertEmail?: string | null;
+  emailAlertsEnabled?: boolean;
 }
 
 const ADMIN_EMAIL = "admin@stackedboost.com";
@@ -107,6 +109,8 @@ export const usePlan = () => {
           apiCallsRemaining: null,
           resetDate: null,
           lastSyncAt: null,
+          alertEmail: null,
+          emailAlertsEnabled: true,
         });
           setLoading(false);
           return;
@@ -137,6 +141,8 @@ export const usePlan = () => {
           apiCallsRemaining: data.api_calls_remaining ?? null,
           resetDate: data.next_reset ?? null,
           lastSyncAt: new Date(),
+          alertEmail: data.alert_email ?? null,
+          emailAlertsEnabled: data.email_alerts_enabled ?? true,
         });
       } catch (error) {
         console.error('Error fetching plan info:', error);
@@ -154,6 +160,8 @@ export const usePlan = () => {
           apiCallsRemaining: null,
           resetDate: null,
           lastSyncAt: null,
+          alertEmail: null,
+          emailAlertsEnabled: true,
         });
       } finally {
         setLoading(false);

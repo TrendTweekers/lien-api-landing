@@ -13,6 +13,7 @@ import { PartnerProgram } from "@/components/dashboard/PartnerProgram";
 import { ApiDocs } from "@/components/dashboard/ApiDocs";
 import UpgradePrompt from "@/components/UpgradePrompt";
 import { ZapierStatusCard } from "@/components/dashboard/ZapierStatusCard";
+import { EmailAlertsCard } from "@/components/dashboard/EmailAlertsCard";
 import { AdminSimulator } from "@/components/AdminSimulator";
 import { EmailCaptures } from "@/components/admin/EmailCaptures";
 import { usePlan } from "@/hooks/usePlan";
@@ -92,6 +93,11 @@ const Index = () => {
           {/* Deadline Calculator */}
           <div className="animate-slide-up" style={{ animationDelay: "0.15s" }}>
             <DeadlineCalculator />
+          </div>
+
+          {/* Email Alerts Card (Default Path) */}
+          <div className="animate-slide-up" style={{ animationDelay: "0.18s" }}>
+            <EmailAlertsCard />
           </div>
 
           {/* Zapier Automation Card - Status-Driven */}

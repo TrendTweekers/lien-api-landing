@@ -88,3 +88,113 @@ def migrate_add_plan_usage_fields():
         traceback.print_exc()
         return False
 
+def migrate_add_email_alert_prefs():
+    """Add email alert preferences to users table and create email_alert_sends table"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                # PostgreSQL: Add columns to users table
+                columns_to_add = [
+                    ('alert_email', 'TEXT'),
+                    ('email_alerts_enabled', 'BOOLEAN NOT NULL DEFAULT TRUE'),
+                ]
+                
+                for col_name, col_def in columns_to_add:
+                    try:
+                        cursor.execute(f"""
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'users' 
+                            AND column_name = '{col_name}'
+                        """)
+                        exists = cursor.fetchone()
+                        if not exists:
+                            cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_def}")
+                            logger.info(f"Added column {col_name} to users table")
+                    except Exception as e:
+                        logger.warning(f"Could not add column {col_name}: {e}")
+                
+                # Create email_alert_sends table if it doesn't exist
+                try:
+                    cursor.execute("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'email_alert_sends'
+                        )
+                    """)
+                    table_exists = cursor.fetchone()[0]
+                    
+                    if not table_exists:
+                        cursor.execute("""
+                            CREATE TABLE email_alert_sends (
+                                id BIGSERIAL PRIMARY KEY,
+                                user_id UUID NOT NULL,
+                                project_id UUID NOT NULL,
+                                deadline_type TEXT NOT NULL,
+                                days_before INTEGER NOT NULL,
+                                deadline_date DATE NOT NULL,
+                                sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                                UNIQUE (user_id, project_id, deadline_type, days_before, deadline_date)
+                            )
+                        """)
+                        cursor.execute("""
+                            CREATE INDEX IF NOT EXISTS idx_email_alert_sends_user_project 
+                            ON email_alert_sends(user_id, project_id)
+                        """)
+                        logger.info("Created email_alert_sends table")
+                except Exception as e:
+                    logger.warning(f"Could not create email_alert_sends table: {e}")
+                
+            else:
+                # SQLite: Check and add columns
+                cursor.execute("PRAGMA table_info(users)")
+                existing_columns = [row[1] for row in cursor.fetchall()]
+                
+                columns_to_add = [
+                    ('alert_email', 'TEXT'),
+                    ('email_alerts_enabled', 'INTEGER DEFAULT 1'),  # SQLite uses INTEGER for boolean
+                ]
+                
+                for col_name, col_def in columns_to_add:
+                    if col_name not in existing_columns:
+                        try:
+                            cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_def}")
+                            logger.info(f"Added column {col_name} to users table")
+                        except Exception as e:
+                            logger.warning(f"Could not add column {col_name}: {e}")
+                
+                # Create email_alert_sends table for SQLite
+                try:
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS email_alert_sends (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            user_id TEXT NOT NULL,
+                            project_id TEXT NOT NULL,
+                            deadline_type TEXT NOT NULL,
+                            days_before INTEGER NOT NULL,
+                            deadline_date TEXT NOT NULL,
+                            sent_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            UNIQUE (user_id, project_id, deadline_type, days_before, deadline_date)
+                        )
+                    """)
+                    cursor.execute("""
+                        CREATE INDEX IF NOT EXISTS idx_email_alert_sends_user_project 
+                        ON email_alert_sends(user_id, project_id)
+                    """)
+                    logger.info("Created email_alert_sends table (SQLite)")
+                except Exception as e:
+                    logger.warning(f"Could not create email_alert_sends table: {e}")
+            
+            conn.commit()
+            logger.info("✅ Migration completed: Added email alert preferences")
+            return True
+            
+    except Exception as e:
+        logger.error(f"Error in email alert migration: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+

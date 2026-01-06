@@ -1,10 +1,15 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from api.database import get_db, get_db_cursor, DB_TYPE
 from api.routers.auth import get_user_from_session
+from pydantic import BaseModel, EmailStr
 import logging
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+class EmailPrefsIn(BaseModel):
+    alert_email: EmailStr
+    email_alerts_enabled: bool
 
 @router.get("/api/user/stats")
 async def get_user_stats(request: Request):
@@ -73,19 +78,34 @@ async def get_user_stats(request: Request):
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
-            # Check if user has Zapier token
+            # Check if user has Zapier token and get email alert preferences
             zapier_connected = False
-            if DB_TYPE == 'postgresql':
-                cursor.execute("SELECT zapier_token_hash FROM users WHERE email = %s", (email,))
-            else:
-                cursor.execute("SELECT zapier_token_hash FROM users WHERE email = ?", (email,))
+            alert_email = None
+            email_alerts_enabled = True
             
-            zapier_result = cursor.fetchone()
-            if zapier_result:
-                if isinstance(zapier_result, dict):
-                    zapier_connected = zapier_result.get('zapier_token_hash') is not None
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT zapier_token_hash, alert_email, email_alerts_enabled 
+                    FROM users 
+                    WHERE email = %s
+                """, (email,))
+            else:
+                cursor.execute("""
+                    SELECT zapier_token_hash, alert_email, email_alerts_enabled 
+                    FROM users 
+                    WHERE email = ?
+                """, (email,))
+            
+            user_row = cursor.fetchone()
+            if user_row:
+                if isinstance(user_row, dict):
+                    zapier_connected = user_row.get('zapier_token_hash') is not None
+                    alert_email = user_row.get('alert_email')
+                    email_alerts_enabled = bool(user_row.get('email_alerts_enabled', True))
                 else:
-                    zapier_connected = zapier_result[0] is not None if len(zapier_result) > 0 else False
+                    zapier_connected = user_row[0] is not None if len(user_row) > 0 else False
+                    alert_email = user_row[1] if len(user_row) > 1 else None
+                    email_alerts_enabled = bool(user_row[2]) if len(user_row) > 2 else True
         
         return {
             "email": email,
@@ -101,6 +121,8 @@ async def get_user_stats(request: Request):
             "is_admin": is_admin,
             "usage_month": usage_month.isoformat() if usage_month else None,
             "next_reset": next_reset.isoformat() if next_reset else None,
+            "alert_email": alert_email,
+            "email_alerts_enabled": email_alerts_enabled,
             # Backward compatibility fields
             "calculationsUsed": manual_count,
             "calculationsLimit": manual_limit,
@@ -234,3 +256,45 @@ async def get_email_captures(request: Request, limit: int = 100):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to fetch email captures: {str(e)}")
+
+@router.post("/api/user/preferences")
+async def save_user_preferences(request: Request, body: EmailPrefsIn):
+    """Save user email alert preferences"""
+    user = get_user_from_session(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    email = user.get('email')
+    user_id = user.get('id')
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="User email not found")
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    UPDATE users
+                    SET alert_email = %s,
+                        email_alerts_enabled = %s
+                    WHERE email = %s
+                """, (body.alert_email, body.email_alerts_enabled, email))
+            else:
+                cursor.execute("""
+                    UPDATE users
+                    SET alert_email = ?,
+                        email_alerts_enabled = ?
+                    WHERE email = ?
+                """, (body.alert_email, 1 if body.email_alerts_enabled else 0, email))
+            
+            conn.commit()
+            
+            return {"ok": True, "message": "Preferences saved successfully"}
+            
+    except Exception as e:
+        logger.error(f"Error saving user preferences: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to save preferences")
