@@ -1533,28 +1533,6 @@ async def redirect_www(request: Request, call_next):
         return RedirectResponse(url=str(url), status_code=301)
     return await call_next(request)
 
-# HTTP Basic Auth for admin routes - MOVED TO admin.py
-# security = HTTPBasic()
-# Basic Auth for admin dashboard HTML/JS routes (direct access without session)
-security = HTTPBasic()
-
-def verify_admin_basic(credentials: HTTPBasicCredentials = Depends(security)):
-    """Verify admin credentials via Basic Auth for HTML/JS routes"""
-    admin_user = os.getenv("ADMIN_USER", "admin")
-    admin_pass = os.getenv("ADMIN_PASS", "LienAPI2025")
-    
-    is_user_ok = secrets.compare_digest(credentials.username, admin_user)
-    is_pass_ok = secrets.compare_digest(credentials.password, admin_pass)
-    
-    if not (is_user_ok and is_pass_ok):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unauthorized",
-            headers={"WWW-Authenticate": "Basic realm=\"Admin Dashboard\""},
-        )
-    return credentials.username
-
-
 # Valid state codes (all 50 US states + DC)
 VALID_STATES = [
     "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL",
