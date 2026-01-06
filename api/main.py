@@ -1481,7 +1481,24 @@ async def redirect_www(request: Request, call_next):
 
 # HTTP Basic Auth for admin routes - MOVED TO admin.py
 # security = HTTPBasic()
-# verify_admin moved to admin.py
+# Basic Auth for admin dashboard HTML/JS routes (direct access without session)
+security = HTTPBasic()
+
+def verify_admin_basic(credentials: HTTPBasicCredentials = Depends(security)):
+    """Verify admin credentials via Basic Auth for HTML/JS routes"""
+    admin_user = os.getenv("ADMIN_USER", "admin")
+    admin_pass = os.getenv("ADMIN_PASS", "LienAPI2025")
+    
+    is_user_ok = secrets.compare_digest(credentials.username, admin_user)
+    is_pass_ok = secrets.compare_digest(credentials.password, admin_pass)
+    
+    if not (is_user_ok and is_pass_ok):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
 
 
 # Valid state codes (all 50 US states + DC)
@@ -2770,7 +2787,7 @@ async def serve_api():
 
 
 @app.get("/admin-dashboard")
-async def serve_admin_dashboard_clean(request: Request, user: dict = Depends(require_admin)):
+async def serve_admin_dashboard_clean(request: Request, username: str = Depends(verify_admin_basic)):
     """
     Clean URL: /admin-dashboard → serves V2 by default
     Query params:
@@ -2838,7 +2855,7 @@ async def serve_admin_dashboard_html(user: dict = Depends(require_admin)):
     )
 
 @app.get("/admin-dashboard-v2")
-async def serve_admin_dashboard_v2(user: dict = Depends(require_admin)):
+async def serve_admin_dashboard_v2(username: str = Depends(verify_admin_basic)):
     """Serve admin dashboard V2 with HTTP Basic Auth"""
     file_path = BASE_DIR / "admin-dashboard-v2.html"
     if not file_path.exists():
@@ -2861,7 +2878,7 @@ async def serve_admin_dashboard_v2(user: dict = Depends(require_admin)):
     )
 
 @app.get("/admin-dashboard.js")
-async def serve_admin_dashboard_js(user: dict = Depends(require_admin)):
+async def serve_admin_dashboard_js(username: str = Depends(verify_admin_basic)):
     """Serve admin dashboard V1 JavaScript"""
     file_path = BASE_DIR / "admin-dashboard.js"
     if not file_path.exists():
@@ -2884,7 +2901,7 @@ async def serve_admin_dashboard_js(user: dict = Depends(require_admin)):
     )
 
 @app.get("/admin-dashboard-v2.js")
-async def serve_admin_dashboard_v2_js(user: dict = Depends(require_admin)):
+async def serve_admin_dashboard_v2_js(username: str = Depends(verify_admin_basic)):
     """Serve admin dashboard V2 JavaScript"""
     file_path = BASE_DIR / "admin-dashboard-v2.js"
     if not file_path.exists():
