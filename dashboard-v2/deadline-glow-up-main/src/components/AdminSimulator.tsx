@@ -31,12 +31,13 @@ export const AdminSimulator = () => {
           const simData = localStorage.getItem('admin_billing_sim');
           if (simData) {
             const parsed = JSON.parse(simData);
-            if (parsed.simulated_plan) {
-              setSimulatedPlan(parsed.simulated_plan);
-              setSimulatedRemaining(parsed.simulated_remaining_calculations ?? 3);
+            // Support both old and new format for backward compatibility
+            if (parsed.plan || parsed.simulated_plan) {
+              setSimulatedPlan((parsed.plan || parsed.simulated_plan) as PlanType);
+              setSimulatedRemaining(parsed.remainingCalculations ?? parsed.simulated_remaining_calculations ?? 3);
               setSimulatedManualUsed(parsed.simulated_manual_used ?? 0);
-              setSimulatedApiUsed(parsed.simulated_api_used ?? 0);
-              setSimulatedZapier(parsed.simulated_zapier_connected ?? false);
+              setSimulatedApiUsed(parsed.apiCallsUsed ?? parsed.simulated_api_used ?? 0);
+              setSimulatedZapier(parsed.zapierConnected ?? parsed.simulated_zapier_connected ?? false);
             }
           }
         } catch (e) {
@@ -50,18 +51,16 @@ export const AdminSimulator = () => {
 
   const handleSave = () => {
     const simData = {
-      simulated_plan: simulatedPlan,
-      simulated_remaining_calculations: simulatedRemaining,
-      simulated_manual_used: simulatedManualUsed,
-      simulated_api_used: simulatedApiUsed,
-      simulated_zapier_connected: simulatedZapier,
+      plan: simulatedPlan,
+      remainingCalculations: simulatedRemaining,
+      apiCallsUsed: simulatedApiUsed,
+      zapierConnected: simulatedZapier,
+      active: true
     };
     localStorage.setItem('admin_billing_sim', JSON.stringify(simData));
-    // Trigger a custom event to notify other components
-    window.dispatchEvent(new CustomEvent('admin_sim_changed'));
+    // Broadcast event to notify usePlan hook
+    window.dispatchEvent(new Event('admin-billing-sim-updated'));
     setIsOpen(false);
-    // Reload page to apply changes
-    window.location.reload();
   };
 
   const handleClear = () => {
@@ -71,9 +70,9 @@ export const AdminSimulator = () => {
     setSimulatedManualUsed(0);
     setSimulatedApiUsed(0);
     setSimulatedZapier(false);
-    window.dispatchEvent(new CustomEvent('admin_sim_changed'));
+    // Broadcast event to notify usePlan hook
+    window.dispatchEvent(new Event('admin-billing-sim-updated'));
     setIsOpen(false);
-    window.location.reload();
   };
 
   return (

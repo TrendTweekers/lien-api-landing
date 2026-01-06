@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 export type PlanType = "free" | "basic" | "automated" | "enterprise";
 
@@ -23,6 +23,22 @@ export interface PlanInfo {
 
 const ADMIN_EMAIL = "admin@stackedboost.com";
 
+// Helper to get admin simulator data from localStorage
+function getAdminSim() {
+  try {
+    const data = localStorage.getItem('admin_billing_sim');
+    if (!data) return null;
+    const parsed = JSON.parse(data);
+    // Support both old and new format
+    if (parsed.active || parsed.simulated_plan || parsed.plan) {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export const usePlan = () => {
   const [planInfo, setPlanInfo] = useState<PlanInfo>({
     plan: "free",
@@ -32,6 +48,7 @@ export const usePlan = () => {
     isSimulated: false,
   });
   const [loading, setLoading] = useState(true);
+  const [adminSim, setAdminSim] = useState(getAdminSim());
 
   useEffect(() => {
     const fetchPlanInfo = async () => {
@@ -68,71 +85,44 @@ export const usePlan = () => {
         }
         
         const isAdmin = userEmail.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase();
-
-        // Check for admin simulator overrides
-        let simulatedPlan: PlanType | null = null;
-        let simulatedRemaining: number | null = null;
-        let simulatedZapier: boolean | null = null;
-        let isSimulated = false;
-
+        
+        // Update adminSim state if admin
         if (isAdmin) {
-          try {
-            const simData = localStorage.getItem('admin_billing_sim');
-            if (simData) {
-              const parsed = JSON.parse(simData);
-              if (parsed.simulated_plan) {
-                simulatedPlan = parsed.simulated_plan;
-                simulatedRemaining = parsed.simulated_remaining_calculations ?? null;
-                simulatedZapier = parsed.simulated_zapier_connected ?? null;
-                isSimulated = true;
-              }
-            }
-          } catch (e) {
-            console.error('Error parsing admin simulator data:', e);
-          }
+          setAdminSim(getAdminSim());
         }
 
         const res = await fetch('/api/user/stats', { headers });
         if (!res.ok) {
           // Default to free plan if API fails
-        setPlanInfo({
-          plan: simulatedPlan || "free",
-          remainingCalculations: simulatedRemaining ?? (simulatedPlan ? Infinity : 3),
-          zapierConnected: simulatedZapier ?? false,
-          isAdmin,
-          isSimulated,
-          manualCalcUsed: 0,
-          manualCalcLimit: simulatedPlan === "free" ? 3 : null,
-          manualCalcRemaining: simulatedRemaining ?? 3,
-          apiCallsUsed: 0,
-          apiCallsLimit: null,
-          apiCallsRemaining: null,
-          resetDate: null,
-          lastSyncAt: null,
-          alertEmail: null,
-          emailAlertsEnabled: true,
-        });
+          setPlanInfo({
+            plan: "free",
+            remainingCalculations: 3,
+            zapierConnected: false,
+            isAdmin,
+            isSimulated: false,
+            manualCalcUsed: 0,
+            manualCalcLimit: 3,
+            manualCalcRemaining: 3,
+            apiCallsUsed: 0,
+            apiCallsLimit: null,
+            apiCallsRemaining: null,
+            resetDate: null,
+            lastSyncAt: null,
+            alertEmail: null,
+            emailAlertsEnabled: true,
+          });
           setLoading(false);
           return;
         }
 
         const data = await res.json();
-        
-        // Apply admin simulator overrides if active
-        const finalPlan: PlanType = simulatedPlan || (data.plan || data.subscriptionStatus || "free");
-        const finalRemaining = simulatedRemaining !== null 
-          ? simulatedRemaining 
-          : (data.manual_calc_remaining ?? data.calculationsRemaining ?? (data.manual_calc_limit ? data.manual_calc_limit - (data.manual_calc_used || 0) : Infinity));
-        const finalZapier = simulatedZapier !== null 
-          ? simulatedZapier 
-          : (data.zapier_connected === true);
 
         setPlanInfo({
-          plan: finalPlan,
-          remainingCalculations: finalRemaining ?? Infinity,
-          zapierConnected: finalZapier,
+          plan: (data.plan || data.subscriptionStatus || "free") as PlanType,
+          remainingCalculations: data.manual_calc_remaining ?? data.calculationsRemaining ?? (data.manual_calc_limit ? data.manual_calc_limit - (data.manual_calc_used || 0) : Infinity),
+          zapierConnected: data.zapier_connected === true,
           isAdmin: data.is_admin === true || isAdmin,
-          isSimulated,
+          isSimulated: false,
           manualCalcUsed: data.manual_calc_used ?? 0,
           manualCalcLimit: data.manual_calc_limit ?? null,
           manualCalcRemaining: data.manual_calc_remaining ?? null,
@@ -171,18 +161,53 @@ export const usePlan = () => {
     fetchPlanInfo();
 
     // Listen for simulator changes
+    const handleSimUpdate = () => {
+      setAdminSim(getAdminSim());
+      // Refetch plan info to get latest backend data, then merge
+      fetchPlanInfo();
+    };
+    
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'admin_billing_sim') {
-        fetchPlanInfo();
+        handleSimUpdate();
       }
     };
+    
+    window.addEventListener('admin-billing-sim-updated', handleSimUpdate);
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
+      window.removeEventListener('admin-billing-sim-updated', handleSimUpdate);
       window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
-  return { planInfo, loading };
+  // Merge simulator overrides with backend plan info
+  const effectivePlanInfo = useMemo(() => {
+    if (!planInfo) return planInfo;
+    
+    // Only apply simulator if admin and simulator is active
+    const userEmail = localStorage.getItem('user_email') || localStorage.getItem('userEmail') || '';
+    const isAdmin = userEmail.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase();
+    
+    // Check if simulator is active (support both old and new format)
+    const simActive = adminSim && (adminSim.active === true || adminSim.simulated_plan || adminSim.plan);
+    
+    if (!isAdmin || !simActive) {
+      return planInfo;
+    }
+
+    // Merge simulator overrides (support both old and new format)
+    return {
+      ...planInfo,
+      plan: (adminSim.plan || adminSim.simulated_plan) as PlanType,
+      remainingCalculations: adminSim.remainingCalculations ?? adminSim.simulated_remaining_calculations ?? planInfo.remainingCalculations,
+      zapierConnected: adminSim.zapierConnected ?? adminSim.simulated_zapier_connected ?? planInfo.zapierConnected,
+      apiCallsUsed: adminSim.apiCallsUsed ?? adminSim.simulated_api_used ?? planInfo.apiCallsUsed,
+      isSimulated: true,
+    };
+  }, [planInfo, adminSim]);
+
+  return { planInfo: effectivePlanInfo || planInfo, loading, adminSim };
 };
 

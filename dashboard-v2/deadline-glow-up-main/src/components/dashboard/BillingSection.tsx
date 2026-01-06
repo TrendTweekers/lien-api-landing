@@ -1,8 +1,55 @@
 import { CreditCard, Calendar, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { usePlan } from "@/hooks/usePlan";
 
 export const BillingSection = () => {
+  const { planInfo, loading } = usePlan();
+
+  // Format plan price
+  const getPlanPrice = (plan: string) => {
+    switch (plan) {
+      case "free": return "$0";
+      case "basic": return "$49";
+      case "automated": return "$149";
+      case "enterprise": return "$499";
+      default: return "$0";
+    }
+  };
+
+  // Format plan display name
+  const getPlanDisplayName = (plan: string) => {
+    switch (plan) {
+      case "free": return "Free Calculator";
+      case "basic": return "Basic Tracker";
+      case "automated": return "Automated Compliance";
+      case "enterprise": return "Enterprise";
+      default: return "Free Calculator";
+    }
+  };
+
+  // Get plan features text
+  const getPlanFeatures = (plan: string) => {
+    switch (plan) {
+      case "free": return "3 calculations/month";
+      case "basic": return "Unlimited calculations";
+      case "automated": return "Unlimited + API + Zapier";
+      case "enterprise": return "Unlimited";
+      default: return "";
+    }
+  };
+
+  if (loading || !planInfo) {
+    return (
+      <div className="bg-card rounded-xl p-6 border border-border card-shadow animate-pulse">
+        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-6"></div>
+        <div className="space-y-4">
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-card rounded-xl p-6 border border-border card-shadow">
       <div className="flex items-center justify-between mb-6">
@@ -21,7 +68,12 @@ export const BillingSection = () => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-muted-foreground">Current Plan</p>
-            <p className="font-semibold text-foreground">$299/month (Unlimited)</p>
+            <p className="font-semibold text-foreground">
+              {getPlanPrice(planInfo.plan)}/month ({getPlanFeatures(planInfo.plan)})
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {getPlanDisplayName(planInfo.plan)}
+            </p>
           </div>
         </div>
 
@@ -47,7 +99,7 @@ export const BillingSection = () => {
             <p className="text-sm text-muted-foreground">Next Charge</p>
             <p className="font-semibold text-foreground flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
-              $299 on Dec 23, 2025
+              {planInfo.plan === "free" ? "No charge" : `${getPlanPrice(planInfo.plan)} on ${planInfo.resetDate ? new Date(planInfo.resetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}`}
             </p>
           </div>
         </div>
