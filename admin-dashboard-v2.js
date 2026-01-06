@@ -91,9 +91,6 @@ async function adminFetch(url, options = {}) {
     }
 }
 
-// Log admin key status on init
-console.log("[AdminV2] key present:", ADMIN_API_KEY.length > 0, "len:", ADMIN_API_KEY.length);
-
 // Check admin key on page load and test connection
 async function initAdminDashboard() {
     if (!ADMIN_API_KEY) {
@@ -291,10 +288,9 @@ async function loadPartnerApplications() {
 
 // Load active brokers (reuses V1 API)
 async function loadActiveBrokers() {
-    if (!adminKeyValid) return; // Skip if key missing
+    if (!ADMIN_API_KEY) return;
     
     console.log('[Admin V2] Loading active brokers...');
-    if (!ADMIN_API_KEY) return;
     
     try {
         const data = await adminFetch('/api/admin/brokers');
@@ -1085,27 +1081,24 @@ async function handleMarkPaid(e) {
 }
 
 async function exportPaymentHistory() {
+    if (!ADMIN_API_KEY) return;
+    
     try {
         const filter = document.getElementById('v2-payment-filter')?.value || 'all';
-        const response = await fetch(`/api/admin/payment-history/export?time_filter=${filter}`, {
-            credentials: "include",
-            headers: getAdminHeaders()
-        });
+        const response = await adminFetch(`/api/admin/payment-history/export?time_filter=${filter}`);
         
-        if (!response.ok) {
-            alert('❌ Error exporting payment history: ' + response.status);
-            return;
+        // Handle blob response for exports
+        if (response instanceof Response) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `payment-history-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
         }
-        
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `payment-history-${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
         
     } catch (error) {
         console.error('[Admin V2] Error exporting payment history:', error);
