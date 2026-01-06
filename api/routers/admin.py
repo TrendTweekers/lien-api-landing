@@ -400,19 +400,40 @@ async def get_comprehensive_analytics(_auth: dict = Depends(require_admin_api_ke
         }
 
 @router.get("/api/admin/users")
-async def get_users_api(_auth: dict = Depends(require_admin_api_key)):
-    """Return list of all registered users from users table"""
+async def get_users_api(
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=100),
+    sort_by: str = Query("created_at", regex="^(created_at|email|subscription_status|last_login)$"),
+    sort_order: str = Query("desc", regex="^(asc|desc)$"),
+    _auth: dict = Depends(require_admin_api_key)
+):
+    """Return paginated list of registered users from users table"""
     try:
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
+            # Calculate offset
+            offset = (page - 1) * limit
+            
+            # Get total count
             if DB_TYPE == 'postgresql':
-                cursor.execute("""
+                cursor.execute("SELECT COUNT(*) FROM users")
+                total_count = cursor.fetchone()['count']
+            else:
+                cursor.execute("SELECT COUNT(*) FROM users")
+                total_count = cursor.fetchone()[0]
+            
+            # Build ORDER BY clause
+            order_by = f"{sort_by} {sort_order.upper()}"
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute(f"""
                     SELECT id, email, subscription_status, stripe_customer_id, 
                            created_at, last_login_at
                     FROM users
-                    ORDER BY created_at DESC
-                """)
+                    ORDER BY {order_by}
+                    LIMIT %s OFFSET %s
+                """, (limit, offset))
                 raw_rows = cursor.fetchall()
                 rows = []
                 for row in raw_rows:
@@ -430,14 +451,15 @@ async def get_users_api(_auth: dict = Depends(require_admin_api_key)):
                         if hasattr(row_dict['last_login'], 'isoformat'):
                             row_dict['last_login'] = row_dict['last_login'].isoformat()
                     rows.append(row_dict)
-                logger.info(f"Found {len(rows)} users from PostgreSQL")
+                logger.info(f"Found {len(rows)} users from PostgreSQL (page {page}, total: {total_count})")
             else:
-                cursor.execute("""
+                cursor.execute(f"""
                     SELECT id, email, subscription_status, stripe_customer_id, 
                            created_at, last_login
                     FROM users
-                    ORDER BY created_at DESC
-                """)
+                    ORDER BY {order_by}
+                    LIMIT ? OFFSET ?
+                """, (limit, offset))
                 rows = cursor.fetchall()
                 # Convert to dict format
                 rows = [
@@ -454,13 +476,56 @@ async def get_users_api(_auth: dict = Depends(require_admin_api_key)):
             
             return {
                 "users": rows,
-                "total": len(rows)
+                "total": total_count,
+                "page": page,
+                "limit": limit,
+                "total_pages": (total_count + limit - 1) // limit
             }
     except Exception as e:
         logger.error(f"Error getting users: {e}")
         import traceback
         traceback.print_exc()
-        return {"users": [], "total": 0, "error": str(e)}
+        return {"users": [], "total": 0, "page": 1, "limit": limit, "total_pages": 0, "error": str(e)}
+
+@router.delete("/api/admin/users/{user_id}")
+async def delete_user_api(user_id: int, _auth: dict = Depends(require_admin_api_key)):
+    """Delete a user by ID"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Check if user exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("SELECT email FROM users WHERE id = %s", (user_id,))
+            else:
+                cursor.execute("SELECT email FROM users WHERE id = ?", (user_id,))
+            
+            user = cursor.fetchone()
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            user_email = user['email'] if isinstance(user, dict) else user[0]
+            
+            # Delete user
+            if DB_TYPE == 'postgresql':
+                cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+            else:
+                cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+            
+            conn.commit()
+            logger.info(f"Deleted user {user_id} ({user_email})")
+            
+            return {
+                "success": True,
+                "message": f"User {user_email} deleted successfully"
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting user: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error deleting user: {str(e)}")
 
 @router.get("/api/admin/customers")
 async def get_customers_api(_auth: dict = Depends(require_admin_api_key)):

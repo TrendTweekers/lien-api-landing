@@ -871,7 +871,7 @@ async function updateAllStats() {
         
         // Set defaults for other stats
         safe.text('v2-todayRevenue', '$0');
-        safe.text('v2-activeCustomers', '0');
+        // v2-activeCustomers is updated by loadRegisteredUsers()
         
     } catch (error) {
         console.error('[Admin V2] Error updating stats:', error);
@@ -1133,28 +1133,49 @@ function logout() {
     }
 }
 
-// Load Registered Users
-async function loadRegisteredUsers() {
+// Load Registered Users with pagination
+let currentUsersPage = 1;
+let currentUsersSort = 'created_at-desc';
+let currentUsersLimit = 50;
+
+async function loadRegisteredUsers(page = null) {
     if (!ADMIN_API_KEY) return;
     
+    // Update current page if provided
+    if (page !== null) {
+        currentUsersPage = page;
+    }
+    
+    // Get sort and limit from UI
+    const sortSelect = document.getElementById('v2-users-sort');
+    const limitSelect = document.getElementById('v2-users-limit');
+    
+    if (sortSelect) {
+        const [sortBy, sortOrder] = sortSelect.value.split('-');
+        currentUsersSort = sortSelect.value;
+    }
+    if (limitSelect) {
+        currentUsersLimit = parseInt(limitSelect.value) || 50;
+    }
+    
+    const [sortBy, sortOrder] = currentUsersSort.split('-');
+    
     try {
-        console.log('[Admin V2] Loading registered users...');
-        const data = await adminFetch('/api/admin/users');
-        console.log('[Admin V2] Raw API response:', data);
+        console.log(`[Admin V2] Loading registered users (page ${currentUsersPage}, sort: ${sortBy} ${sortOrder}, limit: ${currentUsersLimit})...`);
+        const url = `/api/admin/users?page=${currentUsersPage}&limit=${currentUsersLimit}&sort_by=${sortBy}&sort_order=${sortOrder}`;
+        const data = await adminFetch(url);
         
         const users = data.users || [];
+        const total = data.total || 0;
+        const totalPages = data.total_pages || 1;
         
-        console.log('[Admin V2] Users array:', users);
-        console.log('[Admin V2] Users count:', users.length);
+        // Update user count badge
+        safe.text('v2-activeCustomers', total.toString());
         
-        if (!Array.isArray(users)) {
-            console.error('[Admin V2] Users is not an array:', typeof users, users);
-            safe.html('v2-usersList', '<tr><td colspan="6" class="text-center py-8 text-red-600">Error: Invalid data format</td></tr>');
-            return;
-        }
-        
-        // Update active customers count
-        safe.text('v2-activeCustomers', users.length.toString());
+        // Update info text
+        const start = (currentUsersPage - 1) * currentUsersLimit + 1;
+        const end = Math.min(currentUsersPage * currentUsersLimit, total);
+        safe.text('v2-usersInfo', `Showing ${start}-${end} of ${total} users`);
         
         const usersList = safe.get('v2-usersList');
         if (!usersList) {
@@ -1165,18 +1186,17 @@ async function loadRegisteredUsers() {
         if (users.length === 0) {
             safe.html('v2-usersList', `
                 <tr>
-                    <td colspan="6" class="text-center py-8" style="color: var(--muted);">
+                    <td colspan="7" class="text-center py-8" style="color: var(--muted);">
                         No registered users yet
                     </td>
                 </tr>
             `);
+            // Clear pagination
+            safe.html('v2-usersPaginationControls', '');
             return;
         }
         
         const html = users.map(user => {
-            // Debug: log each user to see what we're getting
-            console.log('[Admin V2] Processing user:', user);
-            
             // Parse dates safely
             let createdDate = 'Recently';
             if (user.created_at) {
@@ -1206,7 +1226,6 @@ async function loadRegisteredUsers() {
                 ? '<span class="badge badge-ready">Active</span>'
                 : '<span class="badge badge-pending">Free</span>';
             
-            // Ensure email is a string, not the word "email"
             const email = (user.email && typeof user.email === 'string' && user.email !== 'email') 
                 ? user.email 
                 : (user.email || 'N/A');
@@ -1219,19 +1238,113 @@ async function loadRegisteredUsers() {
                     <td>${subscriptionBadge}</td>
                     <td style="color: var(--muted);">${createdDate}</td>
                     <td style="color: var(--muted);">${lastLogin}</td>
+                    <td>
+                        <button onclick="deleteUser(${user.id}, '${email.replace(/'/g, "\\'")}')" 
+                                class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs">
+                            Delete
+                        </button>
+                    </td>
                 </tr>
             `;
         }).join('');
         
         safe.html('v2-usersList', html);
-        console.log(`✅ Loaded ${users.length} registered users`);
+        
+        // Update pagination controls
+        updateUsersPagination(currentUsersPage, totalPages);
+        
+        console.log(`✅ Loaded ${users.length} registered users (page ${currentUsersPage}/${totalPages})`);
         
     } catch (error) {
         console.error('[Admin V2] Error loading users:', error);
         const usersList = safe.get('v2-usersList');
         if (usersList) {
-            safe.html('v2-usersList', '<tr><td colspan="6" class="text-center py-8 text-red-600">Error loading users</td></tr>');
+            safe.html('v2-usersList', '<tr><td colspan="7" class="text-center py-8 text-red-600">Error loading users</td></tr>');
         }
+    }
+}
+
+function updateUsersPagination(currentPage, totalPages) {
+    const paginationEl = safe.get('v2-usersPaginationControls');
+    if (!paginationEl || totalPages <= 1) {
+        safe.html('v2-usersPaginationControls', '');
+        return;
+    }
+    
+    let html = '';
+    
+    // Previous button
+    html += `<button onclick="loadRegisteredUsers(${currentPage - 1})" 
+                     ${currentPage === 1 ? 'disabled' : ''} 
+                     class="px-3 py-1 text-sm border rounded-lg ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}">
+                Previous
+             </button>`;
+    
+    // Page numbers
+    const maxPagesToShow = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+    
+    if (endPage - startPage < maxPagesToShow - 1) {
+        startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+    
+    if (startPage > 1) {
+        html += `<button onclick="loadRegisteredUsers(1)" class="px-3 py-1 text-sm border rounded-lg hover:bg-gray-50">1</button>`;
+        if (startPage > 2) {
+            html += `<span class="px-2 text-sm" style="color: var(--muted);">...</span>`;
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<button onclick="loadRegisteredUsers(${i})" 
+                         class="px-3 py-1 text-sm border rounded-lg ${i === currentPage ? 'bg-blue-600 text-white' : 'hover:bg-gray-50'}">
+                    ${i}
+                 </button>`;
+    }
+    
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            html += `<span class="px-2 text-sm" style="color: var(--muted);">...</span>`;
+        }
+        html += `<button onclick="loadRegisteredUsers(${totalPages})" class="px-3 py-1 text-sm border rounded-lg hover:bg-gray-50">${totalPages}</button>`;
+    }
+    
+    // Next button
+    html += `<button onclick="loadRegisteredUsers(${currentPage + 1})" 
+                     ${currentPage === totalPages ? 'disabled' : ''} 
+                     class="px-3 py-1 text-sm border rounded-lg ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}">
+                Next
+             </button>`;
+    
+    safe.html('v2-usersPaginationControls', html);
+}
+
+async function deleteUser(userId, userEmail) {
+    if (!confirm(`Are you sure you want to delete user ${userEmail}? This action cannot be undone.`)) {
+        return;
+    }
+    
+    if (!ADMIN_API_KEY) {
+        alert('❌ Admin API key not configured');
+        return;
+    }
+    
+    try {
+        console.log(`[Admin V2] Deleting user ${userId} (${userEmail})...`);
+        const data = await adminFetch(`/api/admin/users/${userId}`, {
+            method: 'DELETE'
+        });
+        
+        if (data.success) {
+            alert(`✅ User ${userEmail} deleted successfully`);
+            loadRegisteredUsers(currentUsersPage); // Reload current page
+        } else {
+            alert(`❌ Error: ${data.error || 'Unknown error'}`);
+        }
+    } catch (error) {
+        console.error('[Admin V2] Error deleting user:', error);
+        alert(`❌ Error: ${error.message || 'Failed to delete user'}`);
     }
 }
 

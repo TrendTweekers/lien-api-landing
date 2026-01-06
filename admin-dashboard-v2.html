@@ -366,8 +366,21 @@
             <section>
                 <div class="dashboard-card overflow-hidden">
                     <div class="flex items-center justify-between p-5 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold">Registered Users</h2>
-                        <span class="badge badge-ready" id="v2-activeCustomers">0 Users</span>
+                        <div>
+                            <h2 class="text-lg font-semibold">Registered Users</h2>
+                            <p class="text-sm" style="color: var(--muted);" id="v2-usersInfo">Loading...</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <select id="v2-users-sort" onchange="loadRegisteredUsers()" class="px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                                <option value="created_at-desc">Newest First</option>
+                                <option value="created_at-asc">Oldest First</option>
+                                <option value="email-asc">Email A-Z</option>
+                                <option value="email-desc">Email Z-A</option>
+                                <option value="subscription_status-desc">Active First</option>
+                                <option value="last_login-desc">Recent Login</option>
+                            </select>
+                            <span class="badge badge-ready" id="v2-activeCustomers">0 Users</span>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="admin-table">
@@ -379,16 +392,32 @@
                                     <th>Subscription</th>
                                     <th>Joined</th>
                                     <th>Last Login</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="v2-usersList">
                                 <tr>
-                                    <td colspan="6" class="text-center py-8" style="color: var(--muted);">
+                                    <td colspan="7" class="text-center py-8" style="color: var(--muted);">
                                         Loading...
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    <!-- Pagination -->
+                    <div class="flex items-center justify-between p-4 border-t border-gray-200" id="v2-usersPagination">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm" style="color: var(--muted);">Show:</span>
+                            <select id="v2-users-limit" onchange="loadRegisteredUsers(1)" class="px-2 py-1 text-sm border border-gray-300 rounded">
+                                <option value="25">25</option>
+                                <option value="50" selected>50</option>
+                                <option value="100">100</option>
+                            </select>
+                            <span class="text-sm" style="color: var(--muted);">per page</span>
+                        </div>
+                        <div class="flex items-center gap-2" id="v2-usersPaginationControls">
+                            <!-- Pagination buttons will be inserted here -->
+                        </div>
                     </div>
                 </div>
             </section>
