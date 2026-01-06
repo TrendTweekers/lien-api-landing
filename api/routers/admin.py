@@ -409,12 +409,16 @@ async def get_users_api(_auth: dict = Depends(require_admin_api_key)):
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     SELECT id, email, subscription_status, stripe_customer_id, 
-                           created_at, last_login
+                           created_at, last_login_at
                     FROM users
                     ORDER BY created_at DESC
                 """)
                 columns = [desc[0] for desc in cursor.description]
                 rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+                # Rename last_login_at to last_login for consistency
+                for row in rows:
+                    if 'last_login_at' in row:
+                        row['last_login'] = row.pop('last_login_at')
             else:
                 cursor.execute("""
                     SELECT id, email, subscription_status, stripe_customer_id, 
