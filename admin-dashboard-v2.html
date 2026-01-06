@@ -241,7 +241,7 @@
             <div class="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
                 <div>
                     <h1 class="text-xl font-semibold" style="color: var(--foreground);">LienDeadline Admin</h1>
-                    <p class="text-sm" style="color: var(--muted);">Dashboard for managing brokers and customers</p>
+                    <p class="text-sm" style="color: var(--muted);">Dashboard for managing users and customers</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <a href="/" class="btn btn-outline btn-sm" target="_blank">View Site</a>
@@ -284,39 +284,6 @@
                         </div>
                         <div class="flex items-center justify-center w-10 h-10 rounded-lg" style="background: rgba(245, 158, 11, 0.1);">
                             <span style="color: var(--warning);">📊</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="kpi-card">
-                    <div class="flex items-start justify-between">
-                        <div class="space-y-1">
-                            <p class="text-sm font-medium" style="color: var(--muted);">Pending Payouts</p>
-                            <p class="text-2xl font-semibold tracking-tight" id="v2-pendingPayouts">0</p>
-                        </div>
-                        <div class="flex items-center justify-center w-10 h-10 rounded-lg" style="background: rgba(220, 38, 38, 0.1);">
-                            <span style="color: var(--error);">💸</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="kpi-card">
-                    <div class="flex items-start justify-between">
-                        <div class="space-y-1">
-                            <p class="text-sm font-medium" style="color: var(--muted);">Total Paid (All Time)</p>
-                            <p class="text-2xl font-semibold tracking-tight" id="v2-totalPaid">$0</p>
-                        </div>
-                        <div class="flex items-center justify-center w-10 h-10 rounded-lg" style="background: rgba(16, 185, 129, 0.1);">
-                            <span style="color: var(--success);">✅</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="kpi-card">
-                    <div class="flex items-start justify-between">
-                        <div class="space-y-1">
-                            <p class="text-sm font-medium" style="color: var(--muted);">Overdue Payments</p>
-                            <p class="text-2xl font-semibold tracking-tight" id="v2-overduePayments">0</p>
-                        </div>
-                        <div class="flex items-center justify-center w-10 h-10 rounded-lg" style="background: rgba(245, 158, 11, 0.1);">
-                            <span style="color: var(--warning);">⚠️</span>
                         </div>
                     </div>
                 </div>
@@ -395,50 +362,40 @@
                 </div>
             </section>
             
-            <!-- Partner Stats Row -->
-            <section class="grid md:grid-cols-2 gap-4">
-                <div class="dashboard-card p-5 flex items-center justify-between">
-                    <span style="color: var(--muted);">Active Partners:</span>
-                    <span class="text-2xl font-semibold" style="color: var(--primary);" id="v2-activePartners">0</span>
-                </div>
-                <div class="dashboard-card p-5 flex items-center justify-between">
-                    <span style="color: var(--muted);">Pending Applications:</span>
-                    <span class="text-2xl font-semibold" style="color: var(--warning);" id="v2-pendingApps">0</span>
+            <!-- Registered Users Section -->
+            <section>
+                <div class="dashboard-card overflow-hidden">
+                    <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold">Registered Users</h2>
+                        <span class="badge badge-ready" id="v2-activeCustomers">0 Users</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>Name</th>
+                                    <th>Company</th>
+                                    <th>Subscription</th>
+                                    <th>Joined</th>
+                                    <th>Last Login</th>
+                                </tr>
+                            </thead>
+                            <tbody id="v2-usersList">
+                                <tr>
+                                    <td colspan="6" class="text-center py-8" style="color: var(--muted);">
+                                        Loading...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
             
-            <!-- Partner Applications + System Panel -->
+            <!-- System Panel -->
             <section class="grid lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2">
-                    <div class="dashboard-card overflow-hidden">
-                        <div class="flex items-center justify-between p-5 border-b border-gray-200">
-                            <h2 class="text-lg font-semibold">Partner Applications</h2>
-                            <div class="flex items-center gap-3">
-                                <span class="badge badge-pending" id="v2-pendingCount">0 Pending</span>
-                                <button onclick="exportApplications()" class="btn btn-outline btn-sm">
-                                    📥 Export CSV
-                                </button>
-                            </div>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Applicant</th>
-                                        <th>Commission Model</th>
-                                        <th>Company</th>
-                                        <th>Applied</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="v2-applicationsTable">
-                                    <!-- Dynamic rows -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                <div class="lg:col-span-3">
                 <div>
                     <div class="dashboard-card p-6">
                         <h3 class="font-medium mb-4">System Health</h3>
@@ -462,119 +419,8 @@
                         </div>
                         <h3 class="font-medium mb-3">Quick Actions</h3>
                         <div class="grid grid-cols-2 gap-3">
-                            <button onclick="approveAllPending()" class="btn btn-success btn-sm">Approve All</button>
-                            <button onclick="payAllReady()" class="btn btn-primary btn-sm">Pay All Ready</button>
                             <button onclick="generateTestKey()" class="btn btn-outline btn-sm">Test Key</button>
                             <button onclick="runBackup()" class="btn btn-outline btn-sm">Backup</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- Payout Debug Panel (Collapsed by Default) -->
-            <section class="mt-6">
-                <div class="dashboard-card overflow-hidden">
-                    <button onclick="toggleDebugPanel()" class="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                        <div class="flex items-center gap-2">
-                            <span style="color: var(--muted);">🔍</span>
-                            <h3 class="font-semibold">Payout Debug</h3>
-                            <span class="text-xs" style="color: var(--muted);">(Read-only)</span>
-                        </div>
-                        <span id="debug-panel-toggle" class="text-xl">▼</span>
-                    </button>
-                    <div id="debug-panel-content" class="hidden p-5 border-t border-gray-200">
-                        <div class="space-y-6">
-                            <!-- Last 20 Referrals -->
-                            <div>
-                                <h4 class="font-medium mb-3">Last 20 Referrals</h4>
-                                <div class="overflow-x-auto">
-                                    <table class="admin-table">
-                                        <thead>
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Broker ID</th>
-                                                <th>Customer Email</th>
-                                                <th>Stripe ID</th>
-                                                <th>Subscription ID</th>
-                                                <th>Status</th>
-                                                <th>Payment Date</th>
-                                                <th>Payout</th>
-                                                <th>Type</th>
-                                                <th>Created</th>
-                                                <th>Paid At</th>
-                                                <th>Batch ID</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="debug-referrals-table">
-                                            <tr>
-                                                <td colspan="12" class="text-center py-4" style="color: var(--muted);">
-                                                    Loading...
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            
-                            <!-- Last 20 Broker Payments -->
-                            <div>
-                                <h4 class="font-medium mb-3">Last 20 Broker Payments</h4>
-                                <div class="overflow-x-auto">
-                                    <table class="admin-table">
-                                        <thead>
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Broker ID</th>
-                                                <th>Broker Name</th>
-                                                <th>Broker Email</th>
-                                                <th>Amount</th>
-                                                <th>Method</th>
-                                                <th>Transaction ID</th>
-                                                <th>Status</th>
-                                                <th>Created</th>
-                                                <th>Paid At</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="debug-payments-table">
-                                            <tr>
-                                                <td colspan="10" class="text-center py-4" style="color: var(--muted);">
-                                                    Loading...
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            
-                            <!-- Last 20 Payout Batches -->
-                            <div>
-                                <h4 class="font-medium mb-3">Last 20 Payout Batches</h4>
-                                <div class="overflow-x-auto">
-                                    <table class="admin-table">
-                                        <thead>
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Broker ID</th>
-                                                <th>Broker Name</th>
-                                                <th>Broker Email</th>
-                                                <th>Total Amount</th>
-                                                <th>Method</th>
-                                                <th>Transaction ID</th>
-                                                <th>Status</th>
-                                                <th>Created</th>
-                                                <th>Paid At</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="debug-batches-table">
-                                            <tr>
-                                                <td colspan="10" class="text-center py-4" style="color: var(--muted);">
-                                                    Loading...
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -689,174 +535,6 @@
                 </div>
             </section>
             
-            <!-- Broker Payouts Section -->
-            <section>
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                    <div>
-                        <h2 class="text-xl font-semibold flex items-center gap-2">
-                            <span style="color: var(--primary);">💰</span>
-                            Broker Payouts
-                        </h2>
-                        <p class="text-sm" style="color: var(--muted);">Manage broker balances, commissions, and payouts</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="exportPaymentHistory()" class="btn btn-outline btn-sm">
-                            📥 Export All
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Payouts Tabs -->
-                <div class="dashboard-card overflow-hidden">
-                    <div class="p-5 border-b border-gray-200">
-                        <div class="flex items-center gap-3">
-                            <button class="tab-button active" onclick="switchPayoutTab('pending')" id="tab-pending">
-                                ⏰ Due to Pay <span class="badge badge-ready" id="pending-badge">0</span>
-                            </button>
-                            <button class="tab-button" onclick="switchPayoutTab('hold')" id="tab-hold">
-                                ⏳ On Hold <span class="badge badge-pending" id="hold-badge">0</span>
-                            </button>
-                            <button class="tab-button" onclick="switchPayoutTab('paid')" id="tab-paid">
-                                ✅ Paid <span class="badge badge-paid" id="paid-badge">0</span>
-                            </button>
-                            <button class="tab-button" onclick="switchPayoutTab('batches')" id="tab-batches">
-                                📦 Batches
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Pending Tab -->
-                    <div id="payout-tab-pending" class="tab-content active p-5">
-                        <div class="overflow-x-auto">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Broker</th>
-                                        <th>Commission Model</th>
-                                        <th>Amount Owed</th>
-                                        <th>Payment Method</th>
-                                        <th>Next Payment Due</th>
-                                        <th>Status</th>
-                                        <th>Summary</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="v2-ready-to-pay-list">
-                                    <!-- Dynamic rows -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <!-- On Hold Tab -->
-                    <div id="payout-tab-hold" class="tab-content p-5">
-                        <div class="overflow-x-auto">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Broker</th>
-                                        <th>Commission Model</th>
-                                        <th>Amount On Hold</th>
-                                        <th>Payment Method</th>
-                                        <th>Days Until Eligible</th>
-                                        <th>Status</th>
-                                        <th>Summary</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="v2-on-hold-list">
-                                    <!-- Dynamic rows -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <!-- Paid Tab -->
-                    <div id="payout-tab-paid" class="tab-content p-5">
-                        <div class="flex items-center justify-end mb-4">
-                            <select id="v2-payment-filter" onchange="loadPaymentHistory()" class="px-3 py-2 text-sm border border-gray-300 rounded-lg">
-                                <option value="all">All Payments</option>
-                                <option value="month">This Month</option>
-                                <option value="week">This Week</option>
-                            </select>
-                            <button onclick="exportPaymentHistory()" class="btn btn-outline btn-sm ml-2">
-                                📥 Export CSV
-                            </button>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Broker</th>
-                                        <th>Amount</th>
-                                        <th>Method</th>
-                                        <th>Transaction ID</th>
-                                        <th>Status</th>
-                                        <th>Notes</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="v2-payment-history-table">
-                                    <!-- Dynamic rows -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <!-- Batches Tab -->
-                    <div id="payout-tab-batches" class="tab-content p-5">
-                        <div class="mb-4">
-                            <p class="text-sm" style="color: var(--muted);">View payout batches created for brokers. Use "View Breakdown" in Due to Pay tab to create new batches.</p>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Batch ID</th>
-                                        <th>Broker</th>
-                                        <th>Total Amount</th>
-                                        <th>Referrals</th>
-                                        <th>Payment Method</th>
-                                        <th>Transaction ID</th>
-                                        <th>Created At</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="v2-batches-list">
-                                    <tr>
-                                        <td colspan="9" class="text-center py-8" style="color: var(--muted);">
-                                            Click "View Breakdown" on a broker in "Due to Pay" tab to create batches
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- Active Brokers -->
-            <section>
-                <div class="dashboard-card overflow-hidden">
-                    <div class="p-5 border-b border-gray-200">
-                        <div class="flex justify-between items-center">
-                            <h2 class="text-lg font-semibold">Active Brokers</h2>
-                            <div class="text-sm" style="color: var(--muted);">
-                                <span id="v2-brokerCount">0</span> brokers
-                            </div>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Referrals</th>
-                                    <th>Commission</th>
-                                    <th>Payment Method</th>
-                                    <th>Payment Status</th>
                                     <th>Last Payment</th>
                                     <th>Total Paid</th>
                                     <th>Actions</th>

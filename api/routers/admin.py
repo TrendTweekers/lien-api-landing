@@ -292,6 +292,11 @@ async def get_api_usage_stats(_auth: dict = Depends(require_admin_api_key)):
             }
         }
 
+@router.get("/api/admin/ping")
+async def admin_ping(_auth: dict = Depends(require_admin_api_key)):
+    """Simple ping endpoint to test admin API connectivity"""
+    return {"ok": True, "message": "Admin API is accessible"}
+
 @router.get("/api/admin/analytics/comprehensive")
 async def get_comprehensive_analytics(_auth: dict = Depends(require_admin_api_key)):
     """Get comprehensive analytics for charts"""

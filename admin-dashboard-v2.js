@@ -1133,6 +1133,78 @@ function logout() {
     }
 }
 
+// Load Registered Users
+async function loadRegisteredUsers() {
+    if (!ADMIN_API_KEY) return;
+    
+    try {
+        console.log('[Admin V2] Loading registered users...');
+        const data = await adminFetch('/api/admin/users');
+        const users = data.users || [];
+        
+        console.log('[Admin V2] Users data:', users);
+        
+        // Update active customers count
+        safe.text('v2-activeCustomers', users.length.toString());
+        
+        const usersList = safe.get('v2-usersList');
+        if (!usersList) {
+            console.warn('[Admin V2] v2-usersList element not found');
+            return;
+        }
+        
+        if (users.length === 0) {
+            safe.html('v2-usersList', `
+                <tr>
+                    <td colspan="6" class="text-center py-8" style="color: var(--muted);">
+                        No registered users yet
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+        
+        const html = users.map(user => {
+            const createdDate = user.created_at 
+                ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'Recently';
+            
+            const lastLogin = user.last_login 
+                ? new Date(user.last_login).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                : 'Never';
+            
+            const subscriptionBadge = user.subscription_status === 'active' || user.subscription_status === 'trialing'
+                ? '<span class="badge badge-ready">Active</span>'
+                : '<span class="badge badge-pending">Free</span>';
+            
+            const name = user.first_name || user.last_name 
+                ? `${user.first_name || ''} ${user.last_name || ''}`.trim() 
+                : '—';
+            
+            return `
+                <tr>
+                    <td class="font-medium">${user.email || 'N/A'}</td>
+                    <td>${name}</td>
+                    <td>${user.company || '—'}</td>
+                    <td>${subscriptionBadge}</td>
+                    <td style="color: var(--muted);">${createdDate}</td>
+                    <td style="color: var(--muted);">${lastLogin}</td>
+                </tr>
+            `;
+        }).join('');
+        
+        safe.html('v2-usersList', html);
+        console.log(`✅ Loaded ${users.length} registered users`);
+        
+    } catch (error) {
+        console.error('[Admin V2] Error loading users:', error);
+        const usersList = safe.get('v2-usersList');
+        if (usersList) {
+            safe.html('v2-usersList', '<tr><td colspan="6" class="text-center py-8 text-red-600">Error loading users</td></tr>');
+        }
+    }
+}
+
 // ==================== API KEY MANAGEMENT ====================
 
 let currentCustomerId = null;
@@ -1324,11 +1396,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Initializing Admin Dashboard V2...');
     
     // Load all data
-    loadPartnerApplications();
-    loadActiveBrokers();
-    loadReadyToPay();
-    loadOnHold();
-    loadPaymentHistory();
+    loadRegisteredUsers();
     loadComprehensiveAnalytics();
     updateAllStats();
     updateLiveAnalytics();
@@ -1337,11 +1405,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Auto-refresh every 60 seconds
     setInterval(() => {
-        loadPartnerApplications();
-        loadActiveBrokers();
-        loadReadyToPay();
-        loadOnHold();
-        loadPaymentHistory();
+        loadRegisteredUsers();
+        loadComprehensiveAnalytics();
         updateAllStats();
         updateLiveAnalytics();
         loadCustomers();
