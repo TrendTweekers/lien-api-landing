@@ -21,6 +21,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer data-domain="liendeadline.com" src="https://plausible.io/js/script.js"></script>
     
+    <!-- Admin API Key (injected server-side) -->
+    <script>
+        // Admin API key for accessing /api/admin/* endpoints
+        // This is injected by the server and should match ADMIN_API_KEY env var
+        window.ADMIN_API_KEY = "{{ADMIN_API_KEY}}";
+    </script>
+    
     <!-- V2 Scoped Styles -->
     <style>
       #admin-v2 {

@@ -1420,7 +1420,29 @@ except Exception as e:
 async def serve_admin_dashboard_v2():
     """Serve admin dashboard V2 (public, no auth)"""
     print("HIT admin-dashboard-v2")
-    return FileResponse("admin-dashboard-v2.html")
+    file_path = BASE_DIR / "admin-dashboard-v2.html"
+    if not file_path.exists():
+        if os.path.exists("admin-dashboard-v2.html"):
+            file_path = Path("admin-dashboard-v2.html")
+        else:
+            raise HTTPException(status_code=404, detail="Admin dashboard V2 not found")
+    
+    # Read HTML and inject ADMIN_API_KEY
+    with open(file_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    
+    admin_api_key = os.getenv("ADMIN_API_KEY", "")
+    html_content = html_content.replace("{{ADMIN_API_KEY}}", admin_api_key)
+    
+    return Response(
+        content=html_content,
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 @app.get("/admin-dashboard")
 async def serve_admin_dashboard_clean(request: Request):

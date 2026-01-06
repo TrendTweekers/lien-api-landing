@@ -8,6 +8,20 @@ console.log('🛡️ Admin Dashboard V2 Loading...');
 const ADMIN_USER = window.ADMIN_USER || 'admin';
 const ADMIN_PASS = window.ADMIN_PASS || 'LienAPI2025';
 
+// Admin API key for /api/admin/* endpoints
+const ADMIN_API_KEY = window.ADMIN_API_KEY || '';
+
+// Helper function to get admin API headers
+function getAdminHeaders() {
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    if (ADMIN_API_KEY) {
+        headers['X-ADMIN-KEY'] = ADMIN_API_KEY;
+    }
+    return headers;
+}
+
 // Safe helper functions (same as V1)
 window.safe = {
     get: function(id) {
@@ -76,9 +90,7 @@ async function loadPartnerApplications() {
     try {
         const response = await fetch('/api/admin/partner-applications?status=pending', {
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -184,9 +196,7 @@ async function loadActiveBrokers() {
     try {
         const response = await fetch('/api/admin/brokers', {
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         console.log('[Admin V2] Brokers API response status:', response.status);
@@ -312,9 +322,7 @@ async function loadReadyToPay() {
     try {
         const response = await fetch('/api/admin/brokers-ready-to-pay', {
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -442,9 +450,7 @@ async function loadOnHold() {
     try {
         const response = await fetch('/api/admin/brokers-ready-to-pay', {
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -553,9 +559,7 @@ async function viewBrokerLedger(brokerId) {
     try {
         const response = await fetch(`/api/admin/broker-ledger/${brokerId}`, {
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -657,9 +661,7 @@ async function loadPaymentHistory() {
         const filter = document.getElementById('v2-payment-filter')?.value || 'all';
         const response = await fetch(`/api/admin/payment-history?time_filter=${filter}`, {
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -747,9 +749,7 @@ async function loadComprehensiveAnalytics() {
     try {
         const response = await fetch('/api/admin/analytics/comprehensive', {
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -819,9 +819,7 @@ async function updateAllStats() {
     try {
         const calcResponse = await fetch('/api/admin/calculations-today', {
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         if (calcResponse.ok) {
             const calcData = await calcResponse.json();
@@ -851,10 +849,7 @@ async function approveApplication(id, email, name, commissionModel) {
     try {
         const response = await fetch(`/api/admin/approve-partner/${id}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            },
+            headers: getAdminHeaders(),
             body: JSON.stringify({
                 commission_model: commissionModel || 'bounty'
             })
@@ -886,9 +881,7 @@ async function rejectApplication(id) {
         const response = await fetch(`/api/admin/reject-partner/${id}`, {
             method: 'POST',
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -914,9 +907,7 @@ async function deleteApplication(id) {
         const response = await fetch(`/api/admin/delete-partner/${id}`, {
             method: 'DELETE',
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -942,9 +933,7 @@ async function deleteActiveBroker(brokerId) {
         const response = await fetch(`/api/admin/delete-broker/${brokerId}`, {
             method: 'DELETE',
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -965,9 +954,7 @@ async function viewBrokerPaymentInfo(brokerId, brokerName, brokerEmail) {
     try {
         const response = await fetch(`/api/admin/broker-payment-info/${brokerId}`, {
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -1054,10 +1041,7 @@ async function handleMarkPaid(e) {
     try {
         const response = await fetch('/api/admin/mark-paid', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            },
+            headers: getAdminHeaders(),
             credentials: "include",
             body: JSON.stringify({
                 broker_id: brokerId,
@@ -1096,9 +1080,7 @@ async function exportPaymentHistory() {
         const filter = document.getElementById('v2-payment-filter')?.value || 'all';
         const response = await fetch(`/api/admin/payment-history/export?time_filter=${filter}`, {
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -1157,9 +1139,7 @@ async function loadCustomers() {
     try {
         const response = await fetch('/api/admin/customers', {
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -1218,9 +1198,7 @@ async function loadApiUsageStats() {
     try {
         const response = await fetch('/api/admin/api-usage-stats', {
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -1251,9 +1229,7 @@ async function viewApiKey(customerId) {
     try {
         const response = await fetch(`/api/admin/customer/${customerId}/api-key`, {
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -1327,9 +1303,7 @@ async function confirmRegenerateApiKey() {
         const response = await fetch(`/api/admin/customer/${currentCustomerId}/regenerate-key`, {
             method: 'POST',
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -1353,9 +1327,7 @@ async function confirmRevokeApiKey() {
         const response = await fetch(`/api/admin/customer/${currentCustomerId}/revoke-key`, {
             method: 'POST',
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -1433,9 +1405,7 @@ async function loadPayoutDebugData() {
     try {
         const response = await fetch('/api/admin/debug/payout-data', {
             credentials: "include",
-            headers: {
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            }
+            headers: getAdminHeaders()
         });
         
         if (!response.ok) {
@@ -1615,10 +1585,7 @@ async function createBatchFromSelection() {
     try {
         const response = await fetch('/api/admin/payout-batches/create', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
-            },
+            headers: getAdminHeaders(),
             credentials: "include",
             body: JSON.stringify({
                 broker_id: brokerId,
