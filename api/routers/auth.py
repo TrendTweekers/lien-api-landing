@@ -99,13 +99,13 @@ def get_user_from_zapier_token(token: str):
                     email = user[1] if user and len(user) > 1 else None
                     subscription_status = user[2] if user and len(user) > 2 else None
                 
-                if subscription_status in ['active', 'trialing']:
-                    return {
-                        'id': user_id,
-                        'email': email,
-                        'subscription_status': subscription_status,
-                        'unlimited': True
-                    }
+                # Return user regardless of subscription status
+                # Subscription gating is enforced on feature usage (Zapier endpoints), not authentication
+                return {
+                    'id': user_id,
+                    'email': email,
+                    'subscription_status': subscription_status or 'free',
+                }
     except Exception as e:
         print(f"⚠️ Error checking Zapier token: {e}")
     
@@ -144,13 +144,13 @@ def get_user_from_session(request: Request):
                     email = user[1] if user and len(user) > 1 else None
                     subscription_status = user[2] if user and len(user) > 2 else None
             
-                if subscription_status in ['active', 'trialing']:
-                    return {
-                        'id': user_id,
-                        'email': email,
-                        'subscription_status': subscription_status,
-                        'unlimited': True
-                    }
+                # Return user regardless of subscription status
+                # Subscription gating is enforced on feature usage, not authentication
+                return {
+                    'id': user_id,
+                    'email': email,
+                    'subscription_status': subscription_status or 'free',
+                }
     except Exception as e:
         print(f"⚠️ Error checking session: {e}")
 
@@ -249,10 +249,9 @@ async def login(request: Request, req: LoginRequest):
             if not password_match:
                 raise HTTPException(status_code=401, detail="Invalid email or password")
             
-            # Check subscription status
-            if subscription_status not in ['active', 'trialing']:
-                print(f"⚠️ Subscription status: {subscription_status} (not active)")
-                raise HTTPException(status_code=403, detail="Subscription expired or cancelled")
+            # Note: Subscription status is NOT checked during login
+            # Users with any subscription status (free, expired, cancelled) can log in
+            # Subscription gating is enforced only on feature usage, not authentication
             
             # Generate session token
             token = secrets.token_urlsafe(32)
@@ -632,13 +631,14 @@ async def verify_session(authorization: str = Header(None)):
                     subscription_status = getattr(user, 'subscription_status', '')
                     email = getattr(user, 'email', '')
             
-            if subscription_status not in ['active', 'trialing']:
-                raise HTTPException(status_code=403, detail="Subscription expired")
+            # Note: Subscription status is NOT checked during session verification
+            # Users with any subscription status can have valid sessions
+            # Subscription gating is enforced only on feature usage, not authentication
             
             return {
                 "valid": True,
                 "email": email,
-                "subscription_status": subscription_status
+                "subscription_status": subscription_status or 'free'
             }
     except HTTPException:
         raise
