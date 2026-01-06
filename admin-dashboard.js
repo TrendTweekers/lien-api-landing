@@ -524,6 +524,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadActiveBrokers();
     loadReadyToPay();
     loadPaymentHistory();
+    loadRegisteredUsers();
     updateAllStats();
     updateLiveAnalytics();
     updateEmailConversion();
@@ -536,6 +537,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadReadyToPay();
         loadPaymentHistory();
         loadPaymentAnalytics();
+        loadRegisteredUsers();
         updateAllStats();
         updateLiveAnalytics();
         updateEmailConversion();
@@ -742,6 +744,104 @@ async function deleteApplication(id) {
     } catch (error) {
         console.error('[Admin] Error deleting application:', error);
         alert('❌ Error: ' + error.message);
+    }
+}
+
+// 8e. Load Registered Users
+async function loadRegisteredUsers() {
+    try {
+        console.log('[Admin] Loading registered users from /api/admin/users...');
+        
+        const adminApiKey = window.ADMIN_API_KEY || '';
+        if (!adminApiKey) {
+            console.warn('[Admin] ADMIN_API_KEY not found, skipping users load');
+            safe.html('customersList', '<p class="text-gray-500 text-sm">Admin API key not configured</p>');
+            return;
+        }
+        
+        const response = await fetch('/api/admin/users', {
+            credentials: "include",
+            headers: {
+                'X-ADMIN-KEY': adminApiKey,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            console.error(`[Admin] Users API error: ${response.status}`);
+            safe.html('customersList', '<p class="text-gray-500 text-sm">Error loading users</p>');
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('[Admin] Users data:', data);
+        
+        const users = data.users || [];
+        const customersList = safe.get('customersList');
+        
+        if (!customersList) {
+            console.warn('[Admin] customersList element not found');
+            return;
+        }
+        
+        if (!users || users.length === 0) {
+            safe.html('customersList', `
+                <div class="text-center py-8 text-gray-500">
+                    <p class="text-sm">No registered users yet</p>
+                </div>
+            `);
+            safe.text('activeCustomers', '0');
+            return;
+        }
+        
+        // Update active customers count
+        safe.text('activeCustomers', users.length.toString());
+        
+        // Render users as cards
+        const html = users.map(user => {
+            const createdDate = user.created_at 
+                ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'Recently';
+            
+            const lastLogin = user.last_login 
+                ? new Date(user.last_login).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                : 'Never';
+            
+            const subscriptionBadge = user.subscription_status === 'active' || user.subscription_status === 'trialing'
+                ? '<span class="px-2 py-1 rounded text-xs bg-green-100 text-green-800">Active</span>'
+                : '<span class="px-2 py-1 rounded text-xs bg-gray-100 text-gray-600">Free</span>';
+            
+            const name = user.first_name || user.last_name 
+                ? `${user.first_name || ''} ${user.last_name || ''}`.trim() 
+                : 'N/A';
+            
+            return `
+                <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <p class="font-medium text-gray-900">${user.email || 'N/A'}</p>
+                                ${subscriptionBadge}
+                            </div>
+                            ${name !== 'N/A' ? `<p class="text-sm text-gray-600">${name}</p>` : ''}
+                            ${user.company ? `<p class="text-sm text-gray-500">${user.company}</p>` : ''}
+                            <div class="mt-2 flex gap-4 text-xs text-gray-500">
+                                <span>Joined: ${createdDate}</span>
+                                <span>Last login: ${lastLogin}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        safe.html('customersList', html);
+        
+        console.log(`✅ Loaded ${users.length} registered users`);
+        
+    } catch (error) {
+        console.error('[Admin] Error loading users:', error);
+        safe.html('customersList', '<p class="text-gray-500 text-sm">Error loading users</p>');
     }
 }
 

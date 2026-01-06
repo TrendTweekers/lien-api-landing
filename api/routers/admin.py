@@ -394,6 +394,56 @@ async def get_comprehensive_analytics(_auth: dict = Depends(require_admin_api_ke
             "error": str(e)
         }
 
+@router.get("/api/admin/users")
+async def get_users_api(_auth: dict = Depends(require_admin_api_key)):
+    """Return list of all registered users from users table"""
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT id, email, subscription_status, stripe_customer_id, 
+                           first_name, last_name, company, created_at, last_login
+                    FROM users
+                    ORDER BY created_at DESC
+                """)
+                columns = [desc[0] for desc in cursor.description]
+                rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            else:
+                cursor.execute("""
+                    SELECT id, email, subscription_status, stripe_customer_id, 
+                           first_name, last_name, company, created_at, last_login
+                    FROM users
+                    ORDER BY created_at DESC
+                """)
+                rows = cursor.fetchall()
+                # Convert to dict format
+                rows = [
+                    {
+                        'id': row[0] if isinstance(row, (tuple, list)) else row.get('id'),
+                        'email': row[1] if isinstance(row, (tuple, list)) else row.get('email'),
+                        'subscription_status': row[2] if isinstance(row, (tuple, list)) else row.get('subscription_status'),
+                        'stripe_customer_id': row[3] if isinstance(row, (tuple, list)) else row.get('stripe_customer_id'),
+                        'first_name': row[4] if isinstance(row, (tuple, list)) else row.get('first_name'),
+                        'last_name': row[5] if isinstance(row, (tuple, list)) else row.get('last_name'),
+                        'company': row[6] if isinstance(row, (tuple, list)) else row.get('company'),
+                        'created_at': row[7] if isinstance(row, (tuple, list)) else row.get('created_at'),
+                        'last_login': row[8] if isinstance(row, (tuple, list)) else row.get('last_login'),
+                    }
+                    for row in rows
+                ]
+            
+            return {
+                "users": rows,
+                "total": len(rows)
+            }
+    except Exception as e:
+        logger.error(f"Error getting users: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"users": [], "total": 0, "error": str(e)}
+
 @router.get("/api/admin/customers")
 async def get_customers_api(_auth: dict = Depends(require_admin_api_key)):
     """Return list of customers"""

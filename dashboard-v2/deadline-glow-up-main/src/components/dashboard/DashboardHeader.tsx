@@ -1,7 +1,38 @@
 import { LogOut, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 
 export const DashboardHeader = () => {
+  const [userEmail, setUserEmail] = useState<string>("");
+
+  useEffect(() => {
+    // Get user email from localStorage or fetch from API
+    const storedEmail = localStorage.getItem('user_email') || localStorage.getItem('userEmail');
+    if (storedEmail) {
+      setUserEmail(storedEmail);
+    } else {
+      // Try to get from API
+      const token = localStorage.getItem('session_token');
+      if (token) {
+        fetch('/api/verify-session', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.email) {
+              setUserEmail(data.email);
+              localStorage.setItem('user_email', data.email);
+            }
+          })
+          .catch(() => {
+            // Fallback to stored email if API fails
+            const fallback = localStorage.getItem('user_email') || localStorage.getItem('userEmail');
+            if (fallback) setUserEmail(fallback);
+          });
+      }
+    }
+  }, []);
+
   const handleLogout = async () => {
     try {
       // Call logout API endpoint if it exists (optional - for server-side session clearing)
@@ -57,7 +88,7 @@ export const DashboardHeader = () => {
         </div>
 
         <nav className="flex items-center gap-6">
-          <span className="text-sm text-muted-foreground hidden sm:block">admin@stackedboost.com</span>
+          <span className="text-sm text-muted-foreground hidden sm:block">{userEmail || "Loading..."}</span>
           <a
             href="/"
             className="flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition-colors"

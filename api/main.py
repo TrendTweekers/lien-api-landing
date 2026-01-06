@@ -2547,6 +2547,19 @@ async def logout(request: Request):
         content={"message": "Logged out successfully"}
     )
 
+@app.get("/api/verify-session")
+async def verify_session(request: Request):
+    """Verify session token and return user info"""
+    user = get_user_from_session(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    
+    return {
+        "valid": True,
+        "email": user.get('email'),
+        "subscription_status": user.get('subscription_status', 'free')
+    }
+
 @app.delete("/api/calculations/{calculation_id}")
 async def delete_calculation(calculation_id: int, request: Request):
     """Delete a saved calculation/project"""
@@ -3407,15 +3420,20 @@ async def capture_email(request: Request):
                 if existing:
                     # Update existing record
                     existing_token = existing[1] if isinstance(existing, tuple) and len(existing) > 1 else None
+                    # Get current calculation_count first
+                    cursor.execute("SELECT calculation_count FROM email_captures WHERE email = ?", (email,))
+                    current_count_row = cursor.fetchone()
+                    current_count = current_count_row[0] if current_count_row and isinstance(current_count_row, tuple) else (current_count_row.get('calculation_count') if isinstance(current_count_row, dict) else 0)
+                    new_count = max(current_count if current_count else 0, 3)
                     cursor.execute('''
                         UPDATE email_captures 
-                        SET calculation_count = MAX(calculation_count, 3),
+                        SET calculation_count = ?,
                             ip_address = ?,
                             user_agent = ?,
                             last_used_at = CURRENT_TIMESTAMP,
                             verification_token = COALESCE(verification_token, ?)
                         WHERE email = ?
-                    ''', (client_ip, user_agent, verification_token, email))
+                    ''', (new_count, client_ip, user_agent, verification_token, email))
                 else:
                     # Insert new record
                     cursor.execute('''
@@ -3443,13 +3461,18 @@ async def capture_email(request: Request):
                     WHERE tracking_key = %s
                 """, (email, tracking_key))
             else:
+                # Get current calculation_count first for SQLite
+                cursor.execute("SELECT calculation_count FROM email_gate_tracking WHERE tracking_key = ?", (tracking_key,))
+                current_count_row = cursor.fetchone()
+                current_count = current_count_row[0] if current_count_row and isinstance(current_count_row, tuple) else (current_count_row.get('calculation_count') if isinstance(current_count_row, dict) else 0)
+                new_count = max(current_count if current_count else 0, 3)
                 cursor.execute("""
                     UPDATE email_gate_tracking 
                     SET email = ?,
                         email_captured_at = CURRENT_TIMESTAMP,
-                        calculation_count = MAX(calculation_count, 3)
+                        calculation_count = ?
                     WHERE tracking_key = ?
-                """, (email, tracking_key))
+                """, (email, new_count, tracking_key))
             
             conn.commit()
         
