@@ -11,61 +11,84 @@ const ADMIN_PASS = window.ADMIN_PASS || 'LienAPI2025';
 // Admin API key for /api/admin/* endpoints
 const ADMIN_API_KEY = (window.ADMIN_API_KEY || "").trim();
 
-// Show banner if admin key is missing
-let adminKeyValid = false;
-function checkAdminKey() {
-    if (!ADMIN_API_KEY) {
-        // Show visible banner
-        const banner = document.getElementById('admin-key-missing-banner') || document.createElement('div');
-        banner.id = 'admin-key-missing-banner';
-        banner.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #dc2626; color: white; padding: 12px; text-align: center; z-index: 10000; font-weight: bold;';
-        banner.textContent = '⚠️ ADMIN_API_KEY missing — set Railway variable ADMIN_API_KEY and redeploy';
-        if (!document.getElementById('admin-key-missing-banner')) {
-            document.body.insertBefore(banner, document.body.firstChild);
-        }
-        console.error('[Admin V2] ADMIN_API_KEY missing — set Railway variable ADMIN_API_KEY and redeploy');
-        adminKeyValid = false;
-        return false;
-    }
-    // Remove banner if it exists
-    const existingBanner = document.getElementById('admin-key-missing-banner');
-    if (existingBanner) {
-        existingBanner.remove();
-    }
-    adminKeyValid = true;
-    return true;
-}
+// Debug log ONCE at boot
+console.log("[AdminV2] key present:", ADMIN_API_KEY.length > 0, "len:", ADMIN_API_KEY.length);
 
-// Helper function to get admin API headers
-function getAdminHeaders() {
-    const h = { "Content-Type": "application/json" };
-    if (ADMIN_API_KEY) {
-        h["X-ADMIN-KEY"] = ADMIN_API_KEY;
-    }
-    return h;
-}
-
-// Show unauthorized banner
-let unauthorizedShown = false;
-function showUnauthorizedBanner() {
-    if (unauthorizedShown) return;
-    unauthorizedShown = true;
-    const banner = document.getElementById('admin-unauthorized-banner') || document.createElement('div');
-    banner.id = 'admin-unauthorized-banner';
+// Show banner helpers
+function showBanner(id, message) {
+    const banner = document.getElementById(id) || document.createElement('div');
+    banner.id = id;
     banner.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #dc2626; color: white; padding: 12px; text-align: center; z-index: 10000; font-weight: bold;';
-    banner.textContent = '⚠️ Admin API unauthorized — X-ADMIN-KEY missing/invalid';
-    if (!document.getElementById('admin-unauthorized-banner')) {
+    banner.textContent = message;
+    if (!document.getElementById(id)) {
         document.body.insertBefore(banner, document.body.firstChild);
     }
 }
 
-// Helper to check response and handle 401
-function handleAdminResponse(response) {
-    if (response.status === 401) {
-        showUnauthorizedBanner();
-        return false;
+function removeBanner(id) {
+    const banner = document.getElementById(id);
+    if (banner) banner.remove();
+}
+
+// Single wrapper for ALL admin API requests
+async function adminFetch(url, options = {}) {
+    const key = ADMIN_API_KEY;
+    
+    if (!key) {
+        showBanner('admin-key-missing-banner', '⚠️ ADMIN_API_KEY missing — set Railway variable ADMIN_API_KEY and redeploy');
+        throw new Error("ADMIN_API_KEY not set");
     }
-    return true;
+    
+    // Build headers with X-ADMIN-KEY
+    const headers = {
+        "X-ADMIN-KEY": key,
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+    };
+    
+    // Merge options
+    const fetchOptions = {
+        ...options,
+        headers,
+        credentials: "include"
+    };
+    
+    try {
+        const response = await fetch(url, fetchOptions);
+        
+        // Handle 401 - unauthorized
+        if (response.status === 401) {
+            showBanner('admin-unauthorized-banner', '⚠️ Admin unauthorized (X-ADMIN-KEY missing/invalid)');
+            const errorData = await response.json().catch(() => ({ detail: "Unauthorized" }));
+            throw new Error(errorData.detail || "Unauthorized");
+        }
+        
+        // Handle 503 - server not configured
+        if (response.status === 503) {
+            showBanner('admin-server-error-banner', '⚠️ ADMIN_API_KEY not configured on server');
+            const errorData = await response.json().catch(() => ({ detail: "Server configuration error" }));
+            throw new Error(errorData.detail || "Server configuration error");
+        }
+        
+        // Parse JSON or return response
+        if (response.ok) {
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                return await response.json();
+            }
+            return response;
+        }
+        
+        // Other errors
+        const errorData = await response.json().catch(() => ({ detail: `HTTP ${response.status}` }));
+        throw new Error(errorData.detail || `HTTP ${response.status}`);
+        
+    } catch (error) {
+        if (error.message.includes("Unauthorized") || error.message.includes("X-ADMIN-KEY")) {
+            throw error; // Already handled above
+        }
+        throw error;
+    }
 }
 
 // Log admin key status on init
@@ -143,18 +166,10 @@ function switchPayoutTab(tab) {
 
 // Load partner applications (reuses V1 API)
 async function loadPartnerApplications() {
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch('/api/admin/partner-applications?status=pending', {
-            credentials: "include",
-            headers: getAdminHeaders()
-        });
-        
-        if (!response.ok) {
-            safe.html('v2-applicationsTable', '<tr><td colspan="6" class="text-center py-8 text-red-500">Error loading applications</td></tr>');
-            return;
-        }
-        
-        const data = await response.json();
+        const data = await adminFetch('/api/admin/partner-applications?status=pending');
         let applications = data.applications || data || [];
         
         if (!Array.isArray(applications)) {
@@ -251,25 +266,10 @@ async function loadActiveBrokers() {
     if (!adminKeyValid) return; // Skip if key missing
     
     console.log('[Admin V2] Loading active brokers...');
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch('/api/admin/brokers', {
-            credentials: "include",
-            headers: getAdminHeaders()
-        });
-        
-        console.log('[Admin V2] Brokers API response status:', response.status);
-        
-        if (!handleAdminResponse(response)) {
-            safe.html('v2-brokersList', '<tr><td colspan="8" class="text-center py-8 text-red-500">Unauthorized — check ADMIN_API_KEY</td></tr>');
-            return;
-        }
-
-        if (!response.ok) {
-            safe.html('v2-brokersList', '<tr><td colspan="8" class="text-center py-8 text-red-500">Error loading brokers</td></tr>');
-            return;
-        }
-        
-        const data = await response.json();
+        const data = await adminFetch('/api/admin/brokers');
         console.log('[Admin V2] Brokers API data:', data);
 
         let brokers = data.brokers || data || [];
@@ -382,25 +382,10 @@ async function loadActiveBrokers() {
 
 // Load ready to pay brokers (reuses V1 API)
 async function loadReadyToPay() {
-    if (!adminKeyValid) return; // Skip if key missing
+    if (!ADMIN_API_KEY) return;
     
     try {
-        const response = await fetch('/api/admin/brokers-ready-to-pay', {
-            credentials: "include",
-            headers: getAdminHeaders()
-        });
-        
-        if (!handleAdminResponse(response)) {
-            safe.html('v2-ready-to-pay-list', '<tr><td colspan="8" class="text-center py-8 text-red-500">Unauthorized — check ADMIN_API_KEY</td></tr>');
-            return;
-        }
-        
-        if (!response.ok) {
-            safe.html('v2-ready-to-pay-list', '<tr><td colspan="8" class="text-center py-8 text-red-500">Error loading brokers ready to pay</td></tr>');
-            return;
-        }
-        
-        const data = await response.json();
+        const data = await adminFetch('/api/admin/brokers-ready-to-pay');
         // Handle both new ledger format (with brokers array) and legacy format
         let brokers = data.brokers || data || [];
         
@@ -517,18 +502,10 @@ async function loadReadyToPay() {
 
 // Load brokers on hold (total_on_hold > 0)
 async function loadOnHold() {
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch('/api/admin/brokers-ready-to-pay', {
-            credentials: "include",
-            headers: getAdminHeaders()
-        });
-        
-        if (!response.ok) {
-            safe.html('v2-on-hold-list', '<tr><td colspan="8" class="text-center py-8 text-red-500">Error loading brokers on hold</td></tr>');
-            return;
-        }
-        
-        const data = await response.json();
+        const data = await adminFetch('/api/admin/brokers-ready-to-pay');
         let brokers = data.brokers || data || [];
         
         if (!Array.isArray(brokers)) {
@@ -626,18 +603,10 @@ async function loadOnHold() {
 
 // View broker ledger breakdown
 async function viewBrokerLedger(brokerId) {
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch(`/api/admin/broker-ledger/${brokerId}`, {
-            credentials: "include",
-            headers: getAdminHeaders()
-        });
-        
-        if (!response.ok) {
-            alert('❌ Error loading broker ledger: ' + response.status);
-            return;
-        }
-        
-        const ledger = await response.json();
+        const ledger = await adminFetch(`/api/admin/broker-ledger/${brokerId}`);
         
         // Populate modal
         safe.text('ledger-broker-name', ledger.broker_name || 'Unknown');
@@ -727,19 +696,11 @@ async function viewBrokerLedger(brokerId) {
 
 // Load payment history (reuses V1 API)
 async function loadPaymentHistory() {
+    if (!ADMIN_API_KEY) return;
+    
     try {
         const filter = document.getElementById('v2-payment-filter')?.value || 'all';
-        const response = await fetch(`/api/admin/payment-history?time_filter=${filter}`, {
-            credentials: "include",
-            headers: getAdminHeaders()
-        });
-        
-        if (!response.ok) {
-            safe.html('v2-payment-history-table', '<tr><td colspan="7" class="text-center py-8 text-red-500">Error loading payment history</td></tr>');
-            return;
-        }
-        
-        const data = await response.json();
+        const data = await adminFetch(`/api/admin/payment-history?time_filter=${filter}`);
         let payments = data.payments || [];
         
         if (!Array.isArray(payments)) {
@@ -816,22 +777,10 @@ async function loadPaymentHistory() {
 
 // Load comprehensive analytics (reuses V1 API)
 async function loadComprehensiveAnalytics() {
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch('/api/admin/analytics/comprehensive', {
-            credentials: "include",
-            headers: getAdminHeaders()
-        });
-        
-        if (!response.ok) {
-            // Show "—" for missing data
-            safe.text('v2-calc-today', '—');
-            safe.text('v2-calc-week', '—');
-            safe.text('v2-calc-month', '—');
-            safe.text('v2-calc-all', '—');
-            return;
-        }
-        
-        const stats = await response.json();
+        const stats = await adminFetch('/api/admin/analytics/comprehensive');
         
         safe.text('v2-calc-today', (stats.calculations_today || 0).toString());
         safe.text('v2-calc-week', (stats.calculations_week || 0).toString());
@@ -886,15 +835,13 @@ async function updateLiveAnalytics() {
 
 // Update all stats (reuses V1 API)
 async function updateAllStats() {
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const calcResponse = await fetch('/api/admin/calculations-today', {
-            credentials: "include",
-            headers: getAdminHeaders()
-        });
-        if (calcResponse.ok) {
-            const calcData = await calcResponse.json();
+        try {
+            const calcData = await adminFetch('/api/admin/calculations-today');
             safe.text('v2-calculationsToday', calcData.calculations_today || '0');
-        } else {
+        } catch (e) {
             safe.text('v2-calculationsToday', '—');
         }
         
@@ -916,20 +863,15 @@ async function approveApplication(id, email, name, commissionModel) {
         return;
     }
     
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch(`/api/admin/approve-partner/${id}`, {
+        await adminFetch(`/api/admin/approve-partner/${id}`, {
             method: 'POST',
-            headers: getAdminHeaders(),
             body: JSON.stringify({
                 commission_model: commissionModel || 'bounty'
             })
         });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            alert(`❌ Error: ${errorText || 'Failed to approve application'}`);
-            return;
-        }
         
         alert('✅ Application approved!');
         loadPartnerApplications();
@@ -947,17 +889,12 @@ async function rejectApplication(id) {
         return;
     }
     
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch(`/api/admin/reject-partner/${id}`, {
-            method: 'POST',
-            credentials: "include",
-            headers: getAdminHeaders()
+        await adminFetch(`/api/admin/reject-partner/${id}`, {
+            method: 'POST'
         });
-        
-        if (!response.ok) {
-            alert('❌ Error: Failed to reject application');
-            return;
-        }
         
         alert('❌ Application rejected');
         loadPartnerApplications();
@@ -973,17 +910,12 @@ async function deleteApplication(id) {
         return;
     }
     
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch(`/api/admin/delete-partner/${id}`, {
-            method: 'DELETE',
-            credentials: "include",
-            headers: getAdminHeaders()
+        await adminFetch(`/api/admin/delete-partner/${id}`, {
+            method: 'DELETE'
         });
-        
-        if (!response.ok) {
-            alert('❌ Error: Failed to delete application');
-            return;
-        }
         
         alert('✅ Application deleted successfully');
         loadPartnerApplications();
@@ -999,17 +931,12 @@ async function deleteActiveBroker(brokerId) {
         return;
     }
     
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch(`/api/admin/delete-broker/${brokerId}`, {
-            method: 'DELETE',
-            credentials: "include",
-            headers: getAdminHeaders()
+        await adminFetch(`/api/admin/delete-broker/${brokerId}`, {
+            method: 'DELETE'
         });
-        
-        if (!response.ok) {
-            alert('❌ Error: Failed to delete broker');
-            return;
-        }
         
         alert('✅ Broker deleted successfully');
         loadActiveBrokers();
@@ -1021,18 +948,10 @@ async function deleteActiveBroker(brokerId) {
 }
 
 async function viewBrokerPaymentInfo(brokerId, brokerName, brokerEmail) {
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch(`/api/admin/broker-payment-info/${brokerId}`, {
-            credentials: "include",
-            headers: getAdminHeaders()
-        });
-        
-        if (!response.ok) {
-            alert('❌ Error loading payment info: ' + response.status);
-            return;
-        }
-        
-        const data = await response.json();
+        const data = await adminFetch(`/api/admin/broker-payment-info/${brokerId}`);
         const paymentInfo = data.payment_info || {};
         const broker = data.broker || {};
         
@@ -1108,11 +1027,11 @@ async function handleMarkPaid(e) {
         return;
     }
     
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch('/api/admin/mark-paid', {
+        const result = await adminFetch('/api/admin/mark-paid', {
             method: 'POST',
-            headers: getAdminHeaders(),
-            credentials: "include",
             body: JSON.stringify({
                 broker_id: brokerId,
                 amount: parseFloat(amount),
@@ -1121,14 +1040,6 @@ async function handleMarkPaid(e) {
                 notes: notes
             })
         });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            alert('❌ Error: ' + (error.message || 'Failed to mark payment as paid'));
-            return;
-        }
-        
-        const result = await response.json();
         const referralsMarked = result.referrals_marked || 0;
         const paidReferralIds = result.paid_referral_ids || [];
         
@@ -1206,17 +1117,10 @@ function logout() {
 let currentCustomerId = null;
 
 async function loadCustomers() {
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch('/api/admin/customers', {
-            credentials: "include",
-            headers: getAdminHeaders()
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const data = await response.json();
+        const data = await adminFetch('/api/admin/customers');
         const customers = data.customers || [];
         
         const tbody = document.getElementById('api-customers-list');
@@ -1265,17 +1169,10 @@ async function loadCustomers() {
 }
 
 async function loadApiUsageStats() {
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch('/api/admin/api-usage-stats', {
-            credentials: "include",
-            headers: getAdminHeaders()
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const data = await response.json();
+        const data = await adminFetch('/api/admin/api-usage-stats');
         const stats = data.stats || {};
         
         safe.text('api-calls-today', stats.total_calls_today || 0);
@@ -1296,17 +1193,10 @@ async function loadApiUsageStats() {
 }
 
 async function viewApiKey(customerId) {
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch(`/api/admin/customer/${customerId}/api-key`, {
-            credentials: "include",
-            headers: getAdminHeaders()
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const data = await response.json();
+        const data = await adminFetch(`/api/admin/customer/${customerId}/api-key`);
         
         const content = document.getElementById('api-key-content');
         if (content) {
@@ -1369,18 +1259,12 @@ function showRevokeModal(customerId, email) {
 async function confirmRegenerateApiKey() {
     if (!currentCustomerId) return;
     
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch(`/api/admin/customer/${currentCustomerId}/regenerate-key`, {
-            method: 'POST',
-            credentials: "include",
-            headers: getAdminHeaders()
+        const data = await adminFetch(`/api/admin/customer/${currentCustomerId}/regenerate-key`, {
+            method: 'POST'
         });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const data = await response.json();
         alert('✅ API key regenerated successfully. Customer has been notified via email.');
         closeModal('regenerateApiKeyModal');
         loadCustomers();
@@ -1393,16 +1277,12 @@ async function confirmRegenerateApiKey() {
 async function confirmRevokeApiKey() {
     if (!currentCustomerId) return;
     
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch(`/api/admin/customer/${currentCustomerId}/revoke-key`, {
-            method: 'POST',
-            credentials: "include",
-            headers: getAdminHeaders()
+        await adminFetch(`/api/admin/customer/${currentCustomerId}/revoke-key`, {
+            method: 'POST'
         });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
         
         alert('✅ API access revoked successfully. Customer has been notified via email.');
         closeModal('revokeApiKeyModal');
@@ -1472,21 +1352,10 @@ function toggleDebugPanel() {
 
 // Load payout debug data
 async function loadPayoutDebugData() {
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch('/api/admin/debug/payout-data', {
-            credentials: "include",
-            headers: getAdminHeaders()
-        });
-        
-        if (!response.ok) {
-            console.error('[Admin V2] Error loading debug data:', response.status);
-            safe.html('debug-referrals-table', '<tr><td colspan="11" class="text-center py-4 text-red-500">Error loading data</td></tr>');
-            safe.html('debug-payments-table', '<tr><td colspan="10" class="text-center py-4 text-red-500">Error loading data</td></tr>');
-            safe.html('debug-batches-table', '<tr><td colspan="10" class="text-center py-4 text-red-500">Error loading data</td></tr>');
-            return;
-        }
-        
-        const data = await response.json();
+        const data = await adminFetch('/api/admin/debug/payout-data');
         
         // Render referrals
         const referrals = data.referrals || [];
@@ -1652,11 +1521,11 @@ async function createBatchFromSelection() {
     const transactionId = prompt('Enter transaction ID (or leave blank to auto-generate):', '') || '';
     const notes = prompt('Enter notes (optional):', '') || '';
     
+    if (!ADMIN_API_KEY) return;
+    
     try {
-        const response = await fetch('/api/admin/payout-batches/create', {
+        const result = await adminFetch('/api/admin/payout-batches/create', {
             method: 'POST',
-            headers: getAdminHeaders(),
-            credentials: "include",
             body: JSON.stringify({
                 broker_id: brokerId,
                 referral_ids: referralIds,
@@ -1665,14 +1534,6 @@ async function createBatchFromSelection() {
                 notes: notes
             })
         });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            alert('❌ Error: ' + (error.message || 'Failed to create batch'));
-            return;
-        }
-        
-        const result = await response.json();
         alert(`✅ Batch created successfully!\n\nBatch ID: ${result.batch_id}\nTransaction ID: ${result.transaction_id}\nTotal: $${result.total_amount.toFixed(2)}\nReferrals marked: ${result.referrals_marked}`);
         
         // Close modal and refresh tabs

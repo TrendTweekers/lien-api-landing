@@ -28,9 +28,14 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 def require_admin_api_key(request: Request):
-    """Require admin API key via X-ADMIN-KEY header"""
+    """Require admin API key via X-ADMIN-KEY header (case-insensitive)"""
     admin_api_key = os.getenv("ADMIN_API_KEY", "")
-    x_admin_key = request.headers.get("X-ADMIN-KEY", "").strip()
+    # Read header case-insensitively
+    x_admin_key = ""
+    for header_name, header_value in request.headers.items():
+        if header_name.lower() == "x-admin-key":
+            x_admin_key = header_value.strip()
+            break
     
     # Debug logging (do NOT log secret values)
     env_present = bool(admin_api_key)

@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 # Railway cron check - MUST be first, before any FastAPI imports
 # If RAILWAY_CRON_RUN=true, execute email job and exit immediately
@@ -1427,18 +1428,22 @@ async def serve_admin_dashboard_v2():
         else:
             raise HTTPException(status_code=404, detail="Admin dashboard V2 not found")
     
-    # Read HTML and inject ADMIN_API_KEY
+    # Read HTML and inject ADMIN_API_KEY and cache busting
     with open(file_path, 'r', encoding='utf-8') as f:
         html_content = f.read()
     
     admin_api_key = os.getenv("ADMIN_API_KEY", "")
+    cache_bust = str(int(time.time()))
+    
+    # Replace placeholders
     html_content = html_content.replace("{{ADMIN_API_KEY}}", admin_api_key)
+    html_content = html_content.replace("{{CACHE_BUST}}", cache_bust)
     
     return Response(
         content=html_content,
         media_type="text/html",
         headers={
-            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Cache-Control": "no-store",
             "Pragma": "no-cache",
             "Expires": "0"
         }
