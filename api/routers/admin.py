@@ -413,11 +413,11 @@ async def get_users_api(_auth: dict = Depends(require_admin_api_key)):
                     FROM users
                     ORDER BY created_at DESC
                 """)
-                columns = [desc[0] for desc in cursor.description]
                 raw_rows = cursor.fetchall()
                 rows = []
                 for row in raw_rows:
-                    row_dict = dict(zip(columns, row))
+                    # RealDictCursor already returns dicts, so row is already a dict
+                    row_dict = dict(row)  # Make a copy
                     # Rename last_login_at to last_login for consistency
                     if 'last_login_at' in row_dict:
                         row_dict['last_login'] = row_dict.pop('last_login_at')
