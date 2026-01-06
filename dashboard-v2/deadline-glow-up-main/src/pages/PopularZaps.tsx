@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 
 // Constants
 const SOCIAL_PROOF_TEXT = "Used by contractors protecting $2.3M+ in receivables monthly";
-const QUICK_START_SLACK_URL = "https://zapier.com/app/editor";
+const QUICK_START_SLACK_URL = "https://zapier.com/apps/webhooks-by-zapier/integrations/slack";
 
 const PopularZaps = () => {
   const navigate = useNavigate();

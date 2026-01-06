@@ -159,10 +159,17 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
 
   // Note: Zapier status is now fetched via usePlan hook, no separate fetch needed
 
-  // Quick Start Slack URL - opens Zapier editor directly
-  const QUICK_START_SLACK_URL = "https://zapier.com/app/editor";
+  // Always route through your Zapier setup page (so you control UX + focus highlight)
+  const QUICK_START_SLACK_URL = "/zapier?focus=slack";
 
   const handleQuickStart = () => {
+    // Internal route → same tab
+    if (QUICK_START_SLACK_URL.startsWith("/")) {
+      window.location.href = QUICK_START_SLACK_URL;
+      return;
+    }
+
+    // External → new tab
     window.open(QUICK_START_SLACK_URL, "_blank", "noopener,noreferrer");
   };
 
