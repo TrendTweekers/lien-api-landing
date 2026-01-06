@@ -1,14 +1,47 @@
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Request, Depends, Header
 from api.database import get_db, get_db_cursor, DB_TYPE
 from api.routers.auth import get_user_from_session, get_current_user
 from pydantic import BaseModel, EmailStr
 import logging
 import subprocess
 import sys
+import os
+import hmac
 from pathlib import Path
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+def require_cron_secret(request: Request, x_cron_secret: str = Header(None, alias="x-cron-secret")):
+    """
+    Dependency for Railway cron endpoints.
+    Validates X-CRON-SECRET header against CRON_SECRET env var using constant-time comparison.
+    """
+    route_path = request.url.path
+    cron_secret = os.environ.get("CRON_SECRET")
+    client_ip = request.client.host if request.client else "unknown"
+    
+    # If CRON_SECRET env var is missing, treat cron endpoints as disabled
+    if not cron_secret:
+        logger.error(f"CRON_DENY route={route_path} reason=CRON_SECRET_not_configured")
+        raise HTTPException(
+            status_code=503,
+            detail="Cron endpoints are disabled: CRON_SECRET environment variable not configured"
+        )
+    
+    # If header is missing or doesn't match, deny
+    if not x_cron_secret:
+        logger.warning(f"CRON_DENY route={route_path} ip={client_ip} reason=missing_header")
+        raise HTTPException(status_code=401, detail="Invalid cron secret")
+    
+    # Constant-time comparison to prevent timing attacks
+    if not hmac.compare_digest(x_cron_secret, cron_secret):
+        logger.warning(f"CRON_DENY route={route_path} ip={client_ip} reason=secret_mismatch")
+        raise HTTPException(status_code=401, detail="Invalid cron secret")
+    
+    # Success - log acceptance
+    logger.info(f"CRON_OK route={route_path} ip={client_ip}")
+    return True
 
 class EmailPrefsIn(BaseModel):
     alert_email: EmailStr
@@ -294,11 +327,11 @@ async def save_user_preferences(request: Request, body: EmailPrefsIn, current_us
         raise HTTPException(status_code=500, detail="Failed to save preferences")
 
 @router.post("/api/admin/run-email-alerts")
-async def run_email_alerts(request: Request, user = Depends(get_current_user)):
-    """Admin-only endpoint to manually trigger email alerts script"""
-    if user.get('email', '').lower() != "admin@stackedboost.com":
-        raise HTTPException(status_code=403, detail="Forbidden")
-    
+async def run_email_alerts(request: Request, _cron_auth = Depends(require_cron_secret)):
+    """
+    Railway cron endpoint to trigger email alerts script.
+    Authenticated via X-CRON-SECRET header (not user session).
+    """
     # Get script path relative to project root
     script_path = Path(__file__).parent.parent.parent / "scripts" / "send_email_alerts.py"
     
@@ -318,9 +351,22 @@ async def run_email_alerts(request: Request, user = Depends(get_current_user)):
             cwd=str(script_path.parent.parent)  # Set working directory to project root
         )
         
+        # Try to extract email count from stdout if available
+        emails_sent = None
+        if result.stdout:
+            # Look for pattern like "✅ Email alerts processed: 5 emails sent"
+            import re
+            match = re.search(r'(\d+)\s+emails?\s+sent', result.stdout, re.IGNORECASE)
+            if match:
+                try:
+                    emails_sent = int(match.group(1))
+                except ValueError:
+                    pass
+        
         return {
             "ok": result.returncode == 0,
             "code": result.returncode,
+            "emails_sent": emails_sent,
             "stdout": result.stdout[-2000:] if result.stdout else "",  # Last 2000 chars
             "stderr": result.stderr[-2000:] if result.stderr else "",  # Last 2000 chars
             "message": "Email alerts script executed"

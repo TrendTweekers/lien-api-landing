@@ -1,10 +1,22 @@
 # Railway Cron Job Setup for Email Reminders
 
-This document explains how to configure Railway to run the daily email reminder cron job.
+This document explains how to configure Railway to run the daily email reminder cron job using HTTP endpoint authentication.
 
-## Method 1: Railway Web Interface (Recommended)
+## Overview
 
-Railway cron jobs are typically configured through their web dashboard:
+The email alerts cron job is triggered via an HTTP POST request to `/api/admin/run-email-alerts`. Authentication is handled via the `X-CRON-SECRET` header, which must match the `CRON_SECRET` environment variable.
+
+## Prerequisites
+
+1. **Set CRON_SECRET Environment Variable**
+   - In Railway dashboard, go to your service → **Variables** tab
+   - Add a new variable: `CRON_SECRET`
+   - Set a strong, random secret value (e.g., generate with: `openssl rand -hex 32`)
+   - **Important**: Keep this secret secure and never commit it to git
+
+## Railway Cron Configuration
+
+### Method 1: Railway Web Interface (Recommended)
 
 1. **Go to Railway Dashboard**
    - Navigate to [railway.app](https://railway.app)
@@ -21,20 +33,14 @@ Railway cron jobs are typically configured through their web dashboard:
    - Configure the following:
      - **Name**: `Send Email Reminders`
      - **Schedule**: `0 9 * * *` (9:00 AM UTC daily)
-     - **Command**: `python api/cron_send_reminders.py`
+     - **Command**: 
+       ```bash
+       curl -sS -X POST https://liendeadline.com/api/admin/run-email-alerts -H "X-CRON-SECRET: $CRON_SECRET"
+       ```
+     - **Note**: Railway automatically provides environment variables to cron jobs, so `$CRON_SECRET` will be replaced with the actual value
    - Click **"Save"** or **"Create"**
 
-4. **Verify Environment Variables**
-   - Ensure these environment variables are set in Railway:
-     - `RESEND_API_KEY` - Your Resend API key for sending emails
-     - `DATABASE_URL` - Your PostgreSQL connection string
-
-5. **Test the Cron Job**
-   - You can test by temporarily changing the schedule to `*/5 * * * *` (every 5 minutes)
-   - Check the logs to verify emails are being sent
-   - Change back to `0 9 * * *` once confirmed working
-
-## Method 2: Railway CLI (Alternative)
+### Method 2: Railway CLI (Alternative)
 
 If Railway CLI supports cron configuration:
 
@@ -42,7 +48,7 @@ If Railway CLI supports cron configuration:
 railway cron add \
   --name "Send Email Reminders" \
   --schedule "0 9 * * *" \
-  --command "python api/cron_send_reminders.py"
+  --command "curl -sS -X POST https://liendeadline.com/api/admin/run-email-alerts -H \"X-CRON-SECRET: \$CRON_SECRET\""
 ```
 
 ## Schedule Format
@@ -58,27 +64,87 @@ The cron schedule uses standard cron syntax:
 - To run at 9:00 AM EST (UTC-5), use `0 14 * * *` (2:00 PM UTC)
 - To run at 9:00 AM PST (UTC-8), use `0 17 * * *` (5:00 PM UTC)
 
+## Authentication
+
+The cron endpoint uses header-based authentication:
+
+- **Header Name**: `X-CRON-SECRET`
+- **Value**: Must match the `CRON_SECRET` environment variable
+- **Comparison**: Uses constant-time comparison (`hmac.compare_digest`) to prevent timing attacks
+
+### Security Notes
+
+- If `CRON_SECRET` is not set, the endpoint returns `503 Service Unavailable`
+- Invalid or missing secrets return `401 Unauthorized`
+- All authentication attempts are logged with IP addresses
+
 ## Monitoring
 
-- Check Railway logs to see cron job execution
-- Look for output starting with `🔔 RUNNING EMAIL REMINDER CRON JOB`
-- Verify emails are being sent successfully
-- Check for any error messages in the logs
+### Check Logs
+
+- Railway logs will show cron job execution
+- Look for log lines:
+  - `CRON_OK route=/api/admin/run-email-alerts ip=...` (success)
+  - `CRON_DENY route=/api/admin/run-email-alerts ip=... reason=...` (failure)
+
+### Response Format
+
+Successful response:
+```json
+{
+  "ok": true,
+  "code": 0,
+  "emails_sent": 5,
+  "stdout": "...",
+  "stderr": "",
+  "message": "Email alerts script executed"
+}
+```
 
 ## Troubleshooting
 
+**Cron job returns 503:**
+- Verify `CRON_SECRET` environment variable is set in Railway
+- Check that the variable name is exactly `CRON_SECRET` (case-sensitive)
+
+**Cron job returns 401:**
+- Verify the `X-CRON-SECRET` header is being sent correctly
+- Check that the header value matches the `CRON_SECRET` environment variable exactly
+- Ensure there are no extra spaces or newlines in the secret
+
 **Cron job not running:**
 - Verify the schedule syntax is correct
-- Check that the command path is correct
-- Ensure environment variables are set
+- Check that the curl command is correct
+- Ensure `curl` is available in the Railway cron environment
+- Check Railway logs for cron execution errors
 
 **Emails not sending:**
 - Verify `RESEND_API_KEY` is set correctly
+- Check `DATABASE_URL` is set correctly
+- Review the `stdout` and `stderr` fields in the response
 - Check Resend dashboard for email delivery status
-- Review error logs in Railway
 
 **Database connection errors:**
 - Verify `DATABASE_URL` is set correctly
 - Check database is accessible from Railway
 - Review connection logs
 
+## Testing Locally
+
+To test the cron endpoint locally:
+
+```bash
+# Set CRON_SECRET environment variable
+export CRON_SECRET="your-secret-here"
+
+# Test the endpoint
+curl -X POST http://localhost:8000/api/admin/run-email-alerts \
+  -H "X-CRON-SECRET: your-secret-here"
+```
+
+## Manual Trigger (Admin)
+
+Admins can also trigger email alerts manually via the admin dashboard:
+- Navigate to `/admin-dashboard-v2`
+- Use the "Run email alerts now" button (if available)
+- This uses session-based authentication, not CRON_SECRET
