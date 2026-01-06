@@ -708,7 +708,7 @@ async def delete_broker(broker_id: int, user: dict = Depends(require_admin)):
             
             conn.commit()
             
-            logger.info(f"Broker {broker_id} and all associated referrals deleted by {username}")
+            logger.info(f"Broker {broker_id} and all associated referrals deleted by {user.get('email', 'unknown')}")
             
             return {
                 "success": True,
@@ -2224,7 +2224,8 @@ async def create_payout_batch(request: Request, user: dict = Depends(require_adm
             
             # Generate batch ID if transaction_id not provided
             if not transaction_id:
-                transaction_id = f"BATCH-{datetime.now().strftime('%Y%m%d')}-{secrets.token_hex(4).upper()}"
+                import secrets as secrets_module
+                transaction_id = f"BATCH-{datetime.now().strftime('%Y%m%d')}-{secrets_module.token_hex(4).upper()}"
             
             # Create batch record
             referral_ids_json = json.dumps(referral_ids)
@@ -2237,7 +2238,7 @@ async def create_payout_batch(request: Request, user: dict = Depends(require_adm
                     VALUES (%s, %s, %s, %s, 'USD', %s, %s, %s, 'pending', %s, NOW(), %s)
                     RETURNING id
                 """, (broker_id, broker_name, broker_email, total_amount, payment_method, 
-                      transaction_id, notes, referral_ids_json, username))
+                      transaction_id, notes, referral_ids_json, user.get('email', 'unknown')))
                 batch_id = cursor.fetchone()[0]
             else:
                 cursor.execute("""
@@ -2246,7 +2247,7 @@ async def create_payout_batch(request: Request, user: dict = Depends(require_adm
                      transaction_id, notes, status, referral_ids, created_at, created_by_admin)
                     VALUES (?, ?, ?, ?, 'USD', ?, ?, ?, 'pending', ?, datetime('now'), ?)
                 """, (broker_id, broker_name, broker_email, total_amount, payment_method, 
-                      transaction_id, notes, referral_ids_json, username))
+                      transaction_id, notes, referral_ids_json, user.get('email', 'unknown')))
                 batch_id = cursor.lastrowid
             
             # Update referrals status
