@@ -92,13 +92,41 @@ async function adminFetch(url, options = {}) {
 }
 
 // Log admin key status on init
-console.log('[Admin V2] ADMIN_API_KEY present:', !!ADMIN_API_KEY, 'len=', ADMIN_API_KEY.length);
+console.log("[AdminV2] key present:", ADMIN_API_KEY.length > 0, "len:", ADMIN_API_KEY.length);
 
-// Check admin key on page load
+// Check admin key on page load and test connection
+async function initAdminDashboard() {
+    if (!ADMIN_API_KEY) {
+        showBanner('admin-key-missing-banner', '⚠️ ADMIN_API_KEY missing — set Railway variable ADMIN_API_KEY and redeploy');
+        return;
+    }
+    
+    removeBanner('admin-key-missing-banner');
+    
+    // Test connection with ping endpoint
+    try {
+        const result = await adminFetch('/api/admin/ping');
+        if (result && result.ok) {
+            console.log('✅ Admin API connected');
+            // Show success indicator in UI
+            const statusEl = document.getElementById('admin-api-status') || document.createElement('div');
+            statusEl.id = 'admin-api-status';
+            statusEl.textContent = '✅ connected';
+            statusEl.style.cssText = 'position: fixed; top: 50px; right: 20px; background: #10b981; color: white; padding: 8px 12px; border-radius: 4px; font-size: 12px; z-index: 9999;';
+            if (!document.getElementById('admin-api-status')) {
+                document.body.appendChild(statusEl);
+            }
+        }
+    } catch (error) {
+        console.error('[Admin V2] Ping failed:', error);
+    }
+}
+
+// Initialize on page load
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', checkAdminKey);
+    document.addEventListener('DOMContentLoaded', initAdminDashboard);
 } else {
-    checkAdminKey();
+    initAdminDashboard();
 }
 
 // Safe helper functions (same as V1)
