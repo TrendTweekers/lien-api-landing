@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { RefreshCw, FileSpreadsheet, FileText, Eye, Calendar, Download, Trash2, Bell, ChevronDown, ChevronUp } from "lucide-react";
+import { RefreshCw, FileSpreadsheet, FileText, Eye, Calendar, Download, Trash2, Bell, ChevronDown, ChevronUp, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,7 +11,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { usePlan } from "@/hooks/usePlan";
 import { NotificationSettings } from "./NotificationSettings";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface Project {
   id: number;
@@ -34,11 +36,16 @@ interface ProjectsTableProps {
 
 export const ProjectsTable = ({ expandedProjectId: externalExpandedProjectId, onExpandedProjectChange }: ProjectsTableProps = {}) => {
   const { toast } = useToast();
+  const { planInfo } = usePlan();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [internalExpandedProjectId, setInternalExpandedProjectId] = useState<number | null>(null);
   const [flashProjectId, setFlashProjectId] = useState<string | null>(null);
   const [projectNotificationStatuses, setProjectNotificationStatuses] = useState<Record<number, { zapierEnabled: boolean; reminderOffsetsDays: number[] }>>({});
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  
+  // Reminders eligibility: Basic+ plans can use reminders
+  const remindersEligible = planInfo.plan === "basic" || planInfo.plan === "automated" || planInfo.plan === "enterprise";
   
   // Use external expandedProjectId if provided, otherwise use internal state
   const expandedProjectId = externalExpandedProjectId !== undefined ? externalExpandedProjectId : internalExpandedProjectId;
@@ -305,6 +312,19 @@ export const ProjectsTable = ({ expandedProjectId: externalExpandedProjectId, on
                     <TableCell className="text-foreground">{project.lien_deadline}</TableCell>
                     <TableCell>
                       {(() => {
+                        // Plan gate: Free plan users see locked state
+                        if (!remindersEligible) {
+                          return (
+                            <span
+                              onClick={() => setUpgradeModalOpen(true)}
+                              className="text-muted-foreground text-sm cursor-pointer hover:text-foreground flex items-center gap-1"
+                            >
+                              <Lock className="h-3 w-3" />
+                              Upgrade to enable reminders
+                            </span>
+                          );
+                        }
+                        
                         // Check notification settings first (new system)
                         const notificationStatus = projectNotificationStatuses[project.id];
                         if (notificationStatus) {
@@ -493,6 +513,8 @@ export const ProjectsTable = ({ expandedProjectId: externalExpandedProjectId, on
           </TableBody>
         </Table>
       </div>
+      
+      <UpgradeModal open={upgradeModalOpen} onOpenChange={setUpgradeModalOpen} />
     </div>
   );
 };
