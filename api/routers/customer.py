@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from api.database import get_db, get_db_cursor, DB_TYPE
-from api.routers.auth import get_user_from_session
+from api.routers.auth import get_user_from_session, get_current_user
 from pydantic import BaseModel, EmailStr
 import logging
 import subprocess
@@ -195,20 +195,10 @@ async def get_customer_stats(request: Request):
         }
 
 @router.get("/api/admin/email-captures")
-async def get_email_captures(request: Request, limit: int = 100):
+async def get_email_captures(request: Request, limit: int = 100, user = Depends(get_current_user)):
     """Admin-only endpoint to get email captures"""
-    user = get_user_from_session(request)
-    if not user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    email = user.get('email')
-    if not email:
-        raise HTTPException(status_code=400, detail="User email not found")
-    
-    # Check if admin (case-insensitive)
-    is_admin = email.lower().strip() == "admin@stackedboost.com"
-    if not is_admin:
-        raise HTTPException(status_code=403, detail="Admin access required")
+    if user.get('email', '').lower() != "admin@stackedboost.com":
+        raise HTTPException(status_code=403, detail="Forbidden")
     
     try:
         with get_db() as conn:
@@ -303,15 +293,10 @@ async def save_user_preferences(request: Request, body: EmailPrefsIn):
         raise HTTPException(status_code=500, detail="Failed to save preferences")
 
 @router.post("/api/admin/run-email-alerts")
-async def run_email_alerts(request: Request):
+async def run_email_alerts(request: Request, user = Depends(get_current_user)):
     """Admin-only endpoint to manually trigger email alerts script"""
-    user = get_user_from_session(request)
-    if not user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    email = user.get('email')
-    if not email or email.lower().strip() != "admin@stackedboost.com":
-        raise HTTPException(status_code=403, detail="Forbidden - Admin access required")
+    if user.get('email', '').lower() != "admin@stackedboost.com":
+        raise HTTPException(status_code=403, detail="Forbidden")
     
     # Get script path relative to project root
     script_path = Path(__file__).parent.parent.parent / "scripts" / "send_email_alerts.py"
