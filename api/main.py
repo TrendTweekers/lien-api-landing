@@ -1396,26 +1396,13 @@ try:
 except Exception as e:
     print(f"Warning: Could not mount static files: {e}")
 
-# Zapier redirect routes - must be BEFORE /dashboard catch-all to ensure proper routing
-@app.get("/zapier")
-async def redirect_zapier(request: Request):
-    """Redirect legacy /zapier URL to /dashboard/zapier (301 permanent)"""
-    # Preserve query string if present
-    url = "/dashboard/zapier"
-    if request.url.query:
-        url = f"{url}?{request.url.query}"
-    return RedirectResponse(url=url, status_code=301)
+# Admin Dashboard Routes - MUST BE FIRST to prevent interception
+@app.get("/admin-dashboard-v2")
+async def serve_admin_dashboard_v2():
+    """Serve admin dashboard V2 (public, no auth)"""
+    print("HIT admin-dashboard-v2")
+    return FileResponse("admin-dashboard-v2.html")
 
-@app.get("/zapier/{full_path:path}")
-async def redirect_zapier_paths(full_path: str, request: Request):
-    """Redirect legacy /zapier/* paths to /dashboard/zapier/* (301 permanent)"""
-    # Preserve query string if present
-    url = f"/dashboard/zapier/{full_path}"
-    if request.url.query:
-        url = f"{url}?{request.url.query}"
-    return RedirectResponse(url=url, status_code=301)
-
-# Admin Dashboard Routes (must come BEFORE /dashboard catch-all)
 @app.get("/admin-dashboard")
 async def serve_admin_dashboard_clean(request: Request):
     """
@@ -1436,10 +1423,24 @@ async def serve_admin_dashboard_html():
     """Serve admin dashboard V1 (public, no auth)"""
     return FileResponse("admin-dashboard.html")
 
-@app.get("/admin-dashboard-v2")
-async def serve_admin_dashboard_v2():
-    """Serve admin dashboard V2 (public, no auth)"""
-    return FileResponse("admin-dashboard-v2.html")
+# Zapier redirect routes - must be BEFORE /dashboard catch-all to ensure proper routing
+@app.get("/zapier")
+async def redirect_zapier(request: Request):
+    """Redirect legacy /zapier URL to /dashboard/zapier (301 permanent)"""
+    # Preserve query string if present
+    url = "/dashboard/zapier"
+    if request.url.query:
+        url = f"{url}?{request.url.query}"
+    return RedirectResponse(url=url, status_code=301)
+
+@app.get("/zapier/{full_path:path}")
+async def redirect_zapier_paths(full_path: str, request: Request):
+    """Redirect legacy /zapier/* paths to /dashboard/zapier/* (301 permanent)"""
+    # Preserve query string if present
+    url = f"/dashboard/zapier/{full_path}"
+    if request.url.query:
+        url = f"{url}?{request.url.query}"
+    return RedirectResponse(url=url, status_code=301)
 
 @app.get("/admin-dashboard.js")
 async def serve_admin_dashboard_js():
