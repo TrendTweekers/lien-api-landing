@@ -1354,7 +1354,23 @@ async def startup():
         traceback.print_exc()
         # Don't fail startup if migration fails - columns might already exist
     
-    print("✅ Application startup complete")
+    # Check if this is a Railway cron run
+    if os.getenv("RAILWAY_CRON_RUN") == "true":
+        print("🕐 Railway cron run detected - executing email alerts job...")
+        try:
+            # Import and run the email alerts job directly
+            sys.path.insert(0, str(Path(__file__).parent.parent))
+            from scripts.send_email_alerts import main as run_email_alerts
+            emails_sent = run_email_alerts()
+            print(f"✅ Email alerts job completed: {emails_sent} emails sent")
+        except Exception as e:
+            print(f"❌ Email alerts job failed: {e}")
+            import traceback
+            traceback.print_exc()
+            # Don't fail startup - let the app continue even if cron job fails
+        print("✅ Application startup complete")
+    else:
+        print("✅ Application startup complete")
 
 
 

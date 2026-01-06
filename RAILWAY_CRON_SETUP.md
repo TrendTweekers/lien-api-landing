@@ -1,18 +1,14 @@
 # Railway Cron Job Setup for Email Reminders
 
-This document explains how to configure Railway to run the daily email reminder cron job using HTTP endpoint authentication.
+This document explains how to configure Railway to run the daily email reminder cron job.
 
 ## Overview
 
-The email alerts cron job is triggered via an HTTP POST request to `/api/admin/run-email-alerts`. Authentication is handled via the `X-CRON-SECRET` header, which must match the `CRON_SECRET` environment variable.
+The email alerts cron job runs automatically on application startup when Railway sets the `RAILWAY_CRON_RUN=true` environment variable. This is the cleanest approach - no HTTP endpoints or secrets needed. Railway automatically injects this environment variable during cron runs.
 
-## Prerequisites
+## How It Works
 
-1. **Set CRON_SECRET Environment Variable**
-   - In Railway dashboard, go to your service → **Variables** tab
-   - Add a new variable: `CRON_SECRET`
-   - Set a strong, random secret value (e.g., generate with: `openssl rand -hex 32`)
-   - **Important**: Keep this secret secure and never commit it to git
+When Railway runs a cron job, it sets `RAILWAY_CRON_RUN=true`. The FastAPI application detects this on startup and automatically executes the email alerts job before starting the web server.
 
 ## Railway Cron Configuration
 
@@ -35,9 +31,9 @@ The email alerts cron job is triggered via an HTTP POST request to `/api/admin/r
      - **Schedule**: `0 9 * * *` (9:00 AM UTC daily)
      - **Command**: 
        ```bash
-       curl -sS -X POST https://liendeadline.com/api/admin/run-email-alerts -H "X-CRON-SECRET: $CRON_SECRET"
+       python -m uvicorn api.main:app --host 0.0.0.0 --port $PORT
        ```
-     - **Note**: Railway automatically provides environment variables to cron jobs, so `$CRON_SECRET` will be replaced with the actual value
+     - **Note**: Railway automatically sets `RAILWAY_CRON_RUN=true` when running cron jobs, which triggers the email alerts job on startup
    - Click **"Save"** or **"Create"**
 
 ### Method 2: Railway CLI (Alternative)
@@ -48,7 +44,7 @@ If Railway CLI supports cron configuration:
 railway cron add \
   --name "Send Email Reminders" \
   --schedule "0 9 * * *" \
-  --command "curl -sS -X POST https://liendeadline.com/api/admin/run-email-alerts -H \"X-CRON-SECRET: \$CRON_SECRET\""
+  --command "python -m uvicorn api.main:app --host 0.0.0.0 --port \$PORT"
 ```
 
 ## Schedule Format
@@ -64,64 +60,37 @@ The cron schedule uses standard cron syntax:
 - To run at 9:00 AM EST (UTC-5), use `0 14 * * *` (2:00 PM UTC)
 - To run at 9:00 AM PST (UTC-8), use `0 17 * * *` (5:00 PM UTC)
 
-## Authentication
-
-The cron endpoint uses header-based authentication:
-
-- **Header Name**: `X-CRON-SECRET`
-- **Value**: Must match the `CRON_SECRET` environment variable
-- **Comparison**: Uses constant-time comparison (`hmac.compare_digest`) to prevent timing attacks
-
-### Security Notes
-
-- If `CRON_SECRET` is not set, the endpoint returns `503 Service Unavailable`
-- Invalid or missing secrets return `401 Unauthorized`
-- All authentication attempts are logged with IP addresses
-
 ## Monitoring
 
 ### Check Logs
 
-- Railway logs will show cron job execution
-- Look for log lines:
-  - `CRON_OK route=/api/admin/run-email-alerts ip=...` (success)
-  - `CRON_DENY route=/api/admin/run-email-alerts ip=... reason=...` (failure)
+Railway logs will show cron job execution:
+- Look for: `🕐 Railway cron run detected - executing email alerts job...`
+- Success: `✅ Email alerts job completed: X emails sent`
+- Failure: `❌ Email alerts job failed: [error message]`
 
-### Response Format
+### Expected Output
 
-Successful response:
-```json
-{
-  "ok": true,
-  "code": 0,
-  "emails_sent": 5,
-  "stdout": "...",
-  "stderr": "",
-  "message": "Email alerts script executed"
-}
+When the cron job runs successfully, you should see:
+```
+🚀 Starting application...
+🕐 Railway cron run detected - executing email alerts job...
+✅ Email alerts job completed: 5 emails sent
+✅ Application startup complete
 ```
 
 ## Troubleshooting
 
-**Cron job returns 503:**
-- Verify `CRON_SECRET` environment variable is set in Railway
-- Check that the variable name is exactly `CRON_SECRET` (case-sensitive)
-
-**Cron job returns 401:**
-- Verify the `X-CRON-SECRET` header is being sent correctly
-- Check that the header value matches the `CRON_SECRET` environment variable exactly
-- Ensure there are no extra spaces or newlines in the secret
-
 **Cron job not running:**
 - Verify the schedule syntax is correct
-- Check that the curl command is correct
-- Ensure `curl` is available in the Railway cron environment
+- Check that the command matches your app's startup command
+- Ensure Railway is setting `RAILWAY_CRON_RUN=true` (check logs)
 - Check Railway logs for cron execution errors
 
 **Emails not sending:**
-- Verify `RESEND_API_KEY` is set correctly
+- Verify `RESEND_API_KEY` is set correctly in Railway environment variables
 - Check `DATABASE_URL` is set correctly
-- Review the `stdout` and `stderr` fields in the response
+- Review error logs in Railway dashboard
 - Check Resend dashboard for email delivery status
 
 **Database connection errors:**
@@ -129,22 +98,32 @@ Successful response:
 - Check database is accessible from Railway
 - Review connection logs
 
+**Job runs but no emails sent:**
+- Check that users have `email_alerts_enabled = TRUE` in the database
+- Verify users have `alert_email` set
+- Check that there are projects with deadlines matching the reminder windows (7, 3, 1 days)
+
 ## Testing Locally
 
-To test the cron endpoint locally:
+To test the cron job locally, simulate Railway's behavior:
 
 ```bash
-# Set CRON_SECRET environment variable
-export CRON_SECRET="your-secret-here"
+# Set RAILWAY_CRON_RUN environment variable
+export RAILWAY_CRON_RUN=true
 
-# Test the endpoint
-curl -X POST http://localhost:8000/api/admin/run-email-alerts \
-  -H "X-CRON-SECRET: your-secret-here"
+# Run the app (it will execute the email job on startup)
+python -m uvicorn api.main:app --host 0.0.0.0 --port 8000
 ```
+
+You should see the email alerts job execute during startup.
 
 ## Manual Trigger (Admin)
 
 Admins can also trigger email alerts manually via the admin dashboard:
 - Navigate to `/admin-dashboard-v2`
 - Use the "Run email alerts now" button (if available)
-- This uses session-based authentication, not CRON_SECRET
+- This uses the HTTP endpoint `/api/admin/run-email-alerts` (requires CRON_SECRET header)
+
+## Alternative: HTTP Endpoint Method
+
+If you prefer to use HTTP endpoints instead of startup detection, you can use the `/api/admin/run-email-alerts` endpoint with `X-CRON-SECRET` header authentication. See the git history for the previous implementation.
