@@ -2832,7 +2832,7 @@ async def serve_admin_dashboard_clean(request: Request, username: str = Depends(
     )
 
 @app.get("/admin-dashboard.html")
-async def serve_admin_dashboard_html(user: dict = Depends(require_admin)):
+async def serve_admin_dashboard_html(username: str = Depends(verify_admin_basic)):
     """Serve admin dashboard V1 with HTTP Basic Auth"""
     file_path = BASE_DIR / "admin-dashboard.html"
     if not file_path.exists():
