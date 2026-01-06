@@ -67,20 +67,26 @@
     
     /* Mobile menu styles */
     .mobile-menu-btn {
-      display: none !important;
+      display: none !important; /* Hidden by default on desktop */
     }
     
     @media (max-width: 768px) {
-      .mobile-menu-btn {
-        display: block !important;
-      }
-      
       .desktop-nav {
         display: none !important;
       }
       
+      .mobile-menu-btn {
+        display: block !important; /* Show on mobile */
+      }
+    }
+    
+    @media (min-width: 769px) {
+      .mobile-menu-btn {
+        display: none !important;
+      }
+      
       .mobile-menu {
-        display: none;
+        display: none !important;
       }
     }
   </style>
@@ -102,13 +108,13 @@
       </div>
       
       <!-- Mobile Hamburger Button -->
-      <button class="mobile-menu-btn" id="mobileMenuBtn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #1F2937; padding: 4px;">
+      <button class="mobile-menu-btn" id="mobileMenuBtn" style="display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: #1F2937; padding: 4px;">
         ☰
       </button>
     </nav>
     
     <!-- Mobile Menu -->
-    <div id="mobileMenu" class="mobile-menu" style="background: white; border-top: 1px solid #e5e7eb; padding: 16px 24px;">
+    <div id="mobileMenu" class="mobile-menu" style="display: none; background: white; border-top: 1px solid #e5e7eb; padding: 16px 24px;">
       <a href="/" style="display: block; text-decoration: none; color: #1F2937; font-weight: 500; padding: 8px 0;">Home</a>
       <a href="/pricing.html" style="display: block; text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Pricing</a>
       <a href="/" style="display: block; background: #F97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; text-align: center; margin-top: 8px;">Try Free</a>
@@ -281,6 +287,28 @@
     });
     
     // Mobile menu toggle
+    function checkMobile() {
+      const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+      const mobileMenu = document.getElementById('mobileMenu');
+      const desktopNav = document.querySelector('.desktop-nav');
+      
+      if (window.innerWidth <= 768) {
+        // Mobile view
+        if (mobileMenuBtn) mobileMenuBtn.style.display = 'block';
+        if (desktopNav) desktopNav.style.display = 'none';
+      } else {
+        // Desktop view
+        if (mobileMenuBtn) mobileMenuBtn.style.display = 'none';
+        if (mobileMenu) mobileMenu.style.display = 'none';
+        if (desktopNav) desktopNav.style.display = 'flex';
+      }
+    }
+    
+    // Check on load and resize
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    // Mobile menu toggle handler
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
     const mobileMenu = document.getElementById('mobileMenu');
     
@@ -289,6 +317,13 @@
         if (mobileMenu.style.display === 'none' || !mobileMenu.style.display) {
           mobileMenu.style.display = 'block';
         } else {
+          mobileMenu.style.display = 'none';
+        }
+      });
+      
+      // Close mobile menu when clicking a link
+      mobileMenu.addEventListener('click', (e) => {
+        if (e.target.tagName === 'A' || e.target.closest('a')) {
           mobileMenu.style.display = 'none';
         }
       });
