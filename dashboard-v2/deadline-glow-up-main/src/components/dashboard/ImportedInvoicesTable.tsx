@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const US_STATES = [
   { name: "Alabama", code: "AL" },
@@ -95,6 +96,7 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
   const [loading, setLoading] = useState(false);
   // Track selected state and type for each invoice
   const [invoiceSelections, setInvoiceSelections] = useState<Record<string, { state: string; type: string }>>({});
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   // Track which invoices are currently recalculating
   const [recalculatingInvoices, setRecalculatingInvoices] = useState<Set<string>>(new Set());
   // Track supported states from backend
@@ -305,7 +307,26 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
           }),
         });
 
-        if (!calcResponse.ok) throw new Error("Failed to calculate deadlines");
+        if (!calcResponse.ok) {
+          // Check for 402 Payment Required with billing error codes
+          if (calcResponse.status === 402) {
+            try {
+              const errorData = await calcResponse.json();
+              const errorCode = errorData.code || errorData.detail?.code;
+              
+              if (errorCode === "LIMIT_REACHED" || errorCode === "UPGRADE_REQUIRED") {
+                // Open upgrade modal instead of showing error
+                setUpgradeModalOpen(true);
+                return;
+              }
+            } catch (e) {
+              // If JSON parsing fails, still open upgrade modal for 402
+              setUpgradeModalOpen(true);
+              return;
+            }
+          }
+          throw new Error("Failed to calculate deadlines");
+        }
 
         const calcData = await calcResponse.json();
         const calcResult = calcData.data || calcData.result || calcData;
@@ -339,6 +360,24 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
       });
 
       if (!response.ok) {
+        // Check for 402 Payment Required with billing error codes
+        if (response.status === 402) {
+          try {
+            const errorData = await response.json();
+            const errorCode = errorData.code || errorData.detail?.code;
+            
+            if (errorCode === "LIMIT_REACHED" || errorCode === "UPGRADE_REQUIRED") {
+              // Open upgrade modal instead of showing error
+              setUpgradeModalOpen(true);
+              return;
+            }
+          } catch (e) {
+            // If JSON parsing fails, still open upgrade modal for 402
+            setUpgradeModalOpen(true);
+            return;
+          }
+        }
+        
         const errorData = await response.json().catch(() => ({ detail: "Save failed" }));
         console.error("❌ Save failed:", errorData);
         throw new Error(errorData.detail || errorData.message || `Save failed: ${response.status}`);
@@ -713,6 +752,8 @@ export const ImportedInvoicesTable = ({ isConnected = false, isChecking = false 
           </TableBody>
         </Table>
       </div>
+      
+      <UpgradeModal open={upgradeModalOpen} onOpenChange={setUpgradeModalOpen} />
     </div>
   );
 };

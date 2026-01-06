@@ -8,6 +8,15 @@ export interface PlanInfo {
   zapierConnected: boolean;
   isAdmin: boolean;
   isSimulated: boolean;
+  // Full stats from /api/user/stats
+  manualCalcUsed?: number;
+  manualCalcLimit?: number | null;
+  manualCalcRemaining?: number | null;
+  apiCallsUsed?: number;
+  apiCallsLimit?: number | null;
+  apiCallsRemaining?: number | null;
+  resetDate?: string | null;
+  lastSyncAt?: Date | null;
 }
 
 const ADMIN_EMAIL = "admin@stackedboost.com";
@@ -84,13 +93,21 @@ export const usePlan = () => {
         const res = await fetch('/api/user/stats', { headers });
         if (!res.ok) {
           // Default to free plan if API fails
-          setPlanInfo({
-            plan: simulatedPlan || "free",
-            remainingCalculations: simulatedRemaining ?? (simulatedPlan ? Infinity : 3),
-            zapierConnected: simulatedZapier ?? false,
-            isAdmin,
-            isSimulated,
-          });
+        setPlanInfo({
+          plan: simulatedPlan || "free",
+          remainingCalculations: simulatedRemaining ?? (simulatedPlan ? Infinity : 3),
+          zapierConnected: simulatedZapier ?? false,
+          isAdmin,
+          isSimulated,
+          manualCalcUsed: 0,
+          manualCalcLimit: simulatedPlan === "free" ? 3 : null,
+          manualCalcRemaining: simulatedRemaining ?? 3,
+          apiCallsUsed: 0,
+          apiCallsLimit: null,
+          apiCallsRemaining: null,
+          resetDate: null,
+          lastSyncAt: null,
+        });
           setLoading(false);
           return;
         }
@@ -112,6 +129,14 @@ export const usePlan = () => {
           zapierConnected: finalZapier,
           isAdmin: data.is_admin === true || isAdmin,
           isSimulated,
+          manualCalcUsed: data.manual_calc_used ?? 0,
+          manualCalcLimit: data.manual_calc_limit ?? null,
+          manualCalcRemaining: data.manual_calc_remaining ?? null,
+          apiCallsUsed: data.api_calls_used ?? 0,
+          apiCallsLimit: data.api_calls_limit ?? null,
+          apiCallsRemaining: data.api_calls_remaining ?? null,
+          resetDate: data.next_reset ?? null,
+          lastSyncAt: new Date(),
         });
       } catch (error) {
         console.error('Error fetching plan info:', error);
@@ -121,6 +146,14 @@ export const usePlan = () => {
           zapierConnected: false,
           isAdmin: false,
           isSimulated: false,
+          manualCalcUsed: 0,
+          manualCalcLimit: 3,
+          manualCalcRemaining: 3,
+          apiCallsUsed: 0,
+          apiCallsLimit: null,
+          apiCallsRemaining: null,
+          resetDate: null,
+          lastSyncAt: null,
         });
       } finally {
         setLoading(false);

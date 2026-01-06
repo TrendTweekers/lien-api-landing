@@ -168,3 +168,69 @@ async def get_customer_stats(request: Request):
             "api_calls": 0,
             "error": str(e)
         }
+
+@router.get("/api/admin/email-captures")
+async def get_email_captures(request: Request, limit: int = 100):
+    """Admin-only endpoint to get email captures"""
+    user = get_user_from_session(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    email = user.get('email')
+    if not email:
+        raise HTTPException(status_code=400, detail="User email not found")
+    
+    # Check if admin (case-insensitive)
+    is_admin = email.lower().strip() == "admin@stackedboost.com"
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Check if email_captures table exists
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT email, created_at, ip_address, last_used_at
+                    FROM email_captures
+                    ORDER BY created_at DESC
+                    LIMIT %s
+                """, (limit,))
+            else:
+                cursor.execute("""
+                    SELECT email, created_at, ip_address, last_used_at
+                    FROM email_captures
+                    ORDER BY created_at DESC
+                    LIMIT ?
+                """, (limit,))
+            
+            rows = cursor.fetchall()
+            captures = []
+            
+            for row in rows:
+                if isinstance(row, dict):
+                    captures.append({
+                        "email": row.get('email'),
+                        "created_at": row.get('created_at'),
+                        "ip_address": row.get('ip_address'),
+                        "last_used_at": row.get('last_used_at'),
+                    })
+                elif isinstance(row, tuple):
+                    captures.append({
+                        "email": row[0] if len(row) > 0 else None,
+                        "created_at": row[1] if len(row) > 1 else None,
+                        "ip_address": row[2] if len(row) > 2 else None,
+                        "last_used_at": row[3] if len(row) > 3 else None,
+                    })
+            
+            return {
+                "success": True,
+                "count": len(captures),
+                "captures": captures
+            }
+    except Exception as e:
+        logger.error(f"Error fetching email captures: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to fetch email captures: {str(e)}")

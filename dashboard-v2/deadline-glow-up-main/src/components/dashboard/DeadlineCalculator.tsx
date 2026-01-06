@@ -227,7 +227,26 @@ export const DeadlineCalculator = () => {
         })
       });
 
-      if (!response.ok) throw new Error("Save failed");
+      if (!response.ok) {
+        // Check for 402 Payment Required with billing error codes
+        if (response.status === 402) {
+          try {
+            const errorData = await response.json();
+            const errorCode = errorData.code || errorData.detail?.code;
+            
+            if (errorCode === "LIMIT_REACHED" || errorCode === "UPGRADE_REQUIRED") {
+              // Open upgrade modal instead of showing error
+              setUpgradeModalOpen(true);
+              return;
+            }
+          } catch (e) {
+            // If JSON parsing fails, still open upgrade modal for 402
+            setUpgradeModalOpen(true);
+            return;
+          }
+        }
+        throw new Error("Save failed");
+      }
 
       toast({
         title: "Saved",

@@ -1,77 +1,64 @@
 import { CheckCircle, CreditCard, Activity, AlertCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { usePlan } from "@/hooks/usePlan";
 
 export const AccountOverview = () => {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({
-    planPrice: "--",
-    planInterval: "month",
-    status: "Loading...",
-    nextBilling: "--",
-    apiCalls: 0,
-    isUnlimited: false
-  });
+  const { planInfo, loading } = usePlan();
 
-  useEffect(() => {
-    const fetchAccountData = async () => {
-      console.log('[AccountOverview] Fetching account data...');
-      try {
-        const token = localStorage.getItem('session_token');
-        if (!token) {
-          console.log('[AccountOverview] No session token found');
-          setLoading(false);
-          return;
-        }
+  // Format plan display name
+  const getPlanDisplayName = (plan: string) => {
+    switch (plan) {
+      case "free": return "Free Calculator";
+      case "basic": return "Basic Tracker";
+      case "automated": return "Automated Compliance";
+      case "enterprise": return "Enterprise";
+      default: return "Free Calculator";
+    }
+  };
 
-        const headers = { 'Authorization': `Bearer ${token}` };
+  // Format plan price
+  const getPlanPrice = (plan: string) => {
+    switch (plan) {
+      case "free": return "$0";
+      case "basic": return "$49";
+      case "automated": return "$149";
+      case "enterprise": return "$499";
+      default: return "$0";
+    }
+  };
 
-        // Parallel fetch for better performance
-        const [sessionRes, statsRes] = await Promise.all([
-          fetch('/api/verify-session', { headers }),
-          fetch('/api/customer/stats', { headers })
-        ]);
+  // Format reset date
+  const formatResetDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return "—";
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return "—";
+    }
+  };
 
-        console.log('[AccountOverview] Session res:', sessionRes.status);
-        console.log('[AccountOverview] Stats res:', statsRes.status);
+  // Get status based on plan
+  const getStatus = (plan: string) => {
+    if (plan === "free") return "Free";
+    return "Active";
+  };
 
-        if (sessionRes.ok) {
-          const sessionData = await sessionRes.json();
-          let apiCalls = 0;
+  // Get API calls display
+  const getApiCallsDisplay = () => {
+    if (planInfo.plan === "enterprise") {
+      return { used: "Unlimited", limit: null, text: "Unlimited" };
+    }
+    if (planInfo.plan === "automated") {
+      return {
+        used: planInfo.apiCallsUsed ?? 0,
+        limit: planInfo.apiCallsLimit ?? 500,
+        text: `${planInfo.apiCallsUsed ?? 0}/${planInfo.apiCallsLimit ?? 500}`
+      };
+    }
+    return { used: planInfo.apiCallsUsed ?? 0, limit: null, text: "Not included" };
+  };
 
-          if (statsRes.ok) {
-            const statsData = await statsRes.json();
-            console.log('[AccountOverview] Stats data:', statsData);
-            apiCalls = statsData.api_calls || 0;
-          }
-
-          // Determine status style and text
-          const statusRaw = sessionData.subscription_status || 'inactive';
-          const statusFormatted = statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1);
-          
-          // Determine next billing text (mocked for now as not in API)
-          const now = new Date();
-          const nextBillingText = statusRaw === 'active' 
-            ? `Auto-renews ${new Date(now.getFullYear(), now.getMonth() + 1, 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` 
-            : 'No active subscription';
-
-          setData({
-            planPrice: statusRaw === 'active' ? "299" : "0",
-            planInterval: statusRaw === 'active' ? "month" : "month",
-            status: statusFormatted,
-            nextBilling: nextBillingText,
-            apiCalls: apiCalls,
-            isUnlimited: statusRaw === 'active'
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching account overview:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAccountData();
-  }, []);
+  const apiDisplay = getApiCallsDisplay();
 
   if (loading) {
     return (
@@ -91,6 +78,8 @@ export const AccountOverview = () => {
       </div>
     );
   }
+
+  const status = getStatus(planInfo.plan);
 
   const getStatusColor = (status: string) => {
     const s = status.toLowerCase();
@@ -120,29 +109,30 @@ export const AccountOverview = () => {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Plan</p>
-            <p className="text-2xl font-bold text-foreground">
-              ${data.planPrice}
-              <span className="text-base font-normal text-muted-foreground">/{data.planInterval}</span>
+            <p className="text-xl font-bold text-foreground">
+              {getPlanDisplayName(planInfo.plan)}
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {data.isUnlimited ? "Unlimited API calls" : "Limited access"}
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {getPlanPrice(planInfo.plan)}/month
             </p>
           </div>
         </div>
 
         {/* Status Card */}
         <div className="flex items-start gap-4">
-          <div className={`w-10 h-10 rounded-lg ${getStatusBg(data.status)} flex items-center justify-center shrink-0`}>
-            {data.status.toLowerCase() === 'active' ? (
-              <CheckCircle className={`h-5 w-5 ${getStatusColor(data.status)}`} />
+          <div className={`w-10 h-10 rounded-lg ${getStatusBg(status)} flex items-center justify-center shrink-0`}>
+            {status.toLowerCase() === 'active' ? (
+              <CheckCircle className={`h-5 w-5 ${getStatusColor(status)}`} />
             ) : (
-              <AlertCircle className={`h-5 w-5 ${getStatusColor(data.status)}`} />
+              <AlertCircle className={`h-5 w-5 ${getStatusColor(status)}`} />
             )}
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Status</p>
-            <p className={`text-2xl font-bold ${getStatusColor(data.status)}`}>{data.status}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Next billing: {data.nextBilling}</p>
+            <p className={`text-2xl font-bold ${getStatusColor(status)}`}>{status}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Resets: {formatResetDate(planInfo.resetDate)}
+            </p>
           </div>
         </div>
 
@@ -152,10 +142,10 @@ export const AccountOverview = () => {
             <Activity className="h-5 w-5 text-info" />
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">API Calls This Month</p>
-            <p className="text-2xl font-bold text-foreground">{data.apiCalls.toLocaleString()}</p>
+            <p className="text-sm text-muted-foreground">API Calls</p>
+            <p className="text-2xl font-bold text-foreground">{apiDisplay.text}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {data.isUnlimited ? "Unlimited plan" : "Upgrade for unlimited"}
+              {planInfo.plan === "enterprise" ? "Unlimited" : planInfo.plan === "automated" ? `${planInfo.apiCallsRemaining ?? 0} remaining` : "Not included"}
             </p>
           </div>
         </div>

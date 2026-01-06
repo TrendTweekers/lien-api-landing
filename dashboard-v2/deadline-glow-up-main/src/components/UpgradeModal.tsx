@@ -1,4 +1,5 @@
 import { X, Check } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,14 @@ interface UpgradeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+// Stripe payment links
+const STRIPE_LINKS = {
+  basic_monthly: "https://buy.stripe.com/8x23cv2KV0WZc7fdfD9fW02",
+  basic_annual: "https://buy.stripe.com/5kQ4gzgBL7lngnvejH9fW03",
+  automated_monthly: "https://buy.stripe.com/aFa9ATdpz7ln4EN8Zn9fW04",
+  automated_annual: "https://buy.stripe.com/eVqdR9etD0WZefncbz9fW05",
+};
 
 const PRICING_TIERS = [
   {
@@ -30,6 +39,8 @@ const PRICING_TIERS = [
     cta: "Start Basic",
     planId: "basic",
     highlight: false,
+    stripeMonthly: STRIPE_LINKS.basic_monthly,
+    stripeAnnual: STRIPE_LINKS.basic_annual,
   },
   {
     name: "Automated Compliance",
@@ -44,9 +55,11 @@ const PRICING_TIERS = [
       "Advanced reporting",
       "Monthly law updates",
     ],
-    cta: "Start 14-Day Trial",
+    cta: "Start Automated",
     planId: "automated",
     highlight: true,
+    stripeMonthly: STRIPE_LINKS.automated_monthly,
+    stripeAnnual: STRIPE_LINKS.automated_annual,
   },
   {
     name: "Enterprise & Partners",
@@ -68,12 +81,45 @@ const PRICING_TIERS = [
 ];
 
 export const UpgradeModal = ({ open, onOpenChange }: UpgradeModalProps) => {
-  const handleUpgrade = (planId: string) => {
+  const [toltReferralId, setToltReferralId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Get Tolt referral ID: prioritize 'via' URL parameter, then window.tolt_referral, then sessionStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const viaParam = urlParams.get('via');
+    const referralId = viaParam || (window as any).tolt_referral || sessionStorage.getItem('tolt_referral') || null;
+    setToltReferralId(referralId);
+    
+    // Persist via param to sessionStorage if present
+    if (viaParam) {
+      sessionStorage.setItem('tolt_referral', viaParam);
+    }
+  }, []);
+
+  const handleUpgrade = (planId: string, isAnnual: boolean = false) => {
     if (planId === "enterprise") {
       window.open("/contact", "_blank");
-    } else {
-      window.open(`/signup?plan=${planId}`, "_blank");
+      onOpenChange(false);
+      return;
     }
+
+    const tier = PRICING_TIERS.find(t => t.planId === planId);
+    if (!tier || !tier.stripeMonthly) {
+      // Fallback to signup page
+      window.open(`/signup?plan=${planId}`, "_blank");
+      onOpenChange(false);
+      return;
+    }
+
+    // Build Stripe payment link with Tolt referral tracking
+    const stripeLink = isAnnual ? tier.stripeAnnual : tier.stripeMonthly;
+    const url = new URL(stripeLink);
+    
+    if (toltReferralId) {
+      url.searchParams.append('client_reference_id', toltReferralId);
+    }
+    
+    window.open(url.toString(), "_blank");
     onOpenChange(false);
   };
 
@@ -120,16 +166,27 @@ export const UpgradeModal = ({ open, onOpenChange }: UpgradeModalProps) => {
                 ))}
               </ul>
 
-              <Button
-                className={`w-full ${
-                  tier.highlight
-                    ? "bg-primary hover:bg-primary/90"
-                    : "bg-secondary hover:bg-secondary/90"
-                }`}
-                onClick={() => handleUpgrade(tier.planId)}
-              >
-                {tier.cta}
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  className={`w-full ${
+                    tier.highlight
+                      ? "bg-primary hover:bg-primary/90"
+                      : "bg-secondary hover:bg-secondary/90"
+                  }`}
+                  onClick={() => handleUpgrade(tier.planId, false)}
+                >
+                  {tier.cta} (Monthly)
+                </Button>
+                {tier.planId !== "enterprise" && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleUpgrade(tier.planId, true)}
+                  >
+                    {tier.cta} (Annual - Save 20%)
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </div>

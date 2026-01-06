@@ -14,9 +14,12 @@ import { ApiDocs } from "@/components/dashboard/ApiDocs";
 import UpgradePrompt from "@/components/UpgradePrompt";
 import { ZapierStatusCard } from "@/components/dashboard/ZapierStatusCard";
 import { AdminSimulator } from "@/components/AdminSimulator";
+import { EmailCaptures } from "@/components/admin/EmailCaptures";
+import { usePlan } from "@/hooks/usePlan";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { planInfo } = usePlan();
   const [userStats, setUserStats] = useState<{
     calculationsUsed: number;
     calculationsLimit: number | null;
@@ -152,6 +155,13 @@ const Index = () => {
       
       {/* Admin Simulator (only visible to admin) */}
       <AdminSimulator />
+
+      {/* Admin Email Captures (only visible to admin) */}
+      {planInfo?.isAdmin && (
+        <div className="container py-8">
+          <EmailCaptures />
+        </div>
+      )}
     </div>
   );
 };

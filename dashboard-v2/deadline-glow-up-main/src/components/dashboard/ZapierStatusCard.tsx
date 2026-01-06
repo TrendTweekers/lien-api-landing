@@ -34,8 +34,8 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
   const [loading, setLoading] = useState(true);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   
-  // Check if Zapier is locked (free plan)
-  const isZapierLocked = planInfo.plan === "free";
+  // Check if Zapier is locked (free or basic plan)
+  const isZapierLocked = planInfo.plan === "free" || planInfo.plan === "basic";
 
   // Format relative time
   const formatRelativeTime = (date: Date | null): string => {
@@ -55,46 +55,22 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
     return `${diffDays}d ago`;
   };
 
-  // Fetch Zapier connection status
-  const fetchZapierStatus = async () => {
-    try {
-      const token = localStorage.getItem('session_token');
-      if (!token) {
-        setZapierConnected(false);
-        setLoading(false);
-        return;
-      }
-
-      const headers: HeadersInit = {
-        "Authorization": `Bearer ${token}`
-      };
-
-      const res = await fetch('/api/user/stats', { headers });
-      if (!res.ok) {
-        setZapierConnected(false);
-        setLoading(false);
-        return;
-      }
-
-      const data = await res.json();
-      const connected = data.zapier_connected === true;
-      setZapierConnected(connected);
-      setLastStatusCheckAt(new Date());
-      
-      // Only fetch project notifications if Zapier is connected
-      if (connected) {
-        await fetchProjectsNotificationStatus();
-      } else {
-        // If not connected, still fetch project count
-        await fetchProjectsCount();
-      }
-    } catch (error) {
-      console.error('Error fetching Zapier status:', error);
-      setZapierConnected(false);
-    } finally {
-      setLoading(false);
+  // Fetch Zapier connection status - use planInfo from usePlan hook
+  useEffect(() => {
+    // Use zapierConnected from planInfo (already fetched by usePlan)
+    const connected = planInfo.zapierConnected;
+    setZapierConnected(connected);
+    setLastStatusCheckAt(planInfo.lastSyncAt || new Date());
+    
+    // Only fetch project notifications if Zapier is connected and plan allows it
+    if (!isZapierLocked && connected) {
+      fetchProjectsNotificationStatus();
+    } else {
+      // If not connected or locked, still fetch project count
+      fetchProjectsCount();
     }
-  };
+    setLoading(false);
+  }, [planInfo.zapierConnected, planInfo.lastSyncAt, isZapierLocked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch project count only (when Zapier not connected)
   const fetchProjectsCount = async () => {
@@ -181,16 +157,7 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
     }
   };
 
-  useEffect(() => {
-    fetchZapierStatus();
-    
-    // Refresh status every 5 minutes
-    const interval = setInterval(() => {
-      fetchZapierStatus();
-    }, 5 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
+  // Note: Zapier status is now fetched via usePlan hook, no separate fetch needed
 
   const handleQuickStart = () => {
     navigate('/zapier?focus=slack');
@@ -252,17 +219,17 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Locked State for Free Plan */}
+        {/* Locked State for Free/Basic Plan */}
         {isZapierLocked ? (
           <div className="space-y-4">
             <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border border-border">
               <Lock className="h-5 w-5 text-muted-foreground" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">
-                  Zapier Automation is available on paid plans
+                  Zapier Automation is available on Automated plan
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Upgrade to Basic ($49/month) or Automated ($149/month) to unlock Zapier integrations.
+                  Upgrade to Automated ($149/month) to unlock Zapier integrations with 6,000+ apps.
                 </p>
               </div>
             </div>

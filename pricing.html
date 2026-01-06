@@ -669,8 +669,11 @@
                         </li>
                     </ul>
                     
-                    <a href="/register.html?plan=basic" class="block w-full bg-primary-orange text-white text-center py-3 rounded-lg font-semibold hover:bg-orange-600 transition text-sm">
+                    <a href="#" id="basicMonthlyBtn" class="block w-full bg-primary-orange text-white text-center py-3 rounded-lg font-semibold hover:bg-orange-600 transition text-sm">
                         Start Basic →
+                    </a>
+                    <a href="#" id="basicAnnualBtn" class="block w-full mt-2 bg-gray-200 text-dark-text text-center py-3 rounded-lg font-semibold hover:bg-gray-300 transition text-sm">
+                        Annual - Save 20% →
                     </a>
                 </div>
                 
@@ -716,8 +719,11 @@
                         </li>
                     </ul>
                     
-                    <a href="/register.html?plan=automated" class="block w-full bg-primary-orange text-white text-center py-3 rounded-lg font-semibold hover:bg-orange-600 transition text-sm">
-                        Start 14-Day Trial →
+                    <a href="#" id="automatedMonthlyBtn" class="block w-full bg-primary-orange text-white text-center py-3 rounded-lg font-semibold hover:bg-orange-600 transition text-sm">
+                        Start Automated →
+                    </a>
+                    <a href="#" id="automatedAnnualBtn" class="block w-full mt-2 bg-gray-200 text-dark-text text-center py-3 rounded-lg font-semibold hover:bg-gray-300 transition text-sm">
+                        Annual - Save 20% →
                     </a>
                 </div>
                 
@@ -1178,6 +1184,69 @@
                 }
             }
         });
+
+        // Stripe payment links with Tolt referral tracking
+        (function() {
+            // Get Tolt referral ID: prioritize 'via' URL parameter, then window.tolt_referral, then sessionStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            const viaParam = urlParams.get('via');
+            const toltReferralId = viaParam || window.tolt_referral || sessionStorage.getItem('tolt_referral') || null;
+            
+            // Persist via param to sessionStorage if present
+            if (viaParam) {
+                sessionStorage.setItem('tolt_referral', viaParam);
+            }
+
+            // Stripe payment links
+            const STRIPE_LINKS = {
+                basic_monthly: 'https://buy.stripe.com/8x23cv2KV0WZc7fdfD9fW02',
+                basic_annual: 'https://buy.stripe.com/5kQ4gzgBL7lngnvejH9fW03',
+                automated_monthly: 'https://buy.stripe.com/aFa9ATdpz7ln4EN8Zn9fW04',
+                automated_annual: 'https://buy.stripe.com/eVqdR9etD0WZefncbz9fW05',
+            };
+
+            function buildStripeUrl(link, referralId) {
+                const url = new URL(link);
+                if (referralId) {
+                    url.searchParams.append('client_reference_id', referralId);
+                }
+                return url.toString();
+            }
+
+            // Wire up pricing CTA buttons
+            const basicMonthlyBtn = document.getElementById('basicMonthlyBtn');
+            const basicAnnualBtn = document.getElementById('basicAnnualBtn');
+            const automatedMonthlyBtn = document.getElementById('automatedMonthlyBtn');
+            const automatedAnnualBtn = document.getElementById('automatedAnnualBtn');
+
+            if (basicMonthlyBtn) {
+                basicMonthlyBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.href = buildStripeUrl(STRIPE_LINKS.basic_monthly, toltReferralId);
+                });
+            }
+
+            if (basicAnnualBtn) {
+                basicAnnualBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.href = buildStripeUrl(STRIPE_LINKS.basic_annual, toltReferralId);
+                });
+            }
+
+            if (automatedMonthlyBtn) {
+                automatedMonthlyBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.href = buildStripeUrl(STRIPE_LINKS.automated_monthly, toltReferralId);
+                });
+            }
+
+            if (automatedAnnualBtn) {
+                automatedAnnualBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.href = buildStripeUrl(STRIPE_LINKS.automated_annual, toltReferralId);
+                });
+            }
+        })();
     </script>
 </body>
 </html>
