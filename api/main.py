@@ -1376,6 +1376,17 @@ try:
 except Exception as e:
     print(f"Warning: Could not mount static files: {e}")
 
+# Zapier redirect routes - must be BEFORE /dashboard catch-all to ensure proper routing
+@app.get("/zapier")
+async def redirect_zapier():
+    """Redirect legacy /zapier URL to /dashboard/zapier"""
+    return RedirectResponse(url="/dashboard/zapier", status_code=302)
+
+@app.get("/zapier/{full_path:path}")
+async def redirect_zapier_paths(full_path: str):
+    """Redirect legacy /zapier/* paths to /dashboard/zapier/*"""
+    return RedirectResponse(url=f"/dashboard/zapier/{full_path}", status_code=302)
+
 # Serve React Dashboard SPA
 @app.get("/dashboard")
 async def serve_dashboard_root():
