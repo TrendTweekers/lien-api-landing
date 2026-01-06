@@ -762,7 +762,12 @@ def ensure_zapier_columns_exist(conn):
 @router.get("/api/zapier/token")
 @limiter.limit("30/minute")
 async def get_zapier_token_status(request: Request, current_user: dict = Depends(get_current_user)):
-    """Get Zapier token status (does not return plaintext token)"""
+    """Get Zapier token status (does not return plaintext token) - requires Automated/Enterprise plan"""
+    from api.routers.billing import require_plan
+    
+    # Gate: Automated/Enterprise plans only
+    require_plan(current_user, ["automated", "enterprise"], route_name="/api/zapier/token")
+    
     try:
         with get_db() as conn:
             ensure_zapier_columns_exist(conn)
@@ -812,7 +817,12 @@ async def get_zapier_token_status(request: Request, current_user: dict = Depends
 @router.post("/api/zapier/token/regenerate")
 @limiter.limit("5/minute")
 async def regenerate_zapier_token(request: Request, current_user: dict = Depends(get_current_user)):
-    """Generate a new Zapier API token (returns plaintext ONCE)"""
+    """Generate a new Zapier API token (returns plaintext ONCE) - requires Automated/Enterprise plan"""
+    from api.routers.billing import require_plan
+    
+    # Gate: Automated/Enterprise plans only
+    require_plan(current_user, ["automated", "enterprise"], route_name="/api/zapier/token/regenerate")
+    
     try:
         with get_db() as conn:
             ensure_zapier_columns_exist(conn)
@@ -876,7 +886,11 @@ async def regenerate_zapier_token(request: Request, current_user: dict = Depends
 @router.post("/api/zapier/token/revoke")
 @limiter.limit("5/minute")
 async def revoke_zapier_token(request: Request, current_user: dict = Depends(get_current_user)):
-    """Revoke/delete Zapier API token"""
+    """Revoke/delete Zapier API token - requires Automated/Enterprise plan"""
+    from api.routers.billing import require_plan
+    
+    # Gate: Automated/Enterprise plans only
+    require_plan(current_user, ["automated", "enterprise"], route_name="/api/zapier/token/revoke")
     try:
         with get_db() as conn:
             ensure_zapier_columns_exist(conn)

@@ -160,20 +160,26 @@ async def webhook_invoice(
                 }
             )
         
-        # Check Zapier plan limit
+        # Check Zapier plan limit (Automated/Enterprise only)
         if user_id:
-            from api.routers.billing import check_plan_limit
-            limit_check = check_plan_limit(user_id, "zapier", user_email)
-            if not limit_check.get('allowed'):
-                error_info = limit_check.get('error', {})
-                return JSONResponse(
-                    status_code=402,
-                    content={
-                        "success": False,
-                        "version": "v1",
-                        **error_info
-                    }
-                )
+            from api.routers.billing import require_plan, check_plan_limit
+            try:
+                require_plan(current_user, ["automated", "enterprise"], route_name="/api/zapier/webhook/invoice")
+            except HTTPException as e:
+                if e.status_code == 403:
+                    logger.warning(f"PLAN_DENY route=/api/zapier/webhook/invoice plan={current_user.get('email')} user={user_email}")
+                    error_detail = e.detail if isinstance(e.detail, dict) else {"detail": str(e.detail)}
+                    return JSONResponse(
+                        status_code=403,
+                        content={
+                            "success": False,
+                            "version": "v1",
+                            "code": "PLAN_NOT_ALLOWED",
+                            "message": "Zapier integration requires Automated or Enterprise plan",
+                            **error_detail
+                        }
+                    )
+                raise
             
             # Check API call limit (zapier webhooks count toward API limit)
             limit_check_api = check_plan_limit(user_id, "api", user_email)
@@ -458,8 +464,29 @@ async def trigger_upcoming(
     Zapier trigger endpoint that returns upcoming projects (lien_deadline > today).
     
     Returns projects sorted by lien_deadline (ascending) with a limit.
-    Requires authentication via Bearer token.
+    Requires authentication via Bearer token and Automated/Enterprise plan.
     """
+    from api.routers.billing import require_plan
+    
+    # Gate: Automated/Enterprise plans only
+    try:
+        require_plan(current_user, ["automated", "enterprise"], route_name="/api/zapier/trigger/upcoming")
+    except HTTPException as e:
+        if e.status_code == 403:
+            logger.warning(f"PLAN_DENY route=/api/zapier/trigger/upcoming plan={current_user.get('email')} user={current_user.get('email')}")
+            error_detail = e.detail if isinstance(e.detail, dict) else {"detail": str(e.detail)}
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "success": False,
+                    "version": "v1",
+                    "code": "PLAN_NOT_ALLOWED",
+                    "message": "Zapier integration requires Automated or Enterprise plan",
+                    **error_detail
+                }
+            )
+        raise
+    
     try:
         user_email = current_user.get('email', '').lower().strip()
         if not user_email:
@@ -641,12 +668,33 @@ async def trigger_reminders(
     Zapier trigger endpoint that returns reminders due now for configured day offsets.
     
     Returns reminders that haven't been sent yet (deduplicated via zapier_notification_events table).
-    Requires authentication via Bearer token.
+    Requires authentication via Bearer token and Automated/Enterprise plan.
     
     Query params:
     - days: comma-separated integers (e.g., "1,7") - default "1,7"
     - limit: max number of reminders to return (default 10, max 100)
     """
+    from api.routers.billing import require_plan
+    
+    # Gate: Automated/Enterprise plans only
+    try:
+        require_plan(current_user, ["automated", "enterprise"], route_name="/api/zapier/trigger/reminders")
+    except HTTPException as e:
+        if e.status_code == 403:
+            logger.warning(f"PLAN_DENY route=/api/zapier/trigger/reminders plan={current_user.get('email')} user={current_user.get('email')}")
+            error_detail = e.detail if isinstance(e.detail, dict) else {"detail": str(e.detail)}
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "success": False,
+                    "version": "v1",
+                    "code": "PLAN_NOT_ALLOWED",
+                    "message": "Zapier integration requires Automated or Enterprise plan",
+                    **error_detail
+                }
+            )
+        raise
+    
     try:
         user_email = current_user.get('email', '').lower().strip()
         user_id = current_user.get('id')

@@ -251,14 +251,15 @@ async def get_email_captures(request: Request, limit: int = 100, user = Depends(
         raise HTTPException(status_code=500, detail=f"Failed to fetch email captures: {str(e)}")
 
 @router.post("/api/user/preferences")
-async def save_user_preferences(request: Request, body: EmailPrefsIn):
-    """Save user email alert preferences"""
-    user = get_user_from_session(request)
-    if not user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+async def save_user_preferences(request: Request, body: EmailPrefsIn, current_user: dict = Depends(get_current_user)):
+    """Save user email alert preferences - requires Basic+ plan"""
+    from api.routers.billing import require_plan
     
-    email = user.get('email')
-    user_id = user.get('id')
+    # Gate: Basic+ plans only (Free cannot enable email reminders)
+    plan_info = require_plan(current_user, ["basic", "automated", "enterprise"], route_name="/api/user/preferences")
+    
+    email = current_user.get('email')
+    user_id = current_user.get('id')
     
     if not email:
         raise HTTPException(status_code=400, detail="User email not found")

@@ -266,9 +266,14 @@ async def get_notifications(
 ):
     """
     Get notification settings for a project (v1 format).
-    Requires authentication and project ownership.
+    Requires authentication, project ownership, and Automated/Enterprise plan.
     Returns v1 format: reminder_offsets_days and zapier_enabled.
     """
+    from api.routers.billing import require_plan
+    
+    # Gate: Automated/Enterprise plans only
+    require_plan(current_user, ["automated", "enterprise"], route_name=f"/api/projects/{project_id}/notifications")
+    
     try:
         user_email = current_user.get('email', '').lower().strip()
         if not user_email:
@@ -315,8 +320,13 @@ async def create_notifications(
 ):
     """
     Create notification settings for a project.
-    Requires authentication and project ownership.
+    Requires authentication, project ownership, and Automated/Enterprise plan.
     """
+    from api.routers.billing import require_plan
+    
+    # Gate: Automated/Enterprise plans only
+    require_plan(current_user, ["automated", "enterprise"], route_name=f"/api/projects/{project_id}/notifications")
+    
     try:
         user_id = current_user.get('id')
         if not user_id:
@@ -395,9 +405,15 @@ async def update_notifications(
 ):
     """
     Update notification settings for a project (v1 format).
-    Requires authentication and project ownership.
+    Requires authentication, project ownership, and Automated/Enterprise plan.
     Accepts v1 format: reminder_offsets_days and zapier_enabled.
     """
+    from api.routers.billing import require_plan, get_user_plan_and_usage, validate_reminder_offsets
+    
+    # Gate: Automated/Enterprise plans only
+    plan_info = require_plan(current_user, ["automated", "enterprise"], route_name=f"/api/projects/{project_id}/notifications")
+    plan = plan_info.get('plan', 'free')
+    
     try:
         user_id = current_user.get('id')
         if not user_id:
@@ -411,8 +427,13 @@ async def update_notifications(
         if project_user_id != user_id:
             raise HTTPException(status_code=403, detail="Access denied. You can only modify your own projects.")
         
-        # Prepare settings JSON (v1 format with legacy compatibility)
+        # Validate reminder offsets by plan
         reminder_offsets_days = settings.reminder_offsets_days
+        is_valid, error_msg = validate_reminder_offsets(reminder_offsets_days, plan)
+        if not is_valid:
+            logger.warning(f"PLAN_DENY route=/api/projects/{project_id}/notifications plan={plan} user={current_user.get('email')} reason=invalid_offsets offsets={reminder_offsets_days}")
+            raise HTTPException(status_code=400, detail=error_msg)
+        
         zapier_enabled = settings.zapier_enabled
         
         # Build legacy format for backwards compatibility

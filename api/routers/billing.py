@@ -3,7 +3,7 @@ Billing and plan enforcement module
 Handles plan limits, usage tracking, and month rollover
 """
 from datetime import date, datetime
-from typing import Literal
+from typing import Literal, List, Tuple
 from fastapi import HTTPException
 from api.database import get_db, get_db_cursor, DB_TYPE
 import logging
@@ -286,4 +286,76 @@ def check_plan_limit(user_id: int, feature: str, user_email: str = None) -> dict
         return {'allowed': True}
     
     return {'allowed': True}
+
+
+def require_plan(user: dict, allowed_plans: List[str], route_name: str = "unknown") -> dict:
+    """
+    Centralized plan gating helper.
+    
+    Args:
+        user: User dict from get_current_user dependency
+        allowed_plans: List of allowed plan names (e.g., ["basic", "automated", "enterprise"])
+        route_name: Route name for logging (e.g., "/api/user/preferences")
+    
+    Returns:
+        dict with 'plan' key containing the user's plan info
+    
+    Raises:
+        HTTPException(403) if user's plan is not in allowed_plans
+    """
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    user_id = user.get('id')
+    user_email = user.get('email', '')
+    
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    # Get user's plan
+    plan_info = get_user_plan_and_usage(user_id, user_email)
+    plan = plan_info.get('plan', 'free')
+    
+    # Check if plan is allowed
+    if plan not in allowed_plans:
+        logger.warning(f"PLAN_DENY route={route_name} plan={plan} user={user_email} allowed={allowed_plans}")
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "PLAN_NOT_ALLOWED",
+                "message": f"This feature requires one of these plans: {', '.join(allowed_plans)}",
+                "current_plan": plan,
+                "allowed_plans": allowed_plans
+            }
+        )
+    
+    return plan_info
+
+
+def validate_reminder_offsets(offsets: List[int], plan: str) -> Tuple[bool, str]:
+    """
+    Validate reminder offsets based on plan.
+    
+    Args:
+        offsets: List of reminder offset days (e.g., [7, 1])
+        plan: User's plan ("free", "basic", "automated", "enterprise")
+    
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    if plan == "basic":
+        allowed_offsets = [7, 1]
+        invalid_offsets = [o for o in offsets if o not in allowed_offsets]
+        if invalid_offsets:
+            return False, f"Basic plan only allows reminder offsets: {allowed_offsets}. Invalid: {invalid_offsets}"
+    elif plan in ["automated", "enterprise"]:
+        allowed_offsets = [7, 3, 1]
+        invalid_offsets = [o for o in offsets if o not in allowed_offsets]
+        if invalid_offsets:
+            return False, f"Automated/Enterprise plans allow reminder offsets: {allowed_offsets}. Invalid: {invalid_offsets}"
+    else:
+        # Free plan shouldn't reach here (should be gated earlier)
+        return False, "Reminder offsets are not available on free plan"
+    
+    return True, ""
 
