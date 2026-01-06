@@ -34,8 +34,8 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
   const [loading, setLoading] = useState(true);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   
-  // Check if Zapier is locked (free or basic plan)
-  const isZapierLocked = planInfo.plan === "free" || planInfo.plan === "basic";
+  // Zapier eligibility: only Automated and Enterprise plans can use Zapier
+  const zapierEligible = planInfo.plan === "automated" || planInfo.plan === "enterprise";
 
   // Format relative time
   const formatRelativeTime = (date: Date | null): string => {
@@ -57,20 +57,28 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
 
   // Fetch Zapier connection status - use planInfo from usePlan hook
   useEffect(() => {
-    // Use zapierConnected from planInfo (already fetched by usePlan)
+    // Only fetch Zapier status if plan is eligible (ignore zapierConnected for Free/Basic)
+    if (!zapierEligible) {
+      // Free/Basic: don't fetch anything, show locked UI
+      setZapierConnected(false);
+      setLastStatusCheckAt(null);
+      setLoading(false);
+      return;
+    }
+    
+    // Automated/Enterprise: fetch Zapier status
     const connected = planInfo.zapierConnected;
     setZapierConnected(connected);
     setLastStatusCheckAt(planInfo.lastSyncAt || new Date());
     
-    // Only fetch project notifications if Zapier is connected and plan allows it
-    if (!isZapierLocked && connected) {
+    // Only fetch project notifications if Zapier is connected
+    if (connected) {
       fetchProjectsNotificationStatus();
     } else {
-      // If not connected or locked, still fetch project count
       fetchProjectsCount();
     }
     setLoading(false);
-  }, [planInfo.zapierConnected, planInfo.lastSyncAt, isZapierLocked]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [planInfo.zapierConnected, planInfo.lastSyncAt, zapierEligible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch project count only (when Zapier not connected)
   const fetchProjectsCount = async () => {
@@ -157,20 +165,9 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
     }
   };
 
-  // Note: Zapier status is now fetched via usePlan hook, no separate fetch needed
-
-  // Always route through your Zapier setup page (so you control UX + focus highlight)
-  const QUICK_START_SLACK_URL = "/zapier?focus=slack";
-
+  // Navigation handlers (using React Router navigate - basename="/dashboard" is already set)
   const handleQuickStart = () => {
-    // Internal route → same tab
-    if (QUICK_START_SLACK_URL.startsWith("/")) {
-      window.location.href = QUICK_START_SLACK_URL;
-      return;
-    }
-
-    // External → new tab
-    window.open(QUICK_START_SLACK_URL, "_blank", "noopener,noreferrer");
+    navigate('/zapier?focus=slack');
   };
 
   const handleSetUpAlerts = () => {
@@ -204,33 +201,38 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             Zapier Automation
-            {zapierConnected ? (
-              <Badge className="bg-success text-success-foreground text-xs">
-                ⚡ Connected
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-xs">
-                ⚡ Not connected
-              </Badge>
+            {/* Only show Connected badge for eligible plans */}
+            {zapierEligible && (
+              zapierConnected ? (
+                <Badge className="bg-success text-success-foreground text-xs">
+                  ⚡ Connected
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs">
+                  ⚡ Not connected
+                </Badge>
+              )
             )}
           </CardTitle>
         </div>
         
-        {/* Meta lines */}
-        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mt-2">
-          <span>Last sync: {formatRelativeTime(lastStatusCheckAt)}</span>
-          {zapierConnected && (
-            <>
-              <span>Alerts active for {projectsWithAlerts} {projectsWithAlerts === 1 ? 'project' : 'projects'}</span>
-              <span>• {projectsNeedingSetup} {projectsNeedingSetup === 1 ? 'project' : 'projects'} need setup</span>
-            </>
-          )}
-        </div>
+        {/* Meta lines - only show for eligible plans */}
+        {zapierEligible && (
+          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mt-2">
+            <span>Last sync: {formatRelativeTime(lastStatusCheckAt)}</span>
+            {zapierConnected && (
+              <>
+                <span>Alerts active for {projectsWithAlerts} {projectsWithAlerts === 1 ? 'project' : 'projects'}</span>
+                <span>• {projectsNeedingSetup} {projectsNeedingSetup === 1 ? 'project' : 'projects'} need setup</span>
+              </>
+            )}
+          </div>
+        )}
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Locked State for Free/Basic Plan */}
-        {isZapierLocked ? (
+        {/* Locked State for Free/Basic Plan - ALWAYS show this if not eligible, ignore zapierConnected */}
+        {!zapierEligible ? (
           <div className="space-y-4">
             <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border border-border">
               <Lock className="h-5 w-5 text-muted-foreground" />
@@ -253,7 +255,7 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
           </div>
         ) : (
           <>
-            {/* Alerts Status */}
+            {/* Alerts Status - Only shown for Automated/Enterprise */}
             {zapierConnected && (
               <div>
                 <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
@@ -272,7 +274,7 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
               </p>
             )}
 
-            {/* Action Buttons */}
+            {/* Action Buttons - Only shown for Automated/Enterprise */}
             <TooltipProvider>
               <div className="flex flex-wrap gap-2 pt-2">
                 {/* Primary Button - Dynamic based on state */}
@@ -304,7 +306,7 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
                   </Button>
                 )}
 
-                {/* Quick Start Button - Always Visible as Secondary */}
+                {/* Quick Start Button - Always Visible as Secondary (only for eligible plans) */}
                 {!zapierConnected ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
