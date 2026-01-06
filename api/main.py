@@ -1486,27 +1486,9 @@ async def serve_admin_dashboard_html(username: str = Depends(verify_admin_basic)
     )
 
 @app.get("/admin-dashboard-v2")
-async def serve_admin_dashboard_v2(username: str = Depends(verify_admin_basic)):
-    """Serve admin dashboard V2 with HTTP Basic Auth"""
-    file_path = BASE_DIR / "admin-dashboard-v2.html"
-    if not file_path.exists():
-        if os.path.exists("admin-dashboard-v2.html"):
-            file_path = Path("admin-dashboard-v2.html")
-        else:
-            raise HTTPException(status_code=404, detail="Admin dashboard V2 not found")
-    
-    with open(file_path, 'r', encoding='utf-8') as f:
-        html_content = f.read()
-    
-    return Response(
-        content=html_content,
-        media_type="text/html",
-        headers={
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0"
-        }
-    )
+async def serve_admin_dashboard_v2():
+    """Serve admin dashboard V2 (public, no auth)"""
+    return FileResponse("admin-dashboard-v2.html")
 
 @app.get("/admin-dashboard.js")
 async def serve_admin_dashboard_js(username: str = Depends(verify_admin_basic)):
