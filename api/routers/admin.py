@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status, Query
 from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from api.database import get_db, get_db_cursor, DB_TYPE, BASE_DIR
 from api.services.email import send_broker_notification, send_email_sync
 from api.services.payout_ledger import compute_broker_ledger, compute_all_brokers_ledgers
 from api.calculators import STATE_CODE_TO_NAME
-import secrets
+from api.routers.auth import get_current_user
 import os
 import json
 import csv
@@ -24,25 +23,19 @@ PAYOUT_LEDGER_AVAILABLE = True
 
 # Initialize router
 router = APIRouter()
-security = HTTPBasic()
 logger = logging.getLogger(__name__)
 
-def verify_admin(creds: HTTPBasicCredentials = Depends(security)):
-    """Verify admin credentials from environment variables"""
-    # Default to main.py credentials if env vars not set
-    admin_user = os.getenv("ADMIN_USER", "admin")
-    admin_pass = os.getenv("ADMIN_PASS", "LienAPI2025")
-    
-    is_user_ok = secrets.compare_digest(creds.username, admin_user)
-    is_pass_ok = secrets.compare_digest(creds.password, admin_pass)
-    
-    if not (is_user_ok and is_pass_ok):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return creds.username
+def require_admin(user: dict = Depends(get_current_user)):
+    """Require admin access via session-based auth (no Basic Auth popup)"""
+    # Allowlist admins (env first, with safe defaults)
+    env = os.getenv("ADMIN_EMAILS", "")
+    allow = [e.strip().lower() for e in env.split(",") if e.strip()]
+    allow += ["admin@stackedboost.com"]  # keep your current admin working
+
+    email = (user.get("email") or "").lower()
+    if email not in allow:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return user
 
 def ensure_users_table():
     """Ensure users table exists (helper for migration)"""
@@ -82,7 +75,7 @@ def ensure_users_table():
 # ==========================================
 
 @router.get("/admin-dashboard-v2")
-async def serve_admin_dashboard_v2(username: str = Depends(verify_admin)):
+async def serve_admin_dashboard_v2(user: dict = Depends(require_admin)):
     """Serve admin dashboard V2 with HTTP Basic Auth"""
     file_path = BASE_DIR / "admin-dashboard-v2.html"
     if not file_path.exists():
@@ -107,7 +100,7 @@ async def serve_admin_dashboard_v2(username: str = Depends(verify_admin)):
     )
 
 @router.get("/admin-dashboard-v2.js")
-async def serve_admin_dashboard_v2_js(username: str = Depends(verify_admin)):
+async def serve_admin_dashboard_v2_js(user: dict = Depends(require_admin)):
     """Serve admin dashboard V2 JavaScript"""
     file_path = BASE_DIR / "admin-dashboard-v2.js"
     if not file_path.exists():
@@ -130,7 +123,7 @@ async def serve_admin_dashboard_v2_js(username: str = Depends(verify_admin)):
     )
 
 @router.get("/admin-dashboard.js")
-async def serve_admin_dashboard_js(username: str = Depends(verify_admin)):
+async def serve_admin_dashboard_js(user: dict = Depends(require_admin)):
     """Serve admin dashboard V1 JavaScript"""
     file_path = BASE_DIR / "admin-dashboard.js"
     if not file_path.exists():
@@ -153,7 +146,7 @@ async def serve_admin_dashboard_js(username: str = Depends(verify_admin)):
     )
 
 @router.get("/admin-dashboard.html")
-async def serve_admin_dashboard_html(username: str = Depends(verify_admin)):
+async def serve_admin_dashboard_html(user: dict = Depends(require_admin)):
     """Serve admin dashboard V1 with HTTP Basic Auth"""
     file_path = BASE_DIR / "admin-dashboard.html"
     if not file_path.exists():
@@ -176,7 +169,7 @@ async def serve_admin_dashboard_html(username: str = Depends(verify_admin)):
     )
 
 @router.get("/admin-dashboard")
-async def serve_admin_dashboard_clean(request: Request, username: str = Depends(verify_admin)):
+async def serve_admin_dashboard_clean(request: Request, user: dict = Depends(require_admin)):
     """
     Clean URL: /admin-dashboard → serves V2 by default
     Query params:
@@ -225,7 +218,7 @@ async def serve_admin_dashboard_clean(request: Request, username: str = Depends(
 # ==========================================
 
 @router.get("/api/admin/stats")
-async def get_admin_stats(username: str = Depends(verify_admin)):
+async def get_admin_stats(user: dict = Depends(require_admin)):
     """Get admin dashboard statistics"""
     try:
         with get_db() as db:
@@ -293,7 +286,7 @@ async def get_admin_stats(username: str = Depends(verify_admin)):
         }
 
 @router.get("/api/admin/api-usage-stats")
-async def get_api_usage_stats(username: str = Depends(verify_admin)):
+async def get_api_usage_stats(user: dict = Depends(require_admin)):
     """Get API usage statistics"""
     try:
         with get_db() as conn:
@@ -396,7 +389,7 @@ async def get_api_usage_stats(username: str = Depends(verify_admin)):
         }
 
 @router.get("/api/admin/analytics/comprehensive")
-async def get_comprehensive_analytics(username: str = Depends(verify_admin)):
+async def get_comprehensive_analytics(user: dict = Depends(require_admin)):
     """Get comprehensive analytics for charts"""
     try:
         with get_db() as conn:
@@ -498,7 +491,7 @@ async def get_comprehensive_analytics(username: str = Depends(verify_admin)):
         }
 
 @router.get("/api/admin/customers")
-async def get_customers_api(username: str = Depends(verify_admin)):
+async def get_customers_api(user: dict = Depends(require_admin)):
     """Return list of customers"""
     try:
         with get_db() as db:
@@ -561,7 +554,7 @@ async def get_customers_api(username: str = Depends(verify_admin)):
         return []
 
 @router.get("/api/admin/brokers")
-async def get_brokers_api(username: str = Depends(verify_admin)):
+async def get_brokers_api(user: dict = Depends(require_admin)):
     """Return list of brokers with payment info"""
     try:
         with get_db() as conn:
@@ -687,7 +680,7 @@ async def get_brokers_api(username: str = Depends(verify_admin)):
         }
 
 @router.delete("/api/admin/delete-broker/{broker_id}")
-async def delete_broker(broker_id: int, username: str = Depends(verify_admin)):
+async def delete_broker(broker_id: int, user: dict = Depends(require_admin)):
     """Delete a broker and all their referrals"""
     try:
         with get_db() as conn:
@@ -734,7 +727,7 @@ async def delete_broker(broker_id: int, username: str = Depends(verify_admin)):
         )
 
 @router.get("/api/admin/email-captures")
-async def get_email_captures_api(username: str = Depends(verify_admin)):
+async def get_email_captures_api(user: dict = Depends(require_admin)):
     """Get all email captures from calculator email gate"""
     try:
         with get_db() as conn:
@@ -787,7 +780,7 @@ async def get_email_captures_api(username: str = Depends(verify_admin)):
 # ==========================================
 
 @router.get("/api/admin/partner-applications")
-async def get_partner_applications(request: Request, status: str = "all", username: str = Depends(verify_admin)):
+async def get_partner_applications(request: Request, status: str = "all", user: dict = Depends(require_admin)):
     """Get partner applications for admin dashboard"""
     try:
         with get_db() as conn:
@@ -884,7 +877,7 @@ async def debug_partner_applications():
         return {"error": str(e)}
 
 @router.post("/api/admin/approve-partner")
-async def approve_partner(request: Request, username: str = Depends(verify_admin)):
+async def approve_partner(request: Request, user: dict = Depends(require_admin)):
     """Approve a partner application"""
     try:
         data = await request.json()
@@ -918,7 +911,7 @@ async def approve_partner(request: Request, username: str = Depends(verify_admin
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/api/admin/deny-partner")
-async def deny_partner(request: Request, username: str = Depends(verify_admin)):
+async def deny_partner(request: Request, user: dict = Depends(require_admin)):
     """Deny a partner application"""
     try:
         data = await request.json()
@@ -946,7 +939,7 @@ async def update_user_email(
     old_email: str = Query(None, description="Current email (for updates)"),
     new_email: str = Query(None, description="New email address"),
     new_password: str = Query(None, description="New password"),
-    username: str = Depends(verify_admin)
+    user: dict = Depends(require_admin)
 ):
     """
     Update or create a user account.
@@ -1076,7 +1069,7 @@ async def update_user_email(
 # ==========================================
 
 @router.get("/api/admin/fix-state-names-now")
-async def fix_state_names_endpoint(username: str = Depends(verify_admin)):
+async def fix_state_names_endpoint(user: dict = Depends(require_admin)):
     """Temporary endpoint to fix state names in database"""
     try:
         from api.migrations.fix_state_names import fix_state_names
@@ -1093,7 +1086,7 @@ async def fix_state_names_endpoint(username: str = Depends(verify_admin)):
         return {"success": False, "error": str(e)}
 
 @router.get("/api/admin/migrate-payout-batches")
-async def migrate_payout_batches(username: str = Depends(verify_admin)):
+async def migrate_payout_batches(user: dict = Depends(require_admin)):
     """
     Migration endpoint to create broker_payout_batches table.
     Safe and idempotent - can be run multiple times.
@@ -1183,7 +1176,7 @@ async def migrate_payout_batches(username: str = Depends(verify_admin)):
         )
 
 @router.get("/api/admin/migrate-payout-ledger")
-async def migrate_payout_ledger(username: str = Depends(verify_admin)):
+async def migrate_payout_ledger(user: dict = Depends(require_admin)):
     """
     Migration endpoint to add payout ledger columns to referrals table.
     Safe and idempotent - can be run multiple times.
@@ -1288,7 +1281,7 @@ async def migrate_payout_ledger(username: str = Depends(verify_admin)):
         )
 
 @router.get("/api/admin/migrate-payment-tracking")
-async def migrate_payment_tracking(username: str = Depends(verify_admin)):
+async def migrate_payment_tracking(user: dict = Depends(require_admin)):
     """Migration endpoint to add payment tracking columns to brokers table"""
     migrations = []
     db_type = None
@@ -1351,7 +1344,7 @@ async def migrate_payment_tracking(username: str = Depends(verify_admin)):
         )
 
 @router.get("/api/admin/migrate-users-table")
-async def migrate_users_table(username: str = Depends(verify_admin)):
+async def migrate_users_table(user: dict = Depends(require_admin)):
     """
     Migration endpoint to create users table.
     Safe and idempotent - can be run multiple times.
@@ -1391,7 +1384,7 @@ async def migrate_users_table(username: str = Depends(verify_admin)):
         )
 
 @router.get("/api/admin/migrate-payment-columns")
-async def migrate_payment_columns(username: str = Depends(verify_admin)):
+async def migrate_payment_columns(user: dict = Depends(require_admin)):
     """Migration endpoint to add international payment columns to brokers table"""
     try:
         with get_db() as conn:
@@ -1513,7 +1506,7 @@ async def migrate_payment_columns(username: str = Depends(verify_admin)):
         )
 
 @router.get("/api/admin/run-state-migration")
-async def run_state_migration(username: str = Depends(verify_admin)):
+async def run_state_migration(user: dict = Depends(require_admin)):
     """Admin endpoint to run state data migration"""
     try:
         from api.migrations.add_all_states import migrate_states
@@ -1528,7 +1521,7 @@ async def run_state_migration(username: str = Depends(verify_admin)):
         return {"success": False, "error": str(e)}
 
 @router.get("/api/admin/run-sage-migration")
-async def run_sage_migration(username: str = Depends(verify_admin)):
+async def run_sage_migration(user: dict = Depends(require_admin)):
     """Run Sage tokens table migration"""
     try:
         from api.migrations.add_sage_tokens import run_migration
@@ -1538,7 +1531,7 @@ async def run_sage_migration(username: str = Depends(verify_admin)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/admin/run-procore-migration")
-async def run_procore_migration(username: str = Depends(verify_admin)):
+async def run_procore_migration(user: dict = Depends(require_admin)):
     """Run Procore tokens table migration"""
     try:
         from api.migrations.add_procore_tokens import run_migration
@@ -1548,7 +1541,7 @@ async def run_procore_migration(username: str = Depends(verify_admin)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/admin/setup-referrals-table")
-async def setup_referrals_table(username: str = Depends(verify_admin)):
+async def setup_referrals_table(user: dict = Depends(require_admin)):
     """One-time setup to create referrals table"""
     try:
         with get_db() as conn:
@@ -1612,7 +1605,7 @@ async def setup_referrals_table(username: str = Depends(verify_admin)):
 # ==========================================
 
 @router.get("/api/admin/debug-pdf-data/{state}")
-async def debug_pdf_data(state: str, username: str = Depends(verify_admin)):
+async def debug_pdf_data(state: str, user: dict = Depends(require_admin)):
     """Debug endpoint to see what data PDF generation uses"""
     try:
         state_upper = state.upper()
@@ -1637,7 +1630,7 @@ async def debug_pdf_data(state: str, username: str = Depends(verify_admin)):
         return {"success": False, "error": str(e)}
 
 @router.get("/api/admin/debug/payout-data")
-async def get_payout_debug_data(username: str = Depends(verify_admin)):
+async def get_payout_debug_data(user: dict = Depends(require_admin)):
     """Get debug data for payout system (last 20 records of each type)"""
     try:
         with get_db() as conn:
@@ -1767,7 +1760,7 @@ async def get_payout_debug_data(username: str = Depends(verify_admin)):
 # ==========================================
 
 @router.get("/api/admin/brokers-ready-to-pay")
-async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
+async def get_brokers_ready_to_pay(user: dict = Depends(require_admin)):
     """Get list of brokers who are ready to be paid - Uses canonical payout ledger"""
     try:
         with get_db() as conn:
@@ -1782,7 +1775,7 @@ async def get_brokers_ready_to_pay(username: str = Depends(verify_admin)):
         return []
 
 @router.get("/api/admin/broker-payment-info/{broker_id}")
-async def get_broker_payment_info(broker_id: int, username: str = Depends(verify_admin)):
+async def get_broker_payment_info(broker_id: int, user: dict = Depends(require_admin)):
     """Get payment info for a specific broker"""
     try:
         with get_db() as conn:
@@ -1816,7 +1809,7 @@ async def get_broker_payment_info(broker_id: int, username: str = Depends(verify
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/admin/broker-ledger/{broker_id}")
-async def get_broker_ledger(broker_id: int, username: str = Depends(verify_admin)):
+async def get_broker_ledger(broker_id: int, user: dict = Depends(require_admin)):
     """Get full payout ledger for a specific broker"""
     try:
         with get_db() as conn:
@@ -1827,7 +1820,7 @@ async def get_broker_ledger(broker_id: int, username: str = Depends(verify_admin
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/api/admin/mark-paid")
-async def mark_payment_paid(request: Request, username: str = Depends(verify_admin)):
+async def mark_payment_paid(request: Request, user: dict = Depends(require_admin)):
     """Mark a broker payment as paid (Manual)"""
     try:
         data = await request.json()
@@ -1862,7 +1855,7 @@ async def mark_payment_paid(request: Request, username: str = Depends(verify_adm
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/admin/payment-history")
-async def get_payment_history(time_filter: str = "all", username: str = Depends(verify_admin)):
+async def get_payment_history(time_filter: str = "all", user: dict = Depends(require_admin)):
     """Get payment history for admin dashboard"""
     try:
         with get_db() as conn:
@@ -1996,7 +1989,7 @@ async def get_payment_history(time_filter: str = "all", username: str = Depends(
         )
 
 @router.get("/api/admin/payment-history/export")
-async def export_payment_history(username: str = Depends(verify_admin)):
+async def export_payment_history(user: dict = Depends(require_admin)):
     """Export payment history as CSV"""
     try:
         with get_db() as conn:
@@ -2029,7 +2022,7 @@ async def export_payment_history(username: str = Depends(verify_admin)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/admin/payouts/pending")
-async def get_pending_payouts_api(username: str = Depends(verify_admin)):
+async def get_pending_payouts_api(user: dict = Depends(require_admin)):
     """Return pending broker payouts"""
     try:
         with get_db() as db:
@@ -2136,7 +2129,7 @@ async def get_pending_payouts_api(username: str = Depends(verify_admin)):
         return []
 
 @router.get("/api/admin/payout-batches")
-async def get_payout_batches(username: str = Depends(verify_admin)):
+async def get_payout_batches(user: dict = Depends(require_admin)):
     """Get all payout batches"""
     try:
         with get_db() as conn:
@@ -2152,7 +2145,7 @@ async def get_payout_batches(username: str = Depends(verify_admin)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/api/admin/payout-batches/create")
-async def create_payout_batch(request: Request, username: str = Depends(verify_admin)):
+async def create_payout_batch(request: Request, user: dict = Depends(require_admin)):
     """Create a payout batch and mark referrals as paid atomically"""
     try:
         data = await request.json()
@@ -2324,7 +2317,7 @@ async def create_payout_batch(request: Request, username: str = Depends(verify_a
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/admin/payout-batches/{broker_id}")
-async def get_broker_batches(broker_id: int, username: str = Depends(verify_admin)):
+async def get_broker_batches(broker_id: int, user: dict = Depends(require_admin)):
     """Get all payout batches for a broker"""
     try:
         with get_db() as conn:
@@ -2339,7 +2332,7 @@ async def get_broker_batches(broker_id: int, username: str = Depends(verify_admi
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/admin/payout-batches/export/{batch_id}")
-async def export_batch_csv(batch_id: int, username: str = Depends(verify_admin)):
+async def export_batch_csv(batch_id: int, user: dict = Depends(require_admin)):
     """Export a payout batch as CSV"""
     try:
         with get_db() as conn:
@@ -2465,7 +2458,7 @@ async def export_batch_csv(batch_id: int, username: str = Depends(verify_admin))
 # ==========================================
 
 @router.get("/api/admin/test-send-reminders")
-async def test_send_reminders(username: str = Depends(verify_admin)):
+async def test_send_reminders(user: dict = Depends(require_admin)):
     """Test the reminder system manually (admin only)"""
     import subprocess
     import sys
@@ -2488,7 +2481,7 @@ async def test_send_reminders(username: str = Depends(verify_admin)):
         return {"success": False, "error": str(e)}
 
 @router.get("/api/admin/test-set-broker-ready/{broker_id}")
-async def test_set_broker_ready(broker_id: int, username: str = Depends(verify_admin)):
+async def test_set_broker_ready(broker_id: int, user: dict = Depends(require_admin)):
     """TEST ONLY: Simulate broker ready for payment"""
     try:
         with get_db() as conn:
@@ -2587,7 +2580,7 @@ async def test_set_broker_ready(broker_id: int, username: str = Depends(verify_a
         return {"success": False, "error": str(e)}
 
 @router.get("/api/admin/list-broker-ids")
-async def list_broker_ids(username: str = Depends(verify_admin)):
+async def list_broker_ids(user: dict = Depends(require_admin)):
     """List all broker IDs for testing"""
     try:
         with get_db() as conn:
@@ -2602,7 +2595,7 @@ async def list_broker_ids(username: str = Depends(verify_admin)):
         return {"success": False, "error": str(e)}
 
 @router.get("/api/admin/calculations-today")
-async def get_calculations_today(username: str = Depends(verify_admin)):
+async def get_calculations_today(user: dict = Depends(require_admin)):
     """Get today's calculations - Fixed counting with UTC timezone"""
     try:
         # Use UTC date for consistency
@@ -2653,7 +2646,7 @@ async def get_calculations_today(username: str = Depends(verify_admin)):
 async def reset_password_emergency(
     email: str = Query(..., description="User email address"),
     new_password: str = Query("TempPass123!", description="New temporary password"),
-    username: str = Depends(verify_admin)
+    user: dict = Depends(require_admin)
 ):
     """
     TEMPORARY EMERGENCY ENDPOINT - Remove after use!
