@@ -418,7 +418,18 @@ async def register(request: Request, req: RegisterRequest):
                                 RETURNING id
                             """, (email, password_hash.decode(), subscription_status, customer_id, subscription_id, req.first_name, req.last_name, req.company))
                             result = cursor.fetchone()
-                            user_id = result[0] if result else None
+                            # result can be tuple/list (fetchone default) OR dict-like (RealDictCursor/RowMapping)
+                            user_id = None
+                            if result:
+                                if isinstance(result, (list, tuple)):
+                                    user_id = result[0] if len(result) > 0 else None
+                                elif isinstance(result, dict):
+                                    user_id = result.get("id") or result.get("user_id")
+                                else:
+                                    # last-resort: try attribute access (some DB row objects behave like this)
+                                    user_id = getattr(result, "id", None) or getattr(result, "user_id", None)
+                            if not user_id:
+                                raise HTTPException(status_code=500, detail="Registration failed: could not determine user_id")
                         else:
                             cursor.execute("""
                                 INSERT INTO users (email, password_hash, subscription_status, stripe_customer_id, subscription_id, first_name, last_name, company, created_at)
@@ -479,7 +490,18 @@ async def register(request: Request, req: RegisterRequest):
                                 RETURNING id
                             """, (email, password_hash.decode(), subscription_status, req.first_name, req.last_name, req.company))
                             result = cursor.fetchone()
-                            user_id = result[0] if result else None
+                            # result can be tuple/list (fetchone default) OR dict-like (RealDictCursor/RowMapping)
+                            user_id = None
+                            if result:
+                                if isinstance(result, (list, tuple)):
+                                    user_id = result[0] if len(result) > 0 else None
+                                elif isinstance(result, dict):
+                                    user_id = result.get("id") or result.get("user_id")
+                                else:
+                                    # last-resort: try attribute access (some DB row objects behave like this)
+                                    user_id = getattr(result, "id", None) or getattr(result, "user_id", None)
+                            if not user_id:
+                                raise HTTPException(status_code=500, detail="Registration failed: could not determine user_id")
                         else:
                             cursor.execute("""
                                 INSERT INTO users (email, password_hash, subscription_status, first_name, last_name, company, created_at)
@@ -497,7 +519,18 @@ async def register(request: Request, req: RegisterRequest):
                             RETURNING id
                         """, (email, password_hash.decode(), subscription_status))
                         result = cursor.fetchone()
-                        user_id = result[0] if result else None
+                        # result can be tuple/list (fetchone default) OR dict-like (RealDictCursor/RowMapping)
+                        user_id = None
+                        if result:
+                            if isinstance(result, (list, tuple)):
+                                user_id = result[0] if len(result) > 0 else None
+                            elif isinstance(result, dict):
+                                user_id = result.get("id") or result.get("user_id")
+                            else:
+                                # last-resort: try attribute access (some DB row objects behave like this)
+                                user_id = getattr(result, "id", None) or getattr(result, "user_id", None)
+                        if not user_id:
+                            raise HTTPException(status_code=500, detail="Registration failed: could not determine user_id")
                     else:
                         cursor.execute("""
                             INSERT INTO users (email, password_hash, subscription_status, created_at)
