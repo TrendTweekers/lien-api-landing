@@ -144,7 +144,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # THEN import routers (after database is defined)
 from .analytics import router as analytics_router
-from .routers.admin import router as admin_router
+from .routers.admin import router as admin_router, require_admin
 from .quickbooks import router as quickbooks_router
 from .routers.calculations import router as calculations_router
 from .routers.auth import get_current_user
@@ -2730,7 +2730,7 @@ async def serve_api():
 
 
 @app.get("/admin-dashboard")
-async def serve_admin_dashboard_clean(request: Request, username: str = Depends(verify_admin)):
+async def serve_admin_dashboard_clean(request: Request, user: dict = Depends(require_admin)):
     """
     Clean URL: /admin-dashboard → serves V2 by default
     Query params:
@@ -2775,7 +2775,7 @@ async def serve_admin_dashboard_clean(request: Request, username: str = Depends(
     )
 
 @app.get("/admin-dashboard.html")
-async def serve_admin_dashboard_html(username: str = Depends(verify_admin)):
+async def serve_admin_dashboard_html(user: dict = Depends(require_admin)):
     """Serve admin dashboard V1 with HTTP Basic Auth"""
     file_path = BASE_DIR / "admin-dashboard.html"
     if not file_path.exists():
@@ -2798,7 +2798,7 @@ async def serve_admin_dashboard_html(username: str = Depends(verify_admin)):
     )
 
 @app.get("/admin-dashboard-v2")
-async def serve_admin_dashboard_v2(username: str = Depends(verify_admin)):
+async def serve_admin_dashboard_v2(user: dict = Depends(require_admin)):
     """Serve admin dashboard V2 with HTTP Basic Auth"""
     file_path = BASE_DIR / "admin-dashboard-v2.html"
     if not file_path.exists():
@@ -2821,7 +2821,7 @@ async def serve_admin_dashboard_v2(username: str = Depends(verify_admin)):
     )
 
 @app.get("/admin-dashboard.js")
-async def serve_admin_dashboard_js(username: str = Depends(verify_admin)):
+async def serve_admin_dashboard_js(user: dict = Depends(require_admin)):
     """Serve admin dashboard V1 JavaScript"""
     file_path = BASE_DIR / "admin-dashboard.js"
     if not file_path.exists():
@@ -2844,7 +2844,7 @@ async def serve_admin_dashboard_js(username: str = Depends(verify_admin)):
     )
 
 @app.get("/admin-dashboard-v2.js")
-async def serve_admin_dashboard_v2_js(username: str = Depends(verify_admin)):
+async def serve_admin_dashboard_v2_js(user: dict = Depends(require_admin)):
     """Serve admin dashboard V2 JavaScript"""
     file_path = BASE_DIR / "admin-dashboard-v2.js"
     if not file_path.exists():
