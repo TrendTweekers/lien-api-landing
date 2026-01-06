@@ -47,6 +47,21 @@ export const ProjectsTable = ({ expandedProjectId: externalExpandedProjectId, on
   // Reminders eligibility: Basic+ plans can use reminders
   const remindersEligible = planInfo.plan === "basic" || planInfo.plan === "automated" || planInfo.plan === "enterprise";
   
+  // Notifications eligibility: Only Automated/Enterprise can use Notification Settings
+  const notificationsEligible = planInfo.plan === "automated" || planInfo.plan === "enterprise";
+  
+  // Collapse any expanded project if user becomes ineligible
+  useEffect(() => {
+    if (!notificationsEligible) {
+      setExpandedProjectId(null);
+    }
+  }, [notificationsEligible]);
+  useEffect(() => {
+    if (!notificationsEligible) {
+      setExpandedProjectId(null);
+    }
+  }, [notificationsEligible]);
+  
   // Use external expandedProjectId if provided, otherwise use internal state
   const expandedProjectId = externalExpandedProjectId !== undefined ? externalExpandedProjectId : internalExpandedProjectId;
   const setExpandedProjectId = (id: number | null) => {
@@ -441,46 +456,48 @@ export const ProjectsTable = ({ expandedProjectId: externalExpandedProjectId, on
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const isExpanding = expandedProjectId !== project.id;
-                            const newExpandedId = isExpanding ? project.id : null;
-                            setExpandedProjectId(newExpandedId);
-                            
-                            // Auto-scroll and highlight only when expanding
-                            if (isExpanding) {
-                              setFlashProjectId(String(project.id));
+                        {notificationsEligible && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const isExpanding = expandedProjectId !== project.id;
+                              const newExpandedId = isExpanding ? project.id : null;
+                              setExpandedProjectId(newExpandedId);
                               
-                              // Wait for DOM paint, then scroll into view
-                              requestAnimationFrame(() => {
-                                const anchorId = `notif-panel-${project.id}`;
-                                const anchorElement = document.getElementById(anchorId);
-                                if (anchorElement) {
-                                  anchorElement.scrollIntoView({ 
-                                    behavior: "smooth", 
-                                    block: "nearest" 
-                                  });
-                                }
-                              });
-                              
-                              // Clear highlight after 1.5s
-                              setTimeout(() => {
-                                setFlashProjectId(null);
-                              }, 1500);
-                            }
-                          }}
-                          className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground font-medium"
-                        >
-                          <Bell className="h-3 w-3" />
-                          <span>{expandedProjectId === project.id ? "Hide notifications" : "Notifications"}</span>
-                          <ChevronDown
-                            className={[
-                              "h-4 w-4 transition-transform duration-200",
-                              expandedProjectId === project.id ? "rotate-180" : "rotate-0",
-                            ].join(" ")}
-                          />
-                        </button>
+                              // Auto-scroll and highlight only when expanding
+                              if (isExpanding) {
+                                setFlashProjectId(String(project.id));
+                                
+                                // Wait for DOM paint, then scroll into view
+                                requestAnimationFrame(() => {
+                                  const anchorId = `notif-panel-${project.id}`;
+                                  const anchorElement = document.getElementById(anchorId);
+                                  if (anchorElement) {
+                                    anchorElement.scrollIntoView({ 
+                                      behavior: "smooth", 
+                                      block: "nearest" 
+                                    });
+                                  }
+                                });
+                                
+                                // Clear highlight after 1.5s
+                                setTimeout(() => {
+                                  setFlashProjectId(null);
+                                }, 1500);
+                              }
+                            }}
+                            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground font-medium"
+                          >
+                            <Bell className="h-3 w-3" />
+                            <span>{expandedProjectId === project.id ? "Hide notifications" : "Notifications"}</span>
+                            <ChevronDown
+                              className={[
+                                "h-4 w-4 transition-transform duration-200",
+                                expandedProjectId === project.id ? "rotate-180" : "rotate-0",
+                              ].join(" ")}
+                            />
+                          </button>
+                        )}
                         <Button 
                           size="sm" 
                           className="bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -499,7 +516,7 @@ export const ProjectsTable = ({ expandedProjectId: externalExpandedProjectId, on
                       </div>
                     </TableCell>
                   </TableRow>
-                  {expandedProjectId === project.id && (
+                  {notificationsEligible && expandedProjectId === project.id && (
                     <TableRow id={`notif-panel-${project.id}`} className={flashProjectId === String(project.id) ? "bg-orange-50/40 ring-1 ring-orange-200" : ""}>
                       <TableCell colSpan={9} className="pt-4 pb-4 px-4">
                         <NotificationSettings projectId={String(project.id)} projectName={project.project_name} />
