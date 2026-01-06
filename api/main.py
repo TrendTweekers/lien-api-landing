@@ -229,8 +229,24 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # HTTPS Redirect Middleware
+# Admin Dashboard Bypass Middleware - MUST BE FIRST
+class AdminDashboardBypassMiddleware(BaseHTTPMiddleware):
+    """Bypass all auth/checks for admin-dashboard paths"""
+    async def dispatch(self, request, call_next):
+        path = request.url.path
+        if path.startswith("/admin-dashboard"):
+            print(f"MIDDLEWARE HIT AdminDashboardBypassMiddleware: {path} - BYPASSING ALL CHECKS")
+            return await call_next(request)
+        return await call_next(request)
+
 class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
+        # Bypass admin-dashboard paths - always allow
+        path = request.url.path
+        if path.startswith("/admin-dashboard"):
+            print(f"MIDDLEWARE HIT HTTPSRedirectMiddleware: {path} - BYPASSING")
+            return await call_next(request)
+        
         # Check if behind a proxy (Railway/Cloudflare)
         forwarded_proto = request.headers.get("x-forwarded-proto")
         
@@ -294,6 +310,9 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
 #         # For all other paths (/dashboard, /api/*, etc.), skip Basic Auth entirely
 #         response = await call_next(request)
 #         return response
+
+# Add Admin Dashboard Bypass middleware FIRST (before all other middleware)
+app.add_middleware(AdminDashboardBypassMiddleware)
 
 # Add HTTPS redirect middleware (before CORS)
 app.add_middleware(HTTPSRedirectMiddleware)
@@ -1527,6 +1546,12 @@ if guides_dir.exists():
 # Redirect www to non-www
 @app.middleware("http")
 async def redirect_www(request: Request, call_next):
+    # Bypass admin-dashboard paths - always allow
+    path = request.url.path
+    if path.startswith("/admin-dashboard"):
+        print(f"MIDDLEWARE HIT redirect_www: {path} - BYPASSING")
+        return await call_next(request)
+    
     host = request.headers.get("host", "")
     if host.startswith("www."):
         url = request.url.replace(netloc=host[4:])
