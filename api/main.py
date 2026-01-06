@@ -1,3 +1,25 @@
+import os
+import sys
+
+# Railway cron check - MUST be first, before any FastAPI imports
+# If RAILWAY_CRON_RUN=true, execute email job and exit immediately
+if os.getenv("RAILWAY_CRON_RUN", "").lower() == "true":
+    print("⏰ RAILWAY_CRON_RUN=true detected — running email alerts job")
+    
+    try:
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from scripts.send_email_alerts import main as send_email_alerts_main
+        result = send_email_alerts_main()
+        print(f"✅ Email alerts finished. result={result}")
+        sys.exit(0)
+    except Exception as e:
+        print(f"❌ Email alerts failed: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+# Now import FastAPI and everything else
 from fastapi import FastAPI, HTTPException, Request, Depends, status, Response, Header, BackgroundTasks
 from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,9 +34,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 import json
 import secrets
-import os
 import subprocess
-import sys
 import bcrypt
 # Stripe is required for payment processing - not optional
 import stripe
@@ -1353,24 +1373,6 @@ async def startup():
         import traceback
         traceback.print_exc()
         # Don't fail startup if migration fails - columns might already exist
-    
-    # Check if this is a Railway cron run - if so, execute job and exit
-    if os.getenv("RAILWAY_CRON_RUN") == "true":
-        print("🕐 Railway cron run detected - executing email alerts job...")
-        try:
-            # Import and run the email alerts job directly
-            sys.path.insert(0, str(Path(__file__).parent.parent))
-            from scripts.send_email_alerts import main as run_email_alerts
-            emails_sent = run_email_alerts()
-            print(f"✅ Email alerts job completed: {emails_sent} emails sent")
-            # Exit successfully - no need to start web server for cron job
-            sys.exit(0)
-        except Exception as e:
-            print(f"❌ Email alerts job failed: {e}")
-            import traceback
-            traceback.print_exc()
-            # Exit with error code
-            sys.exit(1)
     
     print("✅ Application startup complete")
 
