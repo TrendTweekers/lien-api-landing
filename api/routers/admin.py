@@ -414,11 +414,23 @@ async def get_users_api(_auth: dict = Depends(require_admin_api_key)):
                     ORDER BY created_at DESC
                 """)
                 columns = [desc[0] for desc in cursor.description]
-                rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
-                # Rename last_login_at to last_login for consistency
-                for row in rows:
-                    if 'last_login_at' in row:
-                        row['last_login'] = row.pop('last_login_at')
+                raw_rows = cursor.fetchall()
+                rows = []
+                for row in raw_rows:
+                    row_dict = dict(zip(columns, row))
+                    # Rename last_login_at to last_login for consistency
+                    if 'last_login_at' in row_dict:
+                        row_dict['last_login'] = row_dict.pop('last_login_at')
+                    # Ensure all values are properly formatted
+                    if row_dict.get('created_at'):
+                        # Convert datetime to ISO string if it's a datetime object
+                        if hasattr(row_dict['created_at'], 'isoformat'):
+                            row_dict['created_at'] = row_dict['created_at'].isoformat()
+                    if row_dict.get('last_login'):
+                        if hasattr(row_dict['last_login'], 'isoformat'):
+                            row_dict['last_login'] = row_dict['last_login'].isoformat()
+                    rows.append(row_dict)
+                logger.info(f"Found {len(rows)} users from PostgreSQL")
             else:
                 cursor.execute("""
                     SELECT id, email, subscription_status, stripe_customer_id, 

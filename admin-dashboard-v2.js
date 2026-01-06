@@ -1140,9 +1140,18 @@ async function loadRegisteredUsers() {
     try {
         console.log('[Admin V2] Loading registered users...');
         const data = await adminFetch('/api/admin/users');
+        console.log('[Admin V2] Raw API response:', data);
+        
         const users = data.users || [];
         
-        console.log('[Admin V2] Users data:', users);
+        console.log('[Admin V2] Users array:', users);
+        console.log('[Admin V2] Users count:', users.length);
+        
+        if (!Array.isArray(users)) {
+            console.error('[Admin V2] Users is not an array:', typeof users, users);
+            safe.html('v2-usersList', '<tr><td colspan="6" class="text-center py-8 text-red-600">Error: Invalid data format</td></tr>');
+            return;
+        }
         
         // Update active customers count
         safe.text('v2-activeCustomers', users.length.toString());
@@ -1165,21 +1174,46 @@ async function loadRegisteredUsers() {
         }
         
         const html = users.map(user => {
-            const createdDate = user.created_at 
-                ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                : 'Recently';
+            // Debug: log each user to see what we're getting
+            console.log('[Admin V2] Processing user:', user);
             
-            const lastLogin = user.last_login 
-                ? new Date(user.last_login).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                : 'Never';
+            // Parse dates safely
+            let createdDate = 'Recently';
+            if (user.created_at) {
+                try {
+                    const date = new Date(user.created_at);
+                    if (!isNaN(date.getTime())) {
+                        createdDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    }
+                } catch (e) {
+                    console.warn('[Admin V2] Invalid created_at date:', user.created_at, e);
+                }
+            }
+            
+            let lastLogin = 'Never';
+            if (user.last_login) {
+                try {
+                    const date = new Date(user.last_login);
+                    if (!isNaN(date.getTime())) {
+                        lastLogin = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }
+                } catch (e) {
+                    console.warn('[Admin V2] Invalid last_login date:', user.last_login, e);
+                }
+            }
             
             const subscriptionBadge = user.subscription_status === 'active' || user.subscription_status === 'trialing'
                 ? '<span class="badge badge-ready">Active</span>'
                 : '<span class="badge badge-pending">Free</span>';
             
+            // Ensure email is a string, not the word "email"
+            const email = (user.email && typeof user.email === 'string' && user.email !== 'email') 
+                ? user.email 
+                : (user.email || 'N/A');
+            
             return `
                 <tr>
-                    <td class="font-medium">${user.email || 'N/A'}</td>
+                    <td class="font-medium">${email}</td>
                     <td>—</td>
                     <td>—</td>
                     <td>${subscriptionBadge}</td>
