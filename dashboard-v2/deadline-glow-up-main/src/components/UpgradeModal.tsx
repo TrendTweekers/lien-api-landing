@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { billingConfig } from "@/lib/billingConfig";
 
 interface UpgradeModalProps {
   open: boolean;
@@ -82,9 +83,6 @@ const PRICING_TIERS = [
 
 export const UpgradeModal = ({ open, onOpenChange }: UpgradeModalProps) => {
   const [toltReferralId, setToltReferralId] = useState<string | null>(null);
-  
-  // Monthly is always available when using Payment Links (no Stripe keys needed)
-  const monthlyEnabled = true;
 
   useEffect(() => {
     // Get Tolt referral ID: prioritize 'via' URL parameter, then window.tolt_referral, then sessionStorage
@@ -114,15 +112,27 @@ export const UpgradeModal = ({ open, onOpenChange }: UpgradeModalProps) => {
       return;
     }
 
-    // Build Stripe payment link with Tolt referral tracking
-    const stripeLink = isAnnual ? tier.stripeAnnual : tier.stripeMonthly;
-    const url = new URL(stripeLink);
-    
-    if (toltReferralId) {
-      url.searchParams.append('client_reference_id', toltReferralId);
+    // Handle checkout based on checkoutType from config
+    if (billingConfig.checkoutType === "payment_link") {
+      // Build Stripe payment link with Tolt referral tracking
+      const stripeLink = isAnnual ? tier.stripeAnnual : tier.stripeMonthly;
+      const url = new URL(stripeLink);
+      
+      if (toltReferralId) {
+        url.searchParams.append('client_reference_id', toltReferralId);
+      }
+      
+      window.open(url.toString(), "_blank");
+    } else if (billingConfig.checkoutType === "stripe_checkout") {
+      // Future: Use Stripe Checkout API (requires Stripe keys)
+      // For now, fallback to payment link
+      const stripeLink = isAnnual ? tier.stripeAnnual : tier.stripeMonthly;
+      window.open(stripeLink, "_blank");
+    } else {
+      // Custom checkout flow
+      window.open(`/signup?plan=${planId}`, "_blank");
     }
     
-    window.open(url.toString(), "_blank");
     onOpenChange(false);
   };
 
@@ -170,7 +180,7 @@ export const UpgradeModal = ({ open, onOpenChange }: UpgradeModalProps) => {
               </ul>
 
               <div className="space-y-2">
-                {monthlyEnabled && (
+                {billingConfig.supportsMonthly && (
                   <Button
                     className={`w-full ${
                       tier.highlight
