@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, date
 from pathlib import Path
 from typing import Optional
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 import json
 import secrets
 import os
@@ -1378,14 +1379,22 @@ except Exception as e:
 
 # Zapier redirect routes - must be BEFORE /dashboard catch-all to ensure proper routing
 @app.get("/zapier")
-async def redirect_zapier():
-    """Redirect legacy /zapier URL to /dashboard/zapier"""
-    return RedirectResponse(url="/dashboard/zapier", status_code=302)
+async def redirect_zapier(request: Request):
+    """Redirect legacy /zapier URL to /dashboard/zapier (301 permanent)"""
+    # Preserve query string if present
+    url = "/dashboard/zapier"
+    if request.url.query:
+        url = f"{url}?{request.url.query}"
+    return RedirectResponse(url=url, status_code=301)
 
 @app.get("/zapier/{full_path:path}")
-async def redirect_zapier_paths(full_path: str):
-    """Redirect legacy /zapier/* paths to /dashboard/zapier/*"""
-    return RedirectResponse(url=f"/dashboard/zapier/{full_path}", status_code=302)
+async def redirect_zapier_paths(full_path: str, request: Request):
+    """Redirect legacy /zapier/* paths to /dashboard/zapier/* (301 permanent)"""
+    # Preserve query string if present
+    url = f"/dashboard/zapier/{full_path}"
+    if request.url.query:
+        url = f"{url}?{request.url.query}"
+    return RedirectResponse(url=url, status_code=301)
 
 # Serve React Dashboard SPA
 @app.get("/dashboard")
