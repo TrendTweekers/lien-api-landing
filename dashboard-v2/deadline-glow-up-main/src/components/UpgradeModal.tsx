@@ -82,6 +82,9 @@ const PRICING_TIERS = [
 
 export const UpgradeModal = ({ open, onOpenChange }: UpgradeModalProps) => {
   const [toltReferralId, setToltReferralId] = useState<string | null>(null);
+  
+  // Monthly is always available when using Payment Links (no Stripe keys needed)
+  const monthlyEnabled = true;
 
   useEffect(() => {
     // Get Tolt referral ID: prioritize 'via' URL parameter, then window.tolt_referral, then sessionStorage
@@ -167,16 +170,18 @@ export const UpgradeModal = ({ open, onOpenChange }: UpgradeModalProps) => {
               </ul>
 
               <div className="space-y-2">
-                <Button
-                  className={`w-full ${
-                    tier.highlight
-                      ? "bg-primary hover:bg-primary/90"
-                      : "bg-secondary hover:bg-secondary/90"
-                  }`}
-                  onClick={() => handleUpgrade(tier.planId, false)}
-                >
-                  {tier.cta} (Monthly)
-                </Button>
+                {monthlyEnabled && (
+                  <Button
+                    className={`w-full ${
+                      tier.highlight
+                        ? "bg-primary hover:bg-primary/90"
+                        : "bg-secondary hover:bg-secondary/90"
+                    }`}
+                    onClick={() => handleUpgrade(tier.planId, false)}
+                  >
+                    {tier.cta} (Monthly)
+                  </Button>
+                )}
                 {tier.planId !== "enterprise" && (
                   <Button
                     variant="outline"
