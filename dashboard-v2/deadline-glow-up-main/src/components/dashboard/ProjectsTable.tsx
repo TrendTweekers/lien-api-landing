@@ -47,6 +47,10 @@ export const ProjectsTable = ({ expandedProjectId: externalExpandedProjectId, on
   // Reminders eligibility: Basic+ plans can use reminders
   const remindersEligible = planInfo.plan === "basic" || planInfo.plan === "automated" || planInfo.plan === "enterprise";
   
+  // Plan-specific flags for Reminders column
+  const isBasic = planInfo?.plan === "basic";
+  const isAutomated = planInfo?.plan === "automated" || planInfo?.plan === "enterprise";
+  
   // Notifications eligibility: Only Automated/Enterprise can use Notification Settings
   const notificationsEligible = planInfo.plan === "automated" || planInfo.plan === "enterprise";
   
@@ -340,118 +344,133 @@ export const ProjectsTable = ({ expandedProjectId: externalExpandedProjectId, on
                           );
                         }
                         
-                        // Check notification settings first (new system)
-                        const notificationStatus = projectNotificationStatuses[project.id];
-                        if (notificationStatus) {
-                          const alertsEnabled = notificationStatus.zapierEnabled && notificationStatus.reminderOffsetsDays.length > 0;
-                          if (alertsEnabled) {
-                            const offsets = notificationStatus.reminderOffsetsDays.map(d => `${d}d`).join(", ");
-                            return (
-                              <Badge className="bg-success/15 text-success border-success/30">
-                                <Bell className="h-3 w-3 mr-1" />
-                                Alerts on ({offsets})
-                              </Badge>
-                            );
-                          } else {
-                            return (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const isExpanding = expandedProjectId !== project.id;
-                                  const newExpandedId = isExpanding ? project.id : null;
-                                  setExpandedProjectId(newExpandedId);
-                                  
-                                  if (isExpanding) {
-                                    setFlashProjectId(String(project.id));
-                                    requestAnimationFrame(() => {
-                                      const anchorId = `notif-panel-${project.id}`;
-                                      const anchorElement = document.getElementById(anchorId);
-                                      if (anchorElement) {
-                                        anchorElement.scrollIntoView({ 
-                                          behavior: "smooth", 
-                                          block: "nearest" 
-                                        });
-                                      }
-                                    });
-                                    setTimeout(() => {
-                                      setFlashProjectId(null);
-                                    }, 1500);
-                                  }
-                                }}
-                                className="text-primary hover:text-primary/80 text-sm font-medium underline underline-offset-2"
-                              >
-                                Set up alerts
-                              </button>
-                            );
-                          }
-                        }
-                        
-                        // Fallback to legacy reminder fields if notification status not loaded yet
-                        let r1day: boolean;
-                        let r7days: boolean;
-                        
-                        if (project.reminder_1day === null || project.reminder_1day === undefined) {
-                          r1day = false;
-                        } else if (typeof project.reminder_1day === 'boolean') {
-                          r1day = project.reminder_1day;
-                        } else if (typeof project.reminder_1day === 'number') {
-                          r1day = project.reminder_1day !== 0;
-                        } else {
-                          r1day = Boolean(project.reminder_1day);
-                        }
-                        
-                        if (project.reminder_7days === null || project.reminder_7days === undefined) {
-                          r7days = false;
-                        } else if (typeof project.reminder_7days === 'boolean') {
-                          r7days = project.reminder_7days;
-                        } else if (typeof project.reminder_7days === 'number') {
-                          r7days = project.reminder_7days !== 0;
-                        } else {
-                          r7days = Boolean(project.reminder_7days);
-                        }
-                        
-                        if (r1day || r7days) {
-                          const badges = [];
-                          if (r1day) badges.push("1d");
-                          if (r7days) badges.push("7d");
+                        // Basic plan: Show email reminders info (non-clickable)
+                        if (isBasic) {
                           return (
-                            <Badge className="bg-success/15 text-success border-success/30">
-                              <Bell className="h-3 w-3 mr-1" />
-                              Alerts on ({badges.join(", ")})
-                            </Badge>
+                            <span className="text-muted-foreground text-sm">
+                              Email reminders (7 & 1 day)
+                            </span>
                           );
                         }
                         
-                        return (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const isExpanding = expandedProjectId !== project.id;
-                              const newExpandedId = isExpanding ? project.id : null;
-                              setExpandedProjectId(newExpandedId);
-                              
-                              if (isExpanding) {
-                                setFlashProjectId(String(project.id));
-                                requestAnimationFrame(() => {
-                                  const anchorId = `notif-panel-${project.id}`;
-                                  const anchorElement = document.getElementById(anchorId);
-                                  if (anchorElement) {
-                                    anchorElement.scrollIntoView({ 
-                                      behavior: "smooth", 
-                                      block: "nearest" 
-                                    });
-                                  }
-                                });
-                                setTimeout(() => {
-                                  setFlashProjectId(null);
-                                }, 1500);
-                              }
-                            }}
-                            className="text-primary hover:text-primary/80 text-sm font-medium underline underline-offset-2"
-                          >
-                            Set up alerts
-                          </button>
-                        );
+                        // Automated/Enterprise: Show Zapier alerts behavior
+                        if (isAutomated) {
+                          // Check notification settings first (new system)
+                          const notificationStatus = projectNotificationStatuses[project.id];
+                          if (notificationStatus) {
+                            const alertsEnabled = notificationStatus.zapierEnabled && notificationStatus.reminderOffsetsDays.length > 0;
+                            if (alertsEnabled) {
+                              const offsets = notificationStatus.reminderOffsetsDays.map(d => `${d}d`).join(", ");
+                              return (
+                                <Badge className="bg-success/15 text-success border-success/30">
+                                  <Bell className="h-3 w-3 mr-1" />
+                                  Alerts on ({offsets})
+                                </Badge>
+                              );
+                            } else {
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const isExpanding = expandedProjectId !== project.id;
+                                    const newExpandedId = isExpanding ? project.id : null;
+                                    setExpandedProjectId(newExpandedId);
+                                    
+                                    if (isExpanding) {
+                                      setFlashProjectId(String(project.id));
+                                      requestAnimationFrame(() => {
+                                        const anchorId = `notif-panel-${project.id}`;
+                                        const anchorElement = document.getElementById(anchorId);
+                                        if (anchorElement) {
+                                          anchorElement.scrollIntoView({ 
+                                            behavior: "smooth", 
+                                            block: "nearest" 
+                                          });
+                                        }
+                                      });
+                                      setTimeout(() => {
+                                        setFlashProjectId(null);
+                                      }, 1500);
+                                    }
+                                  }}
+                                  className="text-primary hover:text-primary/80 text-sm font-medium underline underline-offset-2"
+                                >
+                                  Set up alerts
+                                </button>
+                              );
+                            }
+                          }
+                          
+                          // Fallback to legacy reminder fields if notification status not loaded yet
+                          let r1day: boolean;
+                          let r7days: boolean;
+                          
+                          if (project.reminder_1day === null || project.reminder_1day === undefined) {
+                            r1day = false;
+                          } else if (typeof project.reminder_1day === 'boolean') {
+                            r1day = project.reminder_1day;
+                          } else if (typeof project.reminder_1day === 'number') {
+                            r1day = project.reminder_1day !== 0;
+                          } else {
+                            r1day = Boolean(project.reminder_1day);
+                          }
+                          
+                          if (project.reminder_7days === null || project.reminder_7days === undefined) {
+                            r7days = false;
+                          } else if (typeof project.reminder_7days === 'boolean') {
+                            r7days = project.reminder_7days;
+                          } else if (typeof project.reminder_7days === 'number') {
+                            r7days = project.reminder_7days !== 0;
+                          } else {
+                            r7days = Boolean(project.reminder_7days);
+                          }
+                          
+                          if (r1day || r7days) {
+                            const badges = [];
+                            if (r1day) badges.push("1d");
+                            if (r7days) badges.push("7d");
+                            return (
+                              <Badge className="bg-success/15 text-success border-success/30">
+                                <Bell className="h-3 w-3 mr-1" />
+                                Alerts on ({badges.join(", ")})
+                              </Badge>
+                            );
+                          }
+                          
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const isExpanding = expandedProjectId !== project.id;
+                                const newExpandedId = isExpanding ? project.id : null;
+                                setExpandedProjectId(newExpandedId);
+                                
+                                if (isExpanding) {
+                                  setFlashProjectId(String(project.id));
+                                  requestAnimationFrame(() => {
+                                    const anchorId = `notif-panel-${project.id}`;
+                                    const anchorElement = document.getElementById(anchorId);
+                                    if (anchorElement) {
+                                      anchorElement.scrollIntoView({ 
+                                        behavior: "smooth", 
+                                        block: "nearest" 
+                                      });
+                                    }
+                                  });
+                                  setTimeout(() => {
+                                    setFlashProjectId(null);
+                                  }, 1500);
+                                }
+                              }}
+                              className="text-primary hover:text-primary/80 text-sm font-medium underline underline-offset-2"
+                            >
+                              Set up alerts
+                            </button>
+                          );
+                        }
+                        
+                        // Fallback (shouldn't reach here, but just in case)
+                        return null;
                       })()}
                     </TableCell>
                     <TableCell>
