@@ -328,17 +328,24 @@ async def track_calculation(request: Request, calc_req: CalculationRequest):
         user_email = user.get("email", "")
         if user_id:
             from api.routers.billing import check_plan_limit, get_user_plan_and_usage
-            limit_check = check_plan_limit(user_id, "manual_calc", user_email)
-            if not limit_check.get('allowed'):
-                error_info = limit_check.get('error', {})
-                raise HTTPException(
-                    status_code=402,
-                    detail=error_info
-                )
+            
+            # Admin bypass (allows unlimited calculations for your admin user)
+            if (user_email or "").lower() == "admin@stackedboost.com":
+                limit_check = {"allowed": True}
+            else:
+                limit_check = check_plan_limit(user_id, "manual_calc", user_email)
+                if not limit_check.get('allowed'):
+                    error_info = limit_check.get('error', {})
+                    raise HTTPException(
+                        status_code=402,
+                        detail=error_info
+                    )
             # Get actual remaining count
             usage = get_user_plan_and_usage(user_id, user_email)
             plan = usage.get('plan', 'free')
-            if plan == 'free':
+            if (user_email or "").lower() == "admin@stackedboost.com":
+                quota_remaining = 999999
+            elif plan == 'free':
                 quota_remaining = max(0, 3 - usage.get('manual_calc_count', 0))
             else:
                 quota_remaining = 9999  # Unlimited for paid plans
