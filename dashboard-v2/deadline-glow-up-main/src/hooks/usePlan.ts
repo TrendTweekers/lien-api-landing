@@ -65,32 +65,11 @@ export const usePlan = () => {
         };
         
         // Check if user is admin (case-insensitive)
-        // Try to get email from session API if not in localStorage
+        // Try to get email from localStorage first (faster)
         let userEmail = localStorage.getItem('user_email') || localStorage.getItem('userEmail') || '';
         
-        // If email not in localStorage, try fetching from session
-        if (!userEmail) {
-          try {
-            const sessionRes = await fetch('/api/verify-session', { headers });
-            if (sessionRes.ok) {
-              const sessionData = await sessionRes.json();
-              userEmail = sessionData.email || sessionData.user_email || '';
-              if (userEmail) {
-                localStorage.setItem('user_email', userEmail);
-              }
-            }
-          } catch (e) {
-            // Ignore errors, will default to non-admin
-          }
-        }
-        
-        const isAdmin = userEmail.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase();
-        
-        // Update adminSim state if admin
-        if (isAdmin) {
-          setAdminSim(getAdminSim());
-        }
-
+        // If email not in localStorage, fetch from stats API (which includes email)
+        // This avoids an extra API call to verify-session
         const res = await fetch('/api/user/stats', { headers });
         if (!res.ok) {
           // Default to free plan if API fails
@@ -116,6 +95,19 @@ export const usePlan = () => {
         }
 
         const data = await res.json();
+        
+        // Extract email from stats response if not in localStorage
+        if (!userEmail && data.email) {
+          userEmail = data.email;
+          localStorage.setItem('user_email', userEmail);
+        }
+        
+        const isAdmin = userEmail.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase();
+        
+        // Update adminSim state if admin
+        if (isAdmin) {
+          setAdminSim(getAdminSim());
+        }
 
         setPlanInfo({
           plan: (data.plan || data.subscriptionStatus || "free") as PlanType,

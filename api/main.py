@@ -1516,9 +1516,34 @@ async def serve_admin_dashboard_v2_js():
 async def serve_dashboard_root():
     """Serve React App Root"""
     file_path = BASE_DIR / "public" / "dashboard" / "index.html"
-    if file_path.exists():
-        return FileResponse(file_path, headers={"Cache-Control": "no-store"})
-    return Response("Dashboard not found", status_code=404)
+    if not file_path.exists():
+        return Response("Dashboard not found", status_code=404)
+    
+    # Read HTML and inject ADMIN_API_KEY for admin components
+    with open(file_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    
+    admin_api_key = os.getenv("ADMIN_API_KEY", "")
+    # Inject admin API key if not already present
+    if "window.ADMIN_API_KEY" not in html_content:
+        # Insert before closing </head> tag
+        if "</head>" in html_content:
+            script_tag = f'\n    <script>window.ADMIN_API_KEY = "{admin_api_key}";</script>\n'
+            html_content = html_content.replace("</head>", script_tag + "</head>")
+        else:
+            # Fallback: insert at the beginning of <body>
+            script_tag = f'<script>window.ADMIN_API_KEY = "{admin_api_key}";</script>'
+            html_content = html_content.replace("<body>", f"<body>\n{script_tag}")
+    
+    return Response(
+        content=html_content,
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 @app.get("/dashboard/{full_path:path}")
 async def serve_dashboard(full_path: str):
@@ -1526,9 +1551,34 @@ async def serve_dashboard(full_path: str):
     # If requesting assets, they're handled by the mount above
     # For all other paths, serve index.html for SPA routing
     index_path = BASE_DIR / "public" / "dashboard" / "index.html"
-    if index_path.exists():
-        return FileResponse(index_path, headers={"Cache-Control": "no-store"})
-    return Response("Dashboard not found", status_code=404)
+    if not index_path.exists():
+        return Response("Dashboard not found", status_code=404)
+    
+    # Read HTML and inject ADMIN_API_KEY for admin components
+    with open(index_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    
+    admin_api_key = os.getenv("ADMIN_API_KEY", "")
+    # Inject admin API key if not already present
+    if "window.ADMIN_API_KEY" not in html_content:
+        # Insert before closing </head> tag
+        if "</head>" in html_content:
+            script_tag = f'\n    <script>window.ADMIN_API_KEY = "{admin_api_key}";</script>\n'
+            html_content = html_content.replace("</head>", script_tag + "</head>")
+        else:
+            # Fallback: insert at the beginning of <body>
+            script_tag = f'<script>window.ADMIN_API_KEY = "{admin_api_key}";</script>'
+            html_content = html_content.replace("<body>", f"<body>\n{script_tag}")
+    
+    return Response(
+        content=html_content,
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 
 # Serve Broker Dashboard v2 SPA

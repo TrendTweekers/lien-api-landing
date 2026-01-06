@@ -23,16 +23,18 @@ export const EmailCaptures = () => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('session_token');
-      if (!token) {
-        setError("Not authenticated");
+      // Use admin API key for admin endpoints
+      const adminApiKey = window.ADMIN_API_KEY || '';
+      if (!adminApiKey) {
+        setError("Admin API key not configured");
         setLoading(false);
         return;
       }
 
       const res = await fetch('/api/admin/email-captures?limit=100', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json',
+          'X-ADMIN-KEY': adminApiKey
         }
       });
 

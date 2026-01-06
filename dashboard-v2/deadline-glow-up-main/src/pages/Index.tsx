@@ -20,22 +20,18 @@ import { usePlan } from "@/hooks/usePlan";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { planInfo } = usePlan();
-  const [userStats, setUserStats] = useState<{
-    calculationsUsed: number;
-    calculationsLimit: number | null;
-    subscriptionStatus: string;
-  } | null>(null);
+  const { planInfo, loading: planLoading } = usePlan();
   const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null);
 
   useEffect(() => {
-    // Check for session token and verify session
+    // Check for session token
     const token = localStorage.getItem('session_token');
     if (!token) {
       window.location.href = '/login.html';
       return;
     }
     
+    // Verify session only once (usePlan will handle stats)
     fetch('/api/verify-session', {
       headers: { 'Authorization': `Bearer ${token}` }
     }).then(res => {
@@ -45,22 +41,6 @@ const Index = () => {
     }).catch(() => {
       window.location.href = '/login.html';
     });
-
-    // Fetch user stats
-    fetch('/api/user/stats', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        setUserStats({
-          calculationsUsed: data.calculationsUsed || 0,
-          calculationsLimit: data.calculationsLimit || null,
-          subscriptionStatus: data.subscriptionStatus || 'free'
-        });
-      })
-      .catch(err => {
-        console.error('Error fetching user stats:', err);
-      });
   }, []);
 
   return (
@@ -78,10 +58,10 @@ const Index = () => {
           </div>
 
           {/* Upgrade Prompt for Free Tier Users */}
-          {userStats && userStats.subscriptionStatus === 'free' && (
+          {!planLoading && planInfo && planInfo.plan === 'free' && (
             <UpgradePrompt 
-              calculationsUsed={userStats.calculationsUsed}
-              calculationsLimit={userStats.calculationsLimit || 3}
+              calculationsUsed={planInfo.manualCalcUsed || 0}
+              calculationsLimit={planInfo.manualCalcLimit || 3}
             />
           )}
 
