@@ -280,10 +280,10 @@ export const DeadlineCalculator = () => {
           <Lock className="h-5 w-5 text-orange-600" />
           <div className="flex-1">
             <p className="text-sm font-medium text-orange-900">
-              Free calculation limit reached
+              Free Plan Limit Reached
             </p>
             <p className="text-xs text-orange-700 mt-1">
-              You've used all your free calculations. Upgrade to continue calculating deadlines.
+              You've used all 3 free calculations this month. Upgrade for unlimited calculations and automation.
             </p>
           </div>
           <Button
