@@ -9,18 +9,49 @@ const ADMIN_USER = window.ADMIN_USER || 'admin';
 const ADMIN_PASS = window.ADMIN_PASS || 'LienAPI2025';
 
 // Admin API key for /api/admin/* endpoints
-const ADMIN_API_KEY = window.ADMIN_API_KEY || '';
+// Get fresh value from window each time (in case it's updated)
+function getAdminKey() {
+    return window.ADMIN_API_KEY || '';
+}
+
+// Show banner if admin key is missing
+function checkAdminKey() {
+    const key = getAdminKey();
+    if (!key || key.trim() === '') {
+        // Show visible banner
+        const banner = document.createElement('div');
+        banner.id = 'admin-key-missing-banner';
+        banner.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #dc2626; color: white; padding: 12px; text-align: center; z-index: 10000; font-weight: bold;';
+        banner.textContent = '⚠️ ADMIN_API_KEY missing — set it in Railway Variables and redeploy.';
+        document.body.insertBefore(banner, document.body.firstChild);
+        console.error('[Admin V2] ADMIN_API_KEY missing — set ADMIN_API_KEY in Railway Variables and redeploy');
+        return false;
+    }
+    // Remove banner if it exists
+    const existingBanner = document.getElementById('admin-key-missing-banner');
+    if (existingBanner) {
+        existingBanner.remove();
+    }
+    return true;
+}
 
 // Helper function to get admin API headers
 function getAdminHeaders() {
     const headers = {
         'Content-Type': 'application/json'
     };
-    if (ADMIN_API_KEY) {
-        headers['X-ADMIN-KEY'] = ADMIN_API_KEY;
+    const key = getAdminKey();
+    if (key) {
+        headers['X-ADMIN-KEY'] = key;
+        console.log('[Admin V2] sending X-ADMIN-KEY len=', key.length);
+    } else {
+        console.warn('[Admin V2] X-ADMIN-KEY header missing (key not set)');
     }
     return headers;
 }
+
+// Log admin key status on init
+console.log('[Admin V2] ADMIN_API_KEY present:', !!getAdminKey(), 'len=', getAdminKey().length);
 
 // Safe helper functions (same as V1)
 window.safe = {

@@ -1508,8 +1508,23 @@ async def serve_admin_dashboard_js():
 
 @app.get("/admin-dashboard-v2.js")
 async def serve_admin_dashboard_v2_js():
-    """Serve admin dashboard V2 JavaScript (public, no auth)"""
-    return FileResponse("admin-dashboard-v2.js", media_type="application/javascript")
+    """Serve admin dashboard V2 JavaScript with cache-busting"""
+    file_path = BASE_DIR / "admin-dashboard-v2.js"
+    if not file_path.exists():
+        if os.path.exists("admin-dashboard-v2.js"):
+            file_path = Path("admin-dashboard-v2.js")
+        else:
+            raise HTTPException(status_code=404, detail="admin-dashboard-v2.js not found")
+    
+    return FileResponse(
+        file_path,
+        media_type="application/javascript",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 # Serve React Dashboard SPA
 @app.get("/dashboard")
