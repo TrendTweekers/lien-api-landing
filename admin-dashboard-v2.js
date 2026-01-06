@@ -1177,15 +1177,11 @@ async function loadRegisteredUsers() {
                 ? '<span class="badge badge-ready">Active</span>'
                 : '<span class="badge badge-pending">Free</span>';
             
-            const name = user.first_name || user.last_name 
-                ? `${user.first_name || ''} ${user.last_name || ''}`.trim() 
-                : '—';
-            
             return `
                 <tr>
                     <td class="font-medium">${user.email || 'N/A'}</td>
-                    <td>${name}</td>
-                    <td>${user.company || '—'}</td>
+                    <td>—</td>
+                    <td>—</td>
                     <td>${subscriptionBadge}</td>
                     <td style="color: var(--muted);">${createdDate}</td>
                     <td style="color: var(--muted);">${lastLogin}</td>
@@ -1414,11 +1410,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 60000);
     
     console.log('✅ Admin Dashboard V2 ready');
-    
-    // Load debug panel data if panel is expanded
-    if (!document.getElementById('debug-panel-content').classList.contains('hidden')) {
-        loadPayoutDebugData();
-    }
 });
 
 // Toggle debug panel

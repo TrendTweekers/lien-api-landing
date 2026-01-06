@@ -409,7 +409,7 @@ async def get_users_api(_auth: dict = Depends(require_admin_api_key)):
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     SELECT id, email, subscription_status, stripe_customer_id, 
-                           first_name, last_name, company, created_at, last_login
+                           created_at, last_login
                     FROM users
                     ORDER BY created_at DESC
                 """)
@@ -418,7 +418,7 @@ async def get_users_api(_auth: dict = Depends(require_admin_api_key)):
             else:
                 cursor.execute("""
                     SELECT id, email, subscription_status, stripe_customer_id, 
-                           first_name, last_name, company, created_at, last_login
+                           created_at, last_login
                     FROM users
                     ORDER BY created_at DESC
                 """)
@@ -430,11 +430,8 @@ async def get_users_api(_auth: dict = Depends(require_admin_api_key)):
                         'email': row[1] if isinstance(row, (tuple, list)) else row.get('email'),
                         'subscription_status': row[2] if isinstance(row, (tuple, list)) else row.get('subscription_status'),
                         'stripe_customer_id': row[3] if isinstance(row, (tuple, list)) else row.get('stripe_customer_id'),
-                        'first_name': row[4] if isinstance(row, (tuple, list)) else row.get('first_name'),
-                        'last_name': row[5] if isinstance(row, (tuple, list)) else row.get('last_name'),
-                        'company': row[6] if isinstance(row, (tuple, list)) else row.get('company'),
-                        'created_at': row[7] if isinstance(row, (tuple, list)) else row.get('created_at'),
-                        'last_login': row[8] if isinstance(row, (tuple, list)) else row.get('last_login'),
+                        'created_at': row[4] if isinstance(row, (tuple, list)) else row.get('created_at'),
+                        'last_login': row[5] if isinstance(row, (tuple, list)) else row.get('last_login'),
                     }
                     for row in rows
                 ]
