@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePlan } from "@/hooks/usePlan";
 import { NotificationSettings } from "./NotificationSettings";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { fetchProjectNotifications } from "@/utils/notificationFetcher";
 
 interface Project {
   id: number;
@@ -108,18 +109,14 @@ export const ProjectsTable = ({ expandedProjectId: externalExpandedProjectId, on
       const headers: HeadersInit = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      const res = await fetch(`/api/projects/${projectId}/notifications`, { headers });
+      // Use circuit breaker-protected fetcher
+      const data = await fetchProjectNotifications(projectId, headers);
       
-      // If 403, stop permanently - user is not eligible
-      if (res.status === 403) {
+      // If null, circuit breaker tripped or error occurred
+      if (!data) {
         return;
       }
       
-      if (!res.ok) {
-        return;
-      }
-      
-      const data = await res.json();
       setProjectNotificationStatuses(prev => ({
         ...prev,
         [projectId]: {

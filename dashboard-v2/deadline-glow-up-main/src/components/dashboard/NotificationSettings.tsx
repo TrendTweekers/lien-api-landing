@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { usePlan } from "@/hooks/usePlan";
+import { fetchProjectNotifications, updateProjectNotifications } from "@/utils/notificationFetcher";
 
 interface NotificationSettingsProps {
   projectId: string;
@@ -94,24 +95,20 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
     setLoading(true);
     try {
       const token = localStorage.getItem('session_token');
-      const headers: HeadersInit = {
-        "Content-Type": "application/json"
-      };
+      const headers: HeadersInit = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      const res = await fetch(`/api/projects/${projectId}/notifications`, { headers });
+      // Use circuit breaker-protected fetcher
+      const data = await fetchProjectNotifications(projectId, headers);
       
-      // If 403, stop permanently - user is not eligible
-      if (res.status === 403) {
-        setLoading(false);
+      // If null, circuit breaker tripped or error occurred
+      if (!data) {
+        // Set defaults
+        setReminderOffsets([7]);
+        setZapierEnabled(false);
         return;
       }
-      
-      if (!res.ok) {
-        throw new Error("Failed to load settings");
-      }
 
-      const data = await res.json();
       setReminderOffsets(data.reminder_offsets_days || [7]);
       setZapierEnabled(data.zapier_enabled || false);
     } catch (error) {
@@ -137,23 +134,21 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
     setSaving(true);
     try {
       const token = localStorage.getItem('session_token');
-      const headers: HeadersInit = {
-        "Content-Type": "application/json"
-      };
+      const headers: HeadersInit = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      const res = await fetch(`/api/projects/${projectId}/notifications`, {
-        method: "PUT",
-        headers,
-        body: JSON.stringify({
+      // Use circuit breaker-protected updater
+      const success = await updateProjectNotifications(
+        projectId,
+        {
           reminder_offsets_days: reminderOffsets,
           zapier_enabled: zapierEnabled
-        })
-      });
+        },
+        headers
+      );
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ detail: "Failed to save settings" }));
-        throw new Error(errorData.detail || "Failed to save notification settings");
+      if (!success) {
+        throw new Error("Failed to save notification settings");
       }
 
       toast({

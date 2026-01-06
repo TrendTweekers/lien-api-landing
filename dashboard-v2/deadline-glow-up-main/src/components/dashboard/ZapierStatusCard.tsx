@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePlan } from "@/hooks/usePlan";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { fetchProjectNotifications } from "@/utils/notificationFetcher";
 
 interface Project {
   id: number;
@@ -122,23 +123,17 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
       setTotalProjects(projects.length);
 
       // Fetch notification settings for all projects in parallel
+      // Circuit breaker will stop all fetches if any returns 403
       const notificationPromises = projects.map(async (project) => {
         try {
-          const notifRes = await fetch(`/api/projects/${project.id}/notifications`, { headers });
+          // Use circuit breaker-protected fetcher
+          const notifData = await fetchProjectNotifications(project.id, headers);
           
-          // If 403, stop permanently - user is not eligible
-          if (notifRes.status === 403) {
+          // If null, circuit breaker tripped or error occurred
+          if (!notifData) {
             return null; // Signal to skip this project
           }
           
-          if (!notifRes.ok) {
-            return {
-              projectId: project.id,
-              zapierEnabled: false,
-              reminderOffsetsDays: []
-            };
-          }
-          const notifData = await notifRes.json();
           return {
             projectId: project.id,
             zapierEnabled: notifData.zapier_enabled === true,
