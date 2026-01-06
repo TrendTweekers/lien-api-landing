@@ -64,6 +64,25 @@
         max-height: 24px !important;
       }
     }
+    
+    /* Mobile menu styles */
+    .mobile-menu-btn {
+      display: none !important;
+    }
+    
+    @media (max-width: 768px) {
+      .mobile-menu-btn {
+        display: block !important;
+      }
+      
+      .desktop-nav {
+        display: none !important;
+      }
+      
+      .mobile-menu {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
@@ -75,11 +94,25 @@
         <img class="ld-brand-icon" src="/images/liendeadline-icon-transparent.png" alt="LienDeadline" />
         <img class="ld-brand-wordmark" src="/images/liendeadline-wordmark-transparent.png" alt="LienDeadline" />
       </a>
-      <div class="flex items-center gap-6">
+      
+      <!-- Desktop Navigation -->
+      <div class="desktop-nav flex items-center gap-6">
         <a href="/" class="text-gray-600 hover:text-gray-900">Home</a>
         <a href="/pricing.html" class="text-gray-600 hover:text-gray-900">Pricing</a>
       </div>
+      
+      <!-- Mobile Hamburger Button -->
+      <button class="mobile-menu-btn" id="mobileMenuBtn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #1F2937; padding: 4px;">
+        ☰
+      </button>
     </nav>
+    
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="mobile-menu" style="background: white; border-top: 1px solid #e5e7eb; padding: 16px 24px;">
+      <a href="/" style="display: block; text-decoration: none; color: #1F2937; font-weight: 500; padding: 8px 0;">Home</a>
+      <a href="/pricing.html" style="display: block; text-decoration: none; color: #6B7280; font-weight: 500; padding: 8px 0;">Pricing</a>
+      <a href="/" style="display: block; background: #F97316; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; text-align: center; margin-top: 8px;">Try Free</a>
+    </div>
   </header>
 
   <!-- Login Form -->
@@ -251,21 +284,13 @@
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
     const mobileMenu = document.getElementById('mobileMenu');
     
-    function checkMobile() {
-      if (window.innerWidth <= 768) {
-        mobileMenuBtn.style.display = 'block';
-      } else {
-        mobileMenuBtn.style.display = 'none';
-        mobileMenu.style.display = 'none';
-      }
-    }
-    
-    window.addEventListener('resize', checkMobile);
-    checkMobile();
-    
-    if (mobileMenuBtn) {
+    if (mobileMenuBtn && mobileMenu) {
       mobileMenuBtn.addEventListener('click', () => {
-        mobileMenu.style.display = mobileMenu.style.display === 'block' ? 'none' : 'block';
+        if (mobileMenu.style.display === 'none' || !mobileMenu.style.display) {
+          mobileMenu.style.display = 'block';
+        } else {
+          mobileMenu.style.display = 'none';
+        }
       });
     }
   </script>
