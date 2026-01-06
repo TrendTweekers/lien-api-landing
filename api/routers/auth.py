@@ -417,16 +417,21 @@ async def register(request: Request, req: RegisterRequest):
                                 RETURNING id
                             """, (email, password_hash.decode(), subscription_status, customer_id, subscription_id, req.first_name, req.last_name, req.company))
                             result = cursor.fetchone()
-                            # result can be tuple/list (fetchone default) OR dict-like (RealDictCursor/RowMapping)
-                            user_id = None
-                            if result:
-                                if isinstance(result, (list, tuple)):
-                                    user_id = result[0] if len(result) > 0 else None
-                                elif isinstance(result, dict):
-                                    user_id = result.get("id") or result.get("user_id")
-                                else:
-                                    # last-resort: try attribute access (some DB row objects behave like this)
-                                    user_id = getattr(result, "id", None) or getattr(result, "user_id", None)
+                            
+                            if not result:
+                                raise HTTPException(status_code=500, detail="User creation failed")
+                            
+                            # psycopg / asyncpg / SQLAlchemy safe handling
+                            if isinstance(result, dict):
+                                user_id = result.get("id")
+                            elif hasattr(result, "_mapping"):
+                                user_id = result._mapping.get("id")
+                            elif isinstance(result, (list, tuple)):
+                                user_id = result[0] if len(result) > 0 else None
+                            else:
+                                # last-resort: try attribute access
+                                user_id = getattr(result, "id", None) or getattr(result, "user_id", None)
+                            
                             if not user_id:
                                 raise HTTPException(status_code=500, detail="Registration failed: could not determine user_id")
                         else:
@@ -489,16 +494,21 @@ async def register(request: Request, req: RegisterRequest):
                                 RETURNING id
                             """, (email, password_hash.decode(), subscription_status, req.first_name, req.last_name, req.company))
                             result = cursor.fetchone()
-                            # result can be tuple/list (fetchone default) OR dict-like (RealDictCursor/RowMapping)
-                            user_id = None
-                            if result:
-                                if isinstance(result, (list, tuple)):
-                                    user_id = result[0] if len(result) > 0 else None
-                                elif isinstance(result, dict):
-                                    user_id = result.get("id") or result.get("user_id")
-                                else:
-                                    # last-resort: try attribute access (some DB row objects behave like this)
-                                    user_id = getattr(result, "id", None) or getattr(result, "user_id", None)
+                            
+                            if not result:
+                                raise HTTPException(status_code=500, detail="User creation failed")
+                            
+                            # psycopg / asyncpg / SQLAlchemy safe handling
+                            if isinstance(result, dict):
+                                user_id = result.get("id")
+                            elif hasattr(result, "_mapping"):
+                                user_id = result._mapping.get("id")
+                            elif isinstance(result, (list, tuple)):
+                                user_id = result[0] if len(result) > 0 else None
+                            else:
+                                # last-resort: try attribute access
+                                user_id = getattr(result, "id", None) or getattr(result, "user_id", None)
+                            
                             if not user_id:
                                 raise HTTPException(status_code=500, detail="Registration failed: could not determine user_id")
                         else:
@@ -518,16 +528,21 @@ async def register(request: Request, req: RegisterRequest):
                             RETURNING id
                         """, (email, password_hash.decode(), subscription_status))
                         result = cursor.fetchone()
-                        # result can be tuple/list (fetchone default) OR dict-like (RealDictCursor/RowMapping)
-                        user_id = None
-                        if result:
-                            if isinstance(result, (list, tuple)):
-                                user_id = result[0] if len(result) > 0 else None
-                            elif isinstance(result, dict):
-                                user_id = result.get("id") or result.get("user_id")
-                            else:
-                                # last-resort: try attribute access (some DB row objects behave like this)
-                                user_id = getattr(result, "id", None) or getattr(result, "user_id", None)
+                        
+                        if not result:
+                            raise HTTPException(status_code=500, detail="User creation failed")
+                        
+                        # psycopg / asyncpg / SQLAlchemy safe handling
+                        if isinstance(result, dict):
+                            user_id = result.get("id")
+                        elif hasattr(result, "_mapping"):
+                            user_id = result._mapping.get("id")
+                        elif isinstance(result, (list, tuple)):
+                            user_id = result[0] if len(result) > 0 else None
+                        else:
+                            # last-resort: try attribute access
+                            user_id = getattr(result, "id", None) or getattr(result, "user_id", None)
+                        
                         if not user_id:
                             raise HTTPException(status_code=500, detail="Registration failed: could not determine user_id")
                     else:
