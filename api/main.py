@@ -3094,6 +3094,16 @@ async def serve_customer_dashboard_clean(request: Request):
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url="/dashboard", status_code=301)
 
+@app.get("/zapier")
+async def redirect_zapier():
+    """Redirect legacy /zapier URL to /dashboard/zapier"""
+    return RedirectResponse(url="/dashboard/zapier", status_code=302)
+
+@app.get("/zapier/{full_path:path}")
+async def redirect_zapier_paths(full_path: str):
+    """Redirect legacy /zapier/* paths to /dashboard/zapier/*"""
+    return RedirectResponse(url=f"/dashboard/zapier/{full_path}", status_code=302)
+
 
 
 
