@@ -183,7 +183,7 @@ This is an automated reminder from LienDeadline.
 if __name__ == "__main__":
     try:
         emails_sent = main()
-        sys.exit(0 if emails_sent >= 0 else 1)
+        sys.exit(0)
     except Exception as e:
         print(f"ERROR: {e}", file=sys.stderr)
         import traceback
