@@ -100,8 +100,13 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
     }
   };
 
-  // Fetch notification status for all projects
+  // Fetch notification status for all projects (only if eligible)
   const fetchProjectsNotificationStatus = async () => {
+    // Hard stop: Only fetch if plan is eligible
+    if (!zapierEligible) {
+      return;
+    }
+
     try {
       const token = localStorage.getItem('session_token');
       const headers: HeadersInit = {};
@@ -120,6 +125,12 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
       const notificationPromises = projects.map(async (project) => {
         try {
           const notifRes = await fetch(`/api/projects/${project.id}/notifications`, { headers });
+          
+          // If 403, stop permanently - user is not eligible
+          if (notifRes.status === 403) {
+            return null; // Signal to skip this project
+          }
+          
           if (!notifRes.ok) {
             return {
               projectId: project.id,
@@ -134,21 +145,21 @@ export const ZapierStatusCard = ({ onProjectExpand }: ZapierStatusCardProps) => 
             reminderOffsetsDays: notifData.reminder_offsets_days || []
           };
         } catch (error) {
-          return {
-            projectId: project.id,
-            zapierEnabled: false,
-            reminderOffsetsDays: []
-          };
+          // Silently fail - don't spam console
+          return null; // Signal to skip this project
         }
       });
 
       const notificationStatuses = await Promise.all(notificationPromises);
       
+      // Filter out null results (403 errors or failures)
+      const validStatuses = notificationStatuses.filter((status): status is ProjectNotificationStatus => status !== null);
+      
       // Compute counts
-      const withAlerts = notificationStatuses.filter(
+      const withAlerts = validStatuses.filter(
         (status) => status.zapierEnabled && status.reminderOffsetsDays.length > 0
       );
-      const needingSetup = notificationStatuses.filter(
+      const needingSetup = validStatuses.filter(
         (status) => !status.zapierEnabled || status.reminderOffsetsDays.length === 0
       );
       

@@ -60,11 +60,6 @@ export const ProjectsTable = ({ expandedProjectId: externalExpandedProjectId, on
       setExpandedProjectId(null);
     }
   }, [notificationsEligible]);
-  useEffect(() => {
-    if (!notificationsEligible) {
-      setExpandedProjectId(null);
-    }
-  }, [notificationsEligible]);
   
   // Use external expandedProjectId if provided, otherwise use internal state
   const expandedProjectId = externalExpandedProjectId !== undefined ? externalExpandedProjectId : internalExpandedProjectId;
@@ -101,50 +96,39 @@ export const ProjectsTable = ({ expandedProjectId: externalExpandedProjectId, on
     }
   };
 
-  // Fetch notification status for all projects
-  const fetchProjectNotificationStatuses = async () => {
+  // Fetch notification status for a single project (only when expanded and eligible)
+  const fetchProjectNotificationStatus = async (projectId: number) => {
+    // Hard stop: Only fetch if plan is eligible
+    if (!notificationsEligible) {
+      return;
+    }
+
     try {
       const token = localStorage.getItem('session_token');
       const headers: HeadersInit = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      // Fetch notification settings for all projects in parallel
-      const notificationPromises = projects.map(async (project) => {
-        try {
-          const res = await fetch(`/api/projects/${project.id}/notifications`, { headers });
-          if (!res.ok) {
-            return {
-              projectId: project.id,
-              zapierEnabled: false,
-              reminderOffsetsDays: []
-            };
-          }
-          const data = await res.json();
-          return {
-            projectId: project.id,
-            zapierEnabled: data.zapier_enabled === true,
-            reminderOffsetsDays: data.reminder_offsets_days || []
-          };
-        } catch (error) {
-          return {
-            projectId: project.id,
-            zapierEnabled: false,
-            reminderOffsetsDays: []
-          };
+      const res = await fetch(`/api/projects/${projectId}/notifications`, { headers });
+      
+      // If 403, stop permanently - user is not eligible
+      if (res.status === 403) {
+        return;
+      }
+      
+      if (!res.ok) {
+        return;
+      }
+      
+      const data = await res.json();
+      setProjectNotificationStatuses(prev => ({
+        ...prev,
+        [projectId]: {
+          zapierEnabled: data.zapier_enabled === true,
+          reminderOffsetsDays: data.reminder_offsets_days || []
         }
-      });
-
-      const statuses = await Promise.all(notificationPromises);
-      const statusMap: Record<number, { zapierEnabled: boolean; reminderOffsetsDays: number[] }> = {};
-      statuses.forEach((status) => {
-        statusMap[status.projectId] = {
-          zapierEnabled: status.zapierEnabled,
-          reminderOffsetsDays: status.reminderOffsetsDays
-        };
-      });
-      setProjectNotificationStatuses(statusMap);
+      }));
     } catch (error) {
-      console.error('Error fetching project notification statuses:', error);
+      // Silently fail - don't spam console
     }
   };
 
@@ -162,13 +146,13 @@ export const ProjectsTable = ({ expandedProjectId: externalExpandedProjectId, on
     };
   }, []);
 
-  // Fetch notification statuses when projects change
+  // Fetch notification status only when a project row is expanded (and eligible)
   useEffect(() => {
-    if (projects.length > 0) {
-      fetchProjectNotificationStatuses();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects.length]);
+    if (!notificationsEligible) return;
+    if (!expandedProjectId) return;
+    
+    fetchProjectNotificationStatus(expandedProjectId);
+  }, [notificationsEligible, expandedProjectId]);
 
   const handleDownloadPDF = async (id: number) => {
     try {

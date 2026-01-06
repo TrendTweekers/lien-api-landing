@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { usePlan } from "@/hooks/usePlan";
 
 interface NotificationSettingsProps {
   projectId: string;
@@ -12,6 +13,7 @@ interface NotificationSettingsProps {
 
 export const NotificationSettings = ({ projectId, projectName }: NotificationSettingsProps) => {
   const { toast } = useToast();
+  const { planInfo } = usePlan();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [reminderOffsets, setReminderOffsets] = useState<number[]>([]);
@@ -20,20 +22,29 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
   const [loadingZapierStatus, setLoadingZapierStatus] = useState(true);
   const [zapierStatusError, setZapierStatusError] = useState(false);
 
+  // Hard stop: Only fetch if plan is eligible
+  const notificationsEligible = planInfo?.plan === "automated" || planInfo?.plan === "enterprise";
+
   // Available offset options
   const availableOffsets = [1, 7, 14];
 
-  // Load Zapier connection status
+  // Load Zapier connection status (only if eligible)
   useEffect(() => {
-    loadZapierStatus();
-  }, []);
-
-  // Load notification settings on mount
-  useEffect(() => {
-    if (zapierConnected !== undefined) {
-      loadSettings();
+    if (!notificationsEligible) {
+      setLoadingZapierStatus(false);
+      setZapierConnected(false);
+      return;
     }
-  }, [projectId, zapierConnected]);
+    loadZapierStatus();
+  }, [notificationsEligible]);
+
+  // Load notification settings only when eligible and Zapier status is loaded
+  useEffect(() => {
+    if (!notificationsEligible) return;
+    if (zapierConnected === undefined) return;
+    
+    loadSettings();
+  }, [projectId, zapierConnected, notificationsEligible]);
 
   const loadZapierStatus = async () => {
     setLoadingZapierStatus(true);
@@ -75,6 +86,11 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
   };
 
   const loadSettings = async () => {
+    // Hard stop: Only fetch if plan is eligible
+    if (!notificationsEligible) {
+      return;
+    }
+
     setLoading(true);
     try {
       const token = localStorage.getItem('session_token');
@@ -84,13 +100,22 @@ export const NotificationSettings = ({ projectId, projectName }: NotificationSet
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
       const res = await fetch(`/api/projects/${projectId}/notifications`, { headers });
-      if (!res.ok) throw new Error("Failed to load settings");
+      
+      // If 403, stop permanently - user is not eligible
+      if (res.status === 403) {
+        setLoading(false);
+        return;
+      }
+      
+      if (!res.ok) {
+        throw new Error("Failed to load settings");
+      }
 
       const data = await res.json();
       setReminderOffsets(data.reminder_offsets_days || [7]);
       setZapierEnabled(data.zapier_enabled || false);
     } catch (error) {
-      console.error("Error loading notification settings:", error);
+      // Silently fail - don't spam console
       // Set defaults
       setReminderOffsets([7]);
       setZapierEnabled(false);
