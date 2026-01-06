@@ -222,8 +222,62 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         return response
 
+# Basic Auth Middleware - ONLY for /admin-dashboard-v2
+class BasicAuthMiddleware(BaseHTTPMiddleware):
+    """Apply Basic Auth ONLY to /admin-dashboard-v2 routes - never to /dashboard or /api routes"""
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        
+        # ONLY protect /admin-dashboard-v2 routes (legacy admin area)
+        # Explicitly exclude:
+        # - /dashboard (React dashboard)
+        # - /dashboard/* (React dashboard routes)
+        # - /api/* (all API routes)
+        if path.startswith("/admin-dashboard-v2"):
+            # Check for Basic Auth header
+            authorization = request.headers.get("authorization", "")
+            if not authorization or not authorization.startswith("Basic "):
+                # Return 401 with Basic Auth challenge
+                return Response(
+                    content="Unauthorized",
+                    status_code=401,
+                    headers={"WWW-Authenticate": "Basic"}
+                )
+            
+            # Verify Basic Auth credentials
+            try:
+                import base64
+                credentials = base64.b64decode(authorization.split(" ")[1]).decode("utf-8")
+                username, password = credentials.split(":", 1)
+                
+                admin_user = os.getenv("ADMIN_USER", "admin")
+                admin_pass = os.getenv("ADMIN_PASS", "LienAPI2025")
+                
+                is_user_ok = secrets.compare_digest(username, admin_user)
+                is_pass_ok = secrets.compare_digest(password, admin_pass)
+                
+                if not (is_user_ok and is_pass_ok):
+                    return Response(
+                        content="Unauthorized",
+                        status_code=401,
+                        headers={"WWW-Authenticate": "Basic"}
+                    )
+            except Exception:
+                return Response(
+                    content="Unauthorized",
+                    status_code=401,
+                    headers={"WWW-Authenticate": "Basic"}
+                )
+        
+        # For all other paths (/dashboard, /api/*, etc.), skip Basic Auth entirely
+        response = await call_next(request)
+        return response
+
 # Add HTTPS redirect middleware (before CORS)
 app.add_middleware(HTTPSRedirectMiddleware)
+
+# Add Basic Auth middleware (only for /admin-dashboard-v2)
+app.add_middleware(BasicAuthMiddleware)
 
 # Bot protection: Trusted Host middleware
 app.add_middleware(
