@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status, Query, Header
+from starlette.requests import Request
 from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 from api.database import get_db, get_db_cursor, DB_TYPE, BASE_DIR
 from api.services.email import send_broker_notification, send_email_sync
@@ -26,27 +27,34 @@ PAYOUT_LEDGER_AVAILABLE = True
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-def require_admin_api_key(x_admin_key: str = Header(None, alias="x-admin-key")):
+def require_admin_api_key(request: Request):
     """Require admin API key via X-ADMIN-KEY header"""
     admin_api_key = os.getenv("ADMIN_API_KEY", "")
+    x_admin_key = request.headers.get("X-ADMIN-KEY", "").strip()
+    
+    # Debug logging (do NOT log secret values)
+    env_present = bool(admin_api_key)
+    header_present = bool(x_admin_key)
+    header_len = len(x_admin_key) if x_admin_key else 0
+    logger.info(f"[Admin Auth] env_present={env_present} header_present={header_present} header_len={header_len}")
     
     if not admin_api_key:
         raise HTTPException(
             status_code=503,
-            detail="Admin API key not configured. Set ADMIN_API_KEY environment variable."
+            detail="ADMIN_API_KEY not configured"
         )
     
     if not x_admin_key:
         raise HTTPException(
             status_code=401,
-            detail="Missing X-ADMIN-KEY header"
+            detail="Missing X-ADMIN-KEY"
         )
     
     # Use constant-time comparison to prevent timing attacks
     if not secrets.compare_digest(x_admin_key, admin_api_key):
         raise HTTPException(
             status_code=401,
-            detail="Invalid admin API key"
+            detail="Invalid X-ADMIN-KEY"
         )
     
     return {"authenticated": True}

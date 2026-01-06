@@ -9,22 +9,22 @@ const ADMIN_USER = window.ADMIN_USER || 'admin';
 const ADMIN_PASS = window.ADMIN_PASS || 'LienAPI2025';
 
 // Admin API key for /api/admin/* endpoints
-// Get fresh value from window each time (in case it's updated)
-function getAdminKey() {
-    return window.ADMIN_API_KEY || '';
-}
+const ADMIN_API_KEY = (window.ADMIN_API_KEY || "").trim();
 
 // Show banner if admin key is missing
+let adminKeyValid = false;
 function checkAdminKey() {
-    const key = getAdminKey();
-    if (!key || key.trim() === '') {
+    if (!ADMIN_API_KEY) {
         // Show visible banner
-        const banner = document.createElement('div');
+        const banner = document.getElementById('admin-key-missing-banner') || document.createElement('div');
         banner.id = 'admin-key-missing-banner';
         banner.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #dc2626; color: white; padding: 12px; text-align: center; z-index: 10000; font-weight: bold;';
-        banner.textContent = '⚠️ ADMIN_API_KEY missing — set it in Railway Variables and redeploy.';
-        document.body.insertBefore(banner, document.body.firstChild);
-        console.error('[Admin V2] ADMIN_API_KEY missing — set ADMIN_API_KEY in Railway Variables and redeploy');
+        banner.textContent = '⚠️ ADMIN_API_KEY missing — set Railway variable ADMIN_API_KEY and redeploy';
+        if (!document.getElementById('admin-key-missing-banner')) {
+            document.body.insertBefore(banner, document.body.firstChild);
+        }
+        console.error('[Admin V2] ADMIN_API_KEY missing — set Railway variable ADMIN_API_KEY and redeploy');
+        adminKeyValid = false;
         return false;
     }
     // Remove banner if it exists
@@ -32,26 +32,44 @@ function checkAdminKey() {
     if (existingBanner) {
         existingBanner.remove();
     }
+    adminKeyValid = true;
     return true;
 }
 
 // Helper function to get admin API headers
 function getAdminHeaders() {
-    const headers = {
-        'Content-Type': 'application/json'
-    };
-    const key = getAdminKey();
-    if (key) {
-        headers['X-ADMIN-KEY'] = key;
-        console.log('[Admin V2] sending X-ADMIN-KEY len=', key.length);
-    } else {
-        console.warn('[Admin V2] X-ADMIN-KEY header missing (key not set)');
+    const h = { "Content-Type": "application/json" };
+    if (ADMIN_API_KEY) {
+        h["X-ADMIN-KEY"] = ADMIN_API_KEY;
     }
-    return headers;
+    return h;
+}
+
+// Show unauthorized banner
+let unauthorizedShown = false;
+function showUnauthorizedBanner() {
+    if (unauthorizedShown) return;
+    unauthorizedShown = true;
+    const banner = document.getElementById('admin-unauthorized-banner') || document.createElement('div');
+    banner.id = 'admin-unauthorized-banner';
+    banner.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #dc2626; color: white; padding: 12px; text-align: center; z-index: 10000; font-weight: bold;';
+    banner.textContent = '⚠️ Admin API unauthorized — X-ADMIN-KEY missing/invalid';
+    if (!document.getElementById('admin-unauthorized-banner')) {
+        document.body.insertBefore(banner, document.body.firstChild);
+    }
+}
+
+// Helper to check response and handle 401
+function handleAdminResponse(response) {
+    if (response.status === 401) {
+        showUnauthorizedBanner();
+        return false;
+    }
+    return true;
 }
 
 // Log admin key status on init
-console.log('[Admin V2] ADMIN_API_KEY present:', !!getAdminKey(), 'len=', getAdminKey().length);
+console.log('[Admin V2] ADMIN_API_KEY present:', !!ADMIN_API_KEY, 'len=', ADMIN_API_KEY.length);
 
 // Check admin key on page load
 if (document.readyState === 'loading') {
@@ -230,6 +248,8 @@ async function loadPartnerApplications() {
 
 // Load active brokers (reuses V1 API)
 async function loadActiveBrokers() {
+    if (!adminKeyValid) return; // Skip if key missing
+    
     console.log('[Admin V2] Loading active brokers...');
     try {
         const response = await fetch('/api/admin/brokers', {
@@ -238,6 +258,11 @@ async function loadActiveBrokers() {
         });
         
         console.log('[Admin V2] Brokers API response status:', response.status);
+        
+        if (!handleAdminResponse(response)) {
+            safe.html('v2-brokersList', '<tr><td colspan="8" class="text-center py-8 text-red-500">Unauthorized — check ADMIN_API_KEY</td></tr>');
+            return;
+        }
 
         if (!response.ok) {
             safe.html('v2-brokersList', '<tr><td colspan="8" class="text-center py-8 text-red-500">Error loading brokers</td></tr>');
@@ -357,11 +382,18 @@ async function loadActiveBrokers() {
 
 // Load ready to pay brokers (reuses V1 API)
 async function loadReadyToPay() {
+    if (!adminKeyValid) return; // Skip if key missing
+    
     try {
         const response = await fetch('/api/admin/brokers-ready-to-pay', {
             credentials: "include",
             headers: getAdminHeaders()
         });
+        
+        if (!handleAdminResponse(response)) {
+            safe.html('v2-ready-to-pay-list', '<tr><td colspan="8" class="text-center py-8 text-red-500">Unauthorized — check ADMIN_API_KEY</td></tr>');
+            return;
+        }
         
         if (!response.ok) {
             safe.html('v2-ready-to-pay-list', '<tr><td colspan="8" class="text-center py-8 text-red-500">Error loading brokers ready to pay</td></tr>');
