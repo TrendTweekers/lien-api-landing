@@ -5,5 +5,8 @@ Disallow: /broker-dashboard
 Disallow: /admin
 Disallow: /api/
 
-Sitemap: https://liendeadline.com/sitemap.xml
+# IMPORTANT: REMOVE Cloudflare's Google block
+# User-agent: Google-Extended
+# Allow: /
 
+Sitemap: https://liendeadline.com/sitemap.xml
