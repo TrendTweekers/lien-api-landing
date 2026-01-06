@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Mail, CheckCircle2, AlertCircle } from "lucide-react";
+import { Mail, CheckCircle2, AlertCircle, Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { usePlan } from "@/hooks/usePlan";
 import { useToast } from "@/hooks/use-toast";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 export const EmailAlertsCard = () => {
   const { planInfo } = usePlan();
@@ -15,6 +16,18 @@ export const EmailAlertsCard = () => {
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  
+  // Email alerts eligibility: Basic+ plans can use email reminders
+  const emailEligible = planInfo.plan === "basic" || planInfo.plan === "automated" || planInfo.plan === "enterprise";
+  
+  // Determine reminder days text based on plan
+  const getReminderDaysText = () => {
+    if (planInfo.plan === "basic") {
+      return "7 and 1 day before";
+    }
+    return "7, 3, and 1 day before";
+  };
 
   // Load preferences from planInfo
   useEffect(() => {
@@ -87,6 +100,8 @@ export const EmailAlertsCard = () => {
     }
   };
 
+  const reminderDaysText = getReminderDaysText();
+
   return (
     <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
       <CardHeader className="pb-3">
@@ -94,66 +109,96 @@ export const EmailAlertsCard = () => {
           <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           Email Alerts (Default)
         </CardTitle>
-        <p className="text-sm text-muted-foreground mt-1">
-          Get deadline reminders via email (7, 3, and 1 day before)
-        </p>
+        {emailEligible && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Get deadline reminders via email ({reminderDaysText})
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="alert-email">Alert Email Address</Label>
-          <Input
-            id="alert-email"
-            type="email"
-            placeholder="your@email.com"
-            value={alertEmail}
-            onChange={(e) => setAlertEmail(e.target.value)}
-            disabled={saving}
-          />
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label htmlFor="email-alerts-enabled">Enable Email Alerts</Label>
-            <p className="text-xs text-muted-foreground">
-              Receive deadline reminders at 7, 3, and 1 day before
-            </p>
-          </div>
-          <Switch
-            id="email-alerts-enabled"
-            checked={emailAlertsEnabled}
-            onCheckedChange={setEmailAlertsEnabled}
-            disabled={saving}
-          />
-        </div>
-
-        <Button
-          onClick={handleSave}
-          disabled={saving || !alertEmail.trim()}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          {saving ? "Saving..." : "Save Preferences"}
-        </Button>
-
-        {emailAlertsEnabled && alertEmail && (
-          <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-            <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-muted-foreground">
-              <p className="font-medium text-foreground mb-1">Email alerts active</p>
-              <p>You'll receive reminders at {alertEmail} for deadlines 7, 3, and 1 day before they're due.</p>
+        {/* Locked State for Free Plan */}
+        {!emailEligible ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border border-border">
+              <Lock className="h-5 w-5 text-muted-foreground" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">
+                  Email reminders are available on Basic plan
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Upgrade to Basic ($49/mo) to get deadline reminders by email.
+                </p>
+              </div>
             </div>
+            <Button
+              size="default"
+              onClick={() => setUpgradeModalOpen(true)}
+              className="w-full bg-primary hover:bg-primary/90"
+            >
+              Upgrade to Unlock Email Reminders
+            </Button>
           </div>
-        )}
-
-        {!emailAlertsEnabled && alertEmail && (
-          <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg border border-border">
-            <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-muted-foreground">
-              <p className="font-medium text-foreground mb-1">Email alerts disabled</p>
-              <p>Enable the toggle above to start receiving deadline reminders.</p>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="alert-email">Alert Email Address</Label>
+              <Input
+                id="alert-email"
+                type="email"
+                placeholder="your@email.com"
+                value={alertEmail}
+                onChange={(e) => setAlertEmail(e.target.value)}
+                disabled={saving}
+              />
             </div>
-          </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="email-alerts-enabled">Enable Email Alerts</Label>
+                <p className="text-xs text-muted-foreground">
+                  Receive deadline reminders at {reminderDaysText}
+                </p>
+              </div>
+              <Switch
+                id="email-alerts-enabled"
+                checked={emailAlertsEnabled}
+                onCheckedChange={setEmailAlertsEnabled}
+                disabled={saving}
+              />
+            </div>
+
+            <Button
+              onClick={handleSave}
+              disabled={saving || !alertEmail.trim()}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {saving ? "Saving..." : "Save Preferences"}
+            </Button>
+
+            {emailAlertsEnabled && alertEmail && (
+              <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-muted-foreground">
+                  <p className="font-medium text-foreground mb-1">Email alerts active</p>
+                  <p>You'll receive reminders at {alertEmail} for deadlines {reminderDaysText} they're due.</p>
+                </div>
+              </div>
+            )}
+
+            {!emailAlertsEnabled && alertEmail && (
+              <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg border border-border">
+                <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-muted-foreground">
+                  <p className="font-medium text-foreground mb-1">Email alerts disabled</p>
+                  <p>Enable the toggle above to start receiving deadline reminders.</p>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
+      
+      <UpgradeModal open={upgradeModalOpen} onOpenChange={setUpgradeModalOpen} />
     </Card>
   );
 };
