@@ -3,6 +3,9 @@ from api.database import get_db, get_db_cursor, DB_TYPE
 from api.routers.auth import get_user_from_session
 from pydantic import BaseModel, EmailStr
 import logging
+import subprocess
+import sys
+from pathlib import Path
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -298,3 +301,54 @@ async def save_user_preferences(request: Request, body: EmailPrefsIn):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to save preferences")
+
+@router.post("/api/admin/run-email-alerts")
+async def run_email_alerts(request: Request):
+    """Admin-only endpoint to manually trigger email alerts script"""
+    user = get_user_from_session(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    email = user.get('email')
+    if not email or email.lower().strip() != "admin@stackedboost.com":
+        raise HTTPException(status_code=403, detail="Forbidden - Admin access required")
+    
+    # Get script path relative to project root
+    script_path = Path(__file__).parent.parent.parent / "scripts" / "send_email_alerts.py"
+    
+    if not script_path.exists():
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Script not found at {script_path}"
+        )
+    
+    try:
+        # Run script inside the same container/environment
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            capture_output=True,
+            text=True,
+            timeout=300,  # 5 minute timeout
+            cwd=str(script_path.parent.parent)  # Set working directory to project root
+        )
+        
+        return {
+            "ok": result.returncode == 0,
+            "code": result.returncode,
+            "stdout": result.stdout[-2000:] if result.stdout else "",  # Last 2000 chars
+            "stderr": result.stderr[-2000:] if result.stderr else "",  # Last 2000 chars
+            "message": "Email alerts script executed"
+        }
+    except subprocess.TimeoutExpired:
+        raise HTTPException(
+            status_code=500,
+            detail="Script execution timed out after 5 minutes"
+        )
+    except Exception as e:
+        logger.error(f"Error running email alerts script: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to run script: {str(e)}"
+        )
