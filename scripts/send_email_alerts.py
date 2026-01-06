@@ -71,7 +71,7 @@ def main():
 
         if not users:
             print("No users with email alerts enabled")
-            return
+            return 0
 
         print(f"Found {len(users)} users with email alerts enabled")
 
