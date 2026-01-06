@@ -53,6 +53,13 @@ function getAdminHeaders() {
 // Log admin key status on init
 console.log('[Admin V2] ADMIN_API_KEY present:', !!getAdminKey(), 'len=', getAdminKey().length);
 
+// Check admin key on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkAdminKey);
+} else {
+    checkAdminKey();
+}
+
 // Safe helper functions (same as V1)
 window.safe = {
     get: function(id) {
