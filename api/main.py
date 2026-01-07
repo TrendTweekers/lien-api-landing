@@ -166,12 +166,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 # THEN import routers (after database is defined)
 from .analytics import router as analytics_router
 from .routers.admin import router as admin_router, require_admin
-from .quickbooks import router as quickbooks_router
 from .routers.calculations import router as calculations_router
 from .routers.auth import get_current_user
 from .routers import auth
 from .routers import webhooks
 from .routers import brokers
+from .routers import deprecated
 from .routers import customer
 from .routers import zapier
 from .routers import notifications
@@ -1115,72 +1115,6 @@ def init_db():
                 conn.commit()
                 print("✅ lien_deadlines table created")
             
-            # Create QuickBooks tokens table
-            if 'quickbooks_tokens' not in existing_tables:
-                print("Creating quickbooks_tokens table...")
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        CREATE TABLE quickbooks_tokens (
-                            id SERIAL PRIMARY KEY,
-                            user_id INTEGER NOT NULL,
-                            realm_id VARCHAR(255) NOT NULL,
-                            access_token TEXT NOT NULL,
-                            refresh_token TEXT NOT NULL,
-                            expires_at TIMESTAMP NOT NULL,
-                            created_at TIMESTAMP DEFAULT NOW(),
-                            updated_at TIMESTAMP DEFAULT NOW()
-                        )
-                    """)
-                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_tokens_user_id ON quickbooks_tokens(user_id)")
-                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_tokens_realm_id ON quickbooks_tokens(realm_id)")
-                else:
-                    cursor.execute("""
-                        CREATE TABLE quickbooks_tokens (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            user_id INTEGER NOT NULL,
-                            realm_id TEXT NOT NULL,
-                            access_token TEXT NOT NULL,
-                            refresh_token TEXT NOT NULL,
-                            expires_at TIMESTAMP NOT NULL,
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                        )
-                    """)
-                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_tokens_user_id ON quickbooks_tokens(user_id)")
-                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_tokens_realm_id ON quickbooks_tokens(realm_id)")
-                conn.commit()
-                print("✅ quickbooks_tokens table created")
-            
-            # Create QuickBooks OAuth states table
-            if 'quickbooks_oauth_states' not in existing_tables:
-                print("Creating quickbooks_oauth_states table...")
-                if DB_TYPE == 'postgresql':
-                    cursor.execute("""
-                        CREATE TABLE quickbooks_oauth_states (
-                            id SERIAL PRIMARY KEY,
-                            user_id INTEGER NOT NULL,
-                            state VARCHAR(255) UNIQUE NOT NULL,
-                            expires_at TIMESTAMP NOT NULL,
-                            created_at TIMESTAMP DEFAULT NOW()
-                        )
-                    """)
-                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_states_state ON quickbooks_oauth_states(state)")
-                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_states_user_id ON quickbooks_oauth_states(user_id)")
-                else:
-                    cursor.execute("""
-                        CREATE TABLE quickbooks_oauth_states (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            user_id INTEGER NOT NULL,
-                            state TEXT UNIQUE NOT NULL,
-                            expires_at TIMESTAMP NOT NULL,
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                        )
-                    """)
-                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_states_state ON quickbooks_oauth_states(state)")
-                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qb_states_user_id ON quickbooks_oauth_states(user_id)")
-                conn.commit()
-                print("✅ quickbooks_oauth_states table created")
-            
             # Commit is handled automatically by context manager
             print("✅ Database initialized")
     except Exception as e:
@@ -1216,20 +1150,6 @@ async def force_db_fix():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.get("/api/clear-oauth-states")
-async def clear_oauth_states():
-    """TEMPORARY: Clear all OAuth states to fix stale state issue"""
-    try:
-        with get_db() as conn:
-            cursor = get_db_cursor(conn)
-            if DB_TYPE == 'postgresql':
-                cursor.execute("DELETE FROM quickbooks_oauth_states")
-            else:
-                cursor.execute("DELETE FROM quickbooks_oauth_states")
-            conn.commit()
-            return {"success": True, "message": "All OAuth states cleared"}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
 
 # Explicit Static Page Routes (Must be defined before static mounts and catch-all routes)
 @app.get("/pricing")
@@ -1291,12 +1211,12 @@ async def serve_contact_html():
 # Include routers with full paths to match frontend calls
 app.include_router(analytics_router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(admin_router, tags=["admin"])
-app.include_router(quickbooks_router, prefix="/api/quickbooks", tags=["quickbooks"])
 app.include_router(calculations_router, tags=["calculations"])
 app.include_router(auth.router, tags=["auth"])
 app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 app.include_router(brokers.router, tags=["brokers"])
 app.include_router(customer.router, tags=["customer"])
+app.include_router(deprecated.router, prefix="/api/quickbooks", tags=["deprecated"])
 app.include_router(zapier.router, prefix="/api/zapier", tags=["zapier"])
 app.include_router(notifications.router, tags=["notifications"])
 
