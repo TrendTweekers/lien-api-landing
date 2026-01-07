@@ -4,16 +4,16 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY dashboard-v2/deadline-glow-up-main/package*.json dashboard-v2/deadline-glow-up-main/
-RUN cd dashboard-v2/deadline-glow-up-main && npm ci
+COPY dashboard/package*.json dashboard/
+RUN cd dashboard && npm ci
 
 # Copy source code and build
-COPY dashboard-v2/deadline-glow-up-main dashboard-v2/deadline-glow-up-main
-RUN cd dashboard-v2/deadline-glow-up-main && npm run build
+COPY dashboard dashboard
+RUN cd dashboard && npm run build
 
 # Verify build output and copy to public/dashboard
-RUN ls -la /app/dashboard-v2/deadline-glow-up-main/dist
-RUN mkdir -p /app/public/dashboard && cp -r /app/dashboard-v2/deadline-glow-up-main/dist/* /app/public/dashboard/
+RUN ls -la /app/dashboard/dist
+RUN mkdir -p /app/public/dashboard && cp -r /app/dashboard/dist/* /app/public/dashboard/
 
 # Stage 2: Python API
 FROM python:3.11-slim AS runtime

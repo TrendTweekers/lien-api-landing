@@ -4,14 +4,14 @@
 
 ### ✅ REAL Dashboard UI (Source of Truth)
 
-**Location:** `dashboard-v2/deadline-glow-up-main/`
+**Location:** `dashboard/`
 
 **These files contain the actual product dashboard:**
-- `dashboard-v2/deadline-glow-up-main/src/pages/` - Dashboard pages
-- `dashboard-v2/deadline-glow-up-main/src/components/` - React components
-- `dashboard-v2/deadline-glow-up-main/src/pages/PopularZaps.tsx` - Zapier setup UI
-- `dashboard-v2/deadline-glow-up-main/src/components/dashboard/NotificationSettings.tsx` - Notification settings UI
-- `dashboard-v2/deadline-glow-up-main/src/components/dashboard/IntegrationsSection.tsx` - Integrations UI
+- `dashboard/src/pages/` - Dashboard pages
+- `dashboard/src/components/` - React components
+- `dashboard/src/pages/PopularZaps.tsx` - Zapier setup UI
+- `dashboard/src/components/dashboard/NotificationSettings.tsx` - Notification settings UI
+- `dashboard/src/components/dashboard/IntegrationsSection.tsx` - Integrations UI
 
 **Accessible at:** `/dashboard/*` (served by FastAPI SPA routing)
 
@@ -31,10 +31,10 @@
 
 ## 🚨 Strict Rule
 
-**Dashboard UI changes happen ONLY in `dashboard-v2/deadline-glow-up-main/`**
+**Dashboard UI changes happen ONLY in `dashboard/`**
 
-If you're asked to make a dashboard UI change and the file is NOT under `dashboard-v2/`, **STOP** and report:
-- "This file is legacy. The real dashboard UI is in `dashboard-v2/deadline-glow-up-main/`"
+If you're asked to make a dashboard UI change and the file is NOT under `dashboard/`, **STOP** and report:
+- "This file is legacy. The real dashboard UI is in `dashboard/`"
 - Point to the correct file location
 
 ---
@@ -83,11 +83,11 @@ git commit -m "fix: critical security fix [legacy-ok]"
 
 | What You Want to Change | Edit This File |
 |------------------------|----------------|
-| Zapier setup UI | `dashboard-v2/deadline-glow-up-main/src/pages/PopularZaps.tsx` |
-| Notification settings | `dashboard-v2/deadline-glow-up-main/src/components/dashboard/NotificationSettings.tsx` |
-| Integrations section | `dashboard-v2/deadline-glow-up-main/src/components/dashboard/IntegrationsSection.tsx` |
-| Projects table | `dashboard-v2/deadline-glow-up-main/src/components/dashboard/ProjectsTable.tsx` |
-| Main dashboard page | `dashboard-v2/deadline-glow-up-main/src/pages/Index.tsx` |
+| Zapier setup UI | `dashboard/src/pages/PopularZaps.tsx` |
+| Notification settings | `dashboard/src/components/dashboard/NotificationSettings.tsx` |
+| Integrations section | `dashboard/src/components/dashboard/IntegrationsSection.tsx` |
+| Projects table | `dashboard/src/components/dashboard/ProjectsTable.tsx` |
+| Main dashboard page | `dashboard/src/pages/Index.tsx` |
 | Legacy compatibility | `dashboard.html` / `dashboard.js` (with `[legacy-ok]`) |
 
 ---
@@ -103,7 +103,7 @@ vim dashboard.html  # Adding Zapier token UI here
 ### ✅ Right: Editing React components
 ```bash
 # DO THIS INSTEAD
-vim dashboard-v2/deadline-glow-up-main/src/pages/PopularZaps.tsx
+vim dashboard/src/pages/PopularZaps.tsx
 ```
 
 ---

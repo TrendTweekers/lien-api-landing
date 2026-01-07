@@ -7,7 +7,7 @@
 **DO NOT edit `dashboard.html` or `dashboard.js` for product UI changes.**
 
 These are legacy static files. The real dashboard UI is in:
-- `dashboard-v2/deadline-glow-up-main/src/`
+- `dashboard/src/`
 
 ### How to Revert Accidental Edits
 
@@ -54,8 +54,8 @@ git commit -m "fix: critical security fix [legacy-ok]"
 ## File Structure
 
 ### Real Dashboard (Edit These)
-- `dashboard-v2/deadline-glow-up-main/src/pages/` - Dashboard pages
-- `dashboard-v2/deadline-glow-up-main/src/components/` - React components
+- `dashboard/src/pages/` - Dashboard pages
+- `dashboard/src/components/` - React components
 - Served at `/dashboard/*` via FastAPI SPA routing
 
 ### Legacy Files (Don't Edit)

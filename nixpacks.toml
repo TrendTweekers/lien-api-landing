@@ -6,13 +6,13 @@ nixPkgs = ["nodejs_20", "python311"]
 
 [phases.install]
 cmds = [
-  "cd dashboard-v2/deadline-glow-up-main && (npm ci || npm install)",
+  "cd dashboard && (npm ci || npm install)",
   "pip install -r api/requirements.txt"
 ]
 
 [phases.build]
 cmds = [
-  "cd dashboard-v2/deadline-glow-up-main && npm run build"
+  "cd dashboard && npm run build"
 ]
 
 [start]
