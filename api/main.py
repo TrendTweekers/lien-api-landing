@@ -208,6 +208,9 @@ from .email_abuse import (
 
 app = FastAPI(title="Lien Deadline API")
 
+# Tolt dashboard URL for broker dashboard redirects
+TOLT_DASHBOARD_URL = os.getenv("TOLT_DASHBOARD_URL", "/partners.html")
+
 # State code to full name mapping
 STATE_CODE_TO_NAME = {
     'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
@@ -1315,6 +1318,27 @@ async def startup():
     
     print("✅ Application startup complete")
 
+
+# Legacy dashboard redirects - MUST be BEFORE StaticFiles mounts
+@app.get("/dashboard.html")
+async def redirect_dashboard_html():
+    """Redirect legacy dashboard.html to React SPA dashboard"""
+    return RedirectResponse(url="/dashboard", status_code=301)
+
+@app.get("/customer-dashboard.html")
+async def redirect_customer_dashboard_html():
+    """Redirect legacy customer-dashboard.html to React SPA dashboard"""
+    return RedirectResponse(url="/dashboard", status_code=301)
+
+@app.get("/broker-dashboard.html")
+async def redirect_broker_dashboard_html():
+    """Redirect legacy broker-dashboard.html to Tolt dashboard"""
+    return RedirectResponse(url=TOLT_DASHBOARD_URL, status_code=301)
+
+@app.get("/broker-dashboard")
+async def redirect_broker_dashboard():
+    """Redirect legacy broker-dashboard to Tolt dashboard"""
+    return RedirectResponse(url=TOLT_DASHBOARD_URL, status_code=301)
 
 
 # Serve static files (CSS, JS)
@@ -2847,11 +2871,6 @@ async def serve_calculator_embed():
         raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
     return FileResponse(file_path)
 
-@app.get("/dashboard.html")
-async def serve_dashboard():
-    """Redirect old dashboard to new customer dashboard"""
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/customer-dashboard.html", status_code=301)
 
 @app.get("/index.html")
 async def serve_index():
@@ -2867,12 +2886,6 @@ async def serve_api():
         raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
     return FileResponse(file_path)
 
-@app.get("/broker-dashboard.html")
-async def serve_broker_dashboard_html():
-    file_path = BASE_DIR / "broker-dashboard.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="broker-dashboard.html not found in project root")
-    return FileResponse(file_path)
 
 @app.get("/partners.html")
 async def serve_partners_html():
@@ -2888,25 +2901,6 @@ async def serve_terms_html():
         raise HTTPException(status_code=404, detail="terms.html not found in project root")
     return FileResponse(file_path)
 
-@app.get("/customer-dashboard.html")
-async def serve_customer_dashboard_html(request: Request):
-    """
-    Customer dashboard HTML - block brokers from accessing.
-    """
-    # Check if user is a broker (via email in query params)
-    email = request.query_params.get('email', '').strip()
-    
-    # Block brokers from accessing customer dashboard
-    if email and is_broker_email(email):
-        raise HTTPException(
-            status_code=403,
-            detail="Brokers cannot access customer dashboard. Please use /broker-dashboard"
-        )
-    
-    file_path = BASE_DIR / "customer-dashboard.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="customer-dashboard.html not found in project root")
-    return FileResponse(file_path)
 
 @app.get("/comparison.html")
 async def serve_comparison_html():
@@ -3009,13 +3003,6 @@ async def serve_calculator_clean():
 # Removed redirect - /dashboard now serves React app (see line 1295)
 
 
-@app.get("/broker-dashboard")
-async def serve_broker_dashboard_clean():
-    """Clean URL: /broker-dashboard → broker-dashboard.html"""
-    file_path = BASE_DIR / "broker-dashboard.html"
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="Broker dashboard not found")
-    return FileResponse(file_path)
 
 @app.get("/comparison")
 async def serve_comparison_clean():
