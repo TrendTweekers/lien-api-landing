@@ -34,3 +34,7 @@ These directories were identified as duplicates that:
 - ✅ `api/main.py` (root)
 - ❌ `_archive/lien-api-landing_DUPLICATE_DO_NOT_USE/api/main.py` (archived, do not edit)
 
+## ⚠️ Important: Do Not Restore Duplicates
+
+**Do not restore duplicate nested repos to the root directory.** Keep them archived only. If you need to reference old code, use git history or the archived copy.
+

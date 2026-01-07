@@ -15,3 +15,6 @@ Thumbs.db
 # Database
 *.sqlite
 *.db
+
+# Prevent accidental re-adding of duplicate nested repo folders
+/lien-api-landing/
