@@ -158,7 +158,7 @@ def increment_usage(user_id: int, kind: UsageKind, user_email: str = None):
 def get_user_plan_and_usage(user_id: int, user_email: str = None):
     """
     Get user's plan and current usage counts.
-    Returns dict with plan, manual_calc_count, api_call_count, zapier_webhook_count, usage_month
+    Returns dict with plan, manual_calc_count, api_call_count, zapier_webhook_count, usage_month, manual_calc_limit
     """
     try:
         ensure_month_rollover(user_id, user_email)
@@ -169,13 +169,13 @@ def get_user_plan_and_usage(user_id: int, user_email: str = None):
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     SELECT plan, manual_calc_count, api_call_count, 
-                           zapier_webhook_count, usage_month
+                           zapier_webhook_count, usage_month, manual_calc_limit
                     FROM users WHERE id = %s
                 """, (user_id,))
             else:
                 cursor.execute("""
                     SELECT plan, manual_calc_count, api_call_count, 
-                           zapier_webhook_count, usage_month
+                           zapier_webhook_count, usage_month, manual_calc_limit
                     FROM users WHERE id = ?
                 """, (user_id,))
             
@@ -190,6 +190,7 @@ def get_user_plan_and_usage(user_id: int, user_email: str = None):
                     'api_call_count': result.get('api_call_count', 0),
                     'zapier_webhook_count': result.get('zapier_webhook_count', 0),
                     'usage_month': result.get('usage_month'),
+                    'manual_calc_limit': result.get('manual_calc_limit'),
                 }
             else:
                 return {
@@ -198,6 +199,7 @@ def get_user_plan_and_usage(user_id: int, user_email: str = None):
                     'api_call_count': result[2] if len(result) > 2 else 0,
                     'zapier_webhook_count': result[3] if len(result) > 3 else 0,
                     'usage_month': result[4] if len(result) > 4 else None,
+                    'manual_calc_limit': result[5] if len(result) > 5 else None,
                 }
     except Exception as e:
         logger.error(f"Error getting plan/usage for user {user_id}: {e}")
@@ -207,6 +209,7 @@ def get_user_plan_and_usage(user_id: int, user_email: str = None):
             'api_call_count': 0,
             'zapier_webhook_count': 0,
             'usage_month': None,
+            'manual_calc_limit': None,
         }
 
 
@@ -230,6 +233,7 @@ def check_plan_limit(user_id: int, feature: str, user_email: str = None) -> dict
     plan = usage.get('plan', 'free')
     manual_count = usage.get('manual_calc_count', 0)
     api_count = usage.get('api_call_count', 0)
+    manual_limit = usage.get('manual_calc_limit')
     
     if feature == "manual_calc":
         if plan == "free":
@@ -244,7 +248,22 @@ def check_plan_limit(user_id: int, feature: str, user_email: str = None) -> dict
                         'plan': 'free'
                     }
                 }
-        # basic, automated, enterprise: unlimited manual
+        elif plan == "basic":
+            # Basic plan: check manual_calc_limit from database (typically 10 per month)
+            # If manual_calc_limit is None or 0, default to 10
+            limit = manual_limit if manual_limit is not None and manual_limit > 0 else 10
+            if manual_count >= limit:
+                return {
+                    'allowed': False,
+                    'error': {
+                        'code': 'LIMIT_REACHED',
+                        'limit_type': 'manual_calcs',
+                        'used': manual_count,
+                        'limit': limit,
+                        'plan': 'basic'
+                    }
+                }
+        # automated, enterprise: unlimited manual (no limit check)
         return {'allowed': True}
     
     elif feature == "zapier":
