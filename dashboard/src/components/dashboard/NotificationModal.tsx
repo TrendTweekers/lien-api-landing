@@ -66,7 +66,7 @@ export const NotificationModal = ({ project, isOpen, onClose, userTier }: Notifi
           
           // Zapier settings
           setZapierEnabled(data.zapier_enabled || false);
-          const zapierDays = data.zapier_reminder_offsets_days || [1, 7];
+          const zapierDays = data.reminder_offsets_days || [1, 7];  // Backend returns 'reminder_offsets_days' for Zapier
           setZapierReminderDays({
             day1: zapierDays.includes(1),
             day7: zapierDays.includes(7),
@@ -104,7 +104,7 @@ export const NotificationModal = ({ project, isOpen, onClose, userTier }: Notifi
           email_enabled: emailEnabled,
           email_reminder_offsets_days: emailDays,
           zapier_enabled: zapierEnabled,
-          zapier_reminder_offsets_days: zapierDays
+          reminder_offsets_days: zapierDays  // Backend expects 'reminder_offsets_days' for Zapier
         })
       });
 
