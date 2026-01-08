@@ -25,8 +25,10 @@ const benefits = [
 export const PartnerProgram = () => {
   const [clientCount, setClientCount] = useState(100);
 
-  // 30% of $299/month subscription = $89.70 per client per month
-  const commissionPerClient = 89.70;
+  // 30% of $149/month Automated subscription = $44.70 per client per month
+  const subscriptionPrice = 149; // Automated tier
+  const commissionRate = 0.30; // 30%
+  const commissionPerClient = subscriptionPrice * commissionRate; // $44.70
   const monthlyEarnings = clientCount * commissionPerClient;
   const annualProjection = monthlyEarnings * 12;
 
@@ -91,7 +93,7 @@ export const PartnerProgram = () => {
             </div>
             
             <ul className="space-y-1 text-gray-400 text-sm">
-              <li>• Earn 30% of every $299/month subscription ($89.70 per client)</li>
+              <li>• Earn 30% of every $149/month Automated subscription ($44.70 per client)</li>
               <li>• Commission held for 30 days after customer payment to prevent fraud</li>
               <li>• Get paid monthly via direct deposit as long as clients remain active</li>
               <li>• Build long-term passive income with your construction network</li>
@@ -112,14 +114,14 @@ export const PartnerProgram = () => {
               <div className="flex items-center justify-between">
                 <span className="text-gray-400">Monthly earnings:</span>
                 <span className="text-primary font-semibold">
-                  {clientCount} × 30% = ${monthlyEarnings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/month
+                  {clientCount} × ${commissionPerClient.toFixed(2)} = ${monthlyEarnings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/month
                 </span>
               </div>
               
               <div className="flex items-center justify-between">
                 <span className="text-gray-400">Annual projection:</span>
                 <span className="text-primary font-semibold">
-                  {clientCount} × 30% × 12 = ${annualProjection.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/year
+                  {clientCount} × ${commissionPerClient.toFixed(2)} × 12 = ${annualProjection.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/year
                 </span>
               </div>
             </div>
