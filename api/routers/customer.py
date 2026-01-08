@@ -44,8 +44,9 @@ def require_cron_secret(request: Request, x_cron_secret: str = Header(None, alia
     return True
 
 class EmailPrefsIn(BaseModel):
-    alert_email: EmailStr
-    email_alerts_enabled: bool
+    alert_email: Optional[EmailStr] = None  # Legacy single email
+    email_alerts_enabled: Optional[bool] = None  # Legacy flag
+    notification_emails: Optional[str] = None  # New: comma-separated emails
 
 @router.get("/api/user/stats")
 async def get_user_stats(request: Request):
@@ -283,6 +284,77 @@ async def get_email_captures(request: Request, limit: int = 100, user = Depends(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to fetch email captures: {str(e)}")
 
+@router.get("/api/user/preferences")
+async def get_user_preferences(request: Request, current_user: dict = Depends(get_current_user)):
+    """Get user email alert preferences"""
+    email = current_user.get('email')
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="User email not found")
+    
+    try:
+        with get_db() as conn:
+            cursor = get_db_cursor(conn)
+            
+            # Check if notification_emails column exists, add if missing
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT column_name FROM information_schema.columns 
+                    WHERE table_name = 'users' AND column_name = 'notification_emails'
+                """)
+            else:
+                cursor.execute("""
+                    SELECT name FROM pragma_table_info('users') WHERE name = 'notification_emails'
+                """)
+            
+            col_exists = cursor.fetchone()
+            if not col_exists:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("ALTER TABLE users ADD COLUMN notification_emails TEXT")
+                else:
+                    cursor.execute("ALTER TABLE users ADD COLUMN notification_emails TEXT")
+                conn.commit()
+            
+            # Fetch preferences
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT notification_emails, alert_email, email_alerts_enabled 
+                    FROM users 
+                    WHERE email = %s
+                """, (email,))
+            else:
+                cursor.execute("""
+                    SELECT notification_emails, alert_email, email_alerts_enabled 
+                    FROM users 
+                    WHERE email = ?
+                """, (email,))
+            
+            row = cursor.fetchone()
+            if row:
+                if isinstance(row, dict):
+                    notification_emails = row.get('notification_emails') or row.get('alert_email') or ""
+                    alert_email = row.get('alert_email')
+                    email_alerts_enabled = bool(row.get('email_alerts_enabled', True))
+                else:
+                    notification_emails = (row[0] if len(row) > 0 and row[0] else None) or (row[1] if len(row) > 1 and row[1] else None) or ""
+                    alert_email = row[1] if len(row) > 1 else None
+                    email_alerts_enabled = bool(row[2]) if len(row) > 2 else True
+            else:
+                notification_emails = ""
+                alert_email = None
+                email_alerts_enabled = True
+            
+            return {
+                "notification_emails": notification_emails,
+                "alert_email": alert_email,  # Legacy
+                "email_alerts_enabled": email_alerts_enabled  # Legacy
+            }
+    except Exception as e:
+        logger.error(f"Error fetching user preferences: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to fetch preferences")
+
 @router.post("/api/user/preferences")
 async def save_user_preferences(request: Request, body: EmailPrefsIn, current_user: dict = Depends(get_current_user)):
     """Save user email alert preferences - requires Basic+ plan"""
@@ -301,20 +373,52 @@ async def save_user_preferences(request: Request, body: EmailPrefsIn, current_us
         with get_db() as conn:
             cursor = get_db_cursor(conn)
             
+            # Check if notification_emails column exists, add if missing
+            if DB_TYPE == 'postgresql':
+                cursor.execute("""
+                    SELECT column_name FROM information_schema.columns 
+                    WHERE table_name = 'users' AND column_name = 'notification_emails'
+                """)
+            else:
+                cursor.execute("""
+                    SELECT name FROM pragma_table_info('users') WHERE name = 'notification_emails'
+                """)
+            
+            col_exists = cursor.fetchone()
+            if not col_exists:
+                if DB_TYPE == 'postgresql':
+                    cursor.execute("ALTER TABLE users ADD COLUMN notification_emails TEXT")
+                else:
+                    cursor.execute("ALTER TABLE users ADD COLUMN notification_emails TEXT")
+                conn.commit()
+            
+            # Determine which email field to use
+            # Priority: notification_emails > alert_email (for backward compatibility)
+            notification_emails = body.notification_emails
+            if not notification_emails and body.alert_email:
+                notification_emails = body.alert_email
+            
+            # Determine email_alerts_enabled
+            email_alerts_enabled = body.email_alerts_enabled
+            if email_alerts_enabled is None:
+                email_alerts_enabled = True  # Default to enabled if not specified
+            
             if DB_TYPE == 'postgresql':
                 cursor.execute("""
                     UPDATE users
-                    SET alert_email = %s,
+                    SET notification_emails = %s,
+                        alert_email = %s,
                         email_alerts_enabled = %s
                     WHERE email = %s
-                """, (body.alert_email, body.email_alerts_enabled, email))
+                """, (notification_emails or "", notification_emails or body.alert_email or "", email_alerts_enabled, email))
             else:
                 cursor.execute("""
                     UPDATE users
-                    SET alert_email = ?,
+                    SET notification_emails = ?,
+                        alert_email = ?,
                         email_alerts_enabled = ?
                     WHERE email = ?
-                """, (body.alert_email, 1 if body.email_alerts_enabled else 0, email))
+                """, (notification_emails or "", notification_emails or body.alert_email or "", 1 if email_alerts_enabled else 0, email))
             
             conn.commit()
             
