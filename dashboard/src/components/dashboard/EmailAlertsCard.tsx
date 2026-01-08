@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Mail, Check, AlertCircle } from "lucide-react";
+import { Mail, Check, AlertCircle, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const EmailAlertsCard = () => {
-  const [emails, setEmails] = useState("");
-  const [savedEmails, setSavedEmails] = useState("");
+  const [emailList, setEmailList] = useState<string[]>([]);
+  const [newEmail, setNewEmail] = useState("");
+  const [savedEmails, setSavedEmails] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -18,8 +19,12 @@ export const EmailAlertsCard = () => {
       .then(r => r.json())
       .then(data => {
         const notificationEmails = data.notification_emails || "";
-        setEmails(notificationEmails);
-        setSavedEmails(notificationEmails);
+        const emailsArray = notificationEmails
+          .split(',')
+          .map(e => e.trim())
+          .filter(e => e);
+        setEmailList(emailsArray);
+        setSavedEmails(emailsArray);
         setLoading(false);
       })
       .catch(err => {
@@ -28,14 +33,43 @@ export const EmailAlertsCard = () => {
       });
   }, []);
 
-  const handleSave = async () => {
+  const handleAddEmail = () => {
+    const trimmedEmail = newEmail.trim();
+    if (!trimmedEmail) return;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setMessage({ type: 'error', text: `Invalid email: ${trimmedEmail}` });
+      setTimeout(() => setMessage(null), 3000);
+      return;
+    }
+
+    if (emailList.includes(trimmedEmail)) {
+      setMessage({ type: 'error', text: 'This email is already added.' });
+      setTimeout(() => setMessage(null), 3000);
+      return;
+    }
+
+    const updatedList = [...emailList, trimmedEmail];
+    setEmailList(updatedList);
+    setNewEmail("");
+    handleSave(updatedList);
+  };
+
+  const handleRemoveEmail = (emailToRemove: string) => {
+    const updatedList = emailList.filter(e => e !== emailToRemove);
+    setEmailList(updatedList);
+    handleSave(updatedList);
+  };
+
+  const handleSave = async (emailsToSave?: string[]) => {
+    const emailsToSaveList = emailsToSave || emailList;
     setSaving(true);
     setMessage(null);
 
     // Basic email validation
-    const emailList = emails.split(',').map(e => e.trim()).filter(e => e);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const invalidEmails = emailList.filter(e => !emailRegex.test(e));
+    const invalidEmails = emailsToSaveList.filter(e => !emailRegex.test(e));
 
     if (invalidEmails.length > 0) {
       setMessage({ type: 'error', text: `Invalid email(s): ${invalidEmails.join(', ')}` });
@@ -45,6 +79,7 @@ export const EmailAlertsCard = () => {
 
     try {
       const token = localStorage.getItem('session_token');
+      const notificationEmailsString = emailsToSaveList.join(', ');
       const response = await fetch("/api/user/preferences", {
         method: 'POST',
         headers: {
@@ -52,12 +87,12 @@ export const EmailAlertsCard = () => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          notification_emails: emails
+          notification_emails: notificationEmailsString
         })
       });
 
       if (response.ok) {
-        setSavedEmails(emails);
+        setSavedEmails(emailsToSaveList);
         setMessage({ type: 'success', text: 'Email addresses saved successfully!' });
         setTimeout(() => setMessage(null), 3000);
         // Dispatch event so NotificationModal can refresh
@@ -73,7 +108,14 @@ export const EmailAlertsCard = () => {
     }
   };
 
-  const hasChanges = emails.trim() !== savedEmails.trim();
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddEmail();
+    }
+  };
+
+  const hasChanges = JSON.stringify(emailList.sort()) !== JSON.stringify(savedEmails.sort());
 
   if (loading) {
     return (
@@ -100,22 +142,60 @@ export const EmailAlertsCard = () => {
         </div>
       </div>
 
-      {/* Email Input */}
+      {/* Email Management */}
       <div className="space-y-4">
+        {/* Saved Email Chips */}
+        {emailList.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Saved Email Addresses ({emailList.length})
+            </label>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {emailList.map((email, index) => (
+                <div
+                  key={index}
+                  className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5 text-sm"
+                >
+                  <Mail className="h-3 w-3 text-blue-600" />
+                  <span className="text-blue-900 font-medium">{email}</span>
+                  <button
+                    onClick={() => handleRemoveEmail(email)}
+                    className="ml-1 hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                    title="Remove email"
+                  >
+                    <X className="h-3 w-3 text-blue-600" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Add New Email */}
         <div>
-          <label htmlFor="notification-emails" className="block text-sm font-medium text-foreground mb-2">
-            Notification Email Addresses
+          <label htmlFor="new-email" className="block text-sm font-medium text-foreground mb-2">
+            {emailList.length === 0 ? 'Add Email Addresses' : 'Add Another Email'}
           </label>
-          <input
-            id="notification-emails"
-            type="text"
-            value={emails}
-            onChange={(e) => setEmails(e.target.value)}
-            placeholder="example@company.com, manager@company.com"
-            className="w-full px-4 py-3 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          />
+          <div className="flex gap-2">
+            <input
+              id="new-email"
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="example@company.com"
+              className="flex-1 px-4 py-3 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            />
+            <Button
+              onClick={handleAddEmail}
+              disabled={!newEmail.trim() || saving}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground mt-2">
-            💡 Tip: Separate multiple emails with commas
+            💡 Press Enter or click the + button to add an email
           </p>
         </div>
 
@@ -134,40 +214,42 @@ export const EmailAlertsCard = () => {
           </div>
         </div>
 
-        {/* Save Button */}
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={handleSave}
-            disabled={saving || !hasChanges}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Saving...
-              </>
-            ) : (
-              <>
-                <Mail className="h-4 w-4 mr-2" />
-                Save Email Addresses
-              </>
-            )}
-          </Button>
-
-          {/* Success/Error Message */}
-          {message && (
-            <div className={`flex items-center gap-2 text-sm font-medium ${
-              message.type === 'success' ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {message.type === 'success' ? (
-                <Check className="h-4 w-4" />
+        {/* Manual Save Button (if needed) */}
+        {hasChanges && (
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => handleSave()}
+              disabled={saving}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
               ) : (
-                <AlertCircle className="h-4 w-4" />
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Save Changes
+                </>
               )}
-              {message.text}
-            </div>
-          )}
-        </div>
+            </Button>
+          </div>
+        )}
+
+        {/* Success/Error Message */}
+        {message && (
+          <div className={`flex items-center gap-2 text-sm font-medium ${
+            message.type === 'success' ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {message.type === 'success' ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <AlertCircle className="h-4 w-4" />
+            )}
+            {message.text}
+          </div>
+        )}
       </div>
     </div>
   );
