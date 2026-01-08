@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Mail, Zap, Calendar, Bell } from "lucide-react";
+import { Mail, Zap, Calendar, Bell, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
@@ -16,6 +16,35 @@ export const NotificationModal = ({ project, isOpen, onClose, userTier }: Notifi
   const [zapierEnabled, setZapierEnabled] = useState(false);
   const [zapierReminderDays, setZapierReminderDays] = useState({ day1: true, day7: true, day14: false });
   const [saving, setSaving] = useState(false);
+  const [notificationEmails, setNotificationEmails] = useState("");
+
+  // Fetch notification emails from user preferences
+  useEffect(() => {
+    const token = localStorage.getItem('session_token');
+    fetch("/api/user/preferences", {
+      headers: { "Authorization": `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(data => {
+        setNotificationEmails(data.notification_emails || "");
+      })
+      .catch(err => console.error('Error fetching notification emails:', err));
+    
+    // Listen for updates
+    const handleUpdate = () => {
+      fetch("/api/user/preferences", {
+        headers: { "Authorization": `Bearer ${token}` }
+      })
+        .then(r => r.json())
+        .then(data => {
+          setNotificationEmails(data.notification_emails || "");
+        })
+        .catch(err => console.error('Error:', err));
+    };
+    
+    window.addEventListener('notification-emails-updated', handleUpdate);
+    return () => window.removeEventListener('notification-emails-updated', handleUpdate);
+  }, []);
 
   useEffect(() => {
     if (isOpen && project) {
@@ -186,6 +215,30 @@ export const NotificationModal = ({ project, isOpen, onClose, userTier }: Notifi
                   className="w-4 h-4 text-blue-500 rounded" />
                 <span className="text-sm">14 days before deadline</span>
               </label>
+
+              {/* Show which emails will receive alerts */}
+              {notificationEmails && (
+                <div className="bg-blue-100 border border-blue-200 rounded-lg p-3 mt-4">
+                  <div className="flex items-start gap-2">
+                    <Mail className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+                    <div className="text-xs text-blue-800">
+                      <p className="font-semibold mb-1">Emails sent to:</p>
+                      <p className="break-words">{notificationEmails}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!notificationEmails && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-4">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
+                    <p className="text-xs text-yellow-800">
+                      No notification emails set. Go to Email Alerts card above to add email addresses.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

@@ -1,205 +1,174 @@
 import { useState, useEffect } from "react";
-import { Mail, CheckCircle2, AlertCircle, Lock } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Mail, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { usePlan } from "@/hooks/usePlan";
-import { useToast } from "@/hooks/use-toast";
-import { UpgradeModal } from "@/components/UpgradeModal";
 
 export const EmailAlertsCard = () => {
-  const { planInfo } = usePlan();
-  const { toast } = useToast();
-  const [alertEmail, setAlertEmail] = useState("");
-  const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [emails, setEmails] = useState("");
+  const [savedEmails, setSavedEmails] = useState("");
   const [saving, setSaving] = useState(false);
-  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
-  
-  // Email alerts eligibility: Basic+ plans can use email reminders
-  const emailEligible = planInfo.plan === "basic" || planInfo.plan === "automated" || planInfo.plan === "enterprise";
-  
-  // Determine reminder days text based on plan
-  const getReminderDaysText = () => {
-    if (planInfo.plan === "basic") {
-      return "7 and 1 day before";
-    }
-    return "7, 3, and 1 day before";
-  };
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  // Load preferences from planInfo
   useEffect(() => {
-    if (planInfo.alertEmail !== undefined) {
-      setAlertEmail(planInfo.alertEmail || "");
-    }
-    if (planInfo.emailAlertsEnabled !== undefined) {
-      setEmailAlertsEnabled(planInfo.emailAlertsEnabled);
-    }
-  }, [planInfo.alertEmail, planInfo.emailAlertsEnabled]);
+    // Fetch current email preferences
+    const token = localStorage.getItem('session_token');
+    fetch("/api/user/preferences", {
+      headers: { "Authorization": `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(data => {
+        const notificationEmails = data.notification_emails || "";
+        setEmails(notificationEmails);
+        setSavedEmails(notificationEmails);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error fetching email preferences:', err);
+        setLoading(false);
+      });
+  }, []);
 
   const handleSave = async () => {
-    if (!alertEmail.trim()) {
-      toast({
-        title: "Email required",
-        description: "Please enter an email address for alerts",
-        variant: "destructive",
-      });
-      return;
-    }
+    setSaving(true);
+    setMessage(null);
 
     // Basic email validation
+    const emailList = emails.split(',').map(e => e.trim()).filter(e => e);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(alertEmail)) {
-      toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address",
-        variant: "destructive",
-      });
+    const invalidEmails = emailList.filter(e => !emailRegex.test(e));
+
+    if (invalidEmails.length > 0) {
+      setMessage({ type: 'error', text: `Invalid email(s): ${invalidEmails.join(', ')}` });
+      setSaving(false);
       return;
     }
 
-    setSaving(true);
     try {
       const token = localStorage.getItem('session_token');
-      const headers: HeadersInit = {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      };
-
-      const res = await fetch('/api/user/preferences', {
+      const response = await fetch("/api/user/preferences", {
         method: 'POST',
-        headers,
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
-          alert_email: alertEmail.trim(),
-          email_alerts_enabled: emailAlertsEnabled,
-        }),
+          notification_emails: emails
+        })
       });
 
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ detail: "Failed to save preferences" }));
-        throw new Error(error.detail || "Failed to save preferences");
+      if (response.ok) {
+        setSavedEmails(emails);
+        setMessage({ type: 'success', text: 'Email addresses saved successfully!' });
+        setTimeout(() => setMessage(null), 3000);
+        // Dispatch event so NotificationModal can refresh
+        window.dispatchEvent(new Event('notification-emails-updated'));
+      } else {
+        setMessage({ type: 'error', text: 'Failed to save email addresses. Please try again.' });
       }
-
-      toast({
-        title: "Preferences saved",
-        description: "Your email alert preferences have been updated",
-      });
-
-      // Refresh plan info to get updated values
-      window.dispatchEvent(new Event('storage'));
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save preferences",
-        variant: "destructive",
-      });
+    } catch (error) {
+      console.error('Error saving emails:', error);
+      setMessage({ type: 'error', text: 'Error saving email addresses.' });
     } finally {
       setSaving(false);
     }
   };
 
-  const reminderDaysText = getReminderDaysText();
+  const hasChanges = emails.trim() !== savedEmails.trim();
+
+  if (loading) {
+    return (
+      <div className="bg-card rounded-xl border-2 border-border p-6 animate-pulse">
+        <div className="h-6 bg-muted rounded w-48 mb-4"></div>
+        <div className="h-20 bg-muted rounded"></div>
+      </div>
+    );
+  }
 
   return (
-    <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-          Email Alerts (Default)
-        </CardTitle>
-        {emailEligible && (
-          <p className="text-sm text-muted-foreground mt-1">
-            Get deadline reminders via email ({reminderDaysText})
+    <div className="bg-card rounded-xl border-2 border-border p-6">
+      {/* Header */}
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+          <Mail className="h-5 w-5 text-blue-600" />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-xl font-bold text-foreground mb-1">Email Alerts</h3>
+          <p className="text-sm text-muted-foreground">
+            Enter the email address(es) where you want to receive deadline notifications. 
+            You can add multiple emails separated by commas.
           </p>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Locked State for Free Plan */}
-        {!emailEligible ? (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border border-border">
-              <Lock className="h-5 w-5 text-muted-foreground" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">
-                  Email reminders are available on Basic plan
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Upgrade to Basic ($49/mo) to get deadline reminders by email.
-                </p>
-              </div>
+        </div>
+      </div>
+
+      {/* Email Input */}
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="notification-emails" className="block text-sm font-medium text-foreground mb-2">
+            Notification Email Addresses
+          </label>
+          <input
+            id="notification-emails"
+            type="text"
+            value={emails}
+            onChange={(e) => setEmails(e.target.value)}
+            placeholder="example@company.com, manager@company.com"
+            className="w-full px-4 py-3 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+          />
+          <p className="text-xs text-muted-foreground mt-2">
+            💡 Tip: Separate multiple emails with commas
+          </p>
+        </div>
+
+        {/* Info Box */}
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-800">
+              <p className="font-semibold mb-1">How it works:</p>
+              <ul className="space-y-1 list-disc list-inside">
+                <li>These emails will receive alerts from projects you enable</li>
+                <li>Configure which projects send alerts by clicking on project cards below</li>
+                <li>Each project can have custom reminder schedules (1, 7, or 14 days before deadlines)</li>
+              </ul>
             </div>
-            <Button
-              size="default"
-              onClick={() => setUpgradeModalOpen(true)}
-              className="w-full bg-primary hover:bg-primary/90"
-            >
-              Upgrade to Unlock Email Reminders
-            </Button>
           </div>
-        ) : (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="alert-email">Alert Email Address</Label>
-              <Input
-                id="alert-email"
-                type="email"
-                placeholder="your@email.com"
-                value={alertEmail}
-                onChange={(e) => setAlertEmail(e.target.value)}
-                disabled={saving}
-              />
-            </div>
+        </div>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="email-alerts-enabled">Enable Email Alerts</Label>
-                <p className="text-xs text-muted-foreground">
-                  Receive deadline reminders at {reminderDaysText}
-                </p>
-              </div>
-              <Switch
-                id="email-alerts-enabled"
-                checked={emailAlertsEnabled}
-                onCheckedChange={setEmailAlertsEnabled}
-                disabled={saving}
-              />
-            </div>
-
-            <Button
-              onClick={handleSave}
-              disabled={saving || !alertEmail.trim()}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {saving ? "Saving..." : "Save Preferences"}
-            </Button>
-
-            {emailAlertsEnabled && alertEmail && (
-              <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-                <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                <div className="text-xs text-muted-foreground">
-                  <p className="font-medium text-foreground mb-1">Email alerts active</p>
-                  <p>You'll receive reminders at {alertEmail} for deadlines {reminderDaysText} they're due.</p>
-                </div>
-              </div>
+        {/* Save Button */}
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={handleSave}
+            disabled={saving || !hasChanges}
+            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <Mail className="h-4 w-4 mr-2" />
+                Save Email Addresses
+              </>
             )}
+          </Button>
 
-            {!emailAlertsEnabled && alertEmail && (
-              <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg border border-border">
-                <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                <div className="text-xs text-muted-foreground">
-                  <p className="font-medium text-foreground mb-1">Email alerts disabled</p>
-                  <p>Enable the toggle above to start receiving deadline reminders.</p>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </CardContent>
-      
-      <UpgradeModal open={upgradeModalOpen} onOpenChange={setUpgradeModalOpen} />
-    </Card>
+          {/* Success/Error Message */}
+          {message && (
+            <div className={`flex items-center gap-2 text-sm font-medium ${
+              message.type === 'success' ? 'text-green-600' : 'text-red-600'
+            }`}>
+              {message.type === 'success' ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <AlertCircle className="h-4 w-4" />
+              )}
+              {message.text}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
-
