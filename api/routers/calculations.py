@@ -661,7 +661,13 @@ async def save_calculation(request: Request, body: SaveRequest):
                         SELECT column_name FROM information_schema.columns 
                         WHERE table_name = 'calculations'
                     """)
-                    existing_columns = [row[0] if isinstance(row, dict) else row[0] for row in cursor.fetchall()]
+                    rows = cursor.fetchall()
+                    existing_columns = []
+                    for row in rows:
+                        if isinstance(row, dict):
+                            existing_columns.append(row.get('column_name', ''))
+                        else:
+                            existing_columns.append(row[0] if len(row) > 0 else '')
                     
                     # Add user_email if missing (required for save endpoint)
                     if 'user_email' not in existing_columns:
@@ -681,9 +687,28 @@ async def save_calculation(request: Request, body: SaveRequest):
                         print("✅ Added client_name column to calculations table")
                     
                     if 'invoice_amount' not in existing_columns:
-                        cursor.execute("ALTER TABLE calculations ADD COLUMN invoice_amount DECIMAL(10,2)")
+                        cursor.execute("ALTER TABLE calculations ADD COLUMN invoice_amount DECIMAL(20,2)")
                         conn.commit()
                         print("✅ Added invoice_amount column to calculations table")
+                    else:
+                        # Check if column needs to be altered to support larger values
+                        cursor.execute("""
+                            SELECT numeric_precision, numeric_scale 
+                            FROM information_schema.columns 
+                            WHERE table_name = 'calculations' AND column_name = 'invoice_amount'
+                        """)
+                        col_info = cursor.fetchone()
+                        if col_info:
+                            precision = col_info[0] if isinstance(col_info, dict) else (col_info[0] if len(col_info) > 0 else None)
+                            if precision and precision < 20:
+                                # Alter column to support larger values
+                                try:
+                                    cursor.execute("ALTER TABLE calculations ALTER COLUMN invoice_amount TYPE DECIMAL(20,2)")
+                                    conn.commit()
+                                    print("✅ Updated invoice_amount column to DECIMAL(20,2) for larger values")
+                                except Exception as e:
+                                    print(f"⚠️ Could not alter invoice_amount column: {e}")
+                                    # Continue anyway - might be a permission issue
                     
                     if 'notes' not in existing_columns:
                         cursor.execute("ALTER TABLE calculations ADD COLUMN notes TEXT")
