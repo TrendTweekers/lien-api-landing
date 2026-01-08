@@ -44,7 +44,7 @@ const Index = () => {
       setLoadingProjects(false);
     }
   };
-
+  
   useEffect(() => {
     // Check for session token
     const token = localStorage.getItem('session_token');
@@ -69,14 +69,14 @@ const Index = () => {
   }, []);
 
   if (planLoading || loadingProjects) {
-    return (
+  return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard...</p>
-        </div>
       </div>
-    );
+    </div>
+  );
   }
 
   return (
@@ -103,20 +103,20 @@ const Index = () => {
 
           {/* Enhanced Account Overview */}
           <div className="animate-slide-up" style={{ animationDelay: "0.1s" }}>
-            <EnhancedAccountOverview />
-          </div>
+            <EnhancedAccountOverview projects={projects} />
+            </div>
 
           {/* Deadline Calculator */}
           <div className="animate-slide-up" style={{ animationDelay: "0.15s" }}>
             <DeadlineCalculator 
               onCalculationComplete={fetchProjects} 
             />
-          </div>
+            </div>
 
           {/* Email Alerts Card (Default Path) */}
           <div className="animate-slide-up" style={{ animationDelay: "0.18s" }}>
             <EmailAlertsCard />
-          </div>
+      </div>
 
           {/* Zapier Automation Card - Status-Driven */}
           <div className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
@@ -132,7 +132,7 @@ const Index = () => {
                 }, 100);
               }}
             />
-          </div>
+        </div>
 
           {/* Urgent Projects Cards */}
           <div className="animate-slide-up" style={{ animationDelay: "0.22s" }}>
@@ -140,7 +140,7 @@ const Index = () => {
               projects={projects}
               userTier={planInfo?.plan || 'free'}
             />
-          </div>
+                </div>
 
           {/* Projects Section with Table/Card Toggle */}
           <div className="animate-slide-up" style={{ animationDelay: "0.25s" }}>
@@ -161,22 +161,22 @@ const Index = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: "0.3s" }}>
             <ApiKeySection />
             <UsageWidget />
-          </div>
-          
+              </div>
+              
           {/* Legacy Usage Stats (keep for now) */}
           <div className="animate-slide-up" style={{ animationDelay: "0.35s" }}>
             <UsageStats />
-          </div>
+                </div>
 
           {/* Billing */}
           <div className="animate-slide-up" style={{ animationDelay: "0.35s" }}>
             <BillingSection />
-          </div>
+                </div>
 
           {/* Partner Program */}
           <div className="animate-slide-up" style={{ animationDelay: "0.4s" }}>
             <PartnerProgram />
-          </div>
+                </div>
 
           {/* API Docs */}
           <div className="animate-slide-up" style={{ animationDelay: "0.45s" }}>

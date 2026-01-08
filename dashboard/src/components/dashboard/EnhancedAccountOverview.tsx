@@ -1,46 +1,36 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Calculator, FileText, MapPin, TrendingUp, CreditCard, CheckCircle, Zap } from "lucide-react";
 import { StatsCard } from "./StatsCard";
 import { usePlan } from "@/hooks/usePlan";
 import { Button } from "@/components/ui/button";
 
-export const EnhancedAccountOverview = () => {
+interface EnhancedAccountOverviewProps {
+  projects?: any[];
+}
+
+export const EnhancedAccountOverview = ({ projects = [] }: EnhancedAccountOverviewProps) => {
   const { planInfo, loading } = usePlan();
-  const [totalCalculations, setTotalCalculations] = useState(0);
-  const [totalProjects, setTotalProjects] = useState(0);
-  const [uniqueStates, setUniqueStates] = useState<string[]>([]);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
-  useEffect(() => {
-    const token = localStorage.getItem('session_token');
+  // Use props instead of fetching - PERFORMANCE OPTIMIZATION
+  const { totalCalculations, totalProjects, uniqueStates } = useMemo(() => {
+    const totalCalculations = projects.length;
+    const totalProjects = projects.length;
     
-    // Fetch projects to calculate stats
-    fetch("/api/calculations/history", {
-      headers: { "Authorization": `Bearer ${token}` }
-    })
-      .then(r => r.json())
-      .then(data => {
-        const projects = Array.isArray(data.history) ? data.history : [];
-        
-        setTotalCalculations(projects.length);
-        setTotalProjects(projects.length);
-        
-        // Extract unique states from last 30 days
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
-        const recentProjects = projects.filter((p: any) => 
-          new Date(p.created_at) > thirtyDaysAgo
-        );
-        
-        const states = Array.from(new Set(
-          recentProjects.map((p: any) => p.state).filter(Boolean)
-        )) as string[];
-        
-        setUniqueStates(states);
-      })
-      .catch(err => console.error('Error fetching stats:', err));
-  }, []);
+    // Extract unique states from last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const recentProjects = projects.filter((p: any) => 
+      p.created_at && new Date(p.created_at) > thirtyDaysAgo
+    );
+    
+    const states = Array.from(new Set(
+      recentProjects.map((p: any) => p.state).filter(Boolean)
+    )) as string[];
+    
+    return { totalCalculations, totalProjects, uniqueStates: states };
+  }, [projects]);
 
   const getPlanDisplayName = (plan: string) => {
     const names: Record<string, string> = {
