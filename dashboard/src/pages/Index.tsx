@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Rocket } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { AccountOverview } from "@/components/dashboard/AccountOverview";
+import { EnhancedAccountOverview } from "@/components/dashboard/EnhancedAccountOverview";
+import { UrgentProjectsCards } from "@/components/dashboard/UrgentProjectsCards";
 import { DeadlineCalculator } from "@/components/dashboard/DeadlineCalculator";
 import { ProjectsTable } from "@/components/dashboard/ProjectsTable";
 import { ApiKeySection } from "@/components/dashboard/ApiKeySection";
@@ -65,9 +66,9 @@ const Index = () => {
             />
           )}
 
-          {/* Account Overview */}
+          {/* Enhanced Account Overview */}
           <div className="animate-slide-up" style={{ animationDelay: "0.1s" }}>
-            <AccountOverview />
+            <EnhancedAccountOverview />
           </div>
 
           {/* Deadline Calculator */}
@@ -94,6 +95,11 @@ const Index = () => {
                 }, 100);
               }}
             />
+          </div>
+
+          {/* Urgent Projects Cards */}
+          <div className="animate-slide-up" style={{ animationDelay: "0.22s" }}>
+            <UrgentProjectsCards />
           </div>
 
           {/* Projects Table */}
