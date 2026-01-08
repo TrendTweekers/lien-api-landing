@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Request, Depends, Header
 from api.database import get_db, get_db_cursor, DB_TYPE
 from api.routers.auth import get_user_from_session, get_current_user
 from pydantic import BaseModel, EmailStr
+from typing import Optional
 import logging
 import subprocess
 import sys
