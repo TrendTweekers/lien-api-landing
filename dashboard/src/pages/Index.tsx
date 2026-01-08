@@ -113,10 +113,6 @@ const Index = () => {
             />
             </div>
 
-          {/* Email Alerts Card (Default Path) */}
-          <div className="animate-slide-up" style={{ animationDelay: "0.18s" }}>
-            <EmailAlertsCard />
-      </div>
 
           {/* Zapier Automation Card - Status-Driven */}
           <div className="animate-slide-up" style={{ animationDelay: "0.2s" }}>

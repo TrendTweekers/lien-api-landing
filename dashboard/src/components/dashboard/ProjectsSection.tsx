@@ -28,7 +28,7 @@ export const ProjectsSection = ({
   onRefresh,
   ProjectsTableComponent
 }: ProjectsSectionProps) => {
-  const [view, setView] = useState<'table' | 'card'>('table');
+  const [view, setView] = useState<'table' | 'card'>('card'); // DEFAULT TO CARD VIEW
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -87,22 +87,11 @@ export const ProjectsSection = ({
             <span className="hidden sm:inline">Refresh</span>
           </Button>
 
-          {/* View Toggle */}
+          {/* View Toggle - Card View First */}
           <div className="flex border border-gray-300 rounded-lg overflow-hidden">
             <button
-              onClick={() => setView('table')}
-              className={`px-4 py-2 text-sm font-medium transition-colors flex items-center gap-2 ${
-                view === 'table'
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <LayoutList className="h-4 w-4" />
-              <span className="hidden sm:inline">Table View</span>
-            </button>
-            <button
               onClick={() => setView('card')}
-              className={`px-4 py-2 text-sm font-medium transition-colors flex items-center gap-2 border-l border-gray-300 ${
+              className={`px-4 py-2 text-sm font-medium transition-colors flex items-center gap-2 ${
                 view === 'card'
                   ? 'bg-orange-500 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -110,6 +99,17 @@ export const ProjectsSection = ({
             >
               <LayoutGrid className="h-4 w-4" />
               <span className="hidden sm:inline">Card View</span>
+            </button>
+            <button
+              onClick={() => setView('table')}
+              className={`px-4 py-2 text-sm font-medium transition-colors flex items-center gap-2 border-l border-gray-300 ${
+                view === 'table'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <LayoutList className="h-4 w-4" />
+              <span className="hidden sm:inline">Table View</span>
             </button>
           </div>
 
