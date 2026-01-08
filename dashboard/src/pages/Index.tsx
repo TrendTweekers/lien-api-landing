@@ -99,7 +99,11 @@ const Index = () => {
 
           {/* Urgent Projects Cards */}
           <div className="animate-slide-up" style={{ animationDelay: "0.22s" }}>
-            <UrgentProjectsCards />
+            <UrgentProjectsCards 
+              onProjectClick={(projectId) => {
+                setExpandedProjectId(projectId);
+              }}
+            />
           </div>
 
           {/* Projects Table */}

@@ -3,7 +3,6 @@ import { Calculator, FileText, MapPin, TrendingUp, CreditCard, CheckCircle, Zap 
 import { StatsCard } from "./StatsCard";
 import { usePlan } from "@/hooks/usePlan";
 import { Button } from "@/components/ui/button";
-import { UpgradeModal } from "@/components/UpgradeModal";
 
 export const EnhancedAccountOverview = () => {
   const { planInfo, loading } = usePlan();
@@ -79,7 +78,7 @@ export const EnhancedAccountOverview = () => {
   return (
     <div className="space-y-6">
       {/* Account Overview Header */}
-      <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-6 border border-border card-shadow">
+      <div className="bg-card rounded-xl p-6 border border-border card-shadow">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           {/* Plan Info */}
           <div className="flex items-start gap-4">
@@ -99,14 +98,14 @@ export const EnhancedAccountOverview = () => {
 
           {/* Status */}
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center shrink-0">
-              <CheckCircle className="h-6 w-6 text-success" />
+            <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
+              <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-1">Status</p>
-              <p className="text-2xl font-bold text-success">Active</p>
+              <p className="text-2xl font-bold text-green-600">Active</p>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {planInfo?.resetDate ? `Resets ${new Date(planInfo.resetDate).toLocaleDateString()}` : 'No reset date'}
+                {planInfo?.next_reset ? `Resets ${new Date(planInfo.next_reset).toLocaleDateString()}` : 'No reset date'}
               </p>
             </div>
           </div>
@@ -114,26 +113,26 @@ export const EnhancedAccountOverview = () => {
           {/* API Status (for Automated tier) */}
           {planInfo?.plan === 'automated' && (
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-info/10 flex items-center justify-center shrink-0">
-                <Zap className="h-6 w-6 text-info" />
+              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                <Zap className="h-6 w-6 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">API Calls</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {planInfo?.apiCallsUsed || 0}/{planInfo?.apiCallsLimit || 500}
+                  {planInfo?.api_calls_used || 0}/{planInfo?.api_calls_limit || 500}
                 </p>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  {planInfo?.apiCallsRemaining || 0} remaining
+                  {planInfo?.api_calls_remaining || 0} remaining
                 </p>
               </div>
             </div>
           )}
 
           {/* Upgrade Button (if not on Automated tier) */}
-          {planInfo?.plan !== 'automated' && planInfo?.plan !== 'enterprise' && (
+          {planInfo?.plan !== 'automated' && (
             <Button 
               onClick={() => setUpgradeModalOpen(true)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-3 rounded-lg transition-all shadow-lg hover:shadow-xl"
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold px-6 py-3 rounded-lg transition-all shadow-lg hover:shadow-xl"
             >
               <TrendingUp className="h-4 w-4 mr-2" />
               Upgrade Plan
@@ -149,8 +148,8 @@ export const EnhancedAccountOverview = () => {
           value={totalCalculations}
           icon={Calculator}
           subtitle="All time calculations"
-          iconColor="text-info"
-          iconBg="bg-info/10"
+          iconColor="text-blue-600"
+          iconBg="bg-blue-100"
         />
         
         <StatsCard
@@ -158,8 +157,8 @@ export const EnhancedAccountOverview = () => {
           value={totalProjects}
           icon={FileText}
           subtitle="Projects being tracked"
-          iconColor="text-success"
-          iconBg="bg-success/10"
+          iconColor="text-green-600"
+          iconBg="bg-green-100"
         />
         
         <StatsCard
@@ -167,14 +166,117 @@ export const EnhancedAccountOverview = () => {
           value={uniqueStates.length}
           icon={MapPin}
           subtitle="Last 30 days"
-          iconColor="text-primary"
-          iconBg="bg-primary/10"
+          iconColor="text-purple-600"
+          iconBg="bg-purple-100"
         />
       </div>
 
       {/* Upgrade Modal */}
-      <UpgradeModal open={upgradeModalOpen} onOpenChange={setUpgradeModalOpen} />
+      {upgradeModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Upgrade Your Plan</h2>
+                <p className="text-gray-600">Choose the plan that fits your needs</p>
+              </div>
+              <button
+                onClick={() => setUpgradeModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Basic Tier */}
+              <div className="border-2 border-gray-200 rounded-xl p-6 hover:border-orange-500 transition-all">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Basic Tracker</h3>
+                    <p className="text-gray-600 text-sm mt-1">For small teams and individual users</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-bold text-gray-900">$49</p>
+                    <p className="text-sm text-gray-500">/month</p>
+                  </div>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700">Unlimited calculations</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700">Email reminders (7-day & 1-day)</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700">PDF/CSV export</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700">Email support</span>
+                  </li>
+                </ul>
+                <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-lg">
+                  Upgrade to Basic
+                </Button>
+              </div>
+
+              {/* Automated Tier */}
+              <div className="border-2 border-orange-500 rounded-xl p-6 bg-gradient-to-br from-orange-50 to-orange-100 relative overflow-hidden">
+                <div className="absolute top-4 right-4">
+                  <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                    POPULAR
+                  </span>
+                </div>
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Automated Compliance</h3>
+                    <p className="text-gray-700 text-sm mt-1">For growing businesses with automation needs</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-bold text-gray-900">$149</p>
+                    <p className="text-sm text-gray-600">/month</p>
+                  </div>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700 font-medium">Everything in Basic, plus:</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700">Zapier automation (6,000+ apps)</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700">Multi-channel alerts (Slack/SMS/Calendar)</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700">API access (500 calls/month)</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700">Priority support</span>
+                  </li>
+                </ul>
+                <Button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-lg shadow-lg">
+                  Upgrade to Automated
+                </Button>
+              </div>
+            </div>
+
+            <p className="text-center text-sm text-gray-500 mt-6">
+              Plans renew automatically. Cancel anytime.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
