@@ -31,18 +31,34 @@ class ReminderConfig(BaseModel):
     channels: ReminderChannel
 
 class NotificationSettingsRequestV1(BaseModel):
-    """Request model for v1 notification settings (Zapier-only)"""
-    reminder_offsets_days: List[int] = Field(..., min_items=0, description="List of reminder offset days (e.g., [1, 7, 14])")
+    """Request model for v1 notification settings (Email + Zapier)"""
+    reminder_offsets_days: Optional[List[int]] = Field(default=None, min_items=0, description="List of reminder offset days for Zapier (e.g., [1, 7, 14])")
     zapier_enabled: bool = Field(default=False, description="Whether Zapier reminders are enabled")
+    email_enabled: Optional[bool] = Field(default=None, description="Whether email reminders are enabled for this project")
+    email_reminder_offsets_days: Optional[List[int]] = Field(default=None, min_items=0, description="List of reminder offset days for Email (e.g., [1, 7, 14])")
     
     @validator('reminder_offsets_days')
-    def validate_offsets(cls, v):
+    def validate_zapier_offsets(cls, v):
         """Ensure no duplicate offsets and all > 0"""
+        if v is None:
+            return v
         if len(v) != len(set(v)):
             raise ValueError("Duplicate offset_days not allowed.")
         for offset in v:
             if offset <= 0:
                 raise ValueError("All offset_days must be > 0")
+        return v
+    
+    @validator('email_reminder_offsets_days')
+    def validate_email_offsets(cls, v):
+        """Ensure no duplicate offsets and all > 0"""
+        if v is None:
+            return v
+        if len(v) != len(set(v)):
+            raise ValueError("Duplicate email_reminder_offsets_days not allowed.")
+        for offset in v:
+            if offset <= 0:
+                raise ValueError("All email_reminder_offsets_days must be > 0")
         return v
 
 class NotificationSettingsRequest(BaseModel):
@@ -168,9 +184,11 @@ def get_notification_settings(project_id: int) -> Optional[Dict]:
             
             # Handle both v1 format and legacy format
             if isinstance(settings_data, dict):
-                # V1 format: {reminder_offsets_days: [7], zapier_enabled: false, reminders: [...]}
+                # V1 format: {reminder_offsets_days: [7], zapier_enabled: false, email_enabled: false, email_reminder_offsets_days: [1,7], reminders: [...]}
                 reminder_offsets_days = settings_data.get("reminder_offsets_days", [])
                 zapier_enabled = settings_data.get("zapier_enabled", False)
+                email_enabled = settings_data.get("email_enabled", False)
+                email_reminder_offsets_days = settings_data.get("email_reminder_offsets_days", [])
                 reminders = settings_data.get("reminders", [])
             elif isinstance(settings_data, list):
                 # Legacy format: [{offset_days: 7, channels: {...}}]
@@ -187,11 +205,15 @@ def get_notification_settings(project_id: int) -> Optional[Dict]:
                 reminders = []
                 reminder_offsets_days = []
                 zapier_enabled = False
+                email_enabled = False
+                email_reminder_offsets_days = []
             
             return {
                 "reminders": reminders,  # Legacy format
                 "reminder_offsets_days": reminder_offsets_days,  # V1 format
                 "zapier_enabled": zapier_enabled,  # V1 format
+                "email_enabled": email_enabled,  # Email support
+                "email_reminder_offsets_days": email_reminder_offsets_days,  # Email support
                 "created_at": created_at.isoformat() if hasattr(created_at, 'isoformat') else str(created_at),
                 "updated_at": updated_at.isoformat() if hasattr(updated_at, 'isoformat') else str(updated_at)
             }
@@ -266,13 +288,21 @@ async def get_notifications(
 ):
     """
     Get notification settings for a project (v1 format).
-    Requires authentication, project ownership, and Automated/Enterprise plan.
-    Returns v1 format: reminder_offsets_days and zapier_enabled.
+    Requires authentication and project ownership.
+    Email settings: Basic+ plans
+    Zapier settings: Automated/Enterprise plans only
+    Returns v1 format: reminder_offsets_days, zapier_enabled, email_enabled, email_reminder_offsets_days.
     """
-    from api.routers.billing import require_plan
+    from api.routers.billing import get_user_plan_and_usage
     
-    # Gate: Automated/Enterprise plans only
-    require_plan(current_user, ["automated", "enterprise"], route_name=f"/api/projects/{project_id}/notifications")
+    # Check plan (no gate - Basic+ can view email settings, Automated+ can view Zapier)
+    user_id = current_user.get('id')
+    user_email = current_user.get('email', '').lower().strip()
+    if user_id:
+        plan_info = get_user_plan_and_usage(user_id, user_email)
+        plan = plan_info.get('plan', 'free')
+    else:
+        plan = 'free'
     
     try:
         user_email = current_user.get('email', '').lower().strip()
@@ -297,12 +327,14 @@ async def get_notifications(
             else:
                 raise HTTPException(status_code=500, detail="Failed to create default notification settings")
         
-        # Return v1 format
+        # Return v1 format with email support
         return JSONResponse(content={
             "success": True,
             "project_id": project_id,
             "reminder_offsets_days": settings.get("reminder_offsets_days", [7]),
             "zapier_enabled": settings.get("zapier_enabled", False),
+            "email_enabled": settings.get("email_enabled", False),
+            "email_reminder_offsets_days": settings.get("email_reminder_offsets_days", [1, 7]),
             "created_at": settings["created_at"],
             "updated_at": settings["updated_at"]
         })
@@ -405,14 +437,25 @@ async def update_notifications(
 ):
     """
     Update notification settings for a project (v1 format).
-    Requires authentication, project ownership, and Automated/Enterprise plan.
-    Accepts v1 format: reminder_offsets_days and zapier_enabled.
+    Requires authentication and project ownership.
+    Email settings: Basic+ plans
+    Zapier settings: Automated/Enterprise plans only
+    Accepts v1 format: reminder_offsets_days, zapier_enabled, email_enabled, email_reminder_offsets_days.
     """
-    from api.routers.billing import require_plan, get_user_plan_and_usage, validate_reminder_offsets
+    from api.routers.billing import get_user_plan_and_usage, validate_reminder_offsets
     
-    # Gate: Automated/Enterprise plans only
-    plan_info = require_plan(current_user, ["automated", "enterprise"], route_name=f"/api/projects/{project_id}/notifications")
-    plan = plan_info.get('plan', 'free')
+    # Check plan (Basic+ for email, Automated+ for Zapier)
+    user_id = current_user.get('id')
+    user_email = current_user.get('email', '').lower().strip()
+    if user_id:
+        plan_info = get_user_plan_and_usage(user_id, user_email)
+        plan = plan_info.get('plan', 'free')
+    else:
+        plan = 'free'
+    
+    # If trying to enable Zapier, require Automated+
+    if settings.zapier_enabled and plan not in ['automated', 'enterprise']:
+        raise HTTPException(status_code=403, detail="Zapier automation requires Automated or Enterprise plan")
     
     try:
         user_id = current_user.get('id')
@@ -427,14 +470,41 @@ async def update_notifications(
         if project_user_id != user_id:
             raise HTTPException(status_code=403, detail="Access denied. You can only modify your own projects.")
         
-        # Validate reminder offsets by plan
-        reminder_offsets_days = settings.reminder_offsets_days
-        is_valid, error_msg = validate_reminder_offsets(reminder_offsets_days, plan)
-        if not is_valid:
-            logger.warning(f"PLAN_DENY route=/api/projects/{project_id}/notifications plan={plan} user={current_user.get('email')} reason=invalid_offsets offsets={reminder_offsets_days}")
-            raise HTTPException(status_code=400, detail=error_msg)
-        
+        # Validate reminder offsets by plan (only for Zapier)
+        reminder_offsets_days = settings.reminder_offsets_days or []
         zapier_enabled = settings.zapier_enabled
+        
+        if zapier_enabled and reminder_offsets_days:
+            # Only validate Zapier offsets if Zapier is enabled
+            is_valid, error_msg = validate_reminder_offsets(reminder_offsets_days, plan)
+            if not is_valid:
+                logger.warning(f"PLAN_DENY route=/api/projects/{project_id}/notifications plan={plan} user={current_user.get('email')} reason=invalid_offsets offsets={reminder_offsets_days}")
+                raise HTTPException(status_code=400, detail=error_msg)
+        
+        # Email settings (Basic+ plans can use email)
+        email_enabled = settings.email_enabled if settings.email_enabled is not None else False
+        email_reminder_offsets_days = settings.email_reminder_offsets_days or []
+        
+        # Validate email settings
+        if email_enabled:
+            # Check plan for email
+            if plan == 'free':
+                raise HTTPException(status_code=403, detail="Email reminders require Basic plan or higher")
+            
+            # Validate email offsets
+            if email_reminder_offsets_days:
+                # Basic plan: max 2 offsets (7, 1)
+                # Automated/Enterprise: unlimited
+                if plan == 'basic' and len(email_reminder_offsets_days) > 2:
+                    raise HTTPException(status_code=400, detail="Basic plan allows maximum 2 email reminder offsets (e.g., [7, 1])")
+                if len(email_reminder_offsets_days) != len(set(email_reminder_offsets_days)):
+                    raise HTTPException(status_code=400, detail="Duplicate email_reminder_offsets_days not allowed")
+                for offset in email_reminder_offsets_days:
+                    if offset <= 0:
+                        raise HTTPException(status_code=400, detail="All email_reminder_offsets_days must be > 0")
+            else:
+                # If email enabled but no offsets, use default
+                email_reminder_offsets_days = [7, 1] if plan == 'basic' else [7, 3, 1]
         
         # Build legacy format for backwards compatibility
         reminders_legacy = [
@@ -449,10 +519,12 @@ async def update_notifications(
             for offset in reminder_offsets_days
         ]
         
-        # Store both formats
+        # Store both formats with email support
         settings_data = {
             "reminder_offsets_days": reminder_offsets_days,
             "zapier_enabled": zapier_enabled,
+            "email_enabled": email_enabled,
+            "email_reminder_offsets_days": email_reminder_offsets_days,
             "reminders": reminders_legacy  # Legacy format for backwards compatibility
         }
         
@@ -489,7 +561,7 @@ async def update_notifications(
             
             conn.commit()
         
-        # Return updated settings (v1 format)
+        # Return updated settings (v1 format with email support)
         updated_settings = get_notification_settings(project_id)
         
         return JSONResponse(content={
@@ -497,6 +569,8 @@ async def update_notifications(
             "project_id": project_id,
             "reminder_offsets_days": updated_settings.get("reminder_offsets_days", []),
             "zapier_enabled": updated_settings.get("zapier_enabled", False),
+            "email_enabled": updated_settings.get("email_enabled", False),
+            "email_reminder_offsets_days": updated_settings.get("email_reminder_offsets_days", []),
             "created_at": updated_settings["created_at"],
             "updated_at": updated_settings["updated_at"]
         })
