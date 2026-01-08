@@ -6,6 +6,7 @@ import { EnhancedAccountOverview } from "@/components/dashboard/EnhancedAccountO
 import { UrgentProjectsCards } from "@/components/dashboard/UrgentProjectsCards";
 import { DeadlineCalculator } from "@/components/dashboard/DeadlineCalculator";
 import { ProjectsTable } from "@/components/dashboard/ProjectsTable";
+import { ProjectsSection } from "@/components/dashboard/ProjectsSection";
 import { ApiKeySection } from "@/components/dashboard/ApiKeySection";
 import { UsageStats } from "@/components/dashboard/UsageStats";
 import { UsageWidget } from "@/components/dashboard/UsageWidget";
@@ -23,6 +24,26 @@ const Index = () => {
   const navigate = useNavigate();
   const { planInfo, loading: planLoading } = usePlan();
   const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
+
+  // SINGLE API CALL - Fetch once, use everywhere (PERFORMANCE OPTIMIZATION)
+  const fetchProjects = async () => {
+    setLoadingProjects(true);
+    try {
+      const token = localStorage.getItem('session_token');
+      const response = await fetch("/api/calculations/history", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const data = await response.json();
+      setProjects(Array.isArray(data.history) ? data.history : []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      setProjects([]);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
 
   useEffect(() => {
     // Check for session token
@@ -42,7 +63,21 @@ const Index = () => {
     }).catch(() => {
       window.location.href = '/login.html';
     });
+
+    // Fetch projects once
+    fetchProjects();
   }, []);
+
+  if (planLoading || loadingProjects) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -73,7 +108,9 @@ const Index = () => {
 
           {/* Deadline Calculator */}
           <div className="animate-slide-up" style={{ animationDelay: "0.15s" }}>
-            <DeadlineCalculator />
+            <DeadlineCalculator 
+              onCalculationComplete={fetchProjects} 
+            />
           </div>
 
           {/* Email Alerts Card (Default Path) */}
@@ -100,17 +137,23 @@ const Index = () => {
           {/* Urgent Projects Cards */}
           <div className="animate-slide-up" style={{ animationDelay: "0.22s" }}>
             <UrgentProjectsCards 
-              onProjectClick={(projectId) => {
-                setExpandedProjectId(projectId);
-              }}
+              projects={projects}
+              userTier={planInfo?.plan || 'free'}
             />
           </div>
 
-          {/* Projects Table */}
-          <div className="animate-slide-up" style={{ animationDelay: "0.25s" }} data-projects-section>
-            <ProjectsTable 
-              expandedProjectId={expandedProjectId}
-              onExpandedProjectChange={setExpandedProjectId}
+          {/* Projects Section with Table/Card Toggle */}
+          <div className="animate-slide-up" style={{ animationDelay: "0.25s" }}>
+            <ProjectsSection
+              projects={projects}
+              userTier={planInfo?.plan || 'free'}
+              onRefresh={fetchProjects}
+              ProjectsTableComponent={() => (
+                <ProjectsTable 
+                  expandedProjectId={expandedProjectId}
+                  onExpandedProjectChange={setExpandedProjectId}
+                />
+              )}
             />
           </div>
 

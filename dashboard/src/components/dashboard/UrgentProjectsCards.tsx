@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { AlertTriangle, Clock } from "lucide-react";
+import { NotificationModal } from "./NotificationModal";
 
 interface Project {
   id: number;
@@ -10,17 +11,41 @@ interface Project {
   lien_deadline: string;
   created_at: string;
   daysRemaining?: number;
+  amount?: number;
 }
 
 interface UrgentProjectsCardsProps {
-  onProjectClick?: (projectId: number) => void;
+  projects?: Project[];
+  userTier: 'free' | 'basic' | 'automated' | 'enterprise';
 }
 
-export const UrgentProjectsCards = ({ onProjectClick }: UrgentProjectsCardsProps) => {
+export const UrgentProjectsCards = ({ projects: propProjects, userTier }: UrgentProjectsCardsProps) => {
   const [urgentProjects, setUrgentProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
+    // If projects passed as props, use them (performance optimization)
+    if (propProjects) {
+      const now = new Date();
+      const projectsWithDays = propProjects.map(p => {
+        const prelimDate = new Date(p.prelim_deadline);
+        const daysRemaining = Math.ceil((prelimDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        return { ...p, daysRemaining };
+      });
+
+      const filtered = projectsWithDays
+        .filter(p => p.daysRemaining! <= 30)
+        .sort((a, b) => a.daysRemaining! - b.daysRemaining!)
+        .slice(0, 6);
+
+      setUrgentProjects(filtered);
+      setLoading(false);
+      return;
+    }
+
+    // Otherwise fetch (fallback)
     const token = localStorage.getItem('session_token');
     fetch("/api/calculations/history", {
       headers: { "Authorization": `Bearer ${token}` }
@@ -29,7 +54,6 @@ export const UrgentProjectsCards = ({ onProjectClick }: UrgentProjectsCardsProps
       .then(data => {
         const projects = Array.isArray(data.history) ? data.history : [];
         
-        // Calculate days remaining and filter urgent/warning projects
         const now = new Date();
         const projectsWithDays = projects.map(p => {
           const prelimDate = new Date(p.prelim_deadline);
@@ -37,11 +61,10 @@ export const UrgentProjectsCards = ({ onProjectClick }: UrgentProjectsCardsProps
           return { ...p, daysRemaining };
         });
 
-        // Filter to only urgent (≤7 days) and warning (8-30 days)
         const filtered = projectsWithDays
           .filter(p => p.daysRemaining <= 30)
           .sort((a, b) => a.daysRemaining - b.daysRemaining)
-          .slice(0, 6); // Show max 6 cards
+          .slice(0, 6);
 
         setUrgentProjects(filtered);
         setLoading(false);
@@ -50,7 +73,7 @@ export const UrgentProjectsCards = ({ onProjectClick }: UrgentProjectsCardsProps
         console.error('Error fetching projects:', err);
         setLoading(false);
       });
-  }, []);
+  }, [propProjects]);
 
   const getStatusConfig = (days: number) => {
     if (days <= 7) {
@@ -75,21 +98,12 @@ export const UrgentProjectsCards = ({ onProjectClick }: UrgentProjectsCardsProps
   };
 
   const getProgressPercent = (days: number) => {
-    // Assume 90 days total, calculate what's left
     return Math.min(100, Math.max(0, (days / 90) * 100));
   };
 
-  const handleCardClick = (projectId: number) => {
-    // Scroll to projects table
-    const projectsSection = document.querySelector('[data-projects-section]');
-    if (projectsSection) {
-      projectsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    
-    // Call parent callback to expand project row
-    if (onProjectClick) {
-      onProjectClick(projectId);
-    }
+  const handleCardClick = (project: Project) => {
+    setSelectedProject(project);
+    setModalOpen(true);
   };
 
   if (loading) {
@@ -140,7 +154,7 @@ export const UrgentProjectsCards = ({ onProjectClick }: UrgentProjectsCardsProps
           return (
             <div
               key={project.id}
-              onClick={() => handleCardClick(project.id)}
+              onClick={() => handleCardClick(project)}
               className="bg-card rounded-xl border-2 border-border p-6 hover:shadow-lg hover:border-primary/30 transition-all cursor-pointer"
             >
               {/* Header with badges */}
@@ -183,6 +197,19 @@ export const UrgentProjectsCards = ({ onProjectClick }: UrgentProjectsCardsProps
           );
         })}
       </div>
+
+      {/* Notification Modal */}
+      {selectedProject && (
+        <NotificationModal
+          project={selectedProject}
+          isOpen={modalOpen}
+          onClose={() => {
+            setModalOpen(false);
+            setSelectedProject(null);
+          }}
+          userTier={userTier}
+        />
+      )}
     </div>
   );
 };
