@@ -15,7 +15,6 @@ import { PartnerProgram } from "@/components/dashboard/PartnerProgram";
 import { ApiDocs } from "@/components/dashboard/ApiDocs";
 import UpgradePrompt from "@/components/UpgradePrompt";
 import { ZapierStatusCard } from "@/components/dashboard/ZapierStatusCard";
-import { EmailAlertsCard } from "@/components/dashboard/EmailAlertsCard";
 import { AdminSimulator } from "@/components/AdminSimulator";
 import { EmailCaptures } from "@/components/admin/EmailCaptures";
 import { usePlan } from "@/hooks/usePlan";
